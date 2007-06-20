@@ -24,6 +24,8 @@
 
 /* $Id$ */
 
+#define _NIMLIB_
+
 #include<khuidefs.h>
 #include<commctrl.h>
 #include<assert.h>
