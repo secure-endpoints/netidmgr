@@ -1,3 +1,5 @@
+#!ANCHOR=ROOT\PluginManager\Plugins
+#!SCOPE=Kerberos 4 Credentials Provider
 Name,Type,Value,Description
 Krb4Cred,KC_SPACE,0,"Kerberos IV Credentials Provider"
   Module,KC_STRING,"MITKrb4",

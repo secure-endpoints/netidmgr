@@ -25,15 +25,47 @@
 MODULE=help
 !include <..\config\Makefile.w32>
 
+CSV2HTML= perl schema2html.pl $** $@
+
 CHMFILE=$(BINDIR)\netidmgr.chm
 
 INCFILES=$(INCDIR)\khhelp.h
 
-all: mkdirs $(CHMFILE) $(INCFILES)
+HTMLDIR=html
+
+SCHEMAHELPFILES=   \
+	$(HTMLDIR)\kcdbconfig.html \
+	$(HTMLDIR)\kmmconfig.html \
+	$(HTMLDIR)\kmqconfig.html \
+	$(HTMLDIR)\krb4config.html \
+	$(HTMLDIR)\krb5config.html \
+	$(HTMLDIR)\uiconfig.html
+
+$(HTMLDIR)\kcdbconfig.html: ..\kcreddb\kcdbconfig.csv
+	$(CSV2HTML)
+
+$(HTMLDIR)\kmmconfig.html: ..\kmm\kmmconfig.csv
+	$(CSV2HTML)
+
+$(HTMLDIR)\kmqconfig.html: ..\kmq\kmqconfig.csv
+	$(CSV2HTML)
+
+$(HTMLDIR)\krb4config.html: ..\plugins\krb4\krbconfig.csv
+	$(CSV2HTML)
+
+$(HTMLDIR)\krb5config.html: ..\plugins\krb5\krbconfig.csv
+	$(CSV2HTML)
+
+$(HTMLDIR)\uiconfig.html: ..\ui\uiconfig.csv
+	$(CSV2HTML)
+
+all: mkdirs $(CHMFILE) $(INCFILES) $(SCHEMAHELPFILES)
 
 $(CHMFILE): netidmgr.hhp
 	-$(HHC) netidmgr.hhp
 	$(CP) netidmgr.chm $(CHMFILE)
 
 clean::
-	if exist '..\obj' $(RM) $(INCFILES)
+	if exist $(INCDIR) $(RM) $(INCFILES)
+	$(RM) $(CHMFILE)
+	$(RM) $(SCHEMAHELPFILES)

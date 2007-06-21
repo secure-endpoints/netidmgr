@@ -1,3 +1,5 @@
+#!ANCHOR=ROOT
+#!SCOPE=Credentials DB
 Name,Type,Value,Description
 KCDB,KC_SPACE,0,Khimaira Configuration DB
   Identity,KC_SPACE,0,Configuration space for identities

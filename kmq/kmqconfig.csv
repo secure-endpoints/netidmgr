@@ -1,5 +1,7 @@
+#!ANCHOR=ROOT
+#!SCOPE=Message Queue
 Name,Type,Value,Description
-KMQ,KC_SPACE,0,Options for the credentials window
+KMQ,KC_SPACE,0,Options for the message queue
   QueueDeadTimeout,KC_INT32,12000,
   CallDeadTimeout,KC_INT32,8000,
 KMQ,KC_ENDSPACE,0,
