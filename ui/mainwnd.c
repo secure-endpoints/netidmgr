@@ -205,6 +205,53 @@ khm_ui_cb(LPARAM lParam) {
     }
 }
 
+static LRESULT
+khm_save_main_window_position(void) {
+    RECT r;
+    khm_handle csp_cw;
+    khm_handle csp_mw;
+    const wchar_t * wconfig;
+
+    if (khm_main_wnd_mode == KHM_MAIN_WND_MINI)
+        wconfig = L"Windows\\MainMini";
+    else
+        wconfig = L"Windows\\Main";
+
+    /* we no longer need the resize timer. */
+    KillTimer(khm_hwnd_main, MW_RESIZE_TIMER);
+
+    GetWindowRect(khm_hwnd_main, &r);
+
+    if (KHM_SUCCEEDED(khc_open_space(NULL,
+                                     L"CredWindow",
+                                     KHM_PERM_WRITE,
+                                     &csp_cw))) {
+        if (KHM_SUCCEEDED(khc_open_space(csp_cw,
+                                         wconfig,
+                                         KHM_PERM_WRITE,
+                                         &csp_mw))) {
+            khm_int32 t;
+
+            khc_write_int32(csp_mw, L"XPos", r.left);
+            khc_write_int32(csp_mw, L"YPos", r.top);
+            khc_write_int32(csp_mw, L"Width",
+                            r.right - r.left);
+            khc_write_int32(csp_mw, L"Height",
+                            r.bottom - r.top);
+
+            if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"Dock", &t)) &&
+                t != KHM_DOCK_NONE) {
+                khc_write_int32(csp_mw, L"Dock", KHM_DOCK_AUTO);
+            }
+
+            khc_close_space(csp_mw);
+        }
+        khc_close_space(csp_cw);
+    }
+
+    return 0;
+}
+
 LRESULT CALLBACK 
 khm_main_wnd_proc(HWND hwnd,
                   UINT uMsg,
@@ -383,6 +430,7 @@ khm_main_wnd_proc(HWND hwnd,
 
             /* layout control */
         case KHUI_ACTION_LAYOUT_MINI:
+
             if (khm_main_wnd_mode == KHM_MAIN_WND_MINI) {
                 khm_set_main_window_mode(KHM_MAIN_WND_NORMAL);
             } else {
@@ -567,48 +615,8 @@ khm_main_wnd_proc(HWND hwnd,
 
     case WM_TIMER:
         if (wParam == MW_RESIZE_TIMER) {
-            RECT r;
-            khm_handle csp_cw;
-            khm_handle csp_mw;
-            const wchar_t * wconfig;
 
-            if (khm_main_wnd_mode == KHM_MAIN_WND_MINI)
-                wconfig = L"Windows\\MainMini";
-            else
-                wconfig = L"Windows\\Main";
-
-            KillTimer(hwnd, wParam);
-
-            GetWindowRect(hwnd, &r);
-
-            if (KHM_SUCCEEDED(khc_open_space(NULL,
-                                             L"CredWindow",
-                                             KHM_PERM_WRITE,
-                                             &csp_cw))) {
-                if (KHM_SUCCEEDED(khc_open_space(csp_cw,
-                                                 wconfig,
-                                                 KHM_PERM_WRITE,
-                                                 &csp_mw))) {
-                    khm_int32 t;
-
-                    khc_write_int32(csp_mw, L"XPos", r.left);
-                    khc_write_int32(csp_mw, L"YPos", r.top);
-                    khc_write_int32(csp_mw, L"Width",
-                                    r.right - r.left);
-                    khc_write_int32(csp_mw, L"Height",
-                                    r.bottom - r.top);
-
-                    if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"Dock", &t)) &&
-                        t != KHM_DOCK_NONE) {
-                        khc_write_int32(csp_mw, L"Dock", KHM_DOCK_AUTO);
-                    }
-
-                    khc_close_space(csp_mw);
-                }
-                khc_close_space(csp_cw);
-            }
-
-            return 0;
+            return khm_save_main_window_position();
 
         } else if (wParam == MW_REFRESH_TIMER) {
             kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, 0);
@@ -1104,6 +1112,10 @@ khm_set_main_window_mode(int mode) {
 
     if (mode == khm_main_wnd_mode)
         return;
+
+    if (khm_hwnd_main) {
+        khm_save_main_window_position();
+    }
 
     khui_check_action(KHUI_ACTION_LAYOUT_MINI,
                       ((mode == KHM_MAIN_WND_MINI)? FALSE : TRUE));
