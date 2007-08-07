@@ -1722,10 +1722,15 @@ cw_update_outline(khui_credwnd_tbl * tbl)
             if (o->start != -1)
                 goto done_with_defident;
 
+            o->flags &= ~(KHUI_CW_O_EXPAND |
+                          KHUI_CW_O_SHOWFLAG |
+                          KHUI_CW_O_SELECTED |
+                          KHUI_CW_O_NOOUTLINE |
+                          KHUI_CW_O_STICKY);
+            o->flags |= KHUI_CW_O_VISIBLE | KHUI_CW_O_EMPTY;
+
             if (flags & KCDB_IDENT_FLAG_STICKY)
                 o->flags |= KHUI_CW_O_STICKY;
-            else
-                o->flags &= ~KHUI_CW_O_STICKY;
 
             o->start = n_rows;
             o->length = 1;
