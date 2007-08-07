@@ -1012,6 +1012,9 @@ cw_update_creds(khui_credwnd_tbl * tbl)
         tbl->idents[i].credcount = 0;
         tbl->idents[i].id_credcount = 0;
         tbl->idents[i].init_credcount = 0;
+        tbl->idents[i].credtype_name[0] = L'\0';
+        tbl->idents[i].credtype = KCDB_CREDTYPE_INVALID;
+        tbl->idents[i].ft_expire = IntToFt(0);
     }
 
     kcdb_credset_apply(tbl->credset, cw_credset_iter_func, (void *) tbl);
@@ -3074,9 +3077,6 @@ cw_wm_paint(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
 
     if(!has_dc && !GetUpdateRect(hwnd, &r, FALSE)) {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
         goto _exit;
     }
 
