@@ -299,8 +299,9 @@ typedef struct tag_ident_data {
     wchar_t * idname;
     int lv_idx;
 
-    BOOL removed;
+    BOOL removed;               /* this identity was marked for removal */
     BOOL applied;
+    BOOL purged;                /* this identity was actually removed */
 
     khm_int32 flags;
 
@@ -455,6 +456,8 @@ write_params_ident(ident_data * d) {
         kcdb_identity_get_flags(d->ident, &flags);
         assert(!(flags & KCDB_IDENT_FLAG_CONFIG));
 #endif
+
+        d->purged = TRUE;
 
     } else {
 
@@ -1269,8 +1272,17 @@ find_ident_by_node(khui_config_node node) {
             break;
     }
 
-    if (i < (int)cfg_idents.n_idents)
+    if (i < (int)cfg_idents.n_idents) {
+        if (cfg_idents.idents[i].purged) {
+            /* we are re-creating a purged identity */
+            cfg_idents.idents[i].purged = FALSE;
+            cfg_idents.idents[i].removed = FALSE;
+            cfg_idents.idents[i].applied = FALSE;
+
+            read_params_ident(&cfg_idents.idents[i]);
+        }
         return &cfg_idents.idents[i];
+    }
 
     /* there is no identity data for this configuration node.  We try
        to create it. */
