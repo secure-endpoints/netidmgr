@@ -478,7 +478,7 @@ write_params_ident(ident_data * d) {
 
     d->applied = TRUE;
 
-    if (d->hwnd)
+    if (d->hwnd && !d->removed)
         PostMessage(d->hwnd, KHUI_WM_CFG_NOTIFY,
                     MAKEWPARAM(0, WMCFG_UPDATE_STATE), 0);
 
@@ -965,12 +965,16 @@ khm_cfg_add_ident_proc(HWND hwnd,
             khm_handle csp_ident = NULL;
             khm_size cb;
             khm_int32 rv = KHM_ERROR_SUCCESS;
+            khm_int32 flags = 0;
 
             d = (add_ident_data *)(LONG_PTR)
                 GetWindowLongPtr(hwnd, DWLP_USER);
 
             if (!d || !d->nc)
                 break;
+
+            if (d->nc->ident_cb)
+                d->nc->ident_cb(d->nc, WMNC_IDENT_PREPROCESS, NULL, 0, 0, 0);
 
             /* check if there was an identity selected */
             if (d->nc->n_identities == 0 ||
@@ -990,6 +994,23 @@ khm_cfg_add_ident_proc(HWND hwnd,
             cb = sizeof(idname);
             kcdb_identity_get_name(ident, idname, &cb);
 
+            /* check if the identity is already in the
+               configuration */
+            if (KHM_SUCCEEDED(kcdb_identity_get_flags(ident, &flags)) &&
+                (flags & KCDB_IDENT_FLAG_CONFIG)) {
+
+                wchar_t fmt[256];
+
+                LoadString(khm_hInstance, IDS_CFG_IDNAME_EXT,
+                           fmt, ARRAYLENGTH(fmt));
+                StringCbPrintf(err_msg, sizeof(err_msg), fmt, idname);
+
+                kcdb_identity_release(ident);
+                ident = NULL;
+
+                goto show_failure;
+            }
+
             /* now we have to create the identity configuration. */
             if (KHM_FAILED(rv = kcdb_identity_get_config(ident,
                                                          KHM_FLAG_CREATE,
@@ -1001,6 +1022,7 @@ khm_cfg_add_ident_proc(HWND hwnd,
                 StringCbPrintf(err_msg, sizeof(err_msg), fmt, rv);
 
                 kcdb_identity_release(ident);
+                ident = NULL;
 
                 goto show_failure;
             }
@@ -1463,11 +1485,14 @@ khm_cfg_id_tab_proc(HWND hwnd,
                 cont = (BOOL *) lParam;
                 d = find_ident_by_node(idata->ctx_node);
                 write_params_ident(d);
-                if (d->removed && cont)
-                    *cont = FALSE;
-                khui_cfg_set_flags_inst(idata, KHUI_CNFLAG_APPLIED,
-                                        KHUI_CNFLAG_APPLIED | 
-                                        KHUI_CNFLAG_MODIFIED);
+                if (d->removed) {
+                    if (cont)
+                        *cont = FALSE;
+                } else {
+                    khui_cfg_set_flags_inst(idata, KHUI_CNFLAG_APPLIED,
+                                            KHUI_CNFLAG_APPLIED | 
+                                            KHUI_CNFLAG_MODIFIED);
+                }
                 break;
 
             case WMCFG_UPDATE_STATE:
