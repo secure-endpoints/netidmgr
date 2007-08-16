@@ -37,6 +37,32 @@
 			<param name="Name" value="Registry Reference">
 			<param name="Local" value="html\registry.htm">
 			</OBJECT>
+                  <UL>
+                    <LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Configuration Database Registry Reference">
+			<param name="Local" value="html\kcdbconfig.html">
+		      </OBJECT>
+                    <LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Module Manager Registry Reference">
+			<param name="Local" value="html\kmmconfig.html">
+		      </OBJECT>
+                    <LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Message Queue Registry Reference">
+			<param name="Local" value="html\kmqconfig.html">
+		      </OBJECT>
+                    <LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Kerberos v4 plug-in Registry Reference">
+			<param name="Local" value="html\krb4config.html">
+		      </OBJECT>
+                    <LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Kerberos v5 plug-in Registry Reference">
+			<param name="Local" value="html\krb5config.html">
+		      </OBJECT>
+                    <LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Network Identity Manager Application Registry Reference">
+			<param name="Local" value="html\uiconfig.html">
+		      </OBJECT>
+                  </UL>
 	</UL>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Concepts">

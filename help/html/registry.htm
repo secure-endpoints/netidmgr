@@ -1,0 +1,82 @@
+<html>
+<head>
+  <title>Network Identity Manager - Registry Settings Reference</title>
+  <meta name="description" content="Registry settings for Network Identity Manager">
+  <meta name="keywords" content="registry,settings">
+  <link rel="stylesheet" type="text/css" href="nidmgr.css">
+</head>
+<body>
+
+<h1>Network Identity Manager - Registry Settings Reference</h1>
+
+<h3>Introduction</h3>
+
+<p>This document only aims to provide information about the specific
+registry settings used by Network Identity Manager.  It assumes that
+the reader is already familiar with the Windows registry.  If you need
+general information about the Windows registry, the following
+Microsoft knowledge base article will be helpful.
+</p>
+
+<ul>
+  <li><a href="http://support.microsoft.com/kb/256986">Description of the Microsoft Windows registry</a> [microsoft.com]</li>
+</ul>
+
+<p>
+This documentation is provided for informational purposes only.
+Whenever possible, the configuration for Network Identity Manager or
+its plug-ins should be modified via the options dialogs provided, and
+not through direct modification of registry values.  Incorrect or
+invalid configuration settings can result in unpredictable behavior.
+</p>
+
+<h3>Registry Settings</h3>
+
+<p>Network Identity Manager stores most of its configuration
+information in the Windows registry.  This information is consist of
+per-machine settings, per-user settings and built-in defaults.  In
+general, Network Identity Manager adopts a policy of favoring per-user
+settings over per-machine settings.  Per-machine settings, in turn,
+are favored over built-in defaults.  Most plug-ins also adopt this
+convention.
+</p>
+
+<p>Most of the configuration settings are stored under the registry
+key <tt>SOFTWARE\MIT\NetIDMgr</tt> in both the per-user
+(<tt>HKEY_CURRENT_USER</tt>) and per-machine
+(<tt>HKEY_LOCAL_MACHINE</tt>) registry hives.
+</p>
+
+<ul class="schema">
+  <li>SOFTWARE
+    <ul>
+      <li>MIT
+        <ul>
+          <li>NetIDMgr
+            <ul>
+              <li><a href="kcdbconfig.html">KCDB</a>
+              </li>
+              <li><a href="kmmconfig.html">PluginManager</a>
+                <ul>
+                  <li>Plugins
+                    <ul>
+                      <li><a href="krb5config.html">Krb5Cred</a></li>
+                      <li><a href="krb4config.html">Krb4Cred</a></li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+              <li><a href="kmqconfig.html">KMQ</a>
+              </li>
+              <li><a href="uiconfig.html">CredWindow</a>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+
+</body>
+</html>

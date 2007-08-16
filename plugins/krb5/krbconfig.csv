@@ -1,5 +1,5 @@
 #!ANCHOR=ROOT\PluginManager\Plugins
-#!SCOPE=Kerberos 5 Credentials Provider and Kerberos 5 Identity Provider
+#!SCOPE=Kerberos v5 Credentials Provider and Kerberos 5 Identity Provider
 Name,Type,Value,Description
 Krb5Cred,KC_SPACE,0,Kerberos V Credentials Provider
   Module,KC_STRING,MITKrb5,

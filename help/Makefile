@@ -59,7 +59,7 @@ $(HTMLDIR)\krb5config.html: ..\plugins\krb5\krbconfig.csv
 $(HTMLDIR)\uiconfig.html: ..\ui\uiconfig.csv
 	$(CSV2HTML)
 
-all: mkdirs $(CHMFILE) $(INCFILES) $(SCHEMAHELPFILES)
+all: mkdirs $(INCFILES) $(SCHEMAHELPFILES) $(CHMFILE)
 
 $(CHMFILE): netidmgr.hhp
 	-$(HHC) netidmgr.hhp
