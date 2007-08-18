@@ -1253,6 +1253,13 @@ khm_cred_process_startup_actions(void) {
             break;
         }
 
+        if (khm_startup.display & SOPTS_DISPLAY_HIDE) {
+            khm_hide_main_window();
+        } else if (khm_startup.display & SOPTS_DISPLAY_SHOW) {
+            khm_show_main_window();
+        }
+        khm_startup.display = 0;
+
         /* when we get here, then we are all done with the command
            line stuff */
         khm_startup.processing = FALSE;

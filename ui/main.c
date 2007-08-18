@@ -28,6 +28,9 @@
 #include<khmapp.h>
 #include<netidmgr_intver.h>
 
+/* used for the command-line help dialog */
+#include<richedit.h>
+
 #if DEBUG
 #include<assert.h>
 
@@ -77,6 +80,107 @@ void khm_exit_gui(void) {
         hr_coinitialize == S_FALSE) {
         CoUninitialize();
     }
+}
+
+/* This is passed into EnumResourceLanguages().  This returns the
+   language ID of the first resource of the type and name that's
+   passed into it.  For the resources types we care about, we only
+   expect there to be one resource for a given name.  At the moment we
+   don't support resource modules that contain resources for multiple
+   languages. */
+BOOL CALLBACK
+khm_enum_res_lang_proc_first(HANDLE hModule,
+                             LPCTSTR lpszType,
+                             LPCTSTR lpszName,
+                             WORD wIDLanguage,
+                             LONG_PTR lParam)
+{
+    WORD * plangid = (WORD *) lParam;
+
+    *plangid = wIDLanguage;
+
+    return FALSE;
+}
+
+#define KHM_RTF_RESOURCE L"KHMRTFRESOURCE"
+
+INT_PTR CALLBACK
+khm_cmdline_dlg_proc(HWND hwnd,
+                     UINT uMsg,
+                     WPARAM wParam,
+                     LPARAM lParam)
+{
+    switch(uMsg) {
+    case WM_INITDIALOG:
+        {
+            WORD langID = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
+            HRSRC h_resinfo = NULL;
+            HGLOBAL h_resource = NULL;
+            LPVOID h_resmem = NULL;
+            SETTEXTEX ste;
+
+            SetDlgItemText(hwnd, IDC_PRODUCT,
+                           TEXT(KH_VERSTR_PRODUCT_1033));
+#ifdef OVERRIDE_COPYRIGHT
+            SetDlgItemText(hwnd, IDC_COPYRIGHT,
+                           TEXT(KH_VERSTR_COPYRIGHT_1033));
+#endif
+
+            EnumResourceLanguages(khm_hInstance,
+                                  KHM_RTF_RESOURCE,
+                                  MAKEINTRESOURCE(IDR_CMDLINERTF),
+                                  khm_enum_res_lang_proc_first,
+                                  (LONG_PTR) &langID);
+
+            h_resinfo = FindResourceEx(khm_hInstance,
+                                       KHM_RTF_RESOURCE,
+                                       MAKEINTRESOURCE(IDR_CMDLINERTF),
+                                       langID);
+            if (h_resinfo == NULL)
+                goto init_failed;
+
+            h_resource = LoadResource(khm_hInstance, h_resinfo);
+            if (h_resinfo == NULL)
+                goto init_failed;
+
+            h_resmem = LockResource(h_resource);
+            if (h_resmem == NULL)
+                goto init_failed;
+
+            ste.flags = ST_DEFAULT;
+            ste.codepage = CP_ACP;
+
+            SendDlgItemMessage(hwnd, IDC_CONTENT, EM_SETTEXTEX, (WPARAM) &ste, (LPARAM) h_resmem);
+        init_failed:
+            /* none of the above handles need to be freed. */
+
+            return TRUE;
+        }
+        break;
+
+    case WM_COMMAND:
+
+        if (wParam == MAKEWPARAM(IDOK, BN_CLICKED)) {
+            EndDialog(hwnd, KHM_ERROR_EXIT);
+        }
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+void khm_show_commandline_help(void) {
+    HMODULE hm_richedit;
+
+    hm_richedit = LoadLibrary(L"riched20.dll");
+    if (hm_richedit == NULL)
+        return;
+    
+    DialogBox(khm_hInstance, MAKEINTRESOURCE(IDD_CMDLINE),
+              NULL, khm_cmdline_dlg_proc);
+
+    FreeLibrary(hm_richedit);
 }
 
 void khm_parse_commandline(void) {
@@ -134,13 +238,27 @@ void khm_parse_commandline(void) {
         else if (!wcscmp(wargs[i], L"--minimized")) {
             khm_startup.no_main_window = TRUE;
         }
+        else if (!wcscmp(wargs[i], L"--show")) {
+            if (khm_startup.display & SOPTS_DISPLAY_HIDE) {
+                khm_show_commandline_help();
+                khm_startup.error_exit = TRUE;
+                break;
+            }
+
+            khm_startup.display |= SOPTS_DISPLAY_SHOW;
+        }
+        else if (!wcscmp(wargs[i], L"--hide")) {
+            if (khm_startup.display & SOPTS_DISPLAY_SHOW) {
+                khm_show_commandline_help();
+                khm_startup.error_exit = TRUE;
+                break;
+            }
+
+            khm_startup.display |= SOPTS_DISPLAY_HIDE;
+            khm_startup.no_main_window = TRUE;
+        }
         else {
-            wchar_t help[2048];
-
-            LoadString(khm_hInstance, IDS_CMDLINE_HELP,
-                       help, ARRAYLENGTH(help));
-
-            MessageBox(NULL, help, L"NetIDMgr", MB_OK);
+            khm_show_commandline_help();
 
             khm_startup.error_exit = TRUE;
             break;
@@ -151,7 +269,8 @@ void khm_parse_commandline(void) {
     if (!khm_startup.exit &&
         !khm_startup.destroy &&
         !khm_startup.init &&
-        !khm_startup.remote_exit)
+        !khm_startup.remote_exit &&
+        !khm_startup.display)
         khm_startup.renew = TRUE;
 }
 
@@ -643,6 +762,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         CloseHandle(h_appmutex);
     } else {
+
+        /* There is an instance of NetIDMgr already running. */
+
         HWND hwnd = NULL;
         int retries = 5;
         HANDLE hmap;
@@ -651,7 +773,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         void * xfer;
         khm_query_app_version query_app_version;
         khm_version v;
-        BOOL use_cmd_v2 = TRUE;
+        BOOL use_cmd_v1 = FALSE;
         khm_size cb = 0;
 
         CloseHandle(h_appmutex);
@@ -766,9 +888,9 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         if (khm_compare_version(&query_app_version.ver_remote, &app_version) == 0 ||
             khm_compare_version(&query_app_version.ver_remote, &v) > 0)
-            use_cmd_v2 = TRUE;
+            use_cmd_v1 = FALSE;
         else
-            use_cmd_v2 = FALSE;
+            use_cmd_v1 = TRUE;
 
         StringCbPrintf(mapname, sizeof(mapname),
                        COMMANDLINE_MAP_FMT,
@@ -795,50 +917,79 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         /* make the call */
 
-        if (use_cmd_v2) {
+        if (!use_cmd_v1) {
             /* use the v2 structure */
-            struct tag_khm_startup_options_v2 v2opt;
+            struct tag_khm_startup_options_v3 opt;
+            struct tag_khm_startup_options_v3 *xferopt;
 
-            ZeroMemory(&v2opt, sizeof(v2opt));
+            ZeroMemory(&opt, sizeof(opt));
 
-            v2opt.magic = STARTUP_OPTIONS_MAGIC;
-            v2opt.cb_size = sizeof(v2opt);
+            opt.v2opt.magic = STARTUP_OPTIONS_MAGIC;
 
-            v2opt.init = khm_startup.init;
-            v2opt.import = khm_startup.import;
-            v2opt.renew = khm_startup.renew;
-            v2opt.destroy = khm_startup.destroy;
+            opt.v2opt.init = khm_startup.init;
+            opt.v2opt.import = khm_startup.import;
+            opt.v2opt.renew = khm_startup.renew;
+            opt.v2opt.destroy = khm_startup.destroy;
+            opt.v2opt.autoinit = khm_startup.autoinit;
+            opt.v2opt.remote_exit = khm_startup.remote_exit;
+            opt.remote_display = khm_startup.display;
 
-            v2opt.autoinit = khm_startup.autoinit;
-            v2opt.remote_exit = khm_startup.remote_exit;
+            opt.v2opt.code = KHM_ERROR_NOT_IMPLEMENTED;
 
-            v2opt.code = KHM_ERROR_NOT_IMPLEMENTED;
+            /* check if we can use the v3 options structure.  This
+               should be possible for 1.3.1 and above. */
+            v.major = 1; v.minor = 3; v.patch = 1; v.aux = 0;
+            if (khm_compare_version(&query_app_version.ver_remote, &app_version) == 0 ||
+                khm_compare_version(&query_app_version.ver_remote, &v) > 0) {
+
+                opt.v2opt.cb_size = sizeof(opt);
+
+            } else {
+
+                opt.v2opt.cb_size = sizeof(opt.v2opt);
+
+            }
 
             xfer = MapViewOfFile(hmap,
                                  FILE_MAP_WRITE,
                                  0, 0,
-                                 sizeof(v2opt));
+                                 opt.v2opt.cb_size);
+
+            xferopt = (struct tag_khm_startup_options_v3 *) xfer;
 
             if (xfer) {
-                memcpy(xfer, &v2opt, sizeof(v2opt));
+                memcpy(xfer, &opt, opt.v2opt.cb_size);
 
                 SendMessage(hwnd, WM_KHUI_ASSIGN_COMMANDLINE_V2,
                             0, (LPARAM) tid);
 
-                memcpy(&v2opt, xfer, sizeof(v2opt));
+                /* If it looks like the request was not processed, and
+                   we were using a v3 request, fail-over to a v2
+                   request. */
+                if (xferopt->v2opt.code == KHM_ERROR_NOT_IMPLEMENTED &&
+                    opt.v2opt.cb_size == sizeof(opt)) {
 
-                /* If the request looks like it wasn't processed, we
-                   fallback to the v1 request. */
+                    opt.v2opt.cb_size = sizeof(opt.v2opt);
+                    memcpy(xfer, &opt, opt.v2opt.cb_size);
 
-                if (v2opt.code == KHM_ERROR_NOT_IMPLEMENTED)
-                    use_cmd_v2 = FALSE;
+                    SendMessage(hwnd, WM_KHUI_ASSIGN_COMMANDLINE_V2,
+                                0, (LPARAM) tid);
+                }
+
+                /* if it still looks like the request was not
+                   processed, we failover to a v1 call */
+                if (xferopt->v2opt.code == KHM_ERROR_NOT_IMPLEMENTED) {
+                    use_cmd_v1 = TRUE;
+                } else {
+                    memcpy(&opt, xfer, opt.v2opt.cb_size);
+                }
 
                 UnmapViewOfFile(xfer);
                 xfer = NULL;
             }
         }
 
-        if (!use_cmd_v2) {
+        if (use_cmd_v1) {
             /* use the v1 structure */
 
             struct tag_khm_startup_options_v1 v1opt;
