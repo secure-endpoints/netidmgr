@@ -1297,6 +1297,23 @@ khm_cred_begin_startup_actions(void) {
 
     }
 
+    /* if this is a remote request, and no specific options were
+       specified other than --renew, then we perform the default
+       action, as if the user clicked on the tray icon. */
+    if (khm_startup.remote &&
+        !khm_startup.exit &&
+        !khm_startup.destroy &&
+        !khm_startup.init &&
+        !khm_startup.remote_exit &&
+        !khm_startup.display) {
+
+        khm_int32 def_action = khm_get_default_notifier_action();
+
+        if (def_action > 0) {
+            khui_action_trigger(def_action, NULL);
+        }
+    }
+
     khm_startup.seen = TRUE;
     khm_startup.processing = TRUE;
 
