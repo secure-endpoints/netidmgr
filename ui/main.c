@@ -940,7 +940,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                should be possible for 1.3.1 and above. */
             v.major = 1; v.minor = 3; v.patch = 1; v.aux = 0;
             if (khm_compare_version(&query_app_version.ver_remote, &app_version) == 0 ||
-                khm_compare_version(&query_app_version.ver_remote, &v) > 0) {
+                khm_compare_version(&query_app_version.ver_remote, &v) >= 0) {
 
                 opt.v2opt.cb_size = sizeof(opt);
 
