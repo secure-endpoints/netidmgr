@@ -74,7 +74,7 @@ struct tag_khm_startup_options_v2 {
     khm_int32 code;
 };
 
-/* Used on NetIDMgr version 1.3 */
+/* Used on NetIDMgr version 1.3.1 and later */
 struct tag_khm_startup_options_v3 {
     struct tag_khm_startup_options_v2 v2opt;
 
