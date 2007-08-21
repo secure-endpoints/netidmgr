@@ -26,6 +26,9 @@
 
 #include<khmapp.h>
 #include<assert.h>
+#if _WIN32_WINNT >= 0x0501
+#include<uxtheme.h>
+#endif
 
 static khui_config_node
 get_window_node(HWND hwnd) {
@@ -92,6 +95,9 @@ add_subpanels(HWND hwnd,
 
 #ifdef DEBUG
         assert(hwnd_panel);
+#endif
+#if _WIN32_WINNT >= 0x0501
+        EnableThemeDialogTexture(hwnd_panel, ETDT_ENABLETAB);
 #endif
 
         ShowWindow(hwnd_panel, SW_HIDE);
