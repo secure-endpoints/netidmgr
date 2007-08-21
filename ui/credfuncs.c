@@ -1145,16 +1145,8 @@ khm_cred_process_startup_actions(void) {
        rest of the startup actions. */
     do {
         if (khm_startup.init) {
-            if (defident)
-                khui_context_set(KHUI_SCOPE_IDENT,
-                                 defident,
-                                 KCDB_CREDTYPE_INVALID,
-                                 NULL, NULL, 0,
-                                 NULL);
-            else
-                khui_context_reset();
 
-            khm_cred_obtain_new_creds(NULL);
+            khm_cred_obtain_new_creds_for_ident(defident, NULL);
             khm_startup.init = FALSE;
             break;
         }
@@ -1200,13 +1192,7 @@ khm_cred_process_startup_actions(void) {
             khm_startup.destroy = FALSE;
 
             if (defident) {
-                khui_context_set(KHUI_SCOPE_IDENT,
-                                 defident,
-                                 KCDB_CREDTYPE_INVALID,
-                                 NULL, NULL, 0,
-                                 NULL);
-
-                khm_cred_destroy_creds(FALSE, FALSE);
+                khm_cred_destroy_identity(defident);
                 break;
             }
         }
