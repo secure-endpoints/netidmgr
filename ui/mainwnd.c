@@ -678,7 +678,7 @@ khm_main_wnd_proc(HWND hwnd,
             HANDLE hmap;
             void * xfer;
             wchar_t mapname[256];
-            struct tag_khm_startup_options_v1 * pv1opt;
+            khm_startup_options_v1 * pv1opt;
             int code = KHM_ERROR_SUCCESS;
 
             StringCbPrintf(mapname, sizeof(mapname),
@@ -693,7 +693,7 @@ khm_main_wnd_proc(HWND hwnd,
                                  sizeof(*pv1opt));
 
             if (xfer) {
-                pv1opt = (struct tag_khm_startup_options_v1 *) xfer;
+                pv1opt = (khm_startup_options_v1 *) xfer;
 
                 khm_startup.init = pv1opt->init;
                 khm_startup.import = pv1opt->import;
@@ -738,8 +738,8 @@ khm_main_wnd_proc(HWND hwnd,
             HANDLE hmap;
             void * xfer;
             wchar_t mapname[256];
-            struct tag_khm_startup_options_v2 *pv2opt = NULL;
-            struct tag_khm_startup_options_v3 *pv3opt = NULL;
+            khm_startup_options_v2 *pv2opt = NULL;
+            khm_startup_options_v3 *pv3opt = NULL;
             int code = KHM_ERROR_SUCCESS;
 
             StringCbPrintf(mapname, sizeof(mapname),
@@ -754,7 +754,7 @@ khm_main_wnd_proc(HWND hwnd,
                                  sizeof(*pv2opt));
 
             if (xfer) {
-                pv2opt = (struct tag_khm_startup_options_v2 *) xfer;
+                pv2opt = (khm_startup_options_v2 *) xfer;
 
                 if (pv2opt->magic != STARTUP_OPTIONS_MAGIC ||
                     (pv2opt->cb_size != sizeof(*pv2opt) &&
@@ -774,7 +774,7 @@ khm_main_wnd_proc(HWND hwnd,
                 pv2opt->code = KHM_ERROR_SUCCESS;
 
                 if (pv2opt->cb_size == sizeof(*pv3opt)) {
-                    pv3opt = (struct tag_khm_startup_options_v3 *) xfer;
+                    pv3opt = (khm_startup_options_v3 *) xfer;
 
                     khm_startup.display = pv3opt->remote_display;
                 } else {

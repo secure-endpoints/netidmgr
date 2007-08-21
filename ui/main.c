@@ -215,6 +215,7 @@ void khm_parse_commandline(void) {
             khm_startup.renew = TRUE;
             khm_startup.exit = TRUE;
             khm_startup.no_main_window = TRUE;
+            khm_startup.display |= SOPTS_DISPLAY_NODEF;
         }
         else if (!wcscmp(wargs[i], L"-d") ||
                  !wcscmp(wargs[i], L"--destroy") ||
@@ -896,8 +897,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
                        COMMANDLINE_MAP_FMT,
                        (tid = GetCurrentThreadId()));
 
-        cb = max(sizeof(struct tag_khm_startup_options_v1),
-                 sizeof(struct tag_khm_startup_options_v2));
+        cb = max(sizeof(khm_startup_options_v1),
+                 sizeof(khm_startup_options_v2));
 
         cb = UBOUNDSS(cb, 4096, 4096);
 
@@ -919,8 +920,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         if (!use_cmd_v1) {
             /* use the v2 structure */
-            struct tag_khm_startup_options_v3 opt;
-            struct tag_khm_startup_options_v3 *xferopt;
+            khm_startup_options_v3 opt;
+            khm_startup_options_v3 *xferopt;
 
             ZeroMemory(&opt, sizeof(opt));
 
@@ -955,7 +956,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
                                  0, 0,
                                  opt.v2opt.cb_size);
 
-            xferopt = (struct tag_khm_startup_options_v3 *) xfer;
+            xferopt = (khm_startup_options_v3 *) xfer;
 
             if (xfer) {
                 memcpy(xfer, &opt, opt.v2opt.cb_size);
@@ -992,7 +993,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         if (use_cmd_v1) {
             /* use the v1 structure */
 
-            struct tag_khm_startup_options_v1 v1opt;
+            khm_startup_options_v1 v1opt;
 
             ZeroMemory(&v1opt, sizeof(v1opt));
 
