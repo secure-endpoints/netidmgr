@@ -201,6 +201,7 @@ void khm_parse_commandline(void) {
             khm_startup.init = TRUE;
             khm_startup.exit = TRUE;
             khm_startup.no_main_window = TRUE;
+            khm_startup.display |= SOPTS_DISPLAY_NODEF;
         }
         else if (!wcscmp(wargs[i], L"-m") ||
                  !wcscmp(wargs[i], L"--import") ||
@@ -208,6 +209,7 @@ void khm_parse_commandline(void) {
             khm_startup.import = TRUE;
             khm_startup.exit = TRUE;
             khm_startup.no_main_window = TRUE;
+            khm_startup.display |= SOPTS_DISPLAY_NODEF;
         }
         else if (!wcscmp(wargs[i], L"-r") ||
                  !wcscmp(wargs[i], L"--renew") ||
@@ -223,11 +225,13 @@ void khm_parse_commandline(void) {
             khm_startup.destroy = TRUE;
             khm_startup.exit = TRUE;
             khm_startup.no_main_window = TRUE;
+            khm_startup.display |= SOPTS_DISPLAY_NODEF;
         }
         else if (!wcscmp(wargs[i], L"-a") ||
                  !wcscmp(wargs[i], L"--autoinit") ||
                  !wcscmp(wargs[i], L"-autoinit")) {
             khm_startup.autoinit = TRUE;
+            khm_startup.display |= SOPTS_DISPLAY_NODEF;
         }
         else if (!wcscmp(wargs[i], L"-x") ||
                  !wcscmp(wargs[i], L"--exit") ||
@@ -235,9 +239,11 @@ void khm_parse_commandline(void) {
             khm_startup.exit = TRUE;
             khm_startup.remote_exit = TRUE;
             khm_startup.no_main_window = TRUE;
+            khm_startup.display |= SOPTS_DISPLAY_NODEF;
         }
         else if (!wcscmp(wargs[i], L"--minimized")) {
             khm_startup.no_main_window = TRUE;
+            khm_startup.display |= SOPTS_DISPLAY_NODEF;
         }
         else if (!wcscmp(wargs[i], L"--show")) {
             if (khm_startup.display & SOPTS_DISPLAY_HIDE) {
@@ -246,7 +252,7 @@ void khm_parse_commandline(void) {
                 break;
             }
 
-            khm_startup.display |= SOPTS_DISPLAY_SHOW;
+            khm_startup.display |= (SOPTS_DISPLAY_SHOW | SOPTS_DISPLAY_NODEF);
         }
         else if (!wcscmp(wargs[i], L"--hide")) {
             if (khm_startup.display & SOPTS_DISPLAY_SHOW) {
@@ -255,7 +261,7 @@ void khm_parse_commandline(void) {
                 break;
             }
 
-            khm_startup.display |= SOPTS_DISPLAY_HIDE;
+            khm_startup.display |= (SOPTS_DISPLAY_HIDE | SOPTS_DISPLAY_NODEF);
             khm_startup.no_main_window = TRUE;
         }
         else {

@@ -1289,8 +1289,10 @@ khm_cred_begin_startup_actions(void) {
     if (khm_startup.remote &&
         !khm_startup.exit &&
         !khm_startup.destroy &&
+        !khm_startup.autoinit &&
         !khm_startup.init &&
         !khm_startup.remote_exit &&
+        !khm_startup.import &&
         !khm_startup.display) {
 
         khm_int32 def_action = khm_get_default_notifier_action();
