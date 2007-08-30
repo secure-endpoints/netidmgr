@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 Secure Endpoints Inc.
+ * Copyright (c) 2006, 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -181,7 +181,7 @@ k5_handle_wmnc_notify(HWND hwnd,
     case WMNC_DIALOG_MOVE:
         {
             k5_dlg_data * d;
-                
+
             d = (k5_dlg_data *)(LONG_PTR) 
                 GetWindowLongPtr(hwnd, DWLP_USER);
 
@@ -657,6 +657,7 @@ k5_kinit_fiber_proc(PVOID lpParameter)
             _reportf(L"  g_fjob.state     = %d", g_fjob.state);
             _reportf(L"  g_fjob.prompt_set= %d", g_fjob.prompt_set);
             _reportf(L"  g_fjob.valid_principal = %d", (int) g_fjob.valid_principal);
+            _reportf(L"  g_fjob.ccache    = [%s]", g_fjob.ccache);
 #endif
 
             /* If we don't know if we have a valid principal, we
@@ -1354,8 +1355,92 @@ k5_read_dlg_params(k5_dlg_data * d, khm_handle identity)
     d->sync = FALSE;
 }
 
+void
+k5_ensure_identity_ccache_is_watched(khm_handle identity, char * ccache)
+{
+    /* if we used a FILE: ccache, we should add it to FileCCList.
+       Otherwise the tickets are not going to get listed. */
+    do {
+        wchar_t thisccache[MAX_PATH];
+        wchar_t * ccpath;
+        khm_size cb_cc;
+        wchar_t * mlist = NULL;
+        khm_size cb_mlist;
+        khm_int32 rv;
+        khm_size t;
+
+        if (ccache != NULL &&
+            strncmp(ccache, "FILE:", 5) != 0)
+            break;
+
+        if (ccache == NULL) {
+            cb_cc = sizeof(thisccache);
+            rv = khm_krb5_get_identity_default_ccache(identity, thisccache, &cb_cc);
+#ifdef DEBUG
+            assert(KHM_SUCCEEDED(rv));
+#endif
+        } else {
+            thisccache[0] = L'\0';
+            AnsiStrToUnicode(thisccache, sizeof(thisccache), ccache);
+        }
+
+        if (wcsncmp(thisccache, L"FILE:", 5))
+            break;
+
+        /* the FileCCList is a list of paths.  We have to strip out
+           the FILE: prefix. */
+        ccpath = thisccache + 5;
+
+        _reportf(L"Checking if ccache [%s] is in FileCCList", ccpath);
+
+        StringCbLength(ccpath, sizeof(thisccache) - sizeof(wchar_t) * 5, &cb_cc);
+        cb_cc += sizeof(wchar_t);
+
+        rv = khc_read_multi_string(csp_params, L"FileCCList", NULL, &cb_mlist);
+        if (rv == KHM_ERROR_TOO_LONG && cb_mlist > sizeof(wchar_t) * 2) {
+            cb_mlist += cb_cc;
+            mlist = PMALLOC(cb_mlist);
+
+            t = cb_mlist;
+            rv = khc_read_multi_string(csp_params, L"FileCCList", mlist, &t);
+#ifdef DEBUG
+            assert(KHM_SUCCEEDED(rv));
+#endif
+            if (KHM_FAILED(rv))
+                goto failed_filecclist;
+
+            if (multi_string_find(mlist, ccpath, 0) == NULL) {
+                t = cb_mlist;
+                multi_string_append(mlist, &t, ccpath);
+
+                khc_write_multi_string(csp_params, L"FileCCList", mlist);
+                _reportf(L"Added CCache to list");
+            } else {
+                _reportf(L"The CCache is already in the list");
+            }
+        } else {
+            cb_mlist = cb_cc + sizeof(wchar_t);
+            mlist = PMALLOC(cb_mlist);
+
+            multi_string_init(mlist, cb_mlist);
+            t = cb_mlist;
+            multi_string_append(mlist, &t, ccpath);
+
+            khc_write_multi_string(csp_params, L"FileCCList", mlist);
+
+            _reportf(L"FileCCList was empty.  Added CCache");
+        }
+
+    failed_filecclist:
+
+        if (mlist)
+            PFREE(mlist);
+
+    } while(FALSE);
+}
+
 void 
-k5_write_dlg_params(k5_dlg_data * d, khm_handle identity)
+k5_write_dlg_params(k5_dlg_data * d, khm_handle identity, char * ccache)
 {
 
     k5_params p;
@@ -1381,6 +1466,8 @@ k5_write_dlg_params(k5_dlg_data * d, khm_handle identity)
     p.renew_life_min = (krb5_deltat) d->tc_renew.min;
 
     khm_krb5_set_identity_params(identity, &p);
+
+    k5_ensure_identity_ccache_is_watched(identity, ccache);
 
     /* as in k5_read_dlg_params, once we write the data in, the local
        data is no longer dirty */
@@ -1456,6 +1543,7 @@ k5_prep_kinit_job(khui_new_creds * nc)
     g_fjob.identity = ident;
     g_fjob.prompt_set = 0;
     g_fjob.valid_principal = FALSE;
+    g_fjob.ccache = NULL;
     g_fjob.retry_if_valid_principal = FALSE;
 
                                 /* the value for
@@ -1486,13 +1574,15 @@ k5_prep_kinit_job(khui_new_creds * nc)
             StringCbCopy(pdlginfo->out.ccache, sizeof(pdlginfo->out.ccache),
                          pdlginfo->in.ccache);
         } else {
+            wchar_t ccache[MAX_PATH];
+
             g_fjob.ccache = NULL;
+            size = sizeof(ccache);
+
+            khm_krb5_get_identity_default_ccache(ident, ccache, &size);
 
             StringCbCopy(pdlginfo->out.ccache, sizeof(pdlginfo->out.ccache),
-                         idname);
-
-            khm_krb5_canon_cc_name(pdlginfo->out.ccache,
-                                   sizeof(pdlginfo->out.ccache));
+                         ccache);
         }
 
         t = khm_get_realm_from_princ(idname);
@@ -1975,6 +2065,9 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 if(g_fjob.state == FIBER_STATE_NONE) {
                     wchar_t msg[KHUI_MAXCCH_BANNER];
                     khm_size cb;
+                    int code;
+
+                    code = g_fjob.code;
 
                     /* Special case.  If the users' password has
                        expired, we force a password change dialog on
@@ -1989,8 +2082,6 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                     }
 
-                    /* we can't possibly have succeeded without a
-                       password */
                     if(g_fjob.code == KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN && 
 		       is_k5_identpro) {
                         kcdb_identity_set_flags(ident,
@@ -2008,6 +2099,12 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                     msg[0] = L'\0';
 
                     switch(g_fjob.code) {
+                    case 0:
+                        /* we succeeded.  This can actually happen if
+                           there was an external program that prompted
+                           for credentials. */
+                        break;
+
                     case KRB5KDC_ERR_NAME_EXP:
                         /* principal expired */
                         LoadString(hResModule, IDS_K5ERR_NAME_EXPIRED,
@@ -2054,11 +2151,16 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                     k5_free_kinit_job();
 
-                    if (is_k5_identpro)
-                        kcdb_identity_set_flags(ident,
-                                                KCDB_IDENT_FLAG_UNKNOWN,
-                                                KCDB_IDENT_FLAG_UNKNOWN);
-
+                    if (is_k5_identpro) {
+                        if (code == 0)
+                            kcdb_identity_set_flags(ident,
+                                                    KCDB_IDENT_FLAG_VALID,
+                                                    KCDB_IDENT_FLAG_VALID);
+                        else
+                            kcdb_identity_set_flags(ident,
+                                                    KCDB_IDENT_FLAG_UNKNOWN,
+                                                    KCDB_IDENT_FLAG_UNKNOWN);
+                    }
 
                 } else if(g_fjob.state == FIBER_STATE_KINIT) {
                     /* this is what we want.  Leave the fiber there. */
@@ -2142,12 +2244,11 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                         /* We get back here once the fiber finishes
                            processing */
-                    }
 #ifdef DEBUG
-                    else {
+                    } else {
                         assert(FALSE);
-                    }
 #endif
+                    }
                 } else {
                     /* we weren't in a KINIT state */
                     if (nc->result == KHUI_NC_RESULT_CANCEL) {
@@ -2157,13 +2258,12 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                         /* g_fjob.code should have the result of the
                            last kinit attempt.  We should leave it
                            as-is */
-                    }
 #ifdef DEBUG
-                    else {
+                    } else {
                         /* unknown result */
                         assert(FALSE);
-                    }
 #endif
+                    }
                 }
 
                 /* special case: if there was no password entered, and
@@ -2247,7 +2347,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                     assert(nc->n_identities > 0);
                     assert(nc->identities[0]);
 
-                    k5_write_dlg_params(d, nc->identities[0]);
+                    k5_write_dlg_params(d, nc->identities[0], g_fjob.ccache);
 
                     /* We should also quickly refresh the credentials
                        so that the identity flags and ccache
@@ -2590,7 +2690,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                            obtaining the ticket. */
                         if (nc->subtype == KMSG_CRED_NEW_CREDS) {
 
-                            k5_write_dlg_params(d, nc->identities[0]);
+                            k5_write_dlg_params(d, nc->identities[0], NULL);
 
                             /* and then update the LRU too */
                             k5_update_LRU(nc->identities[0]);
@@ -2741,6 +2841,9 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 imported = khm_krb5_ms2mit(NULL, (t == K5_LSAIMPORT_MATCH), TRUE,
                                            &id_imported);
                 if (imported) {
+                    if (id_imported)
+                        k5_ensure_identity_ccache_is_watched(id_imported, NULL);
+
                     khm_krb5_list_tickets(&ctx);
 
                     if (ctx)
