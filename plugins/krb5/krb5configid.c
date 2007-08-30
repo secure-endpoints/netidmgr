@@ -61,8 +61,7 @@ k5_id_read_params(k5_id_dlg_data * d) {
     khm_size cb;
     khm_int32 rv;
     khm_int32 t;
-    khm_handle csp_ident;
-    khm_handle csp_idroot = NULL;
+    khm_handle csp_ident = NULL;
 
     cb = sizeof(idname);
     rv = khui_cfg_get_name(d->cfg.ctx_node, idname, &cb);
@@ -75,17 +74,7 @@ k5_id_read_params(k5_id_dlg_data * d) {
     assert(KHM_SUCCEEDED(rv));
 #endif
 
-    rv = kcdb_identity_get_config(d->ident, 0, &csp_idroot);
-    if (KHM_SUCCEEDED(rv) &&
-        KHM_SUCCEEDED(khc_open_space(csp_idroot, CSNAME_KRB5CRED, 0,
-                                     &csp_ident))) {
-        khc_shadow_space(csp_ident, csp_params);
-    } else {
-        csp_ident = csp_params;
-    }
-
-    if (csp_idroot)
-        khc_close_space(csp_idroot);
+    khm_krb5_get_identity_config(d->ident, 0, &csp_ident);
 
     rv = khc_read_int32(csp_ident, L"DefaultLifetime",  &t);
     if (KHM_SUCCEEDED(rv))
@@ -130,13 +119,11 @@ k5_id_read_params(k5_id_dlg_data * d) {
         d->public_ip = 0;
 
     cb = sizeof(d->ccache);
-    rv = khc_read_string(csp_ident, L"DefaultCCName", d->ccache, &cb);
-    if (KHM_FAILED(rv) || cb <= sizeof(wchar_t)) {
-        cb = sizeof(d->ccache);
-        if (KHM_FAILED(kcdb_identity_get_attr(d->ident, attr_id_krb5_ccname,
-                                              NULL, d->ccache, &cb)))
-            ZeroMemory(d->ccache, sizeof(d->ccache));
-    }
+    rv = khm_krb5_get_identity_default_ccache(d->ident, d->ccache, &cb);
+
+#ifdef DEBUG
+    assert(KHM_SUCCEEDED(rv));
+#endif
 
     khui_tracker_initialize(&d->tc_life);
     d->tc_life.current = d->life;
@@ -148,7 +135,7 @@ k5_id_read_params(k5_id_dlg_data * d) {
     d->tc_renew.min = 0;
     d->tc_renew.max = 3600 * 24 * 30;
 
-    if (csp_ident != csp_params)
+    if (csp_ident)
         khc_close_space(csp_ident);
 }
 
@@ -200,6 +187,7 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     khm_size cb;
     khm_int32 rv;
     khm_boolean b;
+    khm_boolean applied = FALSE;
     DWORD dwaddress = 0;
 
     if (!k5_id_is_mod(hw, d))
@@ -208,7 +196,7 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     rv = kcdb_identity_get_config(d->ident, KHM_FLAG_CREATE, &csp_idroot);
     if (KHM_SUCCEEDED(rv)) {
         khc_open_space(csp_idroot, CSNAME_KRB5CRED,
-                       KHM_FLAG_CREATE,
+                       KHM_FLAG_CREATE | KCONF_FLAG_WRITEIFMOD,
                        &csp_ident);
     }
 
@@ -221,29 +209,34 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     if (d->life != d->tc_life.current) {
         d->life = d->tc_life.current;
         khc_write_int32(csp_ident, L"DefaultLifetime", (khm_int32) d->life);
+        applied = TRUE;
     }
 
     if (d->renew_life != d->tc_renew.current) {
         d->renew_life = d->tc_renew.current;
         khc_write_int32(csp_ident, L"DefaultRenewLifetime", (khm_int32) d->renew_life);
+        applied = TRUE;
     }
 
     b = (IsDlgButtonChecked(hw, IDC_CFG_RENEW) == BST_CHECKED);
     if (b != d->renewable) {
         d->renewable = b;
         khc_write_int32(csp_ident, L"Renewable", (khm_int32) b);
+        applied = TRUE;
     }
 
     b = (IsDlgButtonChecked(hw, IDC_CFG_FORWARD) == BST_CHECKED);
     if (b != d->forwardable) {
         d->forwardable = b;
         khc_write_int32(csp_ident, L"Forwardable", (khm_int32) b);
+        applied = TRUE;
     }
 
     b = (IsDlgButtonChecked(hw, IDC_CFG_ADDRESSLESS) == BST_CHECKED);
     if (b != d->addressless) {
         d->addressless = b;
         khc_write_int32(csp_ident, L"Addressless", (khm_int32) b);
+        applied = TRUE;
     }
 
     SendDlgItemMessage(hw, IDC_CFG_PUBLICIP, IPM_GETADDRESS,
@@ -252,23 +245,31 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     if (dwaddress != d->public_ip) {
         d->public_ip = dwaddress;
         khc_write_int32(csp_ident, L"PublicIP", (khm_int32) dwaddress);
+        applied = TRUE;
     }
 
     GetDlgItemText(hw, IDC_CFG_CCACHE, ccache, ARRAYLENGTH(ccache));
 
     if (SUCCEEDED(StringCbLength(ccache, sizeof(ccache), &cb)) &&
-        _wcsicmp(ccache, d->ccache)) {
-        khc_write_string(csp_ident, L"DefaultCCName", ccache);
-        StringCbCopy(d->ccache, sizeof(d->ccache), ccache);
+        cb > sizeof(wchar_t)) {
+
+        if (wcscmp(ccache, d->ccache)) {
+            khc_write_string(csp_ident, L"DefaultCCName", ccache);
+            StringCbCopy(d->ccache, sizeof(d->ccache), ccache);
+            applied = TRUE;
+        }
+
     } else {
         khc_remove_value(csp_ident, L"DefaultCCName", KCONF_FLAG_USER);
+        d->ccache[0] = L'\0';
+        applied = TRUE;
     }
 
     if (csp_ident)
         khc_close_space(csp_ident);
 
     khui_cfg_set_flags_inst(&d->cfg,
-                            KHUI_CNFLAG_APPLIED,
+                            (applied ? KHUI_CNFLAG_APPLIED : 0),
                             KHUI_CNFLAG_APPLIED | KHUI_CNFLAG_MODIFIED);
 }
 
