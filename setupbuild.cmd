@@ -1,4 +1,7 @@
 set PATH=c:\emacs-22.1\bin;%PATH%
+set PATH=%PATH%;c:\work\svn\bin
+set PATH=%PATH%;c:\work\global\bin
+
 set PISMERE=c:\work\pismere
 set KH_DOXYFULLPATH=c:\work\doxygen\doxygen.exe
 set KH_HHCFULLPATH="c:\Program Files\HTML Help Workshop\hhc.exe"
