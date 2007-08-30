@@ -183,14 +183,7 @@ khm_ui_cb(LPARAM lParam) {
 #endif
 
     /* make the call */
-    if (!IsBadCodePtr(pcbdata->cb))
-        pcbdata->rv = (*pcbdata->cb)(khm_hwnd_main, pcbdata->rock);
-    else {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-        pcbdata->rv = KHM_ERROR_INVALID_PARAM;
-    }
+    pcbdata->rv = (*pcbdata->cb)(khm_hwnd_main, pcbdata->rock);
 }
 
 
@@ -671,7 +664,6 @@ khm_main_wnd_proc(HWND hwnd,
 
             return kmq_wm_end(m, rv);
         }
-        return 0;
 
     case WM_KHUI_ASSIGN_COMMANDLINE_V1:
         {
@@ -1341,7 +1333,7 @@ khm_register_main_wnd_class(void) {
     wc.cbWndExtra = 0;
     wc.hInstance = khm_hInstance;
     wc.hIcon = LoadIcon(khm_hInstance, MAKEINTRESOURCE(IDI_MAIN_APP));
-    wc.hCursor = LoadCursor((HINSTANCE) NULL, MAKEINTRESOURCE(IDC_ARROW));
+    wc.hCursor = LoadCursor((HINSTANCE) NULL, IDC_ARROW);
     wc.hIconSm = LoadImage(khm_hInstance, MAKEINTRESOURCE(IDI_MAIN_APP), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
     wc.hbrBackground = (HBRUSH) (COLOR_APPWORKSPACE);
     wc.lpszMenuName = NULL;
@@ -1356,7 +1348,7 @@ khm_register_main_wnd_class(void) {
     wc.cbWndExtra = 0;
     wc.hInstance = khm_hInstance;
     wc.hIcon = LoadIcon(khm_hInstance, MAKEINTRESOURCE(IDI_MAIN_APP));
-    wc.hCursor = LoadCursor((HINSTANCE) NULL, MAKEINTRESOURCE(IDC_ARROW));
+    wc.hCursor = LoadCursor((HINSTANCE) NULL, IDC_ARROW);
     wc.hIconSm = LoadImage(khm_hInstance, MAKEINTRESOURCE(IDI_MAIN_APP), IMAGE_ICON, 0, 0, LR_DEFAULTSIZE);
     wc.hbrBackground = (HBRUSH) (COLOR_APPWORKSPACE);
     wc.lpszMenuName = NULL;

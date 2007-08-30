@@ -531,29 +531,33 @@ va_arg_from_param(va_list * parm, kherr_param p)
         switch (t) {
         case KEPT_INT32:
         case KEPT_UINT32:
-            pi = (khm_int32 *) &(va_arg(*parm, khm_int32));
+            pi = (khm_int32 *)(*parm);
+            va_arg(*parm, khm_int32);
             *pi = (khm_int32) parm_data(p);
             break;
 
         case KEPT_STRINGC:
         case KEPT_STRINGT:
-            ps = (wchar_t **) &(va_arg(*parm, wchar_t *));
+            ps = (wchar_t **) (*parm);
+            va_arg(*parm, wchar_t *);
             *ps = (wchar_t *) parm_data(p);
             break;
 
         case KEPT_PTR:
-            pptr = (void **) &(va_arg(*parm, void *));
+            pptr = (void **) (*parm);
+            va_arg(*parm, void *);
             *pptr = (void *) parm_data(p);
             break;
 
         case KEPT_INT64:
         case KEPT_UINT64:
-            pli = (khm_int64 *) &(va_arg(*parm, khm_int64));
+            pli = (khm_int64 *) (*parm);
+            va_arg(*parm, khm_int64);
             *pli = (khm_int64) parm_data(p);
             break;
 
-        default:
 #ifdef DEBUG
+        default:
             assert(FALSE);
 #endif
         }
