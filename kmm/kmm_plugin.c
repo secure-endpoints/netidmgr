@@ -342,6 +342,9 @@ kmm_provide_plugin(kmm_module module, kmm_plugin_reg * plugin)
     size_t cb_desc = 0;
     size_t cb_dep = 0;
 
+    if (!kmm_is_module(module))
+        return KHM_ERROR_INVALID_PARAM;
+
     m = kmm_module_from_handle(module);
 
     /* can only called when handing init_module() */
@@ -376,7 +379,7 @@ kmm_provide_plugin(kmm_module module, kmm_plugin_reg * plugin)
         return KHM_ERROR_DUPLICATE;
     }
 
-    /* released when the plugin quits */
+    /* released in kmmint_free_plugin() */
     kmm_hold_module(module);
 
     p->module = m;

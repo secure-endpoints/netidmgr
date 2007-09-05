@@ -255,8 +255,8 @@ typedef struct tag_kmm_module_info {
 
     khm_ui_4    language;           /*!< Currently loaded langugage */
 
-    khm_int32   state;              /*!< Current status of the
-				         module */
+    khm_int32   state;              /*!< Current status of the module.
+				         One of ::KMM_MODULE_STATES*/
 
     khm_version file_version;       /*!< File version for the
 				         module */
@@ -313,11 +313,15 @@ enum KMM_MODULE_STATES {
                                           signature */
     KMM_MODULE_STATE_FAIL_NOT_FOUND=-1, /*!< The module was not
                                           found */
-    KMM_MODULE_STATE_NONE=0,            /*!< Unknown state. The handle
-                                          is possibly invalid */
-    KMM_MODULE_STATE_PREINIT,           /*!< The module is being
-                                          loaded. init_module() hasn't
-                                          been called yet */
+    KMM_MODULE_STATE_NONE=0,           
+    /*!< Unknown state. The handle is possibly invalid.  Newly created
+         module objects start of at this state.  It means that the
+         object hasn't completely been initialized yet and is not
+         associated with an actual module. */
+    KMM_MODULE_STATE_PREINIT,           
+    /*!< The module is being prepared for loading.
+         kmmint_init_module() hasn't been called yet to initialize and
+         load the module. */
     KMM_MODULE_STATE_INIT,              /*!< In init_module() */
     KMM_MODULE_STATE_INITPLUG,          /*!< Initializing plugins */
     KMM_MODULE_STATE_RUNNING,           /*!< Running */
