@@ -30,6 +30,10 @@
 
 \section pi_fw_pnm Introduction to Plug-ins, Modules and Messages
 
+This section provides an introduction to plug-ins, modules and
+messages.  For a technical description of the Module Manager, see
+\subpage pi_kmmt .
+
 \subsection pi_fw_pnm_p Plug-ins
 
 A plug-in is a package that implements a defined API that will perform
@@ -239,3 +243,259 @@ Network Identity Manager.
 \image html modules_plugins_krb5.png
 
  */
+
+/*!
+
+\page pi_kmmt Khimaira Module Manager Technical Description
+
+\section pi_kmmt_intro Introduction
+
+This document aims to document the process of loading modules and
+plug-ins that is implemented in the Module Manager.  The code resides
+in the src/windows/identity/kmm directory.  The Module Manager will be
+referred to as KMM in the remainder of the document.
+
+It is assumed that you, the reader, have already gone through the
+content in \ref pi_framework .  This section won't go into details
+about what a module or plug-in is or why these are two separate
+concepts.
+
+\subsection pi_kmmt_module_i Modules
+
+Each module in KMM is represented by a ::kmm_module_i object.  The
+state of the module is indicated by the \a state field of the object.
+
+\subsubsection pi_kmmt_module_state Module State Transitions
+
+<ul>
+  <li>
+    <b>Failure states</b>
+
+    The failure states are as follows:
+
+    - ::KMM_MODULE_STATE_FAIL_INCOMPAT =-12
+    - ::KMM_MODULE_STATE_FAIL_INV_MODULE =-11
+    - ::KMM_MODULE_STATE_FAIL_UNKNOWN =-10
+    - ::KMM_MODULE_STATE_FAIL_MAX_FAILURE =-9
+    - ::KMM_MODULE_STATE_FAIL_DUPLICATE =-8
+    - ::KMM_MODULE_STATE_FAIL_NOT_REGISTERED =-7
+    - ::KMM_MODULE_STATE_FAIL_NO_PLUGINS =-6
+    - ::KMM_MODULE_STATE_FAIL_DISABLED =-5
+    - ::KMM_MODULE_STATE_FAIL_LOAD =-4
+    - ::KMM_MODULE_STATE_FAIL_INVALID =-3
+    - ::KMM_MODULE_STATE_FAIL_SIGNATURE =-2
+    - ::KMM_MODULE_STATE_FAIL_NOT_FOUND =-1
+
+    Transitions:
+
+    <ul>
+      <li>(from all failure states and ::KMM_MODULE_STATE_EXITED) -->
+        ::KMM_MODULE_STATE_PREINIT in kmm_load_module().
+
+        If an attempt is made to load a module that has failed to load
+        or that has exited, the module manager will reset to state to
+        PREINIT and attempt to load the module again.
+      </li>
+    </ul>
+  </li>
+
+  <li>::KMM_MODULE_STATE_NONE =0
+
+    \copydoc ::KMM_MODULE_STATE_NONE
+
+    Transitions:
+
+    <ul>
+      <li> --> ::KMM_MODULE_STATE_PREINIT in kmm_load_module().
+
+        When a new module is being loaded and there is no associated
+        module object yet, one will be created (in state NONE) and
+        then immediately switched to PREINIT stage to start loading
+        the module.
+
+      </li>
+    </ul>
+  </li>
+
+  <li>::KMM_MODULE_STATE_PREINIT =1
+
+    \copydoc ::KMM_MODULE_STATE_PREINIT
+
+    Transitions:
+
+    <ul>
+      <li> --> ::KMM_MODULE_STATE_FAIL_UNKNOWN in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_UNKNOWN
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_NOT_REGISTERED in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_NOT_REGISTERED
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_DISABLED in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_DISABLED
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_MAX_FAILURE in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_MAX_FAILURE
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_NOT_FOUND in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_NOT_FOUND
+
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_INV_MODULE in kmmint_init_module().
+
+          \copydoc ::KMM_MODULE_STATE_FAIL_INV_MODULE
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_INCOMPAT in kmmint_init_module().
+
+          \copydoc ::KMM_MODULE_STATE_FAIL_INCOMPAT
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_INVALID in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_INVALID
+      </li>
+
+
+      <li> --> ::KMM_MODULE_STATE_INIT in kmmint_init_module().
+
+        Once the module has passed all the pre-initialization checks,
+        the module switches to the INIT state.  This is done
+        immediately before calling the module initialization entry
+        point.
+
+      </li>
+    </ul>
+  </li>
+
+  <li>::KMM_MODULE_STATE_INIT=2
+
+    \copydoc ::KMM_MODULE_STATE_INIT
+
+    Transitions:
+
+    <ul>
+      <li> --> ::KMM_MODULE_STATE_FAIL_LOAD in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_LOAD
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_FAIL_NO_PLUGINS in kmmint_init_module().
+
+         \copydoc ::KMM_MODULE_STATE_FAIL_NO_PLUGINS
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_INITPLUG in kmmint_init_module().
+
+        Once the module initialization entry-point has been called and
+        it provides at least one plug-in, the module will switch to
+        the INITPLUG state.  During this state, KMM will attempt to
+        initialize and start each of the plug-ins that the module
+        provided by calling kmmint_init_plugin() for each plug-in.
+
+      </li>
+    </ul>
+  </li>
+
+  <li>::KMM_MODULE_STATE_INITPLUG =3
+
+    \copydoc ::KMM_MODULE_STATE_INITPLUG
+
+    Transitions:
+
+    <ul>
+      <li> --> ::KMM_MODULE_STATE_FAIL_NO_PLUGINS in kmmint_init_module().
+
+        During the plug-in initialization phase, KMM will call
+        kmmint_init_plugin() for each plug-in that was provided by the
+        module initialization entry point.  Once that is completed, if
+        none of the plug-ins successfully initialized, then the module
+        does not have any active plug-ins.  Hence, it will switch to
+        the FAIL_NO_PLUGINS state and will be unloaded.
+
+      </li>
+
+      <li> --> ::KMM_MODULE_STATE_RUNNING in kmmint_init_module().
+
+        All the plug-ins have finished initializing and at least one
+        successfully started.
+      </li>
+    </ul>
+  </li>
+
+  <li>::KMM_MODULE_STATE_RUNNING =4
+
+    \copydoc ::KMM_MODULE_STATE_RUNNING
+
+    Transitions:
+
+    <ul>
+      <li> --> ::KMM_MODULE_STATE_EXITPLUG in kmmint_exit_module().
+
+        When a request is received to unload the module, typically
+        when the application is exiting, KMM will begin the process of
+        unloading the module.  The first step is to terminate all the
+        plug-ins that were provided by the module.  KMM will set the
+        module state to EXITPLUG and then signal all active plug-ins
+        to terminate.
+
+      </li>
+    </ul>
+
+  </li>
+
+  <li>::KMM_MODULE_STATE_EXITPLUG =5
+
+    \copydoc ::KMM_MODULE_STATE_EXITPLUG
+
+    Transitions:
+
+    <ul>
+      <li> --> ::KMM_MODULE_STATE_EXIT in kmmint_exit_module().
+
+        Once all the plug-ins have exited, the module switches to the
+        EXIT state during which the module exit entry point will be
+        called if it is found.
+
+      </li>
+    </ul>
+  </li>
+
+  <li>::KMM_MODULE_STATE_EXIT =6
+
+    \copydoc ::KMM_MODULE_STATE_EXITPLUG
+
+    Transitions:
+
+    <ul>
+      <li> --> ::KMM_MODULE_STATE_EXITED in kmmint_exit_module().
+
+        After the module exit entry point has been called, KMM
+        switches the module state to EXITED.  By this point, the
+        module has no active plug-ins and the Network Identity Manager
+        application should have no dependency on the module.  If the
+        ::KMM_MODULE_FLAG_NOUNLOAD flag is not specified for the
+        module, it will be unloaded.
+
+      </li>
+    </ul>
+
+  </li>
+
+  <li>::KMM_MODULE_STATE_EXITED =7
+
+    \copydoc ::KMM_MODULE_STATE_EXITED
+  </li>
+
+</ul>
+
+*/
