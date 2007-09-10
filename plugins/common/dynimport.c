@@ -373,7 +373,9 @@ khm_int32 init_imports(void) {
 #define CKRV(m)           \
   do {                    \
     if(!imp_rv) {         \
-      _reportf(L"Can't locate all required exports from module [%S]", (m)); \
+      DWORD gle;          \
+      gle = GetLastError(); \
+      _reportf(L"Can't locate all required exports from module [%S]. Error=%d", (m), gle); \
       goto _err_ret;      \
     }                     \
  } while (FALSE)
