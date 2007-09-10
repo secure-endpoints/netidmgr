@@ -117,9 +117,10 @@ KHMEXP void KHMAPI kmm_exit(void)
 
     LeaveCriticalSection(&cs_kmm);
     WaitForSingleObject(evt_exit, INFINITE);
-    EnterCriticalSection(&cs_kmm);
 
-    kmq_post_thread_quit_message(tid_registrar, 0, NULL);
+    kmq_send_thread_quit_message(tid_registrar, 0);
+
+    EnterCriticalSection(&cs_kmm);
 
     hash_del_hashtable(hash_plugins);
     hash_del_hashtable(hash_modules);
