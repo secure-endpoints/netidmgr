@@ -1390,6 +1390,7 @@ k5_ensure_identity_ccache_is_watched(khm_handle identity, char * ccache)
         /* the FileCCList is a list of paths.  We have to strip out
            the FILE: prefix. */
         ccpath = thisccache + 5;
+        unexpand_env_var_prefix(ccpath, sizeof(thisccache) - sizeof(wchar_t) * 5);
 
         _reportf(L"Checking if ccache [%s] is in FileCCList", ccpath);
 
@@ -1398,6 +1399,8 @@ k5_ensure_identity_ccache_is_watched(khm_handle identity, char * ccache)
 
         rv = khc_read_multi_string(csp_params, L"FileCCList", NULL, &cb_mlist);
         if (rv == KHM_ERROR_TOO_LONG && cb_mlist > sizeof(wchar_t) * 2) {
+            wchar_t * cc = NULL;
+
             cb_mlist += cb_cc;
             mlist = PMALLOC(cb_mlist);
 
@@ -1409,7 +1412,20 @@ k5_ensure_identity_ccache_is_watched(khm_handle identity, char * ccache)
             if (KHM_FAILED(rv))
                 goto failed_filecclist;
 
-            if (multi_string_find(mlist, ccpath, 0) == NULL) {
+            for (cc = mlist;
+                 cc && *cc;
+                 cc = multi_string_next(cc)) {
+
+                wchar_t tcc[MAX_PATH];
+
+                StringCbCopy(tcc, sizeof(tcc), cc);
+                unexpand_env_var_prefix(tcc, sizeof(tcc));
+
+                if (!_wcsicmp(tcc, ccpath))
+                    break;
+            }
+
+            if (cc == NULL || !*cc) {
                 t = cb_mlist;
                 multi_string_append(mlist, &t, ccpath);
 

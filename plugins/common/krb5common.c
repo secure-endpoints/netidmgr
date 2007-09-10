@@ -398,8 +398,20 @@ khm_krb5_find_ccache_for_identity(khm_handle ident, krb5_context *pctx,
 
         khc_read_multi_string(csp_params, L"FileCCList", ms, &cb);
         for(t = ms; t && *t; t = multi_string_next(t)) {
-            StringCchPrintfA(ccname, ARRAYLENGTH(ccname),
-                             "FILE:%S", t);
+            if (wcschr(t, L'%')) {
+                wchar_t expname[MAX_PATH];
+                DWORD len;
+
+                len = ExpandEnvironmentStrings(t, expname, ARRAYLENGTH(expname));
+                if (len == 0 || len > ARRAYLENGTH(expname))
+                    continue;
+
+                StringCchPrintfA(ccname, ARRAYLENGTH(ccname),
+                                 "FILE:%S", expname);
+            } else {
+                StringCchPrintfA(ccname, ARRAYLENGTH(ccname),
+                                 "FILE:%S", t);
+            }
 
             code = (*pkrb5_cc_resolve)(ctx, ccname, &cache);
             if (code)

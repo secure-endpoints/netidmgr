@@ -220,4 +220,7 @@ khm_krb5_cc_name_cmp(const wchar_t * cc_name_1,
 int
 khm_krb5_parse_boolean(const char *s, khm_boolean * b);
 
+void
+unexpand_env_var_prefix(wchar_t * s, size_t cb_s);
+
 #endif

@@ -942,8 +942,21 @@ khm_krb5_list_tickets(krb5_context *krbv5Context)
         khc_read_multi_string(csp_params, L"FileCCList", ms, &cb);
 
         for(t = ms; t && *t; t = multi_string_next(t)) {
+            wchar_t exppath[MAX_PATH];
+            DWORD len;
+
+            if (wcschr(t, L'%')) {
+                len = ExpandEnvironmentStrings(t, exppath, ARRAYLENGTH(exppath));
+                if (len == 0 || len > ARRAYLENGTH(exppath)) {
+                    _reportf(L"Skipping path [%s].  Expansion overflowed MAX_PATH", t);
+                    continue;
+                }
+            } else {
+                StringCbCopy(exppath, sizeof(exppath), t);
+            }
+
             StringCchPrintfA(ccname, ARRAYLENGTH(ccname),
-                             "FILE:%S", t);
+                             "FILE:%S", exppath);
 
             code = (*pkrb5_cc_resolve)(ctx, ccname, &cache);
 
@@ -3125,7 +3138,8 @@ get_default_file_cache_for_identity(const wchar_t * idname,
     escape_string_for_filename(idname, escf, sizeof(escf));
     GetTempPath(ARRAYLENGTH(tmppath), tmppath);
 
-    StringCbPrintf(tccname, sizeof(tccname), L"FILE:%s\\krb5cc.%s", tmppath, escf);
+    /* The path returned by GetTempPath always ends in a backslash*/
+    StringCbPrintf(tccname, sizeof(tccname), L"FILE:%skrb5cc.%s", tmppath, escf);
     StringCbLength(tccname, sizeof(tccname), &cb);
     cb += sizeof(wchar_t);
 
@@ -3141,22 +3155,22 @@ get_default_file_cache_for_identity(const wchar_t * idname,
 
 khm_int32
 khm_krb5_get_identity_default_ccache(khm_handle ident, wchar_t * buf, khm_size * pcb) {
+    wchar_t ccname[MAX_PATH + 5];
     khm_handle csp_id = NULL;
     khm_int32 rv = KHM_ERROR_SUCCESS;
     khm_size cbt;
 
     rv = khm_krb5_get_identity_config(ident, 0, &csp_id);
 
-    cbt = *pcb;
+    cbt = sizeof(ccname);
     if (KHM_SUCCEEDED(rv))
-        rv = khc_read_string(csp_id, L"DefaultCCName", buf, &cbt);
+        rv = khc_read_string(csp_id, L"DefaultCCName", ccname, &cbt);
 
-    if ((KHM_FAILED(rv) && rv != KHM_ERROR_TOO_LONG) ||
-        (KHM_SUCCEEDED(rv) && buf[0] == L'\0')) {
+    if (KHM_FAILED(rv) ||
+        (KHM_SUCCEEDED(rv) && ccname[0] == L'\0')) {
         /* we need to figure out the default ccache from the principal
            name */
         wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-        wchar_t ccname[MAX_PATH];
         khm_size cb;
         khm_int32 use_file_cache = 0;
 
@@ -3189,16 +3203,41 @@ khm_krb5_get_identity_default_ccache(khm_handle ident, wchar_t * buf, khm_size *
             *pcb = cb;
             rv = KHM_ERROR_TOO_LONG;
         }
-    } else if (KHM_SUCCEEDED(rv)) {
-        wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-        khm_size cb;
+    } else {
+        if (wcschr(ccname, L'%')) {
+            wchar_t expccname[MAX_PATH + 5];
+            DWORD cch;
 
-        *pcb = cbt;
+            cch = ExpandEnvironmentStrings(ccname, expccname, ARRAYLENGTH(expccname));
+            if (cch == 0 || cch > ARRAYLENGTH(expccname)) {
+#ifdef DEBUG
+                assert(FALSE);
+#endif
+                rv = KHM_ERROR_UNKNOWN;
+            } else {
+                StringCbCopy(ccname, sizeof(ccname), expccname);
+                StringCbLength(ccname, sizeof(ccname), &cbt);
+                cbt += sizeof(wchar_t);
+            }
+        }
 
-        cb = sizeof(idname);
-        kcdb_identity_get_name(ident, idname, &cb);
+        if (KHM_SUCCEEDED(rv)) {
+            wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+            khm_size cb;
 
-        _reportf(L"Found CCache [%s] for identity [%s]", buf, idname);
+            if (buf && *pcb >= cbt) {
+                StringCbCopy(buf, *pcb, ccname);
+                *pcb = cbt;
+            } else {
+                *pcb = cbt;
+                rv = KHM_ERROR_TOO_LONG;
+            }
+
+            cb = sizeof(idname);
+            kcdb_identity_get_name(ident, idname, &cb);
+
+            _reportf(L"Found CCache [%s] for identity [%s]", buf, idname);
+        }
     }
 
     if (csp_id != NULL)
@@ -3209,7 +3248,7 @@ khm_krb5_get_identity_default_ccache(khm_handle ident, wchar_t * buf, khm_size *
 
 khm_int32
 khm_krb5_get_identity_default_ccacheA(khm_handle ident, char * buf, khm_size * pcb) {
-    wchar_t wccname[MAX_PATH];
+    wchar_t wccname[MAX_PATH + 5];
     khm_size cbcc;
     khm_int32 rv;
 
@@ -3618,4 +3657,44 @@ khm_krb5_parse_boolean(const char *s, khm_boolean * b)
 
     /* Default to "no" */
     return KHM_ERROR_INVALID_PARAM;
+}
+
+static const wchar_t * _exp_env_vars[] = {
+    L"TMP",
+    L"TEMP",
+    L"USERPROFILE",
+    L"ALLUSERSPROFILE",
+    L"SystemRoot",
+    L"SystemDrive"
+};
+
+const int _n_exp_env_vars = ARRAYLENGTH(_exp_env_vars);
+
+static int
+check_and_replace_env_prefix(wchar_t * s, size_t cb_s, const wchar_t * env) {
+    wchar_t evalue[MAX_PATH];
+    DWORD len;
+
+    evalue[0] = L'\0';
+    len = GetEnvironmentVariable(env, evalue, ARRAYLENGTH(evalue));
+    if (len > ARRAYLENGTH(evalue) || len == 0)
+        return 0;
+
+    if (_wcsnicmp(s, evalue, len))
+        return 0;
+
+    StringCbPrintf(evalue, sizeof(evalue), L"%%%s%%%s",
+                   env, s + len);
+    StringCbCopy(s, cb_s, evalue);
+    return 1;
+}
+
+void
+unexpand_env_var_prefix(wchar_t * s, size_t cb_s) {
+    int i;
+
+    for (i=0; i < _n_exp_env_vars; i++) {
+        if (check_and_replace_env_prefix(s, cb_s, _exp_env_vars[i]))
+            return;
+    }
 }

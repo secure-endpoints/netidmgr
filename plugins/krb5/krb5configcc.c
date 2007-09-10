@@ -85,13 +85,17 @@ void k5_del_file_cc(k5_ccc_data * d, khm_size idx) {
     d->n_file_ccs--;
 }
 
-void k5_add_file_cc(k5_ccc_data * d, wchar_t * path) {
+void k5_add_file_cc(k5_ccc_data * d, wchar_t * epath) {
     khm_size i;
     khm_size cch;
+    wchar_t path[MAX_PATH];
 
-    if (FAILED(StringCchLength(path, MAX_PATH, &cch)) ||
+    if (FAILED(StringCchLength(epath, MAX_PATH, &cch)) ||
         cch == 0)
         return;
+
+    StringCbCopy(path, sizeof(path), epath);
+    unexpand_env_var_prefix(path, sizeof(path));
 
     /* see if it's there first */
     for (i=0; i < d->n_file_ccs; i++) {
