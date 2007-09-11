@@ -3674,6 +3674,7 @@ static int
 check_and_replace_env_prefix(wchar_t * s, size_t cb_s, const wchar_t * env) {
     wchar_t evalue[MAX_PATH];
     DWORD len;
+    size_t sz;
 
     evalue[0] = L'\0';
     len = GetEnvironmentVariable(env, evalue, ARRAYLENGTH(evalue));
@@ -3683,12 +3684,20 @@ check_and_replace_env_prefix(wchar_t * s, size_t cb_s, const wchar_t * env) {
     if (_wcsnicmp(s, evalue, len))
         return 0;
 
-    StringCbPrintf(evalue, sizeof(evalue), L"%%%s%%%s",
-                   env, s + len);
-    StringCbCopy(s, cb_s, evalue);
+    if (SUCCEEDED(StringCbPrintf(evalue, sizeof(evalue), L"%%%s%%%s",
+                                 env, s + len)) &&
+        SUCCEEDED(StringCbLength(evalue, sizeof(evalue), &sz)) &&
+        sz <= cb_s) {
+        StringCbCopy(s, cb_s, evalue);
+    }
+
     return 1;
 }
 
+/* We use this instead of PathUnexpandEnvStrings() because that API
+   doesn't take process TMP and TEMP.  The string is modified
+   in-place.  The usual case is to call it with a buffer big enough to
+   hold MAX_PATH characters. */
 void
 unexpand_env_var_prefix(wchar_t * s, size_t cb_s) {
     int i;
