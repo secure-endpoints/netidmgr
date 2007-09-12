@@ -50,6 +50,7 @@ OBJFILES= 			\
 	$(OBJ)\addrchange.obj	\
 	$(OBJ)\debugfuncs.obj	\
 	$(OBJ)\taskbar.obj	\
+	$(OBJ)\windowctl.obj	\
 	$(OBJ)\cfg_general_wnd.obj \
 	$(OBJ)\cfg_identities_wnd.obj \
 	$(OBJ)\cfg_notif_wnd.obj \

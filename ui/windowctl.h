@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,48 +24,19 @@
 
 /* $Id$ */
 
-#ifndef __KHIMAIRA_KHIMAIRA_H
-#define __KHIMAIRA_KHIMAIRA_H
+#ifndef __NETIDMGR_WINDOWCTL_H
+#define __NETIDMGR_WINDOWCTL_H
 
-#include<windows.h>
-#include<windowsx.h>
-#include<strsafe.h>
-#include<commctrl.h>
-#include<htmlhelp.h>
+void khm_add_dialog(HWND dlg);
+void khm_del_dialog(HWND dlg);
+BOOL khm_is_dialog_active(void);
 
-#define KHERR_HMODULE khm_hInstance
-#define KHERR_FACILITY khm_facility
-#define KHERR_FACILITY_ID 3
+void khm_enter_modal(HWND hwnd);
+void khm_leave_modal(void);
 
-#define NOEXPORT
+void khm_add_property_sheet(khui_property_sheet * s);
+void khm_del_property_sheet(khui_property_sheet * s);
 
-#include<netidmgr.h>
-
-#include<khhelp.h>
-#include<intaction.h>
-#include<intalert.h>
-
-#include<resource.h>
-#include<credfuncs.h>
-#include<appglobal.h>
-#include<mainwnd.h>
-#include<mainmenu.h>
-#include<toolbar.h>
-#include<statusbar.h>
-#include<credwnd.h>
-#include<htwnd.h>
-#include<passwnd.h>
-#include<newcredwnd.h>
-#include<propertywnd.h>
-#include<configwnd.h>
-#include<aboutwnd.h>
-#include<debugfuncs.h>
-#include<taskbar.h>
-#include<windowctl.h>
-
-#include<reqdaemon.h>
-#include<notifier.h>
-#include<timer.h>
-#include<addrchange.h>
-
+BOOL khm_check_ps_message(LPMSG pmsg);
+BOOL khm_check_dlg_message(LPMSG pmsg);
 #endif
