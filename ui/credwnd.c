@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2005 Massachusetts Institute of Technology
  * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
@@ -537,6 +538,11 @@ cw_load_view(khui_credwnd_tbl * tbl, wchar_t * view, HWND hwnd) {
     else {
         /* do nothing */
     }
+
+    if (KHM_FAILED(khc_read_int32(hc_cw, L"ViewAllIdents", &tbl->view_all_idents)))
+        tbl->view_all_idents = 0;
+
+    khui_check_action(KHUI_ACTION_VIEW_ALL_IDS, tbl->view_all_idents);
 
     kmq_post_message(KMSG_ACT, KMSG_ACT_REFRESH, 0, 0);
 
@@ -1803,6 +1809,9 @@ cw_update_outline(khui_credwnd_tbl * tbl)
         wchar_t ** idarray = NULL;
         int i;
 
+        khm_int32 and_flags = 0;
+        khm_int32 eq_flags = 0;
+
         /* see if the default identity is in the list */
         {
             khm_handle id_def = NULL;
@@ -1863,8 +1872,16 @@ cw_update_outline(khui_credwnd_tbl * tbl)
             ;
         }
 
-        if (kcdb_identity_enum(KCDB_IDENT_FLAG_STICKY,
-                               KCDB_IDENT_FLAG_STICKY,
+        if (tbl->view_all_idents) {
+            and_flags = 0;
+            eq_flags = 0;
+        } else {
+            and_flags = KCDB_IDENT_FLAG_STICKY;
+            eq_flags = KCDB_IDENT_FLAG_STICKY;
+        }
+
+        if (kcdb_identity_enum(and_flags,
+                               eq_flags,
                                NULL,
                                &cb_names,
                                &n_idents) != KHM_ERROR_TOO_LONG ||
@@ -1879,8 +1896,8 @@ cw_update_outline(khui_credwnd_tbl * tbl)
         assert(idarray);
 #endif
 
-        if (KHM_FAILED(kcdb_identity_enum(KCDB_IDENT_FLAG_STICKY,
-                                          KCDB_IDENT_FLAG_STICKY,
+        if (KHM_FAILED(kcdb_identity_enum(and_flags,
+                                          eq_flags,
                                           idnames,
                                           &cb_names,
                                           &n_idents)))
@@ -1894,10 +1911,19 @@ cw_update_outline(khui_credwnd_tbl * tbl)
 
         for (i=0; i < (int) n_idents; i++) {
             khm_handle h;
+            khm_int32 f_sticky;
+            khm_int32 flags;
 
             if (KHM_FAILED(kcdb_identity_create(idarray[i], 
                                                 KCDB_IDENT_FLAG_CREATE, &h)))
                 continue;
+
+            kcdb_identity_get_flags(h, &flags);
+
+            if (flags & KCDB_IDENT_FLAG_STICKY)
+                f_sticky = KHUI_CW_O_STICKY;
+            else
+                f_sticky = 0;
 
             for (o = tbl->outline; o; o = LNEXT(o)) {
                 if (!wcscmp(idarray[i], o->header))
@@ -1909,7 +1935,7 @@ cw_update_outline(khui_credwnd_tbl * tbl)
                 if (o->start != -1) /* already visible? */
                     continue;
                 o->flags &= (KHUI_CW_O_RELIDENT | KHUI_CW_O_SELECTED);
-                o->flags |= KHUI_CW_O_STICKY | KHUI_CW_O_VISIBLE | KHUI_CW_O_EMPTY;
+                o->flags |= f_sticky | KHUI_CW_O_VISIBLE | KHUI_CW_O_EMPTY;
 
                 if (!kcdb_identity_is_equal(o->data, h)) {
                     if (o->flags & KHUI_CW_O_RELIDENT)
@@ -1922,7 +1948,7 @@ cw_update_outline(khui_credwnd_tbl * tbl)
                 /* not found.  create */
                 o = cw_new_outline_node(idarray[i]);
                 LPUSH(&tbl->outline, o);
-                o->flags = KHUI_CW_O_STICKY | KHUI_CW_O_VISIBLE | KHUI_CW_O_EMPTY | KHUI_CW_O_RELIDENT;
+                o->flags = f_sticky | KHUI_CW_O_VISIBLE | KHUI_CW_O_EMPTY | KHUI_CW_O_RELIDENT;
                 o->level = 0;
                 o->col = grouping[0];
                 o->data = h;
@@ -4374,6 +4400,8 @@ cw_wm_mouse(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             tbl->mouse_state = CW_MOUSE_WIDGET | CW_MOUSE_WSTICKY;
 
+            khm_refresh_identity_menus();
+
             return 0;
         } else if ((nm_state & CW_MOUSE_WICON) &&
                    (tbl->mouse_state & CW_MOUSE_WICON)) {
@@ -4874,6 +4902,7 @@ cw_pp_ident_proc(HWND hwnd,
                 kcdb_identity_set_flags(s->identity, flags,
                                         KCDB_IDENT_FLAG_STICKY |
                                         KCDB_IDENT_FLAG_DEFAULT);
+                khm_refresh_identity_menus();
                 return TRUE;
 
             case PSN_RESET:
@@ -5312,6 +5341,30 @@ cw_wm_command(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         }
         break;
 
+    case KHUI_ACTION_VIEW_ALL_IDS:
+        {
+            khm_handle hc_cw = NULL;
+
+            tbl->view_all_idents = !tbl->view_all_idents;
+
+            cw_update_outline(tbl);
+            cw_update_extents(tbl, TRUE);
+            cw_update_selection_state(tbl);
+
+            InvalidateRect(tbl->hwnd, NULL, TRUE);
+
+            if(KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow", KHM_PERM_READ | KHM_PERM_WRITE,
+                                            &hc_cw))) {
+                khc_write_int32(hc_cw, L"ViewAllIdents", tbl->view_all_idents);
+                khc_close_space(hc_cw);
+            }
+
+            khui_check_action(KHUI_ACTION_VIEW_ALL_IDS, tbl->view_all_idents);
+
+            khm_refresh_identity_menus();
+        }
+        break;
+
     case KHUI_PACTION_UP:
     case KHUI_PACTION_UP_EXTEND:
     case KHUI_PACTION_UP_TOGGLE:
@@ -5673,6 +5726,136 @@ khm_credwnd_proc(HWND hwnd,
     }
 
     return DefWindowProc(hwnd,uMsg,wParam,lParam);
+}
+
+void
+khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act)
+{
+    wchar_t * cap;
+    HDC hdc;
+    SIZE sz;
+    size_t len;
+    HFONT hf_old;
+
+    sz.cx = MENU_SIZE_ICON_X;
+    sz.cy = MENU_SIZE_ICON_Y;
+
+    cap = act->caption;
+#ifdef DEBUG
+    assert(cap);
+#endif
+    hdc = GetDC(khm_hwnd_main);
+#ifdef DEBUG
+    assert(hdc);
+#endif
+
+    StringCchLength(cap, KHUI_MAXCCH_NAME, &len);
+
+    hf_old = SelectFont(hdc, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
+
+    GetTextExtentPoint32(hdc, cap, (int) len, &sz);
+
+    SelectFont(hdc, hf_old);
+
+    ReleaseDC(khm_hwnd_main, hdc);
+
+    lpm->itemWidth = sz.cx + sz.cy * 3 / 2 + GetSystemMetrics(SM_CXSMICON);
+    lpm->itemHeight = sz.cy * 3 / 2;
+}
+
+void
+khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
+{
+    khui_credwnd_tbl * tbl;
+    khm_handle ident;
+    khm_size i;
+    size_t count = 0;
+    COLORREF old_clr;
+    wchar_t * cap;
+    size_t len;
+    int margin;
+    SIZE sz;
+    HBRUSH hbr;
+    COLORREF text_clr;
+    khm_int32 idflags;
+    khm_int32 expflags;
+
+    tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
+    if (tbl == NULL)
+        return;
+
+    ident = act->data;
+    cap = act->caption;
+#ifdef DEBUG
+    assert(ident != NULL);
+    assert(cap != NULL);
+#endif
+
+    for (i=0; i < tbl->n_idents; i++) {
+        if (kcdb_identity_is_equal(tbl->idents[i].ident, ident)) {
+            count = tbl->idents[i].credcount;
+            break;
+        }
+    }
+
+    expflags = cw_get_buf_exp_flags(tbl, ident);
+
+    text_clr = tbl->cr_hdr_normal;
+
+    if (lpd->itemState & (ODS_HOTLIGHT | ODS_SELECTED)) {
+        hbr = GetSysColorBrush(COLOR_HIGHLIGHT);
+        text_clr = GetSysColor(COLOR_HIGHLIGHTTEXT);
+    } else if (count == 0) {
+        hbr = tbl->hb_hdr_bg;
+    } else if (expflags == CW_EXPSTATE_EXPIRED) {
+        hbr = tbl->hb_hdr_bg_exp;
+    } else if (expflags == CW_EXPSTATE_WARN) {
+        hbr = tbl->hb_hdr_bg_warn;
+    } else if (expflags == CW_EXPSTATE_CRITICAL) {
+        hbr = tbl->hb_hdr_bg_crit;
+    } else {
+        hbr = tbl->hb_hdr_bg_cred;
+    }
+
+    FillRect(lpd->hDC, &lpd->rcItem, hbr);
+
+    SetBkMode(lpd->hDC, TRANSPARENT);
+
+    old_clr = SetTextColor(lpd->hDC, text_clr);
+
+    StringCchLength(cap, KHUI_MAXCCH_NAME, &len);
+
+    GetTextExtentPoint32(lpd->hDC, cap, (int) len, &sz);
+    margin = sz.cy / 4;
+
+    TextOut(lpd->hDC, lpd->rcItem.left + margin * 2 + GetSystemMetrics(SM_CXSMICON),
+            lpd->rcItem.top + margin, cap, (int) len);
+
+    SetTextColor(lpd->hDC, old_clr);
+
+    kcdb_identity_get_flags(ident, &idflags);
+
+    if (idflags & KCDB_IDENT_FLAG_DEFAULT) {
+        HICON hic;
+
+        hic = (HICON) LoadImage(khm_hInstance, MAKEINTRESOURCE(IDI_ENABLED),
+                                IMAGE_ICON,
+                                GetSystemMetrics(SM_CXSMICON),
+                                GetSystemMetrics(SM_CYSMICON),
+                                LR_DEFAULTCOLOR);
+        if (hic) {
+            DrawIconEx(lpd->hDC,
+                       lpd->rcItem.left + margin,
+                       lpd->rcItem.top + margin,
+                       hic,
+                       GetSystemMetrics(SM_CXSMICON),
+                       GetSystemMetrics(SM_CYSMICON),
+                       0,
+                       hbr,
+                       DI_NORMAL);
+            DestroyIcon(hic);
+        }
+    }
 }
 
 void 

@@ -83,8 +83,9 @@ khui_action_ref khui_menu_toolbars[] = {
 
 khui_action_ref khui_menu_view[] = {
     MENU_ACTION(KHUI_ACTION_LAYOUT_MINI),
-    MENU_SUBMENU(KHUI_MENU_COLUMNS),
     MENU_SUBMENU(KHUI_MENU_LAYOUT),
+    MENU_ACTION(KHUI_ACTION_VIEW_ALL_IDS),
+    MENU_SUBMENU(KHUI_MENU_COLUMNS),
 #if 0
     /* not implemented yet */
     MENU_SUBMENU(KHUI_MENU_TOOLBARS),
@@ -161,6 +162,8 @@ khui_action_ref khui_menu_ico_ctx_min[] = {
     MENU_ACTION(KHUI_ACTION_IMPORT),
     MENU_SUBMENU(KHUI_MENU_DESTROY_CRED),
     MENU_SEP(),
+    MENU_SUBMENU(KHUI_MENU_SETDEF),
+    MENU_SEP(),
     MENU_ACTION(KHUI_ACTION_PASSWD_ID),
     MENU_SEP(),
     MENU_ACTION(KHUI_ACTION_HELP_CTX),
@@ -177,6 +180,8 @@ khui_action_ref khui_menu_ico_ctx_normal[] = {
     MENU_SUBMENU(KHUI_MENU_RENEW_CRED),
     MENU_ACTION(KHUI_ACTION_IMPORT),
     MENU_SUBMENU(KHUI_MENU_DESTROY_CRED),
+    MENU_SEP(),
+    MENU_SUBMENU(KHUI_MENU_SETDEF),
     MENU_SEP(),
     MENU_ACTION(KHUI_ACTION_PASSWD_ID),
     MENU_SEP(),
@@ -207,6 +212,10 @@ khui_action_ref khui_menu_renew_cred[] = {
     MENU_END()
 };
 
+khui_action_ref khui_menu_setdef[] = {
+    MENU_END()
+};
+
 khui_action_ref khui_pmenu_tok_sel[] = {
     MENU_ACTION(KHUI_ACTION_RENEW_CRED),
     MENU_ACTION(KHUI_ACTION_DESTROY_CRED),
@@ -232,6 +241,7 @@ khui_menu_def khui_all_menus[] = {
     CONSTMENU(KHUI_MENU_COLUMNS, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_columns),
     CONSTMENU(KHUI_MENU_RENEW_CRED, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_renew_cred),
     CONSTMENU(KHUI_MENU_DESTROY_CRED, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_destroy_cred),
+    CONSTMENU(KHUI_MENU_SETDEF, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_setdef),
 
     /* toolbars */
     CONSTMENU(KHUI_TOOLBAR_STANDARD, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_toolbar_standard),
@@ -306,7 +316,8 @@ khui_action_create(const wchar_t * name,
         !caption ||
         FAILED(StringCchLength(caption, KHUI_MAXCCH_SHORT_DESC, &s)) ||
         (tooltip && FAILED(StringCchLength(tooltip, KHUI_MAXCCH_SHORT_DESC, &s))) ||
-        (type != KHUI_ACTIONTYPE_TRIGGER && type != KHUI_ACTIONTYPE_TOGGLE)) {
+        (type != KHUI_ACTIONTYPE_TRIGGER && type != KHUI_ACTIONTYPE_TOGGLE &&
+         type != KHUI_ACTIONTYPE_IDENTITY)) {
         return 0;
     }
 
@@ -785,16 +796,18 @@ khui_find_menu(khm_int32 id) {
 
 KHMEXP khui_action * KHMAPI
 khui_find_action(khm_int32 id) {
-    khui_action * act;
+    khui_action * act = NULL;
     int i;
 
-    act = khui_actions;
-    for(i=0;i<khui_n_actions;i++) {
-        if(act[i].cmd == id)
-            return &act[i];
-    }
+    if (id < KHUI_USERACTION_BASE) {
+        act = khui_actions;
+        for(i=0;i<khui_n_actions;i++) {
+            if(act[i].cmd == id)
+                return &act[i];
+        }
 
-    act = NULL;
+        return NULL;
+    }
 
     EnterCriticalSection(&cs_actions);
     if (id >= KHUI_USERACTION_BASE &&

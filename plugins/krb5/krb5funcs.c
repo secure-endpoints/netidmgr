@@ -211,7 +211,7 @@ typedef struct tag_ident_data {
     khm_handle  ident;          /* handle to the identity */
     khm_int32 count;            /* number of initial tickets we have
                                    found for this identity. */
-    wchar_t   ccname[MAX_PATH];
+    wchar_t   ccname[KRB5_MAXCCH_CCNAME];
     FILETIME  ft_issue;
     FILETIME  ft_expire;
     FILETIME  ft_renewexpire;
@@ -933,7 +933,7 @@ khm_krb5_list_tickets(krb5_context *krbv5Context)
         == KHM_ERROR_TOO_LONG &&
         cb > sizeof(wchar_t) * 2) {
         wchar_t * t;
-        char ccname[MAX_PATH + 6];
+        char ccname[KRB5_MAXCCH_CCNAME];
 
         ms = PMALLOC(cb);
 #ifdef DEBUG
@@ -942,7 +942,7 @@ khm_krb5_list_tickets(krb5_context *krbv5Context)
         khc_read_multi_string(csp_params, L"FileCCList", ms, &cb);
 
         for(t = ms; t && *t; t = multi_string_next(t)) {
-            wchar_t exppath[MAX_PATH];
+            wchar_t exppath[KRB5_MAXCCH_CCNAME];
             DWORD len;
 
             if (wcschr(t, L'%')) {
@@ -1406,7 +1406,7 @@ khm_krb5_kinit(krb5_context       alt_ctx,
     } else {
 	khm_handle identity = NULL;
 	wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-	char ccname[MAX_PATH];
+	char ccname[KRB5_MAXCCH_CCNAME];
 	char * pccname = principal_name;
 	khm_size cb;
 
@@ -2178,7 +2178,7 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
     krb5_principal princ = 0;
     khm_handle ident = NULL;
     wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-    char    ccname[MAX_PATH];
+    char    ccname[KRB5_MAXCCH_CCNAME];
     char *cache_name = NULL;
     char *princ_name = NULL;
     BOOL rc = FALSE;
@@ -3130,15 +3130,15 @@ get_default_file_cache_for_identity(const wchar_t * idname,
                                     wchar_t * ccname,
                                     khm_size * pcb)
 {
-    wchar_t escf[MAX_PATH] = L"";
-    wchar_t tmppath[MAX_PATH] = L"";
-    wchar_t tccname[MAX_PATH];
+    wchar_t escf[KRB5_MAXCCH_CCNAME] = L"";
+    wchar_t tmppath[KRB5_MAXCCH_CCNAME] = L"";
+    wchar_t tccname[KRB5_MAXCCH_CCNAME];
     khm_size cb;
 
     escape_string_for_filename(idname, escf, sizeof(escf));
     GetTempPath(ARRAYLENGTH(tmppath), tmppath);
 
-    /* The path returned by GetTempPath always ends in a backslash*/
+    /* The path returned by GetTempPath always ends in a backslash. */
     StringCbPrintf(tccname, sizeof(tccname), L"FILE:%skrb5cc.%s", tmppath, escf);
     StringCbLength(tccname, sizeof(tccname), &cb);
     cb += sizeof(wchar_t);
@@ -3155,7 +3155,7 @@ get_default_file_cache_for_identity(const wchar_t * idname,
 
 khm_int32
 khm_krb5_get_identity_default_ccache(khm_handle ident, wchar_t * buf, khm_size * pcb) {
-    wchar_t ccname[MAX_PATH + 5];
+    wchar_t ccname[KRB5_MAXCCH_CCNAME];
     khm_handle csp_id = NULL;
     khm_int32 rv = KHM_ERROR_SUCCESS;
     khm_size cbt;

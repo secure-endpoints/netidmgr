@@ -592,7 +592,7 @@ BEGIN
     IDS_CFG_GENERAL_SHORT   "General"
     IDS_ACTION_NEW_CRED     "Obtain &new credentials ..."
     IDS_ACTION_PASSWD_ID    "Change &password"
-    IDS_ACTION_CHOOSE_COLS  "View columns"
+    IDS_ACTION_CHOOSE_COLS  "Select columns"
     IDS_ACTION_DEBUG_WINDOW "Debug window"
     IDS_ACTION_VIEW_REFRESH "Refresh view"
     IDS_MENU_LAYOUT         "Layout"
@@ -714,6 +714,7 @@ BEGIN
     IDS_WTPOST_PASSWORD     " - Changing password"
     IDS_CTX_PROC_PASSWORD   "Changing password for %1!s!"
     IDS_NC_PWD_FAILED_TITLE "Failed to change password"
+    IDS_MENU_SETDEF         "Set default"
     IDS_PACTION_NEXT        "Next alert"
     IDS_ERR_TITLE_NO_IDENTPRO "Cannot proceed without identity provider"
 END
@@ -837,6 +838,13 @@ BEGIN
     IDS_CW_TYPEF            "(%s)"
     IDS_CW_EXPIREF          "Expires in %s"
     IDS_CW_EXPIRED          "(Expired)"
+    IDS_IDACTIONT_SETDEF    "Set %s as default identity"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_IDACTION_SETDEF     "%s"
+    IDS_ACTION_VIEW_ALL_IDS "All identities"
 END
 
 #endif    // English (U.S.) resources
@@ -848,8 +856,7 @@ END
 /////////////////////////////////////////////////////////////////////////////
 //
 // Generated from the TEXTINCLUDE 3 resource.
-//
-
+//
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

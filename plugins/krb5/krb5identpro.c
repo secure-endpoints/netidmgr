@@ -814,7 +814,7 @@ k5_update_last_default_identity(khm_handle ident) {
 
 static khm_int32
 k5_ident_set_default_int(khm_handle def_ident) {
-    wchar_t id_ccname[MAX_PATH];
+    wchar_t id_ccname[KRB5_MAXCCH_CCNAME];
     khm_size cb;
     DWORD dw;
     LONG l;

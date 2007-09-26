@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -551,7 +552,7 @@ void kmmint_exit_plugin(kmm_plugin_i * p) {
     }
 
     /* The plugin is in an error state.  We need to keep the plugin
-       record in tact so that the failure information is kept around.
+       record intact so that the failure information is kept around.
        Also, we shouldn't release the plugin if it appears that
        kmmint_init_plugin() was never called for it. */
     if (p->state < KMM_PLUGIN_STATE_HOLD) {

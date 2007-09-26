@@ -44,51 +44,7 @@ KHIMAIRA_WIN32_CONFIG=1
 #      PRIVATE    : Private build
 #      SPECIAL    : Special build.  Typically one with non-mainline patches.
 
-# Version info
-NETIDMGR_VERSION_MAJOR=1
-NETIDMGR_VERSION_MINOR=3
-NETIDMGR_VERSION_PATCH=1
-NETIDMGR_VERSION_AUX=0
-NETIDMGR_RELEASEDESC=
-
-# The API version.  This number must be incremented each time the API
-# changes.  Plugins specify the version of the API that they were
-# compiled against and the Module Manager uses the API numbers to
-# decide whether the plugin is safe to load or not.
-#
-# Changes to the API version numbers should be documented in
-# apiversion.txt at the root of the source tree.
-NETIDMGR_VERSION_API=10
-
-# Minimum backwards compatible version.  API versions from
-# NETIDMGR_VERSION_API_MINCOMPAT through NETIDMGR_VERSION_API
-# inclusive, are compatible with this version.
-NETIDMGR_VERSION_API_MINCOMPAT=5
-
-NETIDMGR_VERSION=$(NETIDMGR_VERSION_MAJOR).$(NETIDMGR_VERSION_MINOR).$(NETIDMGR_VERSION_PATCH).$(NETIDMGR_VERSION_AUX)
-NETIDMGR_VERSIONC=$(NETIDMGR_VERSION_MAJOR),$(NETIDMGR_VERSION_MINOR),$(NETIDMGR_VERSION_PATCH),$(NETIDMGR_VERSION_AUX)
-
-# Source information
-NETIDMGR_SRC_COMPANY_1033=Massachusetts Institute of Technology
-NETIDMGR_SRC_COPYRIGHT_1033=(C) 2005-2007 Massachusetts Institute of Technology
-
-# Choose the default build type if one is not set
-!if ("$(KH_BUILD)" != "DEBUG") && ("$(KH_BUILD)" != "RETAIL")
-!  if defined(NODEBUG) && "$(NODEBUG)"=="1"
-KH_BUILD=RETAIL
-!  else
-KH_BUILD=DEBUG
-!  endif
-!endif
-
-!if "$(KH_BUILD)"=="DEBUG" && defined(NODEBUG) && "$(NODEBUG)"=="1"
-! error The Khimaira build configuration is set for DEBUG while the Platform SDK build environment is set to RETAIL.
-!endif
-
-# The default release type is PRIVATE is no other type is specified
-!if ("$(KH_RELEASE)" != "OFFICIAL") && ("$(KH_RELEASE)" != "PRERELEASE") && ("$(KH_RELEASE)" != "PRIVATE") && ("$(KH_RELEASE)" != "SPECIAL")
-KH_RELEASE=PRIVATE
-!endif
+!include <Makefile.version>
 
 # Actual build environment settings
 
@@ -280,6 +236,8 @@ clean::
 !if exist($(OBJ))
 	$(RM) $(OBJ)\
 !endif
+	if exist vc70.pdb $(RM) vc70.pdb
+	if exist vc80.pdb $(RM) vc80.pdb
 
 test::
 

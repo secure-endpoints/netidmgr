@@ -3172,31 +3172,3 @@ void khm_exit_notifier(void)
     notifier_ready = FALSE;
 }
 
-/***** testing *****/
-
-#ifdef DEBUG
-void
-create_test_alerts(void) {
-
-    khui_alert * a;
-    int i;
-
-    for (i=0; i < 50; i++) {
-        wchar_t buf[128];
-
-        StringCbPrintf(buf, sizeof(buf), L"Foo bar baz.  This is alert number %d", i);
-        khui_alert_create_simple(L"Title", buf, KHERR_INFO, &a);
-        khui_alert_set_type(a, KHUI_ALERTTYPE_PLUGIN);
-        khui_alert_set_suggestion(a, L"This is a suggestion.  It is kinda long to see if the word wrapping actually works as we expect it to.  Just in case, here's a line feed.\n\nDoes this show up on a different line? Cool!");
-
-        khui_alert_add_command(a, KHUI_ACTION_NEW_CRED);
-        khui_alert_add_command(a, KHUI_ACTION_CLOSE_APP);
-        khui_alert_add_command(a, KHUI_ACTION_PROPERTIES);
-        khui_alert_add_command(a, KHUI_ACTION_OPEN_APP);
-        khui_alert_add_command(a, KHUI_ACTION_VIEW_REFRESH);
-
-        khui_alert_show(a);
-        khui_alert_release(a);
-    }
-}
-#endif

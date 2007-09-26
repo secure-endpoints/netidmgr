@@ -1,0 +1,80 @@
+# Copyright (c) 2004,2005,2006 Massachusetts Institute of Technology
+# Copyright (c) 2006,2007 Secure Endpoints Inc.
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation files
+# (the "Software"), to deal in the Software without restriction,
+# including without limitation the rights to use, copy, modify, merge,
+# publish, distribute, sublicense, and/or sell copies of the Software,
+# and to permit persons to whom the Software is furnished to do so,
+# subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+#
+# Network Identity Manager version settings
+#
+
+!ifndef NETIDMGR_VERSION_INC
+NETIDMGR_VERSION_INC=1
+
+# Version info
+
+NETIDMGR_VERSION_MAJOR=2
+NETIDMGR_VERSION_MINOR=0
+NETIDMGR_VERSION_PATCH=0
+NETIDMGR_VERSION_AUX=0
+
+# Release description
+NETIDMGR_RELEASEDESC=
+
+# The API version.  This number must be incremented each time the API
+# changes.  Plugins specify the version of the API that they were
+# compiled against and the Module Manager uses the API numbers to
+# decide whether the plugin is safe to load or not.
+#
+# Changes to the API version numbers should be documented in
+# apiversion.txt at the root of the source tree.
+NETIDMGR_VERSION_API=11
+
+# Minimum backwards compatible version.  API versions from
+# NETIDMGR_VERSION_API_MINCOMPAT through NETIDMGR_VERSION_API
+# inclusive, are compatible with this version.
+NETIDMGR_VERSION_API_MINCOMPAT=5
+
+NETIDMGR_VERSION=$(NETIDMGR_VERSION_MAJOR).$(NETIDMGR_VERSION_MINOR).$(NETIDMGR_VERSION_PATCH).$(NETIDMGR_VERSION_AUX)
+NETIDMGR_VERSIONC=$(NETIDMGR_VERSION_MAJOR),$(NETIDMGR_VERSION_MINOR),$(NETIDMGR_VERSION_PATCH),$(NETIDMGR_VERSION_AUX)
+
+# Source information
+NETIDMGR_SRC_COMPANY_1033=Massachusetts Institute of Technology
+NETIDMGR_SRC_COPYRIGHT_1033=(C) 2005-2007 Massachusetts Institute of Technology
+
+# Choose the default build type if one is not set
+!if ("$(KH_BUILD)" != "DEBUG") && ("$(KH_BUILD)" != "RETAIL")
+!  if defined(NODEBUG) && "$(NODEBUG)"=="1"
+KH_BUILD=RETAIL
+!  else
+KH_BUILD=DEBUG
+!  endif
+!endif
+
+!if "$(KH_BUILD)"=="DEBUG" && defined(NODEBUG) && "$(NODEBUG)"=="1"
+! error The Khimaira build configuration is set for DEBUG while the Platform SDK build environment is set to RETAIL.
+!endif
+
+# The default release type is PRIVATE if no other type is specified
+!if ("$(KH_RELEASE)" != "OFFICIAL") && ("$(KH_RELEASE)" != "PRERELEASE") && ("$(KH_RELEASE)" != "PRIVATE") && ("$(KH_RELEASE)" != "SPECIAL")
+KH_RELEASE=PRIVATE
+!endif
+
+!endif
