@@ -607,6 +607,7 @@
 
 /*! \brief Initialize and start the identity provider
 
+
     Sent by the KCDB to notify the identity provider that it is now
     the current identity provider.
 

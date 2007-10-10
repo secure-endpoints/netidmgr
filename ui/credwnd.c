@@ -959,7 +959,7 @@ cw_credset_iter_func(khm_handle cred, void * rock) {
 
             cb = sizeof(cwi->credtype_name);
             if (KHM_FAILED(kcdb_identity_get_attr(ident, KCDB_ATTR_TYPE_NAME, NULL,
-                                                  &cwi->credtype, &cb))) {
+                                                  &cwi->credtype_name, &cb))) {
                 cb = sizeof(cwi->credtype_name);
                 kcdb_credtype_describe(cwi->credtype, cwi->credtype_name,
                                        &cb, KCDB_TS_SHORT);
@@ -1441,7 +1441,6 @@ cw_update_outline(khui_credwnd_tbl * tbl)
     khm_size cbbuf;
     khm_int32 flags;
     int selected;
-    khm_int32 expstate = 0;
 
     /*  this is called after calling cw_update_creds, so we assume
         that the credentials are all loaded and sorted according to
@@ -1711,7 +1710,6 @@ cw_update_outline(khui_credwnd_tbl * tbl)
                 if (flags) {
                     ol->flags |= flags;
                     ol->flags |= KHUI_CW_O_SHOWFLAG;
-		    expstate |= flags;
                 } else if (grouping[j] == tbl->n_cols - 1) {
                     /* if we aren't showing any creds under this
                        outline level, we should also show any
@@ -1990,17 +1988,34 @@ cw_update_outline(khui_credwnd_tbl * tbl)
         tbl->cursor_row = 0;
 
 _exit:
-    /* note that the expstate is derived from whether or not 
-     * we have expiration states set for any active identities */
-    if (n_creds == 0)
-        khm_notify_icon_expstate(KHM_NOTIF_EMPTY);
-    else if ((expstate & CW_EXPSTATE_EXPIRED) == CW_EXPSTATE_EXPIRED)
-        khm_notify_icon_expstate(KHM_NOTIF_EXP);
-    else if ((expstate & CW_EXPSTATE_WARN) == CW_EXPSTATE_WARN ||
-             (expstate & CW_EXPSTATE_CRITICAL) == CW_EXPSTATE_CRITICAL)
-        khm_notify_icon_expstate(KHM_NOTIF_WARN);
-    else
-        khm_notify_icon_expstate(KHM_NOTIF_OK);
+
+    {
+        khm_handle def_ident = NULL;
+        khm_int32 def_expstate = 0;
+        khm_boolean def_empty = TRUE;
+
+        kcdb_identity_get_default(&def_ident);
+        if (def_ident) {
+            khui_credwnd_ident * cwi;
+
+            cwi = cw_find_ident(tbl, def_ident);
+            if (cwi) {
+                def_empty = (cwi->id_credcount == 0);
+            }
+
+            def_expstate = cw_get_buf_exp_flags(tbl, def_ident);
+        }
+
+        if (def_empty)
+            khm_notify_icon_expstate(KHM_NOTIF_EMPTY);
+        else if ((def_expstate & CW_EXPSTATE_EXPIRED) == CW_EXPSTATE_EXPIRED)
+            khm_notify_icon_expstate(KHM_NOTIF_EXP);
+        else if ((def_expstate & CW_EXPSTATE_WARN) == CW_EXPSTATE_WARN ||
+                 (def_expstate & CW_EXPSTATE_CRITICAL) == CW_EXPSTATE_CRITICAL)
+            khm_notify_icon_expstate(KHM_NOTIF_WARN);
+        else
+            khm_notify_icon_expstate(KHM_NOTIF_OK);
+    }
 }
 
 void 
@@ -2383,6 +2398,8 @@ cw_insert_header_cols(khui_credwnd_tbl * tbl) {
 #define CW_ER_GREY  1
 #define CW_ER_SEL   2
 
+#pragma warning(push)
+#pragma warning(disable: 4701)
 void 
 cw_erase_rect(HDC hdc, 
               khui_credwnd_tbl * tbl, 
@@ -2462,6 +2479,7 @@ cw_erase_rect(HDC hdc,
         }
     }
 }
+#pragma warning(pop)
 
 void 
 cw_draw_header(HDC hdc, 
@@ -2475,6 +2493,7 @@ cw_draw_header(HDC hdc,
     khui_credwnd_outline * o;
     int selected = 0;
     khm_int32 idf = 0;
+    khui_credwnd_ident * cwi = NULL;
 
     /* each header consists of a couple of widgets and some text */
     /* we need to figure out the background color first */
@@ -2488,6 +2507,7 @@ cw_draw_header(HDC hdc,
         khm_handle ident = o->data;
 
         kcdb_identity_get_flags(ident, &idf);
+        cwi = cw_find_ident(tbl, ident);
     }
 
     selected = o->flags & KHUI_CW_O_SELECTED;
@@ -2502,7 +2522,8 @@ cw_draw_header(HDC hdc,
                 hbr = tbl->hb_hdr_bg_crit_s;
             else if ((o->flags & CW_EXPSTATE_MASK) == CW_EXPSTATE_WARN)
                 hbr = tbl->hb_hdr_bg_warn_s;
-            else if ((colattr == KCDB_ATTR_ID_NAME) && !(o->flags & KHUI_CW_O_EMPTY)) 
+            else if ((colattr == KCDB_ATTR_ID_NAME) && !(o->flags & KHUI_CW_O_EMPTY) &&
+                     cwi && cwi->id_credcount > 0) 
                 hbr = tbl->hb_hdr_bg_cred_s;
             else
                 hbr = tbl->hb_hdr_bg_s;
@@ -2513,7 +2534,8 @@ cw_draw_header(HDC hdc,
                 hbr = tbl->hb_hdr_bg_crit;
             else if ((o->flags & CW_EXPSTATE_MASK) == CW_EXPSTATE_WARN)
                 hbr = tbl->hb_hdr_bg_warn;
-            else if ((colattr == KCDB_ATTR_ID_NAME) && !(o->flags & KHUI_CW_O_EMPTY)) 
+            else if ((colattr == KCDB_ATTR_ID_NAME) && !(o->flags & KHUI_CW_O_EMPTY) &&
+                     cwi && cwi->id_credcount > 0)
                 hbr = tbl->hb_hdr_bg_cred;
             else
                 hbr = tbl->hb_hdr_bg;
@@ -2590,7 +2612,8 @@ cw_draw_header(HDC hdc,
 
         } else {
             khui_ilist_draw_id(tbl->ilist, 
-                               ((o->flags & KHUI_CW_O_EMPTY)?
+                               (((o->flags & KHUI_CW_O_EMPTY) ||
+                                 cwi == NULL || cwi->id_credcount == 0)?
                                 IDB_ID_DIS_SM:
                                 IDB_ID_SM), 
                                hdc,
@@ -2635,14 +2658,11 @@ cw_draw_header(HDC hdc,
         wchar_t typestr[128];
         int cx_id;
         SIZE size;
-        khui_credwnd_ident * cwi;
 
         /* expanded view */
 #ifdef DEBUG
         assert(colattr == KCDB_ATTR_ID_NAME);
 #endif
-
-        cwi = cw_find_ident(tbl, o->data);
 
         CopyRect(&tr, r);
         tr.bottom -= (tr.bottom - tr.top) / 2; /* drawing two lines of text */
@@ -3537,7 +3557,7 @@ cw_kmq_wm_dispatch(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             cw_update_outline(tbl);
             cw_update_extents(tbl, TRUE);
             cw_update_selection_state(tbl);
-            cw_set_row_context(tbl, tbl->cursor_row);
+            cw_select_row(tbl, tbl->cursor_row, 0);
             InvalidateRect(hwnd, NULL, FALSE);
             break;
 
@@ -3577,6 +3597,8 @@ cw_kmq_wm_dispatch(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             cw_update_outline(tbl);
             cw_update_extents(tbl, TRUE);
             InvalidateRect(hwnd, NULL, FALSE);
+
+            cb = sizeof(idname);
 
             if (KHM_SUCCEEDED(kcdb_identity_get_default(&defid)) &&
                 defid != NULL &&
@@ -5768,7 +5790,6 @@ khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
 {
     khui_credwnd_tbl * tbl;
     khm_handle ident;
-    khm_size i;
     size_t count = 0;
     COLORREF old_clr;
     wchar_t * cap;
@@ -5791,10 +5812,14 @@ khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
     assert(cap != NULL);
 #endif
 
-    for (i=0; i < tbl->n_idents; i++) {
-        if (kcdb_identity_is_equal(tbl->idents[i].ident, ident)) {
-            count = tbl->idents[i].credcount;
-            break;
+    {
+        khui_credwnd_ident * cwi;
+
+        cwi = cw_find_ident(tbl, ident);
+        if (cwi) {
+            count = cwi->id_credcount;
+        } else {
+            count = 0;
         }
     }
 
@@ -5805,16 +5830,16 @@ khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
     if (lpd->itemState & (ODS_HOTLIGHT | ODS_SELECTED)) {
         hbr = GetSysColorBrush(COLOR_HIGHLIGHT);
         text_clr = GetSysColor(COLOR_HIGHLIGHTTEXT);
-    } else if (count == 0) {
-        hbr = tbl->hb_hdr_bg;
     } else if (expflags == CW_EXPSTATE_EXPIRED) {
         hbr = tbl->hb_hdr_bg_exp;
     } else if (expflags == CW_EXPSTATE_WARN) {
         hbr = tbl->hb_hdr_bg_warn;
     } else if (expflags == CW_EXPSTATE_CRITICAL) {
         hbr = tbl->hb_hdr_bg_crit;
-    } else {
+    } else if (count > 0) {
         hbr = tbl->hb_hdr_bg_cred;
+    } else {
+        hbr = tbl->hb_hdr_bg;
     }
 
     FillRect(lpd->hDC, &lpd->rcItem, hbr);
