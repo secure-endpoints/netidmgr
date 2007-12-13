@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -38,39 +39,44 @@ typedef enum tag_nc_notification_types {
     NC_NOTIFY_MESSAGE,          /* a message */
 } nc_notification_type;
 
-typedef struct khui_nc_wnd_data_t {
+typedef enum tag_nc_page {
+    NC_PAGE_NONE = 0,
+    NC_PAGE_IDSPEC,
+    NC_PAGE_CREDOPT_BASIC,
+    NC_PAGE_CREDOPT_ADV,
+    NC_PAGE_PASSWORD,
+    NC_PAGE_PROGRESS
+} nc_page;
+
+typedef struct tag_khui_nc_wnd_data {
     khui_new_creds * nc;
 
-    /* The tab control */
+    /* Mode and sequence */
+    nc_page          page;
+    khm_boolean      enable_prev;
+    khm_boolean      enable_next;
 
-    HWND tab_wnd;               /* tab control */
-    int current_panel;          /* ordinal of the current panel being
-                                   displayed. */
+    /* Identity information */
+    HICON            id_icon;
+    wchar_t          id_display_string[KCDB_IDENT_MAXCCH_NAME];
+    wchar_t          id_type_string[KCDB_MAXCCH_SHORT_DESC];
+    wchar_t          id_status[KCDB_MAXCCH_SHORT_DESC];
 
-    /* The main panel */
-    HWND dlg_main;              /* main dialog */
-    RECT r_main;                /* the extent of the main panel that
-                                   we have used so far.  The rect
-                                   includes the size of the area used
-                                   by the identity selector controls,
-                                   the custom controls added by
-                                   credentials providers and the
-                                   buttons that may be required when
-                                   in the mini mode. */
-    RECT r_required;            /* required size of the main window */
+    /* Privileged interaction */
+    khui_new_creds_privint * privint; /* Current privileged interaction panel */
 
-    /* The button bar */
-
-    HWND dlg_bb;                /* button bar */
+    /* Tab Control (only valid if in advanced mode) */
+    khm_boolean      tab_initialized;
+    HWND             last_tab_panel;
 
     /* Sizing the new credentials window */
 
-    BOOL animation_enabled;     /* Flag indicating whether animation
-                                   is enabled for the dialg.  If this
-                                   flag is off, we don't animate size
-                                   changes even if the configuration
-                                   says so. */
-    BOOL size_changing;         /* flag indicating that the size of
+    khm_boolean animation_enabled; /* Flag indicating whether
+                                   animation is enabled for the dialg.
+                                   If this flag is off, we don't
+                                   animate size changes even if the
+                                   configuration says so. */
+    khm_boolean size_changing;  /* flag indicating that the size of
                                    the main window is being
                                    adjusted. */
     RECT sz_ch_source;          /* Source size, from which we are
@@ -92,16 +98,13 @@ typedef struct khui_nc_wnd_data_t {
                                    change operation. */
     int  sz_ch_timeout;         /* Milliseconds between each increment */
 
-    BOOL flashing_enabled;      /* The window maybe still flashing
+    /* Behavior */
+
+    khm_boolean flashing_enabled; /* The window maybe still flashing
                                    from the last call to
                                    FlashWindowEx(). */
-
-    /* Custom controls and identity specifiers */
-
-    HWND hwnd_banner;           /* static control for banner */
-    HWND hwnd_name;             /* static control for name */
-
-    HWND hwnd_last_idspec;      /* last identity specifier control */
+    khm_boolean force_topmost;  /* Force New Credentials window to the
+                                   top */
 
     /* Notification windows */
 
@@ -109,30 +112,15 @@ typedef struct khui_nc_wnd_data_t {
     HWND hwnd_notif_label;      /* Label for notifications */
     HWND hwnd_notif_aux;        /* Other control for notifications */
 
-    /* Areas of the main panel */
+    /* Other windows */
+    HWND hwnd_nav;              /* IDD_NC_NAV */
+    HWND hwnd_idsel;            /* IDD_NC_IDSEL */
+    HWND hwnd_idspec;           /* IDD_NC_IDSPEC */
+    HWND hwnd_privint_basic;    /* IDD_NC_PRIVINT_BASIC */
+    HWND hwnd_privint_advanced; /* IDD_NC_PRIVINT_ADVANCED */
+    HWND hwnd_progress;         /* IDD_NC_PROGRESS */
 
-    RECT r_idspec;          /* Area used by identity specifiers
-                               (relative to client) */
-    RECT r_custprompt;      /* Area used by custom controls (relative
-                               to client) */
-    RECT r_notif;           /* Area used for notifications. */
-
-    /* Metrics for custom prompts and identity specifiers */
-
-    RECT r_row;             /* Metrics for a control row (left=0,
-                               top=0, right=width, bottom=height) */
-    RECT r_area;            /* Area available for controls (relative
-                               to client) */
-    RECT r_n_label;         /* coords of the static control (relative
-                               to row) */
-    RECT r_n_input;         /* coords of the edit control (relative to
-                               row) */
-    RECT r_e_label;         /* coords of the extended edit control
-                               (relative to row) */
-    RECT r_e_input;         /* coords of the extended edit control
-                               (relative to row) */
-    RECT r_credtext;        /* Area for credtext window (relative to
-                               row) */
+    HWND hwnd_noprompts;        /* IDD_NC_NOPROMPTS */
 } khui_nc_wnd_data;
 
 void khm_register_newcredwnd_class(void);
@@ -141,26 +129,10 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c);
 void khm_prep_newcredwnd(HWND hwnd);
 void khm_show_newcredwnd(HWND hwnd);
 
-/* Width of the button bar in dialog units */
-#define NCDLG_BBAR_WIDTH 66
-/* Height of the button bar in dialog units */
-#define NCDLG_BBAR_HEIGHT 190
-
 /* Control identifier for the tab control in the new credentials
    dialog. We declare this here since we will be creating the control
    manually. */
 #define IDC_NC_TABS 8001
-
-/* This is the first control ID that is created in the custom tabstrip
-   control buttons.  Subsequent buttons get consecutive IDs starting
-   from this one.  */
-#define NC_TS_CTRL_ID_MIN 8002
-
-/* Maximum number of controls */
-#define NC_TS_MAX_CTRLS 8
-
-/* Maximum control ID */
-#define NC_TS_CTRL_ID_MAX (NC_TS_CTRL_ID_MIN + NC_TS_MAX_CTRLS - 1)
 
 #define NC_BN_SET_DEF_ID 8012
 
@@ -173,9 +145,6 @@ void khm_show_newcredwnd(HWND hwnd);
 
 /* the maximum control ID that may be used by an identity provider */
 #define NC_IS_CTRL_ID_MAX (NC_IS_CTRL_ID_MIN + NC_IS_MAX_CTRLS - 1)
-
-#define NC_WINDOW_EX_STYLES (WS_EX_DLGMODALFRAME | WS_EX_CONTEXTHELP | WS_EX_APPWINDOW)
-#define NC_WINDOW_STYLES    (WS_DLGFRAME | WS_POPUPWINDOW | WS_CLIPCHILDREN)
 
 #define NC_SZ_STEPS_MIN 3
 #define NC_SZ_STEPS_DEF 10

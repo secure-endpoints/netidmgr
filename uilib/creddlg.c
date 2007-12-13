@@ -25,8 +25,10 @@
 /* $Id$ */
 
 #define _NIMLIB_
+#define NOEXPORT
 
 #include<khuidefs.h>
+#include<intnewcred.h>
 #include<utils.h>
 #include<assert.h>
 #include<strsafe.h>
@@ -38,12 +40,8 @@ static void cw_free_prompts(khui_new_creds * c);
 static void cw_free_prompt(khui_new_creds_prompt * p);
 
 static khui_new_creds_prompt * 
-cw_create_prompt(
-    khm_size idx,
-    khm_int32 type,
-    wchar_t * prompt,
-    wchar_t * def,
-    khm_int32 flags);
+cw_create_prompt(khm_size idx, khm_int32 type, wchar_t * prompt,
+                 wchar_t * def, khm_int32 flags);
 
 KHMEXP khm_int32 KHMAPI 
 khui_cw_create_cred_blob(khui_new_creds ** ppnc)
@@ -69,34 +67,30 @@ KHMEXP khm_int32 KHMAPI
 khui_cw_destroy_cred_blob(khui_new_creds *c)
 {
     khm_size i;
-    size_t len;
     EnterCriticalSection(&c->cs);
-    for(i=0;i<c->n_identities;i++) {
+    for (i=0; i < c->n_identities; i++) {
         kcdb_identity_release(c->identities[i]);
     }
-    cw_free_prompts(c);
+    for (i=0; i < c->n_providers; i++) {
+        kcdb_identpro_release(c->providers[i].h);
+    }
     khui_context_release(&c->ctx);
     LeaveCriticalSection(&c->cs);
     DeleteCriticalSection(&c->cs);
 
-    if (c->password) {
-        len = wcslen(c->password);
-        SecureZeroMemory(c->password, sizeof(wchar_t) * len);
-        PFREE(c->password);
-    }
-
     if (c->identities)
         PFREE(c->identities);
+
+    if (c->providers)
+        PFREE(c->providers);
 
     if (c->types)
         PFREE(c->types);
 
-    if (c->type_subs)
-        PFREE(c->type_subs);
-
     if (c->window_title)
         PFREE(c->window_title);
 
+    ZeroMemory(c, sizeof(*c));
     PFREE(c);
 
     return KHM_ERROR_SUCCESS;
@@ -174,13 +168,34 @@ khui_cw_set_primary_id(khui_new_creds * c,
     }
     c->n_identities = 0;
 
-    LeaveCriticalSection(&(c->cs));
     rv = khui_cw_add_identity(c,id);
+    LeaveCriticalSection(&(c->cs));
+
     if(c->hwnd != NULL) {
         PostMessage(c->hwnd, KHUI_WM_NC_NOTIFY, 
                     MAKEWPARAM(0, WMNC_IDENTITY_CHANGE), 0);
     }
+
     return rv;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_primary_id(khui_new_creds * c,
+                       khm_handle * ph)
+{
+    EnterCriticalSection(&c->cs);
+    *ph = NULL;
+    if (c->n_identities > 0) {
+        *ph = c->identities[0];
+    }
+    LeaveCriticalSection(&c->cs);
+
+    if (*ph) {
+        kcdb_identity_hold(*ph);
+        return KHM_ERROR_SUCCESS;
+    } else {
+        return KHM_ERROR_NOT_FOUND;
+    }
 }
 
 KHMEXP khm_int32 KHMAPI 
@@ -197,33 +212,24 @@ khui_cw_add_type(khui_new_creds * c,
     if(c->types == NULL) {
         c->nc_types = CW_ALLOC_INCR;
         c->types = PMALLOC(sizeof(*(c->types)) * c->nc_types);
-        c->type_subs = PMALLOC(sizeof(*(c->type_subs)) * c->nc_types);
         c->n_types = 0;
     }
 
     if(c->nc_types < c->n_types + 1) {
-        void * t;
-        khm_size n;
+        c->nc_types = UBOUNDSS(c->n_types + 1, CW_ALLOC_INCR, CW_ALLOC_INCR);
+#ifdef DEBUG
+        assert (c->nc_types >= c->n_types + 1);
+#endif
 
-        n = UBOUNDSS(c->n_types + 1, CW_ALLOC_INCR, CW_ALLOC_INCR);
-
-        t = PMALLOC(sizeof(*(c->types)) * n);
-        memcpy(t, (void *) c->types, sizeof(*(c->types)) * c->n_types);
-        PFREE(c->types);
-        c->types = t;
-
-        t = PMALLOC(sizeof(*(c->type_subs)) * n);
-        memcpy(t, (void *) c->type_subs, sizeof(*(c->type_subs)) * c->n_types);
-        PFREE(c->type_subs);
-        c->type_subs = t;
-
-        c->nc_types = n;
+        c->types = PREALLOC(c->types, sizeof(c->types[0]) * c->nc_types);
     }
 
-    c->type_subs[c->n_types] = kcdb_credtype_get_sub(t->type);
-    c->types[c->n_types++] = t;
+    ZeroMemory(&c->types[c->n_types], sizeof(c->types[0]));
+    c->types[c->n_types].nct = t;
+    c->types[c->n_types].sub = kcdb_credtype_get_sub(t->type);
     t->nc = c;
     LeaveCriticalSection(&c->cs);
+
     return KHM_ERROR_SUCCESS;
 }
 
@@ -235,7 +241,7 @@ khui_cw_del_type(khui_new_creds * c,
 
     EnterCriticalSection(&c->cs);
     for(i=0; i < c->n_types; i++) {
-        if(c->types[i]->type == type_id)
+        if(c->types[i].nct->type == type_id)
             break;
     }
     if(i >= c->n_types) {
@@ -245,7 +251,6 @@ khui_cw_del_type(khui_new_creds * c,
     c->n_types--;
     for(;i < c->n_types; i++) {
         c->types[i] = c->types[i+1];
-        c->type_subs[i] = c->type_subs[i+1];
     }
     LeaveCriticalSection(&c->cs);
     return KHM_ERROR_SUCCESS;
@@ -261,8 +266,8 @@ khui_cw_find_type(khui_new_creds * c,
     EnterCriticalSection(&c->cs);
     *t = NULL;
     for(i=0;i<c->n_types;i++) {
-        if(c->types[i]->type == type) {
-            *t = c->types[i];
+        if(c->types[i].nct->type == type) {
+            *t = c->types[i].nct;
             break;
         }
     }
@@ -318,6 +323,197 @@ khui_cw_type_succeeded(khui_new_creds * c,
 
     return s;
 }
+
+KHMEXP khm_int32 KHMAPI 
+khui_cw_set_response(khui_new_creds * c, 
+                     khm_int32 type, 
+                     khm_int32 response)
+{
+    khui_new_creds_by_type * t = NULL;
+    EnterCriticalSection(&c->cs);
+    khui_cw_find_type(c, type, &t);
+    c->response |= response & KHUI_NCMASK_RESPONSE;
+    if(t) {
+        t->flags &= ~KHUI_NCMASK_RESULT;
+        t->flags |= (response & KHUI_NCMASK_RESULT);
+
+        if (!(response & KHUI_NC_RESPONSE_NOEXIT) &&
+            !(response & KHUI_NC_RESPONSE_PENDING))
+            t->flags |= KHUI_NC_RESPONSE_COMPLETED;
+    }
+    LeaveCriticalSection(&c->cs);
+    return KHM_ERROR_SUCCESS;
+}
+
+/* called with c->cs held */
+static khui_new_creds_idpro *
+cw_find_idpro(khui_new_creds * c,
+              khm_handle h_idpro)
+{
+    khm_size i;
+
+    for (i=0; i < c->n_providers; i++) {
+        if (kcdb_identpro_is_equal(h_idpro, c->providers[i].h))
+            return &c->providers[i];
+    }
+
+    return NULL;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_find_provider(khui_new_creds * c,
+                      khm_handle h_idpro,
+                      khui_new_creds_idpro ** p)
+{
+    EnterCriticalSection(&c->cs);
+    *p = cw_find_idpro(c, h_idpro);
+    LeaveCriticalSection(&c->cs);
+
+    return ((*p) != NULL)? KHM_ERROR_SUCCESS : KHM_ERROR_NOT_FOUND;
+}
+
+#define NC_N_PROVIDERS 4
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_add_provider(khui_new_creds * c,
+                     khm_handle       h_idpro)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    EnterCriticalSection(&c->cs);
+    if (cw_find_idpro(c, h_idpro) != NULL) {
+        rv = KHM_ERROR_EXISTS;
+        goto _exit;
+    }
+
+    if (c->nc_providers < c->n_providers + 1) {
+        c->nc_providers = UBOUNDSS(c->n_providers + 1, NC_N_PROVIDERS, NC_N_PROVIDERS);
+        c->providers = PREALLOC(c->providers, sizeof(c->providers[0]) * c->nc_providers);
+#ifdef DEBUG
+        assert (c->nc_providers >= c->n_providers + 1);
+#endif
+    }
+
+#ifdef DEBUG
+    assert(c->nc_providers >= c->n_providers + 1);
+    assert(c->providers != NULL);
+#endif
+
+    ZeroMemory(&c->providers[c->n_providers], sizeof(c->providers[0]));
+
+    c->providers[c->n_providers].h = h_idpro;
+    kcdb_identpro_hold(h_idpro);
+
+ _exit:
+    LeaveCriticalSection(&c->cs);
+
+    return rv;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_del_provider(khui_new_creds * c,
+                     khm_handle       h_idpro)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    khui_new_creds_idpro * p;
+    khm_size idx;
+
+    EnterCriticalSection(&c->cs);
+    p = cw_find_idpro(c, h_idpro);
+    if (p == NULL) {
+        rv = KHM_ERROR_NOT_FOUND;
+        goto _exit;
+    }
+
+#ifdef DEBUG
+    assert(c->n_providers > 0);
+#endif
+
+    c->n_providers--;
+    idx = c->providers - p;
+    if (idx < c->n_providers) {
+        MoveMemory(&c->providers[idx], &c->providers[idx+1],
+                   (c->n_providers - idx) * sizeof(c->providers[0]));
+    }
+
+ _exit:
+    LeaveCriticalSection(&c->cs);
+
+    return rv;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_set_provider_data(khui_new_creds * c,
+                          khm_handle h_idpro,
+                          void * data)
+{
+    khui_new_creds_idpro * p;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    EnterCriticalSection(&c->cs);
+    p = cw_find_idpro(c, h_idpro);
+    if (p == NULL) {
+        rv = KHM_ERROR_NOT_FOUND;
+    } else {
+        p->data = data;
+    }
+    LeaveCriticalSection(&c->cs);
+
+    return rv;
+}
+
+KHMEXP void * KHMAPI
+khui_cw_get_provider_data(khui_new_creds * c,
+                          khm_handle h_idpro)
+{
+    void * rv = NULL;
+    khui_new_creds_idpro * p;
+
+    EnterCriticalSection(&c->cs);
+    p = cw_find_idpro(c, h_idpro);
+    if (p != NULL)
+        rv = p->data;
+    LeaveCriticalSection(&c->cs);
+
+    return rv;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_next_privint(khui_new_creds * c,
+                         khui_new_creds_privint ** ppp)
+{
+    khui_new_creds_privint * pp = NULL;
+    khm_size i;
+
+    EnterCriticalSection(&c->cs);
+    for (i=0; i < c->n_types; i++) {
+        if (QTOP(&c->types[i])) {
+            QGET(&c->types[i], &pp);
+            break;
+        }
+    }
+    LeaveCriticalSection(&c->cs);
+
+    *ppp = pp;
+
+    return (pp)?KHM_ERROR_SUCCESS:KHM_ERROR_NOT_FOUND;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_free_privint(khui_new_creds_privint * pp)
+{
+    if (pp->hwnd) {
+        DestroyWindow(pp->hwnd);
+        pp->hwnd = NULL;
+    }
+
+    PFREE(pp);
+
+    return KHM_ERROR_SUCCESS;
+}
+
+#if 0
+/* Custom prompts */
 
 static khui_new_creds_prompt * 
 cw_create_prompt(khm_size idx,
@@ -521,16 +717,6 @@ khui_cw_add_prompt(khui_new_creds * c,
     if(c->n_prompts == c->nc_prompts) {
         PostMessage(c->hwnd, KHUI_WM_NC_NOTIFY, 
                     MAKEWPARAM(0, WMNC_SET_PROMPTS), (LPARAM) c);
-        /* once we are done adding prompts, switch to the auth
-           panel */
-#if 0
-        /* Actually, don't. Doing so can mean an unexpected panel
-           switch if fiddling on some other panel causes a change in
-           custom prompts. */
-        SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY, 
-                    MAKEWPARAM(0, WMNC_DIALOG_SWITCH_PANEL), 
-                    (LPARAM) c);
-#endif
     }
 
     return KHM_ERROR_SUCCESS;
@@ -672,27 +858,6 @@ khui_cw_get_prompt_value(khui_new_creds * c,
     return KHM_ERROR_SUCCESS;
 }
 
-KHMEXP khm_int32 KHMAPI 
-khui_cw_set_response(khui_new_creds * c, 
-                     khm_int32 type, 
-                     khm_int32 response)
-{
-    khui_new_creds_by_type * t = NULL;
-    EnterCriticalSection(&c->cs);
-    khui_cw_find_type(c, type, &t);
-    c->response |= response & KHUI_NCMASK_RESPONSE;
-    if(t) {
-        t->flags &= ~KHUI_NCMASK_RESULT;
-        t->flags |= (response & KHUI_NCMASK_RESULT);
-
-        if (!(response & KHUI_NC_RESPONSE_NOEXIT) &&
-            !(response & KHUI_NC_RESPONSE_PENDING))
-            t->flags |= KHUI_NC_RESPONSE_COMPLETED;
-    }
-    LeaveCriticalSection(&c->cs);
-    return KHM_ERROR_SUCCESS;
-}
-
 /* only called from a identity provider callback */
 KHMEXP khm_int32 KHMAPI
 khui_cw_add_control_row(khui_new_creds * c,
@@ -717,3 +882,5 @@ khui_cw_add_control_row(khui_new_creds * c,
         return KHM_ERROR_INVALID_PARAM;
     }
 }
+
+#endif

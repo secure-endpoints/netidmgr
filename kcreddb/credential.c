@@ -54,13 +54,19 @@ void kcdb_cred_exit(void)
     DeleteRwLock(&l_creds);
 }
 
+KHMEXP khm_boolean KHMAPI
+kcdb_handle_is_cred(khm_handle h)
+{
+    return kcdb_cred_is_active_cred(h);
+}
+
 /*! \internal
 
     can be called by kcdb_cred_dup with a write lock on l_creds and in other
     places with a read lock on l_creds.  New credentials must be creatable while
     holding either lock. */
 KHMEXP khm_int32 KHMAPI 
-kcdb_cred_create(const wchar_t *   name, 
+kcdb_cred_create(const wchar_t * name, 
                  khm_handle  identity,
                  khm_int32   cred_type,
                  khm_handle * result) 
@@ -316,6 +322,131 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_type(
     return KHM_ERROR_SUCCESS;
 }
 
+khm_int32 kcdbint_cred_attr_cb(khm_handle h,
+                               khm_int32 attr,
+                               void * buf,
+                               khm_size *pcb_buf)
+{
+    kcdb_cred * c;
+
+    c = (kcdb_cred *) h;
+
+    switch(attr) {
+    case KCDB_ATTR_NAME:
+        return kcdb_cred_get_name(h, buf, pcb_buf);
+
+    case KCDB_ATTR_ID:
+        if(buf && *pcb_buf >= sizeof(khm_ui_8)) {
+            *pcb_buf = sizeof(khm_ui_8);
+            *((khm_ui_8 *) buf) = (khm_ui_8) c->identity;
+            return KHM_ERROR_SUCCESS;
+        } else {
+            *pcb_buf = sizeof(khm_ui_8);
+            return KHM_ERROR_TOO_LONG;
+        }
+
+    case KCDB_ATTR_ID_NAME:
+        return kcdb_identity_get_name((khm_handle) c->identity, 
+                                      (wchar_t *) buf, pcb_buf);
+
+    case KCDB_ATTR_TYPE:
+        if(buf && *pcb_buf >= sizeof(khm_int32)) {
+            *pcb_buf = sizeof(khm_int32);
+            *((khm_int32 *) buf) = c->type;
+            return KHM_ERROR_SUCCESS;
+        } else {
+            *pcb_buf = sizeof(khm_int32);
+            return KHM_ERROR_TOO_LONG;
+        }
+
+    case KCDB_ATTR_TYPE_NAME:
+        return kcdb_credtype_describe(c->type, buf, 
+                                      pcb_buf, KCDB_TS_SHORT);
+
+    case KCDB_ATTR_TIMELEFT:
+        {
+            khm_int32 rv = KHM_ERROR_SUCCESS;
+
+            if(!buf || *pcb_buf < sizeof(FILETIME)) {
+                *pcb_buf = sizeof(FILETIME);
+                rv = KHM_ERROR_TOO_LONG;
+            } else if(!kcdb_cred_buf_exist(c,KCDB_ATTR_EXPIRE)) {
+                *pcb_buf = sizeof(FILETIME);
+                /* setting the timeleft to _I64_MAX has the
+                   interpretation that this credential does not
+                   expire, which is the default behavior if the
+                   expiration time is not known */
+                *((FILETIME *) buf) = IntToFt(_I64_MAX);
+            } else {
+                FILETIME ftc;
+                khm_int64 iftc;
+
+                GetSystemTimeAsFileTime(&ftc);
+                iftc = FtToInt(&ftc);
+
+                *((FILETIME *) buf) =
+                    IntToFt(FtToInt((FILETIME *) 
+                                    kcdb_cred_buf_get(c,KCDB_ATTR_EXPIRE))
+                            - iftc);
+                *pcb_buf = sizeof(FILETIME);
+            }
+
+            return rv;
+        }
+
+    case KCDB_ATTR_RENEW_TIMELEFT:
+        {
+            khm_int32 rv = KHM_ERROR_SUCCESS;
+
+            if(!buf || *pcb_buf < sizeof(FILETIME)) {
+                *pcb_buf = sizeof(FILETIME);
+                rv = KHM_ERROR_TOO_LONG;
+            } else if(!kcdb_cred_buf_exist(c,KCDB_ATTR_RENEW_EXPIRE)) {
+                *pcb_buf = sizeof(FILETIME);
+                /* setting the timeleft to _I64_MAX has the
+                   interpretation that this credential does not
+                   expire, which is the default behavior if the
+                   expiration time is not known */
+                *((FILETIME *) buf) = IntToFt(_I64_MAX);
+            } else {
+                FILETIME ftc;
+                khm_int64 i_re;
+                khm_int64 i_ct;
+
+                GetSystemTimeAsFileTime(&ftc);
+
+                i_re = FtToInt(((FILETIME *)
+                                kcdb_cred_buf_get(c, KCDB_ATTR_RENEW_EXPIRE)));
+                i_ct = FtToInt(&ftc);
+
+                if (i_re > i_ct)
+                    *((FILETIME *) buf) =
+                        IntToFt(i_re - i_ct);
+                else
+                    *((FILETIME *) buf) =
+                        IntToFt(0);
+
+                *pcb_buf = sizeof(FILETIME);
+            }
+
+            return rv;
+        }
+
+    case KCDB_ATTR_FLAGS:
+        if(buf && *pcb_buf >= sizeof(khm_int32)) {
+            *pcb_buf = sizeof(khm_int32);
+            *((khm_int32 *) buf) = c->flags;
+            return KHM_ERROR_SUCCESS;
+        } else {
+            *pcb_buf = sizeof(khm_int32);
+            return KHM_ERROR_TOO_LONG;
+        }
+
+    default:
+        return KHM_ERROR_NOT_FOUND;
+    }
+}
+
 KHMEXP khm_int32 KHMAPI kcdb_cred_set_attrib(
     khm_handle cred, 
     const wchar_t * name, 
@@ -504,17 +635,11 @@ kcdb_cred_get_attr(khm_handle vcred,
     }
 
     if(attrib->flags & KCDB_ATTR_FLAG_COMPUTED) {
-        code = attrib->compute_cb(
-            vcred,
-            attr_id,
-            buffer,
-            pcbbuf);
+        code = attrib->compute_cb(vcred, attr_id, buffer, pcbbuf);
     } else if (kcdb_cred_val_exist(cred, attr_id)) {
-        code = type->dup(
-            kcdb_cred_buf_get(cred, attr_id),
-            kcdb_cred_buf_size(cred, attr_id),
-            buffer,
-            pcbbuf);
+        code = type->dup(kcdb_cred_buf_get(cred, attr_id),
+                         kcdb_cred_buf_size(cred, attr_id),
+                         buffer, pcbbuf);
     } else {
         code = KHM_ERROR_NOT_FOUND;
     }
@@ -1017,42 +1142,6 @@ kcdb_cred_get_flags(khm_handle vcred,
             >= 0)
             f |= KCDB_CRED_FLAG_EXPIRED;
     }
-
-#if 0
-    /* Commented out: if the credential has expired, then checking the
-       renewable time is not useful */
-    if (!(f & KCDB_CRED_FLAG_INVALID)) {
-        if (f & KCDB_CRED_FLAG_RENEWABLE) {
-            if (kcdb_cred_buf_exist(cred, KCDB_ATTR_RENEW_EXPIRE)) {
-                FILETIME ftc;
-
-                GetSystemTimeAsFileTime(&ftc);
-                if (CompareFileTime(&ftc, ((FILETIME *)
-                                           kcdb_cred_buf_get(cred, KCDB_ATTR_RENEW_EXPIRE))) >= 0)
-                    f |= KCDB_CRED_FLAG_INVALID;
-            }
-        } else {
-            if (f & KCDB_CRED_FLAG_EXPIRED)
-                f |= KCDB_CRED_FLAG_INVALID;
-        }
-    }
-
-    /* Commented out: this is a read operation.  We shouldn't attempt
-       to lock for writing */
-    if (f != cred->flags) {
-        kcdb_cred_unlock_read();
-        kcdb_cred_lock_write();
-        /* Did we lose a race? */
-        if (kcdb_cred_is_active_cred(vcred))
-            cred->flags = f;
-        else {
-            rv = KHM_ERROR_INVALID_PARAM;
-            f = 0;
-        }
-        kcdb_cred_unlock_write();
-        release_lock = FALSE;
-    }
-#endif
 
     *pflags = f;
 

@@ -72,7 +72,7 @@ END
 STRINGTABLE 
 BEGIN
     IDS_CREDDB              "Khimaira Credentials Database"
-    IDS_NAME                "Service Name"
+    IDS_NAME                "Name"
     IDS_IDENTITY            "Identity"
     IDS_ISSUED              "Issued on"
     IDS_EXPIRES             "Expires on"
@@ -106,11 +106,16 @@ END
 
 STRINGTABLE 
 BEGIN
-    128                     "w,wk,wks,weeks"
+    IDS_IVL_W_SPEC          "w,wk,wks,weeks"
     IDS_FLAGS               "Flags"
     IDS_RENEW_TIMELEFT      "Renewable Time left"
     IDS_RENEW_EXPIRES       "Renewable time expires"
     IDS_RENEW_LIFETIME      "Renewable lifetime"
+    IDS_DISPLAY_NAME        "Display Name"
+    IDS_LAST_UPDATE         "Last Update"
+    IDS_N_CREDS             "Number of Credentials"
+    IDS_N_IDCREDS           "Number of Identity Credentials"
+    IDS_N_INITCREDS         "Number of Initial Credentials"
 END
 
 #endif    // English (U.S.) resources

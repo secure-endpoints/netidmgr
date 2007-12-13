@@ -35,669 +35,100 @@
 #endif
 #include<assert.h>
 
-ATOM khui_newcredwnd_cls;
-
-/* forward dcl */
 static void
-nc_position_credtext(khui_nc_wnd_data * d);
-
-/* Common dialog procedure used by the main credential panel
-   (IDD_NC_NEWCRED) and the button bar (IDC_NC_BBAR). */
-
-static void
-nc_layout_main_panel(khui_nc_wnd_data * d);
-
-static void
-nc_layout_new_cred_window(khui_nc_wnd_data * d);
-
-static INT_PTR CALLBACK 
-nc_common_dlg_proc(HWND hwnd,
-                   UINT uMsg,
-                   WPARAM wParam,
-                   LPARAM lParam)
+nc_set_dlg_data(HWND hwnd, khui_nc_wnd_data * d)
 {
-    switch(uMsg) {
-    case WM_INITDIALOG:
-        {
-            khui_nc_wnd_data * d;
-
-            d = (khui_nc_wnd_data *) lParam;
-
 #pragma warning(push)
 #pragma warning(disable: 4244)
-            SetWindowLongPtr(hwnd, DWLP_USER, lParam);
+    SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR) ncd);
 #pragma warning(pop)
-
-            if (d->nc->subtype == KMSG_CRED_PASSWORD) {
-                ShowWindow(GetDlgItem(hwnd, IDC_NC_ADVANCED),
-                           SW_HIDE);
-            }
-        }
-        return TRUE;
-
-    case WM_COMMAND:
-        {
-            int ctrl_id;
-
-            ctrl_id = LOWORD(wParam);
-            if (ctrl_id < KHUI_CW_ID_MIN ||
-                ctrl_id > KHUI_CW_ID_MAX) {
-                /* pump it to the parent */
-                PostMessage(GetParent(hwnd), WM_COMMAND, wParam, lParam);
-                return TRUE;
-            } /* else we allow the message to fall through and get
-                 passed into the identity provider's message
-                 handler. */
-        }
-        break;
-
-    case KHUI_WM_NC_NOTIFY:
-        {
-            khui_nc_wnd_data * d;
-            d = (khui_nc_wnd_data *)(LONG_PTR) 
-                GetWindowLongPtr(hwnd, DWLP_USER);
-            if (d == NULL)
-                break;
-
-            /* message sent by parent to notify us of something */
-            switch(HIWORD(wParam)) {
-            case WMNC_DIALOG_EXPAND:
-                /* fallthrough */
-            case WMNC_UPDATE_LAYOUT:
-                if(hwnd == d->dlg_main) {
-
-                    nc_layout_main_panel(d);
-
-                    return TRUE;
-                }
-                break;          /* nop */
-            }
-        }
-        return TRUE;
-    }
-
-    /* check if we have a wnd_data, and if so pass the message on to
-       the identity provider callback. */
-    {
-        khui_nc_wnd_data * d;
-
-        d = (khui_nc_wnd_data *) (LONG_PTR)
-            GetWindowLongPtr(hwnd, DWLP_USER);
-
-        /* TODO: filter out and forward only the messages that
-           originated or pertain to the identity selection
-           controls. */
-        if (d && d->nc && d->nc->ident_cb) {
-            return d->nc->ident_cb(d->nc, WMNC_IDENT_WMSG, hwnd, uMsg, 
-                                   wParam, lParam);
-        }
-    }
-
-    return FALSE;
 }
 
-static void
-nc_notify_clear(khui_nc_wnd_data * d) {
-
-    if (d->notif_type == NC_NOTIFY_NONE)
-        /* there are no notifications anyway. */
-        return;
-
-    if (d->hwnd_notif_label)
-        DestroyWindow(d->hwnd_notif_label);
-
-    if (d->hwnd_notif_aux)
-        DestroyWindow(d->hwnd_notif_aux);
-
-    d->hwnd_notif_label = NULL;
-    d->hwnd_notif_aux = NULL;
-
-    SetRectEmpty(&d->r_notif);
-
-    d->notif_type = NC_NOTIFY_NONE;
-
-    /* Note that we must call nc_layout_main_panel() after calling
-       this to adjust the layout of the main panel.  However we aren't
-       calling it here since we might want to add another set of
-       notifications or make other changes to the main panel content
-       before calling nc_layout_main_panel(). */
-}
-
-static void
-nc_notify_marquee(khui_nc_wnd_data * d, const wchar_t * label) {
-
-#if (_WIN32_IE >= 0x0600)
-    HDC hdc;
-    size_t length;
-    SIZE label_size;
-#endif
-
-    RECT r_label;
-    RECT r_mq;
-    RECT r_row;
-    HFONT hfont;
-    HWND hwnd;
-    HDWP hdefer;
-
-    /* Clear the notification area.  We only support one notification
-       at a time. */
-    nc_notify_clear(d);
-
-#ifdef DEBUG
-    assert(d->dlg_main);
-#endif
-
-#if (_WIN32_IE >= 0x0600)
-
-    /* We can only show the marquee control if the comctl32 DLL is
-       version 6.0 or later.  Otherwise we only show the label. */
-
-    if (FAILED(StringCchLength(label, KHUI_MAXCCH_SHORT_DESC, &length))) {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-        length = KHUI_MAXCCH_SHORT_DESC;
-    }
-
-    /* See how big the notification control needs to be. */
-
-    hdc = GetDC(d->dlg_main);
-#ifdef DEBUG
-    assert(hdc != NULL);
-#endif
-
-    GetTextExtentPoint32(hdc, label, (int) length, &label_size);
-
-    ReleaseDC(d->dlg_main, hdc);
-
-    CopyRect(&r_row, &d->r_row);
-
-    if (label_size.cx > d->r_e_label.right - d->r_e_label.left) {
-        /* using an entire row */
-        CopyRect(&r_label, &d->r_row);
-        CopyRect(&r_mq, &d->r_n_input);
-        OffsetRect(&r_mq, 0, r_row.bottom - r_row.top);
-        r_row.bottom += r_row.bottom - r_row.top;
-    } else if (label_size.cx > d->r_n_label.right - d->r_n_label.left) {
-        /* using large labels */
-        CopyRect(&r_label, &d->r_e_label);
-        CopyRect(&r_mq, &d->r_e_input);
-    } else {
-        /* normal labels */
-        CopyRect(&r_label, &d->r_n_label);
-        CopyRect(&r_mq, &d->r_n_input);
-    }
-
-    InflateRect(&r_mq, 0, - ((r_mq.bottom - r_mq.top) / 4));
-
-#else  /* _WIN32_IE < 0x0600 */
-
-    /* We are just showing the label */
-    CopyRect(&r_row, &d->r_row);
-    CopyRect(&r_label, &r_row);
-    SetRectEmpty(&r_mq);
-
-#endif /* _WIN32_IE >= 0x0600 */
-
-    {
-        long y;
-
-        if (IsRectEmpty(&d->r_custprompt)) {
-            y = d->r_idspec.bottom;
-        } else {
-            y = d->r_custprompt.bottom;
-        }
-
-        OffsetRect(&r_row, d->r_area.left, y);
-        OffsetRect(&r_label, r_row.left, r_row.top);
-        OffsetRect(&r_mq, r_row.left, r_row.top);
-    }
-
-    hfont = (HFONT) SendMessage(d->dlg_main, WM_GETFONT, 0, 0);
-
-    hdefer = BeginDeferWindowPos(2);
-
-    /* the label */
-    hwnd = CreateWindowEx(0,
-                          L"STATIC",
-                          label,
-                          WS_CHILD | SS_ENDELLIPSIS,
-                          r_label.left, r_label.top,
-                          r_label.right - r_label.left,
-                          r_label.bottom - r_label.top,
-                          d->dlg_main,
-                          NULL, NULL, NULL);
-#ifdef DEBUG
-    assert(hwnd != NULL);
-#endif
-    SendMessage(hwnd, WM_SETFONT, (WPARAM) hfont, (LPARAM) TRUE);
-
-    DeferWindowPos(hdefer, hwnd, NULL,
-                   0, 0, 0, 0,
-                   SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER |
-                   SWP_NOSIZE | SWP_SHOWWINDOW);
-
-    d->hwnd_notif_label = hwnd;
-
-    /* and the marquee */
-
-#if (_WIN32_IE >= 0x0600)
-
-    /* unfortunately, the marquee is only available on comctl32
-       version 6.0 or later.  On previous versions, we only display
-       the message label. */
-
-    hwnd = CreateWindowEx(0,
-                          PROGRESS_CLASS,
-                          L"",
-                          WS_CHILD | PBS_MARQUEE,
-                          r_mq.left, r_mq.top,
-                          r_mq.right - r_mq.left,
-                          r_mq.bottom - r_mq.top,
-                          d->dlg_main,
-                          NULL, NULL, NULL);
-#ifdef DEBUG
-    assert(hwnd != NULL);
-#endif
-
-    SendMessage(hwnd, PBM_SETMARQUEE, TRUE, 100);
-
-    DeferWindowPos(hdefer, hwnd, NULL,
-                   0, 0, 0, 0,
-                   SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER |
-                   SWP_NOSIZE | SWP_SHOWWINDOW);
-
-    d->hwnd_notif_aux = hwnd;
-
-#endif /* _WIN32_IE >= 0x0600 */
-
-    EndDeferWindowPos(hdefer);
-
-    CopyRect(&d->r_notif, &r_row);
-
-    d->notif_type = NC_NOTIFY_MARQUEE;
-
-    /* Note that we must call nc_layout_main_panel() after calling
-       this to adjust the layout of the main panel.  However we aren't
-       calling it here since we might want to add another set of
-       notifications or make other changes to the main panel content
-       before calling nc_layout_main_panel(). */
-}
-
-static void
-nc_notify_message(khui_nc_wnd_data * d,
-                  kherr_severity severity,
-                  const wchar_t * message) {
-
-    SIZE icon_size;
-    LPCTSTR icon_res;
-    HICON h_icon;
-    HWND hwnd;
-    HFONT hfont;
-    HDWP hdefer;
-
-    RECT r_row;
-    RECT r_label;
-    RECT r_icon;
-
-    nc_notify_clear(d);
-
-    icon_size.cx = GetSystemMetrics(SM_CXSMICON);
-    icon_size.cy = GetSystemMetrics(SM_CYSMICON);
-
-    switch(severity) {
-    case KHERR_INFO:
-        icon_res = MAKEINTRESOURCE(OIC_INFORMATION);
-        break;
-
-    case KHERR_WARNING:
-        icon_res = MAKEINTRESOURCE(OIC_WARNING);
-        break;
-
-    case KHERR_ERROR:
-        icon_res = MAKEINTRESOURCE(OIC_ERROR);
-        break;
-
-    default:
-        icon_res = NULL;
-    }
-
-    if (icon_res != NULL) {
-        h_icon = (HICON) LoadImage(NULL,
-                                   icon_res,
-                                   IMAGE_ICON,
-                                   icon_size.cx,
-                                   icon_size.cy,
-                                   LR_DEFAULTCOLOR | LR_SHARED);
-    } else {
-        h_icon = NULL;
-    }
-
-    CopyRect(&r_row, &d->r_row);
-
-#define CENTERVALUE(w,v) ((w)/2 - (v)/2)
-
-    SetRect(&r_icon,
-            0, CENTERVALUE(r_row.bottom - r_row.top, icon_size.cy),
-            icon_size.cx,
-            CENTERVALUE(r_row.bottom - r_row.top, icon_size.cy) + icon_size.cy);
-
-#undef CENTERVALUE
-
-    CopyRect(&r_label, &r_row);
-    OffsetRect(&r_label, -r_label.left, -r_label.top);
-    r_label.left += (icon_size.cx * 3) / 2;
-
-    {
-        long y;
-
-        if (IsRectEmpty(&d->r_custprompt)) {
-            y = d->r_idspec.bottom;
-        } else {
-            y = d->r_custprompt.bottom;
-        }
-
-        OffsetRect(&r_row, d->r_area.left, y);
-        OffsetRect(&r_label, r_row.left, r_row.top);
-        OffsetRect(&r_icon, r_row.left, r_row.top);
-    }
-
-    hfont = (HFONT) SendMessage(d->dlg_main, WM_GETFONT, 0, 0);
-
-    hdefer = BeginDeferWindowPos(2);
-
-    hwnd = CreateWindowEx(0,
-                          L"STATIC",
-                          message,
-                          WS_CHILD | SS_ENDELLIPSIS | SS_CENTER,
-                          r_label.left, r_label.top,
-                          r_label.right - r_label.left,
-                          r_label.bottom - r_label.top,
-                          d->dlg_main,
-                          NULL, NULL, NULL);
-#ifdef DEBUG
-    assert(hwnd != NULL);
-#endif
-    SendMessage(hwnd, WM_SETFONT, (WPARAM) hfont, (LPARAM) TRUE);
-
-    DeferWindowPos(hdefer, hwnd, NULL,
-                   0, 0, 0, 0,
-                   SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER |
-                   SWP_NOSIZE | SWP_SHOWWINDOW);
-
-    d->hwnd_notif_label = hwnd;
-
-    hwnd = CreateWindowEx(0,
-                          L"STATIC",
-                          NULL,
-                          WS_CHILD | SS_ICON |
-#if (_WIN32_IE >= 0x0600)
-                          SS_REALSIZECONTROL
-#else
-                          0
-#endif
-                          ,
-                          r_icon.left, r_icon.top,
-                          r_icon.right - r_icon.left,
-                          r_icon.bottom - r_icon.top,
-                          d->dlg_main,
-                          NULL, NULL, NULL);
-#ifdef DEBUG
-    assert(hwnd != NULL);
-#endif
-
-    if (h_icon && hwnd)
-        SendMessage(hwnd, STM_SETICON, (WPARAM) h_icon, 0);
-
-    DeferWindowPos(hdefer, hwnd, NULL,
-                   0, 0, 0, 0,
-                   SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOOWNERZORDER |
-                   SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOZORDER);
-
-    d->hwnd_notif_aux = hwnd;
-
-    EndDeferWindowPos(hdefer);
-
-    CopyRect(&d->r_notif, &r_row);
-
-    d->notif_type = NC_NOTIFY_MESSAGE;
-
-    /* Note that we must call nc_layout_main_panel() after calling
-       this to adjust the layout of the main panel.  However we aren't
-       calling it here since we might want to add another set of
-       notifications or make other changes to the main panel content
-       before calling nc_layout_main_panel(). */
-}
-
-static void
-nc_layout_main_panel(khui_nc_wnd_data * d)
+static khui_nc_wnd_data *
+nc_get_dlg_data(HWND hwnd)
 {
-    RECT r_main;
-    HWND hw_ct;
-    HWND hw_ct_label;
-    HDWP hdwp;
-    RECT r_used;                /* extent used by identity specifiers,
-                                   custom prompts and notificaiton
-                                   controls. */
+    return (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, DWLP_USER);
+}
 
-    RECT r_wmain;              /* extents of the main window in screen
-                                  coordinates. */
+/* Flag combinations for SetWindowPos */
 
-    r_main.left = 0;
-    r_main.top = 0;
-    r_main.bottom = NCDLG_HEIGHT;
-    r_main.right = NCDLG_WIDTH;
+/* Move+Size+Zorder */
+#define SWP_MOVESIZEZ (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_SHOWWINDOW)
 
-    MapDialogRect(d->dlg_main, &r_main);
+/* Size */
+#define SWP_SIZEONLY (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOMOVE|SWP_NOZORDER)
 
-    CopyRect(&r_used, &d->r_idspec);
+/* Hide */
+#define SWP_HIDEONLY (SWP_NOACTIVATE|SWP_HIDEWINDOW|SWP_NOMOVE|SWP_NOSIZE|SWP_NOOWNERZORDER|SWP_NOZORDER)
 
-    GetWindowRect(d->dlg_main, &r_wmain);
+/* Show */
+#define SWP_SHOWONLY (SWP_NOACTIVATE|SWP_SHOWWINDOW|SWP_NOMOVE|SWP_NOSIZE|SWP_NOOWNERZORDER|SWP_NOZORDER)
 
-    hdwp = BeginDeferWindowPos(7);
+/* Layout functions */
 
-    /* check if the notification area and the custom prompt area are
-       overlapping. */
+/* Layout the ID Selector dialog.  This should be called whenever the
+   primary identity changes. */
+static void
+nc_layout_idsel(khui_nc_wnd_data * ncd)
+{
+    khm_handle ident;
+    khm_handle idpro = NULL;
+    khm_size cb;
 
-    if (d->notif_type != NC_NOTIFY_NONE) {
-        long delta_y = 0;
-        RECT r;
+    khui_cw_lock_nc(ncd->nc);
+#ifdef DEBUG
+    assert(ncd->nc->n_identities > 0);
+#endif
 
-        CopyRect(&r, &d->r_custprompt);
+    ncd->id_icon = NULL;
+    ncd->id_display_string[0] = L'\0';
+    ncd->id_status[0] = L'\0';
+    ncd->id_type_string[0] = L'\0';
 
-        if (IsRectEmpty(&d->r_custprompt)) {
-            /* if there are no custom prompts, then the notification
-               area should be immediately below the identitify
-               specifers. */
-
-            delta_y = d->r_idspec.bottom - d->r_notif.top;
-        } else {
-            /* otherwise, the notification area should be immediately
-               below the custom prompt area */
-
-            delta_y = d->r_custprompt.bottom - d->r_notif.top;
-        }
-
-        if (delta_y != 0) {
-            RECT r_lbl;
-            RECT r_aux;
-
-            if (d->hwnd_notif_label) {
-                GetWindowRect(d->hwnd_notif_label, &r_lbl);
-                OffsetRect(&r_lbl, -r_wmain.left, delta_y - r_wmain.top);
-
-                DeferWindowPos(hdwp, d->hwnd_notif_label, NULL,
-                               r_lbl.left, r_lbl.top, 0, 0,
-                               SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                               SWP_NOZORDER | SWP_NOSIZE);
-            }
-
-            if (d->hwnd_notif_aux) {
-                GetWindowRect(d->hwnd_notif_aux, &r_aux);
-                OffsetRect(&r_aux, -r_wmain.left, delta_y - r_wmain.top);
-
-                DeferWindowPos(hdwp, d->hwnd_notif_aux, NULL,
-                               r_aux.left, r_aux.top, 0, 0,
-                               SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                               SWP_NOZORDER | SWP_NOSIZE);
-            }
-
-            OffsetRect(&d->r_notif, 0, delta_y);
-        }
+    if (ncd->nc->n_identities == 0) {
+        goto _exit;
     }
 
-    if (!IsRectEmpty(&d->r_custprompt)) {
-        r_used.bottom = max(d->r_custprompt.bottom,
-                            r_used.bottom);
-    }
+    ident = ncd->nc->identities[0];
 
-    if (!IsRectEmpty(&d->r_notif)) {
-        r_used.bottom = max(d->r_notif.bottom,
-                            r_used.bottom);
-    }
+    cb = sizeof(ncd->id_icon);
+    kcdb_get_resource(ident, KCDB_RES_ICON_NORMAL, 0, NULL, NULL,
+                      &cb, &ncd->id_icon);
 
-    if (d->nc->mode == KHUI_NC_MODE_MINI) {
-        RECT r_ok;
-        RECT r_cancel;
-        RECT r_advanced;
-        HWND hw;
+    cb = sizeof(ncd->id_display_string);
+    kcdb_get_resource(ident, KCDB_RES_DISPLAYNAME, KCDB_RFS_SHORT, NULL, NULL,
+                      &cb, ncd->id_display_string);
 
-        hw = GetDlgItem(d->dlg_main, IDOK);
-#ifdef DEBUG
-        assert(hw != NULL);
-#endif
-        GetWindowRect(hw, &r_ok);
-        OffsetRect(&r_ok, -r_wmain.left, -r_ok.top + r_used.bottom);
+    kcdb_identity_get_identpro(ident, &idpro);
 
-        DeferWindowPos(hdwp, hw, NULL,
-                       r_ok.left, r_ok.top, 0, 0,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_NOZORDER | SWP_NOSIZE | SWP_SHOWWINDOW);
+    cb = sizeof(ncd->id_type_string);
+    kcdb_get_resource(idpro, KCDB_RES_INSTANCE, KCDB_RFS_SHORT, NULL, NULL,
+                      &cb, ncd->id_type_string);
 
-        hw = GetDlgItem(d->dlg_main, IDCANCEL);
-#ifdef DEBUG
-        assert(hw != NULL);
-#endif
-        GetWindowRect(hw, &r_cancel);
-        OffsetRect(&r_cancel, -r_wmain.left, -r_cancel.top + r_used.bottom);
+ _exit:
 
-        DeferWindowPos(hdwp, hw, NULL,
-                       r_cancel.left, r_cancel.top, 0, 0,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_NOZORDER | SWP_NOSIZE | SWP_SHOWWINDOW);
+    khui_cw_unlock_nc(ncd->nc);
+}
 
-        hw = GetDlgItem(d->dlg_main, IDC_NC_ADVANCED);
-#ifdef DEBUG
-        assert(hw != NULL);
-#endif
-        GetWindowRect(hw, &r_advanced);
-        OffsetRect(&r_advanced, -r_wmain.left, -r_advanced.top + r_used.bottom);
+static void
+nc_layout_idspec(khui_nc_wnd_data * ncd)
+{
+}
 
-        DeferWindowPos(hdwp, hw, NULL,
-                       r_advanced.left, r_advanced.top, 0, 0,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_NOZORDER | SWP_NOSIZE | SWP_SHOWWINDOW);
+static void
+nc_layout_nav(khui_nc_wnd_data * ncd)
+{
+    HDWP dwp;
+    dwp = BeginDeferWindowPos(3);
 
-        /* and now update the extents of the main panel */
-        r_main.bottom = r_used.bottom + (r_ok.bottom - r_ok.top) + d->r_area.top;
+    DeferWindowPos(dwp, GetDlgItem(ncd->hwnd_nav, ID_WIZBACK), NULL, 0, 0, 0, 0,
+                   (ncd->enable_prev ? SWP_SHOWONLY : SWP_HIDEONLY));
+    DeferWindowPos(dwp, GetDlgItem(ncd->hwnd_nav, ID_WIZNEXT), NULL, 0, 0, 0, 0,
+                   (ncd->enable_next ? SWP_SHOWONLY : SWP_HIDEONLY));
+    DeferWindowPos(dwp, GetDlgItem(ncd->hwnd_nav, ID_WIZFINISH), NULL, 0, 0, 0, 0,
+                   ((ncd->enable_next || ncd->page == NC_PAGE_PROGRESS)? SWP_HIDEONLY: SWP_SHOWONLY));
 
-        CopyRect(&d->r_main, &r_main);
-
-    } else {
-
-        HWND hw;
-
-        hw = GetDlgItem(d->dlg_main, IDOK);
-#ifdef DEBUG
-        assert(hw != NULL);
-#endif
-        if (IsWindowVisible(hw))
-            DeferWindowPos(hdwp, hw, NULL,
-                           0, 0, 0, 0,
-                           SWP_HIDEWINDOW | SWP_NOMOVE | SWP_NOSIZE |
-                           SWP_NOOWNERZORDER | SWP_NOZORDER);
-
-        hw = GetDlgItem(d->dlg_main, IDCANCEL);
-#ifdef DEBUG
-        assert(hw != NULL);
-#endif
-        if (IsWindowVisible(hw))
-            DeferWindowPos(hdwp, hw, NULL,
-                           0, 0, 0, 0,
-                           SWP_HIDEWINDOW | SWP_NOMOVE | SWP_NOSIZE |
-                           SWP_NOOWNERZORDER | SWP_NOZORDER);
-
-        hw = GetDlgItem(d->dlg_main, IDC_NC_ADVANCED);
-#ifdef DEBUG
-        assert(hw != NULL);
-#endif
-        if (IsWindowVisible(hw))
-            DeferWindowPos(hdwp, hw, NULL,
-                           0, 0, 0, 0,
-                           SWP_HIDEWINDOW | SWP_NOMOVE | SWP_NOSIZE |
-                           SWP_NOOWNERZORDER | SWP_NOZORDER);
-
-        d->r_credtext.top = r_used.bottom;
-
-        CopyRect(&d->r_main, &r_main);
-    }
-
-    /* now update the layout of the credentials text window */
-
-    hw_ct = GetDlgItem(d->dlg_main, IDC_NC_CREDTEXT);
-    hw_ct_label = GetDlgItem(d->dlg_main, IDC_NC_CREDTEXT_LABEL);
-#ifdef DEBUG
-    assert(hw_ct != NULL);
-    assert(hw_ct_label != NULL);
-#endif
-
-    if (d->nc->mode == KHUI_NC_MODE_MINI ||
-        d->r_credtext.bottom < d->r_credtext.top + d->r_row.bottom * 2) {
-
-        /* either we aren't supposed to show the credentials text
-           window, or we don't have enough room. */
-        if (IsWindowVisible(hw_ct) || IsWindowVisible(hw_ct_label)) {
-
-            DeferWindowPos(hdwp, hw_ct, NULL,
-                           0, 0, 0, 0,
-                           SWP_HIDEWINDOW | SWP_NOOWNERZORDER |
-                           SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE);
-
-            DeferWindowPos(hdwp, hw_ct_label, NULL,
-                           0, 0, 0, 0,
-                           SWP_HIDEWINDOW | SWP_NOOWNERZORDER |
-                           SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE);
-
-        }
-
-    } else {
-
-        DeferWindowPos(hdwp,
-                       hw_ct, NULL,
-                       d->r_credtext.left + d->r_n_input.left, /* x */
-                       d->r_credtext.top, /* y */
-                       d->r_n_input.right - d->r_n_input.left, /* width */
-                       d->r_credtext.bottom - d->r_credtext.top, /* height */
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER | 
-                       SWP_NOZORDER | SWP_SHOWWINDOW);
-
-        DeferWindowPos(hdwp,
-                       hw_ct_label, NULL,
-                       d->r_credtext.left + d->r_n_label.left, /* x */
-                       d->r_credtext.top, /* y */
-                       d->r_n_label.right - d->r_n_label.left, /* width */
-                       d->r_n_label.bottom - d->r_n_label.top, /* height */
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_NOZORDER | SWP_SHOWWINDOW);
-    }
-
-    EndDeferWindowPos(hdwp);
-
-    /* NOTE: although we updated d->r_main, if the new credentials
-       window is in mini mode, we must call
-       nc_layout_new_cred_window() to adjust the size of the new
-       credentials window to fit the main panel.  We don't do it here
-       because we need to keep these two operations separate. */
+    EndDeferWindowPos(dwp);
 }
 
 /* Credential type panel comparison function.  Tabs are sorted based
@@ -714,635 +145,663 @@ static int __cdecl
 nc_tab_sort_func(const void * v1, const void * v2)
 {
     /* v1 and v2 and of type : khui_new_creds_by_type ** */
-    khui_new_creds_by_type *t1, *t2;
+    khui_new_creds_type_int *t1, *t2;
 
-    t1 = *((khui_new_creds_by_type **) v1);
-    t2 = *((khui_new_creds_by_type **) v2);
+    t1 = *((khui_new_creds_type_int **) v1);
+    t2 = *((khui_new_creds_type_int **) v2);
 
-    if(t1->ordinal !=  -1) {
-        if(t2->ordinal != -1) {
-            if(t1->ordinal == t2->ordinal) {
-                if (t1->name && t2->name)
-                    return _wcsicmp(t1->name, t2->name);
-                else if (t1->name)
+    if(t1->nct->ordinal !=  -1) {
+        if(t2->nct->ordinal != -1) {
+            if(t1->nct->ordinal == t2->ordinal) {
+                if (t1->nct->name && t2->nct->name)
+                    return _wcsicmp(t1->nct->name, t2->nct->name);
+                else if (t1->nct->name)
                     return -1;
-                else if (t2->name)
+                else if (t2->nct->name)
                     return 1;
                 else
                     return 0;
             } else {
                 /* safe to convert to an int here */
-                return (int) (t1->ordinal - t2->ordinal);
+                return (int) (t1->nct->ordinal - t2->nct->ordinal);
             }
         } else
             return -1;
     } else {
-        if(t2->ordinal != -1)
+        if(t2->nct->ordinal != -1)
             return 1;
-        else if (t1->name && t2->name)
-            return wcscmp(t1->name, t2->name);
-        else if (t1->name)
+        else if (t1->nct->name && t2->nct->name)
+            return wcscmp(t1->nct->name, t2->nct->name);
+        else if (t1->nct->name)
             return -1;
-        else if (t2->name)
+        else if (t2->nct->name)
             return 1;
         else
             return 0;
     }
 }
 
-static void 
-nc_notify_types(khui_new_creds * c, UINT uMsg,
-                WPARAM wParam, LPARAM lParam, BOOL sync)
+/* Called with ncd->nc locked
+
+   Prepares the credentials type list in a new credentials object
+   after an identity has been selected and the types have been
+   notified.
+
+   The list is sorted with the identity credential type at the
+   beginning and the ordinals are updated to reflect the actual order
+   of the types.
+*/
+static void
+nc_prep_cred_types(khui_nc_wnd_data * ncd)
 {
     khm_size i;
+    khm_handle idpro = NULL;
+    khm_int32 ctype;
 
-    for(i=0; i<c->n_types; i++) {
+    /* if we have an identity, we should make sure that the identity
+       credentials type is at the top of the list */
+    if (ncd->nc->n_identities > 0 &&
+        KHM_SUCCEEDED(kcdb_identity_get_identpro(ncd->nc->identities[0],
+                                                 &idpro)) &&
+        KHM_SUCCEEDED(kcdb_identpro_get_type(idpro, &ctype))) {
 
-        if (c->types[i]->hwnd_panel == NULL)
-            continue;
-
-        if (sync)
-            SendMessage(c->types[i]->hwnd_panel, uMsg, wParam, lParam);
-        else
-            PostMessage(c->types[i]->hwnd_panel, uMsg, wParam, lParam);
-    }
-}
-
-static void
-nc_clear_password_fields(khui_nc_wnd_data * d)
-{
-    khm_size i;
-    khm_boolean need_sync = FALSE;
-
-    khui_cw_lock_nc(d->nc);
-
-    for (i=0; i < d->nc->n_prompts; i++) {
-        if ((d->nc->prompts[i]->flags & KHUI_NCPROMPT_FLAG_HIDDEN) &&
-            d->nc->prompts[i]->hwnd_edit) {
-            SetWindowText(d->nc->prompts[i]->hwnd_edit,
-                          L"");
-            need_sync = TRUE;
-        }
-    }
-
-    khui_cw_unlock_nc(d->nc);
-
-    if (need_sync) {
-        khui_cw_sync_prompt_values(d->nc);
-    }
-}
-
-/* used by nc_enable_controls */
-
-struct nc_enum_wnd_data {
-    khui_nc_wnd_data * d;
-    khm_boolean enable;
-};
-
-static
-BOOL CALLBACK
-nc_enum_wnd_proc(HWND hwnd,
-                 LPARAM lParam)
-{
-    struct nc_enum_wnd_data * wd;
-
-    wd = (struct nc_enum_wnd_data *) lParam;
-
-    EnableWindow(hwnd, wd->enable);
-
-    return TRUE;
-}
-
-static void
-nc_enable_controls(khui_nc_wnd_data * d, khm_boolean enable)
-{
-    struct nc_enum_wnd_data wd;
-
-    ZeroMemory(&wd, sizeof(wd));
-
-    wd.d = d;
-    wd.enable = enable;
-
-    EnumChildWindows(d->dlg_main, nc_enum_wnd_proc, (LPARAM) &wd);
-}
-
-#define NC_MAXCCH_CREDTEXT 16384
-#define NC_MAXCB_CREDTEXT (NC_MAXCCH_CREDTEXT * sizeof(wchar_t))
-
-static void 
-nc_update_credtext(khui_nc_wnd_data * d) 
-{
-    wchar_t * ctbuf = NULL;
-    wchar_t * buf;
-    BOOL okEnable = FALSE;
-    BOOL validId = FALSE;
-    HWND hw = NULL;
-    size_t cch = 0;
-
-    ctbuf = PMALLOC(NC_MAXCB_CREDTEXT);
-
-    assert(ctbuf != NULL);
-
-    LoadString(khm_hInstance, IDS_NC_CREDTEXT_TABS, ctbuf, NC_MAXCCH_CREDTEXT);
-    StringCchLength(ctbuf, NC_MAXCCH_CREDTEXT, &cch);
-    buf = ctbuf + cch;
-    nc_notify_types(d->nc, KHUI_WM_NC_NOTIFY, 
-                    MAKEWPARAM(0, WMNC_UPDATE_CREDTEXT), (LPARAM) d->nc, TRUE);
-
-    /* hopefully all the types have updated their credential texts */
-
-    /* if the dialog is in the mini mode, we have to display
-       exceptions using a notification. */
-    if (d->nc->mode == KHUI_NC_MODE_MINI) {
-        BOOL need_layout = FALSE;
-        if (d->nc->n_identities == 0) {
-
-            /* There are no identities selected. We don't show any
-               notifications here. */
-            if (d->notif_type != NC_NOTIFY_NONE) {
-                nc_notify_clear(d);
-                need_layout = TRUE;
-            }
-
-        } else {
-
-            wchar_t id_name[KCDB_IDENT_MAXCCH_NAME];
-            wchar_t format[256];
-            wchar_t msg[ARRAYLENGTH(format) + ARRAYLENGTH(id_name)];
-            khm_size cbbuf;
-            khm_int32 flags;
-
-            kcdb_identity_get_flags(d->nc->identities[0], &flags);
-
-            cbbuf = sizeof(id_name);
-            kcdb_identity_get_name(d->nc->identities[0], id_name, &cbbuf);
-
-            if (flags & KCDB_IDENT_FLAG_INVALID) {
-
-                /* identity is invalid */
-                LoadString(khm_hInstance, IDS_NCN_IDENT_INVALID,
-                           format, ARRAYLENGTH(format));
-                StringCbPrintf(msg, sizeof(msg), format, id_name);
-
-                nc_notify_message(d, KHERR_ERROR, msg);
-
-                need_layout = TRUE;
-
-            } else if ((flags & KCDB_IDENT_FLAG_VALID) ||
-                       d->nc->subtype == KMSG_CRED_PASSWORD) {
-                /* special case: If we are going to change the
-                   password, we don't expect the identity provider to
-                   validate the identity in real time.  As such, we
-                   assume that the identity is valid. */
- 
-               /* identity is valid */
-                if (d->notif_type != NC_NOTIFY_NONE) {
-                    nc_notify_clear(d);
-                    need_layout = TRUE;
-                }
-
-            } else if (flags & KCDB_IDENT_FLAG_UNKNOWN) {
-
-                /* unknown state */
-                LoadString(khm_hInstance, IDS_NCN_IDENT_UNKNOWN,
-                           format, ARRAYLENGTH(format));
-                StringCbPrintf(msg, sizeof(msg), format, id_name);
-
-                nc_notify_message(d, KHERR_WARNING, msg);
-
-                need_layout = TRUE;
-
-            } else {
-
-                /* still checking */
-                LoadString(khm_hInstance, IDS_NCN_IDENT_CHECKING,
-                           format, ARRAYLENGTH(format));
-                StringCbPrintf(msg, sizeof(msg), format, id_name);
-
-                nc_notify_marquee(d, msg);
-
-                need_layout = TRUE;
-
+        for (i=0; i < ncd->nc->n_types; i++) {
+            if (ncd->nc->types[i]->nct->type == ctype) {
+                ncd->nc->types[i]->nct->ordinal = 0;
+            } else if (ncd->nc->types[i]->nct->ordinal == 0) {
+                ncd->nc->types[i]->nct->ordinal = 1;
             }
         }
-
-        if (need_layout) {
-            nc_layout_main_panel(d);
-            nc_layout_new_cred_window(d);
-        }
     }
 
-    if(d->nc->n_identities == 1) {
-        wchar_t main_fmt[256];
-        wchar_t id_fmt[256];
-        wchar_t id_name[KCDB_IDENT_MAXCCH_NAME];
-        wchar_t id_string[KCDB_IDENT_MAXCCH_NAME + 256];
-        khm_size cbbuf;
-        khm_int32 flags;
+    qsort(ncd->nc->types, ncd->nc->n_types, sizeof(*(ncd->nc->types)), nc_tab_sort_func);
 
-        LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_ONE, 
-                   main_fmt, (int) ARRAYLENGTH(main_fmt));
+    for (i=0; i < ncd->nc->n_types; i++) {
+        ncd->nc->types[i]->nct->ordinal = i+1;
+    }
+}
 
-        cbbuf = sizeof(id_name);
-        kcdb_identity_get_name(d->nc->identities[0], id_name, &cbbuf);
+/* Layout the privileged interaction panel in either the basic or the
+   advanced mode. */
+static void
+nc_layout_privint(khui_nc_wnd_data * ncd, khm_boolean adv)
+{
+    HWND hw;
+    HWND hw_r_p = NULL;
+    HWND hw_target = NULL;
+    HWND hw_tab = NULL;
+    RECT r, r_p;
+    khm_int32 idf = 0;
 
-        kcdb_identity_get_flags(d->nc->identities[0], &flags);
+    if (adv) {
+        hw = ncd->hwnd_privint_advanced;
+        hw_tab = GetDlgItem(hw, IDC_NC_TAB);
+    } else {
+        hw = ncd->hwnd_privint_basic;
+    }
 
-        if (flags & KCDB_IDENT_FLAG_INVALID) {
-            LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_INVALID, 
-                       id_fmt, (int) ARRAYLENGTH(id_fmt));
-        } else if(flags & KCDB_IDENT_FLAG_VALID) {
-            LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_VALID, 
-                       id_fmt, (int) ARRAYLENGTH(id_fmt));
-        } else if(flags & KCDB_IDENT_FLAG_UNKNOWN) {
-            LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_UNCHECKED,
-                       id_fmt, (int) ARRAYLENGTH(id_fmt));
-        } else if(d->nc->subtype == KMSG_CRED_NEW_CREDS) {
-            LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_CHECKING, 
-                       id_fmt, (int) ARRAYLENGTH(id_fmt));
-        } else {
-            LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_UNCHECKED, 
-                       id_fmt, (int) ARRAYLENGTH(id_fmt));
+    if (adv && !ncd->tab_initialized) {
+        /* We have to populate the Tab control */
+
+        wchar_t desc[KCDB_MAXCCH_SHORT_DESC];
+        TCITEM tci;
+        khm_size i;
+        int idx = 0;
+
+        ZeroMemory(&tci, sizeof(tci));
+#ifdef DEBUG
+        assert(hw_tab != NULL);
+#endif
+        TabCtrl_DeleteAllItems(hw_tab);
+
+        khui_cw_lock_nc(ncd->nc);
+        nc_prep_cred_types(ncd);
+
+        if (ncd->privint == NULL)
+            khui_cw_get_next_privint(ncd->nc, &ncd->privint);
+
+        if (ncd->privint) {
+            tci.mask = TCIF_PARAM | TCIF_TEXT;
+            tci.pszText = ncd->privint->caption;
+            tci.lParam = -1;
+
+            TabCtrl_InsertItem(hw_tab, 0, &tci);
+            idx = 1;
         }
 
-        StringCbPrintf(id_string, sizeof(id_string), id_fmt, id_name);
-
-        StringCbPrintf(buf, NC_MAXCB_CREDTEXT - cch*sizeof(wchar_t), 
-                       main_fmt, id_string);
-
-        if (flags & KCDB_IDENT_FLAG_VALID) {
-            if (flags & KCDB_IDENT_FLAG_DEFAULT)
-                LoadString(khm_hInstance, IDS_NC_ID_DEF,
-                           id_string, ARRAYLENGTH(id_string));
-            else if (d->nc->set_default)
-                LoadString(khm_hInstance, IDS_NC_ID_WDEF,
-                           id_string, ARRAYLENGTH(id_string));
-            else
-                LoadString(khm_hInstance, IDS_NC_ID_NDEF,
-                           id_string, ARRAYLENGTH(id_string));
-
-            StringCbCat(buf, NC_MAXCB_CREDTEXT - cch * sizeof(wchar_t),
-                        id_string);
-        }
-
-    } else if(d->nc->n_identities > 1) {
-        wchar_t *ids_string;
-        khm_size cb_ids_string;
-
-        wchar_t id_name[KCDB_IDENT_MAXCCH_NAME];
-        wchar_t id_fmt[256];
-        wchar_t id_string[KCDB_IDENT_MAXCCH_NAME + 256];
-
-        wchar_t main_fmt[256];
-        khm_size cbbuf;
-
-        LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_MANY, 
-                   main_fmt, (int) ARRAYLENGTH(main_fmt));
-
-        /* we are going to concatenate all the identity names into
-           a comma separated string */
-
-        /* d->nc->n_identities is at least 2 */
-        ids_string = PMALLOC((KCDB_IDENT_MAXCB_NAME + sizeof(id_fmt)) * 
-                            (d->nc->n_identities - 1));
-        cb_ids_string = 
-            (KCDB_IDENT_MAXCB_NAME + sizeof(id_fmt)) * 
-            (d->nc->n_identities - 1);
-
-        assert(ids_string != NULL);
-
-        ids_string[0] = 0;
-
-        {
-            khm_size i;
-            khm_int32 flags;
-
-            for(i=1; i<d->nc->n_identities; i++) {
-                if(i>1) {
-                    StringCbCat(ids_string, cb_ids_string, L",");
-                }
-
-                flags = 0;
-
-                cbbuf = sizeof(id_name);
-                kcdb_identity_get_name(d->nc->identities[i], id_name, &cbbuf);
-                kcdb_identity_get_flags(d->nc->identities[i], &flags);
-                if(flags & KCDB_IDENT_FLAG_INVALID) {
-                    LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_INVALID, 
-                               id_fmt, (int) ARRAYLENGTH(id_fmt));
-                } else if(flags & KCDB_IDENT_FLAG_VALID) {
-                    LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_VALID, 
-                               id_fmt, (int) ARRAYLENGTH(id_fmt));
+        for (i=0; i < ncd->nc->n_types; i++)
+            if (!(ncd->nc->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)) {
+                tci.mask = TCIF_PARAM | TCIF_TEXT;
+                if (ncd->nc->types[i].nct->name) {
+                    tci.pszText = ncd->nc->types[i].nct->name;
                 } else {
-                    LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_UNCHECKED, 
-                               id_fmt, (int) ARRAYLENGTH(id_fmt));
+                    khm_size cb;
+
+                    desc[0] = L'\0';
+                    cb = sizeof(desc);
+                    kcdb_get_resource((khm_handle) ncd->nc->types[i].nct->type,
+                                      KCDB_RES_DESCRIPTION, KCDB_RFS_SHORT,
+                                      NULL, NULL, &cb, desc);
+                    tci.pszText = desc;
                 }
+                tci.lParam = i;
 
-                StringCbPrintf(id_string, sizeof(id_string), id_fmt, id_name);
-                StringCbCat(ids_string, cb_ids_string, id_string);
+                TabCtrl_InsertItem(hw_tab, idx, &tci);
+                idx++;
             }
+        khui_cw_unlock_nc(ncd->nc);
 
-            cbbuf = sizeof(id_name);
-            kcdb_identity_get_name(d->nc->identities[0], id_name, &cbbuf);
-            kcdb_identity_get_flags(d->nc->identities[0], &flags);
-            if(flags & KCDB_IDENT_FLAG_INVALID) {
-                LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_INVALID, 
-                           id_fmt, (int) ARRAYLENGTH(id_fmt));
-            } else if(flags & KCDB_IDENT_FLAG_VALID) {
-                LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_VALID, 
-                           id_fmt, (int) ARRAYLENGTH(id_fmt));
-            } else {
-                LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_UNCHECKED, 
-                           id_fmt, (int) ARRAYLENGTH(id_fmt));
-            }
-            StringCbPrintf(id_string, sizeof(id_string), id_fmt, id_name);
+        ncd->tab_initialized = TRUE;
 
-            StringCbPrintf(buf, NC_MAXCB_CREDTEXT - cch*sizeof(wchar_t), 
-                           main_fmt, id_string, ids_string);
-
-            PFREE(ids_string);
-        }
-    } else {
-        LoadString(khm_hInstance, IDS_NC_CREDTEXT_ID_NONE, 
-                   buf, (int)(NC_MAXCCH_CREDTEXT - cch));
-    }
-
-    /* now, append the credtext string from each of the cred types */
-    {
-        khm_size i;
-        size_t cb;
-        wchar_t * buf;
-
-        cb = NC_MAXCB_CREDTEXT;
-        buf = ctbuf;
-
-        for(i=0; i<d->nc->n_types; i++) {
-            if(d->nc->types[i]->credtext != NULL) {
-                StringCbCatEx(buf, cb, 
-                              d->nc->types[i]->credtext,
-                              &buf, &cb,
-                              0);
-            }
-        }
-    }
-
-    SetDlgItemText(d->dlg_main, IDC_NC_CREDTEXT, ctbuf);
-
-    PFREE(ctbuf);
-
-    /* so depending on whether the primary identity was found to be
-       invalid, we need to disable the Ok button and set the title to
-       reflect this */
-
-    if(d->nc->n_identities > 0) {
-        khm_int32 flags = 0;
-
-        if(KHM_SUCCEEDED(kcdb_identity_get_flags(d->nc->identities[0], 
-                                               &flags)) &&
-           (flags & KCDB_IDENT_FLAG_VALID)) {
-            validId = TRUE;
-        }
-    }
-
-    if (d->nc->window_title == NULL) {
-        if(validId) {
-            wchar_t wpostfix[256];
-            wchar_t wtitle[KCDB_IDENT_MAXCCH_NAME + 256];
-            khm_size cbsize;
-
-            cbsize = sizeof(wtitle);
-            kcdb_identity_get_name(d->nc->identities[0], wtitle, &cbsize);
-
-            if (d->nc->subtype == KMSG_CRED_PASSWORD)
-                LoadString(khm_hInstance, IDS_WTPOST_PASSWORD,
-                           wpostfix, (int) ARRAYLENGTH(wpostfix));
-            else
-                LoadString(khm_hInstance, IDS_WTPOST_NEW_CREDS, 
-                           wpostfix, (int) ARRAYLENGTH(wpostfix));
-
-            StringCbCat(wtitle, sizeof(wtitle), wpostfix);
-
-            SetWindowText(d->nc->hwnd, wtitle);
-        } else {
-            wchar_t wtitle[256];
-
-            if (d->nc->subtype == KMSG_CRED_PASSWORD)
-                LoadString(khm_hInstance, IDS_WT_PASSWORD,
-                           wtitle, (int) ARRAYLENGTH(wtitle));
-            else
-                LoadString(khm_hInstance, IDS_WT_NEW_CREDS, 
-                           wtitle, (int) ARRAYLENGTH(wtitle));
-
-            SetWindowText(d->nc->hwnd, wtitle);
-        }
-    }
-
-    if (!(d->nc->response & KHUI_NC_RESPONSE_PROCESSING)) {
-        if(validId ||
-           d->nc->subtype == KMSG_CRED_PASSWORD) {
-            /* TODO: check if all the required fields have valid values
-               before enabling the Ok button */
-            okEnable = TRUE;
-        }
-
-        hw = GetDlgItem(d->dlg_main, IDOK);
-        EnableWindow(hw, okEnable);
-        hw = GetDlgItem(d->dlg_bb, IDOK);
-        EnableWindow(hw, okEnable);
-    }
-}
-
-static void
-nc_layout_new_cred_window(khui_nc_wnd_data * ncd) {
-    khui_new_creds * c;
-    RECT r_main;
-    RECT r_ncdialog;
-    HDWP hdefer;
-
-    c = ncd->nc;
-
-    r_main.left = 0;
-    r_main.top = 0;
-    r_main.right = NCDLG_WIDTH;
-    r_main.bottom = NCDLG_HEIGHT;
-
-    MapDialogRect(ncd->dlg_main, &r_main);
-
-    hdefer = BeginDeferWindowPos(5);
-
-    if (c->mode == KHUI_NC_MODE_MINI) {
-
-        if (IsWindowVisible(ncd->tab_wnd)) {
-            DeferWindowPos(hdefer,
-                           ncd->tab_wnd, NULL,
-                           0, 0, 0, 0,
-                           SWP_HIDEWINDOW |
-                           SWP_NOMOVE | SWP_NOOWNERZORDER |
-                           SWP_NOSIZE | SWP_NOZORDER);
-        }
-
-        if (IsWindowVisible(ncd->dlg_bb)) {
-            DeferWindowPos(hdefer,
-                           ncd->dlg_bb, NULL,
-                           0, 0, 0, 0,
-                           SWP_HIDEWINDOW |
-                           SWP_NOMOVE | SWP_NOOWNERZORDER |
-                           SWP_NOSIZE | SWP_NOZORDER);
-        }
-
-        DeferWindowPos(hdefer, ncd->dlg_main, NULL,
-                       r_main.left, r_main.top,
-                       r_main.right - r_main.left,
-                       r_main.bottom - r_main.top,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_NOZORDER | SWP_SHOWWINDOW);
-
-        /* note that the ncd->r_main.bottom may not be the same as
-           r_main.bottom because ncd->r_main.bottom is set dynamically
-           depending on custom controls. ncd->r_main is valid only
-           once nc_layout_main_panel() is called.*/
-        CopyRect(&ncd->r_required, &ncd->r_main);
-
-    } else {
-        RECT r_tabctrl;
-        RECT r_displayarea;
-        RECT r_bbar;
-        khm_size i;
-
-        /* calculate the size of the tab control so that it fits
-           snugly around the expanded main panel. */
-        CopyRect(&r_tabctrl, &r_main);
-        TabCtrl_AdjustRect(ncd->tab_wnd, TRUE, &r_tabctrl);
-
-        if (r_tabctrl.left < 0 ||
-            r_tabctrl.top < 0) {
-
-            OffsetRect(&r_tabctrl,
-                       (r_tabctrl.left < 0)? -r_tabctrl.left : 0,
-                       (r_tabctrl.top < 0)? -r_tabctrl.top : 0);
-
-        }
+        TabCtrl_SetCurSel(hw_tab, ncd->current_tab);
 
 #ifdef DEBUG
-        assert(r_tabctrl.left == 0);
-        assert(r_tabctrl.top == 0);
+        assert(idx > 0);
 #endif
-
-        OffsetRect(&r_tabctrl, 0, ncd->r_area.top);
-
-        /* and now calculate the rectangle where the main panel should
-           be inside the tab control. */
-        CopyRect(&r_displayarea, &r_tabctrl);
-        TabCtrl_AdjustRect(ncd->tab_wnd, FALSE, &r_displayarea);
-
-        DeferWindowPos(hdefer,
-                       ncd->tab_wnd, HWND_BOTTOM,
-                       r_tabctrl.left, r_tabctrl.top,
-                       r_tabctrl.right - r_tabctrl.left,
-                       r_tabctrl.bottom - r_tabctrl.top,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_SHOWWINDOW);
-
-        /* we have to place the button bar just to the right of the
-           tab panel. */
-        r_bbar.left = 0;
-        r_bbar.top = 0;
-        r_bbar.right = NCDLG_BBAR_WIDTH;
-        r_bbar.bottom = NCDLG_BBAR_HEIGHT;
-
-        MapDialogRect(ncd->dlg_main, &r_bbar);
-
-        OffsetRect(&r_bbar, r_tabctrl.right, 0);
-
-        DeferWindowPos(hdefer,
-                       ncd->dlg_bb, NULL,
-                       r_bbar.left, r_bbar.top,
-                       r_bbar.right - r_bbar.left,
-                       r_bbar.bottom - r_bbar.top,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_NOZORDER | SWP_SHOWWINDOW);
-
-        /* move the main panel inside the tab control... */
-        DeferWindowPos(hdefer,
-                       ncd->dlg_main, NULL,
-                       r_displayarea.left, r_displayarea.top,
-                       r_displayarea.right - r_displayarea.left,
-                       r_displayarea.bottom - r_displayarea.top,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                       SWP_NOZORDER |
-                       (ncd->current_panel == 0 ? SWP_SHOWWINDOW : SWP_HIDEWINDOW));
-
-        /* and also move all the credential type panels (if they have
-           been created) inside the tab control too. */
-        khui_cw_lock_nc(c);
-
-        for (i=0; i < c->n_types; i++) {
-            if (c->types[i]->hwnd_panel != NULL) {
-                DeferWindowPos(hdefer,
-                               c->types[i]->hwnd_panel, NULL,
-                               r_displayarea.left, r_displayarea.top,
-                               r_displayarea.right - r_displayarea.left,
-                               r_displayarea.bottom - r_displayarea.top,
-                               SWP_NOACTIVATE | SWP_NOOWNERZORDER |
-                               SWP_NOZORDER |
-                               (ncd->current_panel == c->types[i]->ordinal ?
-                                SWP_SHOWWINDOW : SWP_HIDEWINDOW));
-            }
-        }
-
-        khui_cw_unlock_nc(c);
-
-        /* then update the required size of the new credentials
-           dialog. */
-        ncd->r_required.left = 0;
-        ncd->r_required.top = 0;
-        ncd->r_required.right = r_bbar.right;
-        ncd->r_required.bottom = max(r_tabctrl.bottom, r_bbar.bottom) + ncd->r_area.top;
     }
 
-    /* commit all the window moves, resizes and hides/shows we did*/
-    EndDeferWindowPos(hdefer);
+    if (adv) {
+        TCITEM tci;
+        int current_panel;
 
-    /* now we have to see if the client area of the new credentials
-       window is the right size. */
+        current_panel = TabCtrl_GetCurSel(hw_tab);
 
-    GetClientRect(c->hwnd, &r_ncdialog);
+        ZeroMemory(&tci, sizeof(tci));
 
-    if (
+        tci.mask = TCIF_PARAM;
+        TabCtrl_GetItem(hw_tab, current_panel, &tci);
 
-        ((r_ncdialog.right - r_ncdialog.left !=
-          ncd->r_required.right - ncd->r_required.left)
+        khui_cw_lock_nc(ncd->nc);
 
-         ||
+        if (tci.lParam == -1) {
+            /* selected the privileged interaction panel */
+#ifdef DEBUG
+            assert(ncd->privint);
+#endif
+            hw_target = ncd->privint->hwnd;
+        } else {
+#ifdef DEBUG
+            assert(tci.lParam >= 0 && tci.lParam < ncd->nc->n_types);
+#endif
+            hw_target = ncd->nc->types[tci.lParam].nct->hwnd_panel;
+        }
 
-         (r_ncdialog.bottom - r_ncdialog.top !=
-          ncd->r_required.bottom - ncd->r_required.top))
+        khui_cw_unlock_nc(ncd->nc);
 
-        &&
+        if (hw_target != ncd->last_tab_panel && ncd->last_tab_panel != NULL) {
+            SetWindowPos(ncd->last_tab_panel, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
+        }
 
-        /* we don't bother if the new creds window is already in the
-           process of changing the size. */
-        !ncd->size_changing) {
+    } else {
+        if (ncd->privint == NULL) {
+            khui_cw_get_next_privint(ncd->nc, &ncd->privint);
+        }
 
-        /* if not, notify the window that the size needs adjusting. */
-        if (IsWindowVisible(c->hwnd))
-            PostMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
-                        MAKEWPARAM(0, WMNC_UPDATE_LAYOUT), 0);
+        if (ncd->privint == NULL)
+            hw_target = ncd->hwnd_noprompts;
         else
-            SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
-                        MAKEWPARAM(0, WMNC_UPDATE_LAYOUT), 0);
+            hw_target = ncd->privint->hwnd;
+    }
+
+#ifdef DEBUG
+    assert(hw_target != NULL);
+#endif
+
+    hw_r_p = GetDlgItem(hw, IDC_NC_R_PROMPTS);
+#ifdef DEBUG
+    assert(hw_r_p != NULL);
+#endif
+
+    if (!adv) {
+        GetWindowRect(hw, &r);
+        GetWindowRect(hw_r_p, &r_p);
+        OffsetRect(&r_p, -r.left, -r.top);
+    } else {
+#ifdef DEBUG
+        assert(hw_tab != NULL);
+#endif
+        GetWindowRect(hw, &r);
+        GetWindowRect(hw_tab, &r_p);
+        OffsetRect(&r_p, -r.left, -r.top);
+
+        TabCtrl_AdjustRect(hw_tab, FALSE, &r_p);
+    }
+
+    SetParent(hw_target, hw);
+    SetWindowPos(hw_target, hw_r_p, r_p.left, r_p.top,
+                 r_p.right - r_p.left, r_p.bottom - r_p.top,
+                 SWP_MOVESIZEZ);
+
+    khui_cw_lock_nc(ncd->nc);
+#ifdef DEBUG
+    assert(ncd->nc->n_identities > 0);
+#endif
+    if (ncd->nc->n_identities > 0) {
+        kcdb_identity_get_flags(ncd->nc->identities[0], &idf);
+    }
+    khui_cw_unlock_nc(ncd->nc);
+
+    CheckDlgButton(hw, IDC_NC_MAKEDEFAULT,
+                   ((idf & KCDB_IDENT_FLAG_DEFAULT)? BST_CHECKED : BST_UNCHECKED));
+    EnableWindow(GetDlgItem(hw, IDC_NC_MAKEDEFAULT),
+                 !(idf & KCDB_IDENT_FLAG_DEFAULT));
+}
+
+static void
+nc_layout_progress(khui_nc_wnd_data * ncd)
+{
+}
+
+static void
+nc_size_container(khui_nc_wnd_data * ncd, HDWP dwp)
+{
+    RECT r;
+    DWORD style;
+    DWORD exstyle;
+
+    if (ncd->nc->mode == KHUI_NC_MODE_MINI) {
+        int t;
+        RECT r1, r2;
+
+        GetWindowRect(GetDlgItem(ncd->nc->hwnd, IDC_NC_R_IDSEL), &r1);
+        GetWindowRect(GetDlgItem(ncd->nc->hwnd, IDC_NC_R_MAIN_LG), &r2);
+        t = r2.top;
+        GetWindowRect(GetDlgItem(ncd->nc->hwnd, IDC_NC_R_NAV), &r2);
+        OffsetRect(&r2, 0, t - r2.top);
+
+        UnionRect(&r, &r1, &r2);
+    } else {
+        RECT r1, r2;
+
+        GetWindowRect(GetDlgItem(ncd->nc->hwnd, IDC_NC_R_IDSEL), &r1);
+        GetWindowRect(GetDlgItem(ncd->nc->hwnd, IDC_NC_R_NAV), &r2);
+
+        UnionRect(&r, &r1, &r2);
+    }
+
+    style = GetWindowLong(ncd->nc->hwnd, GWL_STYLE);
+    exstyle = GetWindowLong(ncd->nc->hwnd, GWL_EXSTYLE);
+
+    AdjustWindowRectEx(&r, style, FALSE, exstyle);
+
+    DeferWindowPos(dwp, ncd->nc->hwnd, NULL, 0, 0,
+                   r.right - r.left, r.bottom - r.top,
+                   SWP_SIZEONLY);
+}
+
+static void
+nc_layout_container(khui_nc_wnd_data * ncd)
+{
+    RECT r_idsel;
+    RECT r_main;
+    RECT r_main_lg;
+    RECT r_nav_lg;
+    RECT r_nav_sm;
+    RECT r;
+    HDWP dwp = NULL;
+
+#define get_wnd_rect(id,pv) \
+    GetWindowRect(GetDlgItem(ncd->nc->hwnd, id), pv); OffsetRect(pv, -r.left, -r.top)
+
+#define rect_coords(r) r.left, r.top, (r.right - r.left), (r.bottom - r.top)
+
+#define dlg_item(id) GetDlgItem(ncd->nc->hwnd, id)
+
+    GetWindowRect(ncd->nc->hwnd, &r);
+
+    get_wnd_rect(IDC_NC_R_IDSEL, &r_idsel);
+    get_wnd_rect(IDC_NC_R_MAIN, &r_main);
+    get_wnd_rect(IDC_NC_R_MAIN_LG, &r_main_lg);
+    get_wnd_rect(IDC_NC_R_NAV, &r_nav_lg);
+
+    CopyRect(&r_nav_sm, &r_nav_lg);
+    OffsetRect(&r_nav_sm, 0, r_main_lg.top - r_nav_sm.top);
+    UnionRect(&r, &r_main, &r_main_lg);
+    CopyRect(&r_main_lg, &r);
+
+    switch (ncd->page) {
+    case NC_PAGE_IDSPEC:
+
+        khui_cw_lock_nc(ncd->nc);
+
+        dwp = BeginDeferWindowPos(7);
+
+        UnionRect(&r, &r_idsel, &r_main);
+        DeferWindowPos(dwp, ncd->hwnd_idspec,
+                       dlg_item(IDC_NC_R_IDSEL),
+                       rect_coords(r), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_nav,
+                       dlg_item(IDC_NC_R_NAV),
+                       rect_coords(r_nav_sm), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_idsel, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_basic, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_advanced, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_progress, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        ncd->nc->mode = KHUI_NC_MODE_MINI;
+        nc_size_container(ncd, dwp);
+
+        EndDeferWindowPos(dwp);
+
+        khui_cw_unlock_nc(ncd->nc);
+
+        nc_layout_idspec(ncd);
+        nc_layout_nav(ncd);
+
+        break;
+
+    case NC_PAGE_CREDOPT_BASIC:
+
+        khui_cw_lock_nc(ndc->nc);
+
+        dwp = BeginDeferWindowPos(7);
+
+        DeferWindowPos(dwp, ncd->hwnd_idsel,
+                       dlg_item(IDC_NC_R_IDSEL),
+                       rect_coords(r_idsel), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_basic,
+                       dlg_item(IDC_NC_R_MAIN),
+                       rect_coords(r_main), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_nav,
+                       dlg_item(IDC_NC_R_NAV),
+                       rect_coords(r_nav_sm), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_advanced, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_idspec, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_progress, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        ncd->nc->mode = KHUI_NC_MODE_MINI;
+        nc_size_container(ncd, dwp);
+
+        EndDeferWindowPos(dwp);
+
+        khui_cw_unlock_nc(ncd->nc);
+
+        nc_layout_idsel(ncd);
+        nc_layout_privint(ncd, FALSE);
+        nc_layout_nav(ncd);
+
+        break;
+
+    case NC_PAGE_CREDOPT_ADV:
+
+        khui_cw_lock_nc(ncd->nc);
+
+        dwp = BeginDeferWindowPos(7);
+
+        DeferWindowPos(dwp, ncd->hwnd_idsel,
+                       dlg_item(IDC_NC_R_IDSEL),
+                       rect_coords(r_idsel), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_advanced,
+                       dlg_item(IDC_NC_R_MAIN),
+                       rect_coords(r_main_lg), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_nav,
+                       dlg_item(IDC_NC_R_NAV),
+                       rect_coords(r_nav_lg), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_basic, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_idspec, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_progress, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        ncd->nc = KHUI_NC_MODE_EXPANDED;
+        nc_size_container(ncd, dwp);
+
+        EndDeferWindowPos(dwp);
+
+        khui_cw_unlock_nc(ncd->nc);
+
+        nc_layout_idsel(ncd);
+        nc_layout_privint(ncd, TRUE);
+        nc_layout_nav(ncd);
+
+        break;
+
+    case NC_PAGE_PASSWORD:
+
+        khui_cw_lock_nc(ncd->nc);
+
+        dwp = BeginDeferWindowPos(7);
+
+        DeferWindowPos(dwp, ncd->hwnd_idsel,
+                       dlg_item(IDC_NC_R_IDSEL),
+                       rect_coords(r_idsel), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_basic,
+                       dlg_item(IDC_NC_R_MAIN),
+                       rect_coords(r_main), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_nav,
+                       dlg_item(IDC_NC_R_NAV),
+                       rect_coords(r_nav_sm), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_advanced, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_idspec, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_progress, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        ncd->nc->mode = KHUI_NC_MODE_MINI;
+        nc_size_container(ncd, dwp);
+
+        EndDeferWindowPos(dwp);
+
+        khui_cw_unlock_nc(ncd->nc);
+
+        nc_layout_idsel(ncd);
+        nc_layout_privint(ncd, FALSE);
+        nc_layout_nav(ncd);
+
+        break;
+
+    case NC_PAGE_PROGRESS:
+
+        khui_cw_lock_nc(ncd->nc);
+
+        dwp = BeginDeferWindowPos(7);
+
+        DeferWindowPos(dwp, ncd->hwnd_idsel,
+                       dlg_item(IDC_NC_R_IDSEL),
+                       rect_coords(r_idsel), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_progress,
+                       dlg_item(IDC_NC_R_MAIN),
+                       rect_coords(r_main), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_nav,
+                       dlg_item(IDC_NC_R_NAV),
+                       rect_coords(r_nav_sm), SWP_MOVESIZEZ);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_basic, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_privint_advanced, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        DeferWindowPos(dwp, ncd->hwnd_idspec, NULL, 0, 0, 0, 0,
+                       SWP_HIDEONLY);
+
+        ncd->nc->mode = KHUI_NC_MODE_MINI;
+        nc_size_container(ncd, dwp);
+
+        EndDeferWindowPos(dwp);
+
+        khui_cw_unlock_nc(ncd->nc);
+
+        nc_layout_idsel(ncd);
+        nc_layout_progress(ncd);
+        nc_layout_nav(ncd);
+
+        break;
+
+    default:
+#ifdef DEBUG
+        assert(FALSE);
+#endif
+    }
+
+#undef get_wnd_rect
+#undef rect_coords
+#undef dlg_item
+}
+
+/* Dialog procedures for child dialogs */
+
+/* Navigation dialog.  IDD_NC_NAV */
+static LRESULT
+nc_nav_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_nc_wnd_data * ncd;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        ncd = (khui_nc_wnd_data *) lParam;
+        nc_set_dlg_data(hwnd, ncd);
+        return TRUE;
+
+    default:
+        return FALSE;
     }
 }
 
-#define CW_PARAM DWLP_USER
+/* Identity specification.  IDD_NC_IDSPEC */
+static LRESULT
+nc_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_nc_wnd_data * ncd;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        ncd = (khui_nc_wnd_data *) lParam;
+        nc_set_dlg_data(hwnd, ncd);
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+/* Privileged Interaction (Basic). IDD_NC_PRIVINT_BASIC */
+static LRESULT
+nc_privint_basic_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_nc_wnd_data * ncd;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        ncd = (khui_nc_wnd_data *) lParam;
+        nc_set_dlg_data(hwnd, ncd);
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+/* Privileged Interaction (Advanced). IDD_NC_PRIVINT_ADVANCED */
+static LRESULT
+nc_privint_advanced_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_nc_wnd_data * ncd;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        ncd = (khui_nc_wnd_data *) lParam;
+        nc_set_dlg_data(hwnd, ncd);
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+/* Identity Selection.  IDD_NC_IDSEL */
+static LRESULT
+nc_idsel_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_nc_wnd_data * ncd;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        ncd = (khui_nc_wnd_data *) lParam;
+        nc_set_dlg_data(hwnd, ncd);
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+/* Progress. IDD_NC_PROGRESS */
+static LRESULT
+nc_progress_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_nc_wnd_data * ncd;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        ncd = (khui_nc_wnd_data *) lParam;
+        nc_set_dlg_data(hwnd, ncd);
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+/* No-Prompt Placeholder.  IDD_NC_NOPROMPTS */
+static LRESULT
+nc_noprompts_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_nc_wnd_data * ncd;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        ncd = (khui_nc_wnd_data *) lParam;
+        nc_set_dlg_data(hwnd, ncd);
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
+
+/* Message handlers for the wizard. IDD_NC_CONTAINER*/
+
+
 
 static LRESULT 
-nc_handle_wm_create(HWND hwnd,
-                    UINT uMsg,
-                    WPARAM wParam,
-                    LPARAM lParam)
+nc_handle_wm_initdialog(HWND hwnd,
+                        UINT uMsg,
+                        WPARAM wParam,
+                        LPARAM lParam)
 {
-    LPCREATESTRUCT lpc;
     khui_new_creds * c;
     khui_nc_wnd_data * ncd;
     int x, y;
@@ -1350,204 +809,59 @@ nc_handle_wm_create(HWND hwnd,
     RECT r;
     HFONT hf_main;
 
-    lpc = (LPCREATESTRUCT) lParam;
-
-    ncd = PMALLOC(sizeof(*ncd));
-    ZeroMemory(ncd, sizeof(*ncd));
-
-    c = (khui_new_creds *) lpc->lpCreateParams;
-    ncd->nc = c;
+    ncd = (khui_nc_wnd_data *) lParam;
+#ifdef debug
+    assert(ncd);
+#endif
+    c = ncd->nc;
     c->hwnd = hwnd;
 
 #ifdef DEBUG
+    assert(c != NULL);
     assert(c->subtype == KMSG_CRED_NEW_CREDS ||
            c->subtype == KMSG_CRED_PASSWORD);
 #endif
+    nc_set_dlg_data(hwnd, ncd);
 
-#pragma warning(push)
-#pragma warning(disable: 4244)
-    SetWindowLongPtr(hwnd, CW_PARAM, (LONG_PTR) ncd);
-#pragma warning(pop)
+    ncd->hwnd_nav =
+        CreateDialogIndirectParam(khm_hInstance,
+                                  MAKEINTRESOURCE(IDD_NC_NAV),
+                                  hwnd, nc_nav_dlg_proc, (LPARAM) ncd);
+    ncd->hwnd_idsel =
+        CreateDialogIndirectParam(khm_hInstance,
+                                  MAKEINTRESOURCE(IDD_NC_IDSPEC),
+                                  hwnd, nc_idsel_dlg_proc, (LPARAM) ncd);
+    ncd->hwnd_privint_basic =
+        CreateDialogIndirectParam(khm_hInstance,
+                                  MAKEINTRESOURCE(IDD_NC_PRIVINT_BASIC),
+                                  hwnd, nc_privint_basic_dlg_proc, (LPARAM) ncd);
 
-    /* first, create the tab control that will house the main dialog
-       panel as well as the plug-in specific panels */
-    ncd->tab_wnd = CreateWindowEx(0, /* extended style */
-                                  WC_TABCONTROL,
-                                  L"TabControloxxrz", /* window name */
-                                  TCS_HOTTRACK | TCS_RAGGEDRIGHT |
-                                  TCS_SINGLELINE | TCS_TABS |
-                                  WS_CHILD | WS_TABSTOP | WS_CLIPSIBLINGS,
-                                  0, 0, 100, 100, /* x,y,width height.
-                                                     We'll be changing
-                                                     these later
-                                                     anyway. */
-                                  hwnd,
-                                  (HMENU) IDC_NC_TABS,
-                                  NULL,
-                                  0);
+    ncd->hwnd_privint_advanced =
+        CreateDialogIndirectParam(khm_hInstance,
+                                  MAKEINTRESOURCE(IDD_NC_PRIVINT_ADVANCED),
+                                  hwnd, nc_privint_advanced_dlg_proc, (LPARAM) ncd);
 
-#ifdef DEBUG
-    assert(ncd->tab_wnd != NULL);
-#endif
+    ncd->hwnd_idspec =
+        CreateDialogIndirectParam(khm_hInstance,
+                                  MAKEINTRESOURCE(IDD_NC_IDSEL),
+                                  hwnd, nc_idspec_dlg_proc, (LPARAM) ncd);
 
-    /* try to create the main dialog panel */
+    ncd->hwnd_progress =
+        CreateDialogIndirectParam(khm_hInstance,
+                                  MAKEINTRESOURCE(IDD_NC_PROGRESS),
+                                  hwnd, nc_progress_dlg_proc, (LPARAM) ncd);
 
-    ncd->dlg_main = CreateDialogParam(khm_hInstance,
-                                      MAKEINTRESOURCE(IDD_NC_NEWCRED),
-                                      hwnd,
-                                      nc_common_dlg_proc,
-                                      (LPARAM) ncd);
-#ifdef DEBUG
-    assert(ncd->dlg_main != NULL);
-#endif
+    ncd->hwnd_noprompts =
+        CreateDialogIndirectParam(khm_hInstance,
+                                  MAKEINTRESOURCE(IDD_NC_NOPROMPTS),
+                                  hwnd, nc_noprompts_dlg_proc, (LPARAM) ncd);
 
-    hf_main = (HFONT) SendMessage(ncd->dlg_main, WM_GETFONT, 0, 0);
-    if (hf_main)
-        SendMessage(ncd->tab_wnd, WM_SETFONT, (WPARAM) hf_main, FALSE);
+    /* Position the dialog */
 
-#if _WIN32_WINNT >= 0x0501
-    EnableThemeDialogTexture(ncd->dlg_main,
-                             ETDT_ENABLETAB);
-#endif
+    GetWindowRect(hwnd, &r);
 
-    {
-        RECT r_main;
-        RECT r_area;
-        RECT r_row;
-        HWND hw;
-            
-        /* During the operation of the new credentials window, we will
-           need to dynamically change the layout of the controls as a
-           result of custom prompting from credentials providers and
-           identity selectors from identity providers.  In order to
-           guide the dynamic layout, we pick out a few metrics from
-           the dialog template for the main panel. The metrics come
-           from hidden STATIC controls in the dialog template. */
-
-        GetWindowRect(ncd->dlg_main, &r_main);
-
-        /* IDC_NC_TPL_PANEL spans the full extent of the dialog that
-           we can populate with custom controls. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_TPL_PANEL);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r_area);
-        OffsetRect(&r_area,-r_main.left, -r_main.top);
-        CopyRect(&ncd->r_area, &r_area);
-
-        /* IDC_NC_TPL_ROW spans the extent of a row of normal sized
-           custom controls.  A row of custom controls typicall consist
-           of a text label and an input control. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_TPL_ROW);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r);
-        CopyRect(&r_row, &r);
-        OffsetRect(&r,-r.left, -r.top);
-        CopyRect(&ncd->r_row, &r);
-
-        /* IDC_NC_TPL_LABEL spans the extent that a normal sized
-           label.  The control overlaps IDC_NC_TPL_ROW so we can get
-           coordinates relative to the row extents. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_TPL_LABEL);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r);
-        OffsetRect(&r,-r_row.left, -r_row.top);
-        CopyRect(&ncd->r_n_label, &r);
-
-        /* IDC_NC_TPL_INPUT spans the extent of a normal sized input
-           control in a custom control row.  The control overlaps
-           IDC_NC_TPL_ROW so we can get relative coordinates. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_TPL_INPUT);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r);
-        OffsetRect(&r, -r_row.left, -r_row.top);
-        CopyRect(&ncd->r_n_input, &r);
-
-        /* IDC_NC_TPL_ROW_LG spans the extent of a row of large sized
-           controls. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_TPL_ROW_LG);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r_row);
-
-        /* IDC_NC_TPL_LABEL_LG is a large sized label.  The control
-           overlaps IDC_NC_TPL_ROW_LG. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_TPL_LABEL_LG);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r);
-        OffsetRect(&r, -r_row.left, -r_row.top);
-        CopyRect(&ncd->r_e_label, &r);
-
-        /* IDC_NC_TPL_INPUT_LG is a large sized input control.
-           Overlaps IDC_NC_TPL_ROW_LG. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_TPL_INPUT_LG);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r);
-        OffsetRect(&r, -r_row.left, -r_row.top);
-        CopyRect(&ncd->r_e_input, &r);
-
-        CopyRect(&ncd->r_credtext, &ncd->r_area);
-        CopyRect(&ncd->r_idspec, &ncd->r_area);
-
-        ncd->r_idspec.bottom = ncd->r_idspec.top;
-
-        /* And finally the credential text window.  The only metric we
-           take from here is the Y coordinate of the bottom of the
-           control since the actual size and position of the
-           credentials window will change depending on the custom
-           controls being displayed. */
-        hw = GetDlgItem(ncd->dlg_main, IDC_NC_CREDTEXT);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r);
-        OffsetRect(&r, -r_main.left, -r_main.top);
-        ncd->r_credtext.bottom = r.bottom;
-    }
-
-    /* if the mode is 'mini'*/
-    r.left = 0;
-    r.top = 0;
-
-    if(c->mode == KHUI_NC_MODE_MINI) {
-        r.right = NCDLG_WIDTH;
-        r.bottom = NCDLG_HEIGHT;
-    } else {
-        r.right = NCDLG_WIDTH + NCDLG_BBAR_WIDTH;
-        r.bottom = NCDLG_BBAR_HEIGHT;
-    }
-
-    MapDialogRect(ncd->dlg_main, &r);
-
-    /* position the new credentials dialog */
     width = r.right - r.left;
     height = r.bottom - r.top;
-
-    /* adjust width and height to accomodate NC area */
-    {
-        RECT wr,cr;
-
-        GetWindowRect(hwnd, &wr);
-        GetClientRect(hwnd, &cr);
-
-        /* the non-client and client areas have already been calculated
-           at this point.  We just use the difference to adjust the width
-           and height */
-        width += (wr.right - wr.left) - (cr.right - cr.left);
-        height += (wr.bottom - wr.top) - (cr.bottom - cr.top);
-    }
 
     /* if the parent window is visible, we center the new credentials
        dialog over the parent.  Otherwise, we center it on the primary
@@ -1581,119 +895,10 @@ nc_handle_wm_create(HWND hwnd,
 
     MoveWindow(hwnd, x, y, width, height, FALSE);
 
-    ncd->dlg_bb = CreateDialogParam(khm_hInstance,
-                                    MAKEINTRESOURCE(IDD_NC_BBAR),
-                                    hwnd,
-                                    nc_common_dlg_proc,
-                                    (LPARAM) ncd);
-
-#ifdef DEBUG
-    assert(ncd->dlg_bb);
-#endif
-
-    /* Call the identity provider callback to set the identity
-       selector controls.  These controls need to be there before we
-       layout the main panel. */
-    c->ident_cb(c, WMNC_IDENT_INIT, NULL, 0, 0, (LPARAM) ncd->dlg_main);
-
-    if (c->mode == KHUI_NC_MODE_EXPANDED) {
-        SendMessage(ncd->dlg_main, KHUI_WM_NC_NOTIFY,
-                    MAKEWPARAM(0, WMNC_DIALOG_EXPAND), 0);
-    } else {
-        /* we don't call nc_layout_main_panel() if the dialog is
-           expanded because posting WMNC_DIALOG_EXPAND to the main
-           panel results in it getting called anyway. */
-        nc_layout_main_panel(ncd);
-    }
-
-    nc_layout_new_cred_window(ncd);
-
     /* add this to the dialog chain */
     khm_add_dialog(hwnd);
 
     return TRUE;
-}
-
-/* add a control row supplied by an identity provider */
-static void
-nc_add_control_row(khui_nc_wnd_data * d, 
-                   HWND label,
-                   HWND input,
-                   khui_control_size size)
-{
-    RECT r_row;
-    RECT r_label;
-    RECT r_input;
-    HFONT hf;
-    HDWP hdefer;
-
-    hf = (HFONT) SendMessage(d->dlg_main, WM_GETFONT, 0, 0);
-    SendMessage(label, WM_SETFONT, (WPARAM) hf, FALSE);
-    SendMessage(input, WM_SETFONT, (WPARAM) hf, FALSE);
-
-    CopyRect(&r_row, &d->r_row);
-    OffsetRect(&r_row, d->r_idspec.left, d->r_idspec.bottom);
-
-    if (size == KHUI_CTRLSIZE_SMALL) {
-        CopyRect(&r_label, &d->r_n_label);
-        CopyRect(&r_input, &d->r_n_input);
-        OffsetRect(&r_label, r_row.left, r_row.top);
-        OffsetRect(&r_input, r_row.left, r_row.top);
-    } else if (size == KHUI_CTRLSIZE_HALF) {
-        CopyRect(&r_label, &d->r_e_label);
-        CopyRect(&r_input, &d->r_e_input);
-        OffsetRect(&r_label, r_row.left, r_row.top);
-        OffsetRect(&r_input, r_row.left, r_row.top);
-    } else if (size == KHUI_CTRLSIZE_FULL) {
-        CopyRect(&r_label, &d->r_n_label);
-        r_label.right = d->r_row.right;
-        CopyRect(&r_input, &d->r_n_input);
-        OffsetRect(&r_input, r_row.left, r_row.top);
-        OffsetRect(&r_input, 0, r_input.bottom);
-        r_row.bottom += r_input.bottom;
-        OffsetRect(&r_label, r_row.left, r_row.top);
-    } else {
-        SetRectEmpty(&r_label);
-        SetRectEmpty(&r_input);
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-        return;
-    }
-
-    hdefer = BeginDeferWindowPos(2);
-
-    if (label)
-        DeferWindowPos(hdefer, label,
-                       ((d->hwnd_last_idspec != NULL)?
-                        d->hwnd_last_idspec:
-                        HWND_TOP),
-                       r_label.left, r_label.top,
-                       r_label.right - r_label.left,
-                       r_label.bottom - r_label.top,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER);
-
-    if (input)
-        DeferWindowPos(hdefer, input,
-                       (label ? label : ((d->hwnd_last_idspec != NULL)?
-                                         d->hwnd_last_idspec:
-                                         HWND_TOP)),
-                       r_input.left, r_input.top,
-                       r_input.right - r_input.left,
-                       r_input.bottom - r_input.top,
-                       SWP_NOACTIVATE | SWP_NOOWNERZORDER);
-
-    EndDeferWindowPos(hdefer);
-
-    d->hwnd_last_idspec = (input ? input : label);
-
-    d->r_idspec.bottom = r_row.bottom;
-
-    /* we don't update the layout of the main panel yet, since these
-       control additions happen before the main panel is displayed.  A
-       call to nc_layout_main_panel() will be made before the main
-       panel is shown anyway. */
-
 }
 
 
@@ -1708,7 +913,7 @@ nc_handle_wm_destroy(HWND hwnd,
     /* remove self from dialog chain */
     khm_del_dialog(hwnd);
 
-    d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    d = nc_get_dlg_data(hwnd);
     if (d == NULL)
         return TRUE;
 
@@ -1741,7 +946,7 @@ nc_handle_wm_command(HWND hwnd,
 {
     khui_nc_wnd_data * d;
 
-    d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    d = nc_get_dlg_data(hwnd);
     if (d == NULL)
         return 0;
 
@@ -1914,7 +1119,7 @@ static LRESULT nc_handle_wm_moving(HWND hwnd,
 {
     khui_nc_wnd_data * d;
 
-    d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    d = nc_get_dlg_data(hwnd);
     if (d == NULL)
         return FALSE;
 
@@ -1932,7 +1137,7 @@ static LRESULT nc_handle_wm_nc_notify(HWND hwnd,
     khui_nc_wnd_data * d;
     int id;
 
-    d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    d = nc_get_dlg_data(hwnd);
     if (d == NULL)
         return FALSE;
 
@@ -2653,7 +1858,7 @@ static LRESULT nc_handle_wm_timer(HWND hwnd,
                                   LPARAM lParam) {
     khui_nc_wnd_data * d;
 
-    d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    d = nc_get_dlg_data(hwnd);
     if (d == NULL)
         return FALSE;
 
@@ -2779,7 +1984,7 @@ static LRESULT nc_handle_wm_notify(HWND hwnd,
     LPNMHDR nmhdr;
     khui_nc_wnd_data * d;
 
-    d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    d = nc_get_dlg_data(hwnd);
     if (d == NULL)
         return FALSE;
 
@@ -2832,7 +2037,7 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
     HWND hw_ctrl;
     khui_nc_wnd_data * d;
 
-    d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+    d = nc_get_dlg_data(hwnd);
     if (d == NULL)
         return FALSE;
 
@@ -2886,7 +2091,7 @@ static LRESULT nc_handle_wm_activate(HWND hwnd,
         khui_nc_wnd_data * d;
         DWORD_PTR ex_style;
 
-        d = (khui_nc_wnd_data *)(LONG_PTR) GetWindowLongPtr(hwnd, CW_PARAM);
+        d = nc_get_dlg_data(hwnd);
 
         if (d && d->flashing_enabled) {
             ZeroMemory(&fi, sizeof(fi));
@@ -2911,24 +2116,27 @@ static LRESULT nc_handle_wm_activate(HWND hwnd,
     return (uMsg == WM_MOUSEACTIVATE)? MA_ACTIVATE : 0;
 }
 
-static LRESULT CALLBACK nc_window_proc(HWND hwnd,
-                                       UINT uMsg,
-                                       WPARAM wParam,
-                                       LPARAM lParam)
+INT_PTR CALLBACK nc_dlg_proc(HWND hwnd,
+                             UINT uMsg,
+                             WPARAM wParam,
+                             LPARAM lParam)
 {
     switch(uMsg) {
-    case WM_MOUSEACTIVATE:
-    case WM_ACTIVATE:
-        return nc_handle_wm_activate(hwnd, uMsg, wParam, lParam);
+    case WM_INITDIALOG:
+        return nc_handle_wm_initdialog(hwnd, uMsg, wParam, lParam);
 
-    case WM_CREATE:
-        return nc_handle_wm_create(hwnd, uMsg, wParam, lParam);
+    case WM_CLOSE:
+        return nc_handle_wm_close(hwnd, uMsg, wParam, lParam);
 
     case WM_DESTROY:
         return nc_handle_wm_destroy(hwnd, uMsg, wParam, lParam);
 
     case WM_COMMAND:
         return nc_handle_wm_command(hwnd, uMsg, wParam, lParam);
+
+    case WM_MOUSEACTIVATE:
+    case WM_ACTIVATE:
+        return nc_handle_wm_activate(hwnd, uMsg, wParam, lParam);
 
     case WM_NOTIFY:
         return nc_handle_wm_notify(hwnd, uMsg, wParam, lParam);
@@ -2947,42 +2155,41 @@ static LRESULT CALLBACK nc_window_proc(HWND hwnd,
         return nc_handle_wm_nc_notify(hwnd, uMsg, wParam, lParam);
     }
 
-    /* Note that this is technically a dialog box */
-    return DefDlgProc(hwnd, uMsg, wParam, lParam);
+    return FALSE;
 }
 
 void khm_register_newcredwnd_class(void)
 {
-    WNDCLASSEX wcx;
-
-    wcx.cbSize = sizeof(wcx);
-    wcx.style = CS_DBLCLKS | CS_OWNDC;
-    wcx.lpfnWndProc = nc_window_proc;
-    wcx.cbClsExtra = 0;
-    wcx.cbWndExtra = DLGWINDOWEXTRA + sizeof(LONG_PTR);
-    wcx.hInstance = khm_hInstance;
-    wcx.hIcon = LoadIcon(khm_hInstance, MAKEINTRESOURCE(IDI_MAIN_APP));
-    wcx.hCursor = LoadCursor((HINSTANCE) NULL, IDC_ARROW);
-    wcx.hbrBackground = (HBRUSH) (COLOR_BTNFACE + 1);
-    wcx.lpszMenuName = NULL;
-    wcx.lpszClassName = KHUI_NEWCREDWND_CLASS;
-    wcx.hIconSm = NULL;
-
-    khui_newcredwnd_cls = RegisterClassEx(&wcx);
+    /* Nothing to do */
 }
 
 void khm_unregister_newcredwnd_class(void)
 {
-    UnregisterClass(MAKEINTATOM(khui_newcredwnd_cls), khm_hInstance);
+    /* Nothing to do */
 }
+
 
 HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
 {
     wchar_t wtitle[256];
     HWND hwnd;
-    khm_int32 force_topmost = 0;
+    khui_nc_wnd_data * d;
+
+    d = (khui_nc_wnd_data *) PMALLOC(sizeof(*d));
+#ifdef DEBUG
+    assert(d != NULL);
+#endif
+    ZeroMemory(d, sizeof(*d));
+
+    d->nc = c;
+
+    khui_cw_lock_nc(c);
 
     if (c->window_title == NULL) {
+        size_t t = 0;
+
+        wtitle[0] = L'\0';
+
         if (c->subtype == KMSG_CRED_PASSWORD)
             LoadString(khm_hInstance, 
                        IDS_WT_PASSWORD,
@@ -2993,22 +2200,21 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
                        IDS_WT_NEW_CREDS,
                        wtitle,
                        ARRAYLENGTH(wtitle));
+
+        StringCchLength(wtitle, ARRAYLENGTH(wtitle), &t);
+        if (t > 0) {
+            t = (t + 1) * sizeof(wchar_t);
+            c->window_title = PMALLOC(t);
+            StringCbCopy(c->window_title, t, wtitle);
+        }
     }
 
-    khc_read_int32(NULL, L"CredWindow\\Windows\\NewCred\\ForceToTop", &force_topmost);
+    khui_cw_unlock_nc(c);
 
-    hwnd = CreateWindowEx(NC_WINDOW_EX_STYLES | (force_topmost ? WS_EX_TOPMOST : 0),
-                          MAKEINTATOM(khui_newcredwnd_cls),
-                          ((c->window_title)?c->window_title: wtitle),
-                          NC_WINDOW_STYLES,
-                          0,0,400,400,    /* bogus values.  the window
-                                             is going to resize and
-                                             reposition itself
-                                             anyway */
-                          parent,
-                          NULL,
-                          khm_hInstance,
-                          (LPVOID) c);
+    khc_read_int32(NULL, L"CredWindow\\Windows\\NewCred\\ForceToTop", &d->force_topmost);
+
+    hwnd = CreateDialogParam(khm_hInstance, MAKEINTRESOURCE(IDD_NC_CONTAINER),
+                             parent, nc_dlg_proc,  (LPVOID) d);
 
 #ifdef DEBUG
     assert(hwnd != NULL);

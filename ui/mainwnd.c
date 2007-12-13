@@ -1216,13 +1216,15 @@ khm_show_main_window(void) {
     if (khm_nCmdShow == SW_SHOWMINIMIZED ||
         khm_nCmdShow == SW_SHOWMINNOACTIVE ||
         khm_nCmdShow == SW_MINIMIZE) {
-        khm_hide_main_window();
-    } else {
-        ShowWindow(khm_hwnd_main, khm_nCmdShow);
-        UpdateWindow(khm_hwnd_main);
 
-        khm_cred_refresh();
+        khm_nCmdShow = SW_SHOW;
+
     }
+
+    ShowWindow(khm_hwnd_main, khm_nCmdShow);
+    UpdateWindow(khm_hwnd_main);
+
+    khm_cred_refresh();
 
     khm_nCmdShow = SW_RESTORE;
 }
@@ -1315,6 +1317,26 @@ khm_hide_main_window(void) {
 
 BOOL 
 khm_is_main_window_visible(void) {
+#if 0
+    HDC hdc;
+    RECT rc, rcClient;
+    int iType;
+
+    hdc = GetDC(khm_hwnd_main);
+    iType = GetClipBox(hdc, &rc);
+
+    ReleaseDC(hwnd, hdc);
+
+    if (iType == NULLREGION ||
+        iType == COMPLEXREGION)
+        return FALSE;
+
+    GetClientRect(khm_hwnd_main, &rcClient);
+    if (EqualRect(&rc, &rcClient))
+        return TRUE;
+
+    return FALSE;
+#endif
     return IsWindowVisible(khm_hwnd_main);
 }
 

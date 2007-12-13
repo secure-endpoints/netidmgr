@@ -2012,11 +2012,8 @@ khc_value_exists(khm_handle conf, const wchar_t * value) {
     DWORD t;
     int i;
 
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    if(!khc_is_handle(conf))
-        return KHM_ERROR_INVALID_PARAM;
+    if(!khc_is_config_running() || !khc_is_handle(conf))
+        return 0;
 
     do {
         c = khc_space_from_handle(conf);
@@ -2500,10 +2497,9 @@ khc_enum_subspaces(khm_handle conf,
     s = khc_space_from_handle(conf);
 
     if(prev == NULL) {
-        /* first off, we enumerate all the registry spaces regardless of
-        whether the handle is applicable for some registry space or not.
-        See notes for khc_begin_enum_subspaces() for reasons as to why
-        this is done (notes are in kconfig.h)*/
+        /* first off, we enumerate all the registry spaces regardless
+           of whether the handle is applicable for some registry space
+           or not. */
 
         /* go through the user hive first */
         {

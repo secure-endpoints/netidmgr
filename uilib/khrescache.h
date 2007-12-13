@@ -29,17 +29,40 @@
 
 #include<khdefs.h>
 
+#ifdef NOEXPORT
+
 KHMEXP void KHMAPI 
 khui_init_rescache(void);
 
 KHMEXP void KHMAPI 
 khui_exit_rescache(void);
 
+#if 0
+
 KHMEXP void KHMAPI 
 khui_cache_bitmap(UINT id, HBITMAP hbm);
 
 KHMEXP HBITMAP KHMAPI 
 khui_get_cached_bitmap(UINT id);
+
+#endif
+
+KHMEXP khm_int32 KHMAPI
+khui_cache_add_resource(khm_handle owner, khm_int32 id,
+                        khm_restype type,
+                        const void * buf, khm_size cb_buf);
+
+KHMEXP khm_int32 KHMAPI
+khui_cache_get_resource(khm_handle owner, khm_int32 id, khm_restype type,
+                        void * buf, khm_size *pcb_buf);
+
+KHMEXP khm_int32 KHMAPI
+khui_cache_del_resource(khm_handle owner, khm_int32 id, khm_restype type);
+
+KHMEXP khm_int32 KHMAPI
+khui_cache_del_by_owner(khm_handle owner);
+
+#endif
 
 typedef struct khui_ilist_t {
     int cx;

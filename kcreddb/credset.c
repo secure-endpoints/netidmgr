@@ -51,7 +51,7 @@ kcdb_credset_exit(void)
     DeleteCriticalSection(&cs_credset);
 }
 
-/* called on an unreleased credset, or with credset::cs held */
+/* called on a new credset, or with credset::cs held */
 void 
 kcdb_credset_buf_new(kcdb_credset * cs)
 {
@@ -69,6 +69,7 @@ void
 kcdb_credset_buf_delete(kcdb_credset * cs)
 {
     PFREE(cs->clist);
+    cs->clist = NULL;
     cs->nc_clist = 0;
     cs->nclist = 0;
 }
@@ -152,82 +153,137 @@ kcdb_credset_delete(khm_handle vcredset)
     return KHM_ERROR_SUCCESS;
 }
 
+static void
+check_and_set_refresh_bit_for_identity(khm_handle cred,
+                                       khm_handle * plast_identity) {
+    khm_handle this_identity;
+
+    if (KHM_SUCCEEDED(kcdb_cred_get_identity(cred,
+                                             &this_identity))) {
+        if (!kcdb_identity_is_equal(this_identity, *plast_identity)) {
+            kcdb_identity_set_flags(this_identity,
+                                    KCDB_IDENT_FLAG_NEEDREFRESH,
+                                    KCDB_IDENT_FLAG_NEEDREFRESH);
+            kcdb_identity_hold(this_identity);
+            if (*plast_identity)
+                kcdb_identity_release(*plast_identity);
+            *plast_identity = this_identity;
+        }
+        
+        kcdb_identity_release(this_identity);
+        this_identity = NULL;
+    }
+}
+
 /*! \internal
 
-Collect credentials from cs2 to cs1 which have already been selected into
-cl1 and cl2.
+  Collect credentials from cs_src to cs_dest which have already been
+  selected into cl_dest and cl_src.
 
-- Credentials in cl2 that are not in cl1 will get added to cs1
-- Credentials in cl1 that are not in cl2 will get removed from cs1
-- Credentials in cl1 and cl2 will be updated in cs1
+  - Credentials in cl_src that are not in cl_dest will get added to
+    cs_dest
 
-cl1 and cl2 will be modified.
+  - Credentials in cl_dest that are not in cl_src will get removed
+    from cs_dest
+
+  - Credentials in cl_dest and cl_src will be updated in cs_dest
+
+  cl_dest and cl_src will be modified.
 */
 khm_int32 
-kcdb_credset_collect_core(kcdb_credset * cs1,
-                          kcdb_cred ** cl1,
-                          khm_int32 ncl1,
-                          kcdb_credset * cs2,
-                          kcdb_cred ** cl2,
-                          khm_int32 ncl2,
+kcdb_credset_collect_core(kcdb_credset * cs_dest,
+                          kcdb_cred ** cl_dest,
+                          khm_int32 ncl_dest,
+                          kcdb_credset * cs_src,
+                          kcdb_cred ** cl_src,
+                          khm_int32 ncl_src,
                           khm_int32 * delta)
 {
     int i, j;
     int ldelta = 0;
     khm_int32 rv;
+    khm_boolean dest_is_root;
+    khm_handle last_identity = NULL;
 
-    /* find matching creds and update them */
-    for(i=0; i<ncl1; i++) 
-        if(cl1[i]) {
-            for(j=0; j<ncl2; j++) 
-                if(cl2[j] && kcdb_creds_is_equal((khm_handle) cl1[i], (khm_handle) cl2[j])) {
-                    /* they are equivalent. make them equal */
+    dest_is_root = (cs_dest == kcdb_root_credset);
+
+    /* find matching credentials and update them */
+    for (i=0; i < ncl_dest; i++) {
+        if (cl_dest[i]) {
+            for (j=0; j < ncl_src; j++) {
+                if (cl_src[j] &&
+                    kcdb_creds_is_equal((khm_handle) cl_dest[i], (khm_handle) cl_src[j])) {
 
                     /* depending on whether any changes were made,
-                        update ldelta with the proper bit flag */
+                       update ldelta with the proper bit flag */
 
-                    rv = kcdb_cred_update(cl1[i], cl2[j]);
+                    rv = kcdb_cred_update(cl_dest[i], cl_src[j]);
                     if (rv == KHM_ERROR_SUCCESS) {
-                        kcdb_credset_update_cred_ref((khm_handle) cs1, (khm_handle) cl1[i]);
+                        kcdb_credset_update_cred_ref((khm_handle) cs_dest,
+                                                     (khm_handle) cl_dest[i]);
                         ldelta |= KCDB_DELTA_MODIFY;
+
+                        if (dest_is_root)
+                            check_and_set_refresh_bit_for_identity(cl_dest[i],
+                                                                   &last_identity);
                     }
 
-                    cl2[j] = NULL;
-                    cl1[i] = NULL;
+                    cl_src[j] = NULL;
+                    cl_dest[i] = NULL;
                     break;
                 }
+            }
         }
+    }
 
-    /* all the creds that are left in cl1 need to be removed */
-    for(i=0; i<ncl1; i++)
-        if(cl1[i]) {
-            kcdb_credset_del_cred_ref((khm_handle) cs1, (khm_handle) cl1[i]);
-            cl1[i] = NULL;
+    /* all the creds that are left in cl_dest need to be removed */
+    for (i=0; i < ncl_dest; i++) {
+        if (cl_dest[i]) {
+            if (dest_is_root)
+                check_and_set_refresh_bit_for_identity(cl_dest[i],
+                                                       &last_identity);
+
+            kcdb_credset_del_cred_ref((khm_handle) cs_dest, (khm_handle) cl_dest[i]);
             ldelta |= KCDB_DELTA_DEL;
-        }
 
-    /* all the creds in cl2 need to be added to cs1 */
-    for(j=0; j<ncl2; j++)
-        if(cl2[j]) {
-            /* duplicate the credential and add it if we are adding it to the
-               root credential store. */
-            if(cs1 == kcdb_root_credset) {
+            cl_dest[i] = NULL;
+        }
+    }
+
+    /* all the creds in cl_src need to be added to cs_dest */
+    for (j=0; j < ncl_src; j++) {
+        if (cl_src[j]) {
+            /* duplicate the credential and add it if we are adding it
+               to or from the root credential store. */
+            if (cs_dest == kcdb_root_credset ||
+                cs_src == kcdb_root_credset) {
                 khm_handle h;
 
-                if(KHM_SUCCEEDED(kcdb_cred_dup((khm_handle) cl2[j], &h))) {
-                    kcdb_credset_add_cred((khm_handle) cs1, h, -1);
+                if (KHM_SUCCEEDED(kcdb_cred_dup((khm_handle) cl_src[j], &h))) {
+                    kcdb_credset_add_cred((khm_handle) cs_dest, h, -1);
                     kcdb_cred_release(h);
                 }
-            } else
-                kcdb_credset_add_cred((khm_handle) cs1, cl2[j], -1);
-            cl2[j] = NULL;
+            } else {
+                kcdb_credset_add_cred((khm_handle) cs_dest, cl_src[j], -1);
+            }
+
+            if (dest_is_root)
+                check_and_set_refresh_bit_for_identity(cl_src[j],
+                                                       &last_identity);
+            cl_src[j] = NULL;
             ldelta |= KCDB_DELTA_ADD;
         }
+    }
 
-    if(delta)
+    if (last_identity) {
+        kcdb_identity_release(last_identity);
+        last_identity = NULL;
+    }
+
+    if (delta)
         *delta = ldelta;
 
-    if((cs1 == kcdb_root_credset) && ldelta) {
+    if (dest_is_root && ldelta) {
         /* something changed in the root credential set */
         kmq_post_message(KMSG_CRED,KMSG_CRED_ROOTDELTA,ldelta,NULL);
     }
@@ -235,93 +291,93 @@ kcdb_credset_collect_core(kcdb_credset * cs1,
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_credset_collect(khm_handle cs_dest,
-		     khm_handle cs_src, 
+kcdb_credset_collect(khm_handle h_cs_dest,
+		     khm_handle h_cs_src, 
 		     khm_handle identity, 
-		     khm_int32 type,
+		     khm_int32 type_id,
 		     khm_int32 * delta)
 {
-    kcdb_credset * cs;
-    kcdb_credset * rcs;
+    kcdb_credset * cs_source;
+    kcdb_credset * cs_dest;
     khm_int32 code = KHM_ERROR_SUCCESS;
-    kcdb_cred ** r_sel = NULL;
-    kcdb_cred ** c_sel = NULL;
-    int nr_sel, nc_sel;
+    kcdb_cred ** clist_dest = NULL;
+    kcdb_cred ** clist_src = NULL;
+    int nclist_dest, nclist_src;
     int i;
 
-    if((cs_src && !kcdb_credset_is_credset(cs_src)) ||
-        (cs_dest && !kcdb_credset_is_credset(cs_dest)) ||
-        (cs_src == cs_dest)) /* works because credsets use shared
-                                handles */
+    if ((h_cs_src && !kcdb_credset_is_credset(h_cs_src)) ||
+        (h_cs_dest && !kcdb_credset_is_credset(h_cs_dest)) ||
+        (h_cs_src == h_cs_dest)) /* works because credsets use shared
+                                    handles */
         return KHM_ERROR_INVALID_PARAM;
 
     if(identity && !kcdb_is_active_identity(identity))
         return KHM_ERROR_INVALID_PARAM;
 
-    if(cs_src)
-        cs = (kcdb_credset *) cs_src;
+    if(h_cs_src)
+        cs_source = (kcdb_credset *) h_cs_src;
     else
-        cs = kcdb_root_credset;
+        cs_source = kcdb_root_credset;
 
-    if(cs_dest)
-        rcs = (kcdb_credset *) cs_dest;
+    if(h_cs_dest)
+        cs_dest = (kcdb_credset *) h_cs_dest;
     else
-        rcs = kcdb_root_credset;
+        cs_dest = kcdb_root_credset;
 
-    if (kcdb_credset_is_sealed(rcs))
+    if (kcdb_credset_is_sealed(cs_dest))
         return KHM_ERROR_INVALID_OPERATION;
 
-    EnterCriticalSection(&(cs->cs));
-    EnterCriticalSection(&(rcs->cs));
+    if (cs_source < cs_dest) {
+        EnterCriticalSection(&(cs_source->cs));
+        EnterCriticalSection(&(cs_dest->cs));
+    } else {
+        EnterCriticalSection(&(cs_dest->cs));
+        EnterCriticalSection(&(cs_source->cs));
+    }
 
     /* enumerate through the root and given credential sets and select
        the ones we want */
 
-    if(rcs->nclist > 0)
-        r_sel = PMALLOC(sizeof(kcdb_cred *) * rcs->nclist);
-    if(cs->nclist > 0)
-        c_sel = PMALLOC(sizeof(kcdb_cred *) * cs->nclist);
-    nr_sel = 0;
-    nc_sel = 0;
+    if(cs_dest->nclist > 0)
+        clist_dest = PMALLOC(sizeof(kcdb_cred *) * cs_dest->nclist);
+    if(cs_source->nclist > 0)
+        clist_src = PMALLOC(sizeof(kcdb_cred *) * cs_source->nclist);
+    nclist_dest = 0;
+    nclist_src = 0;
 
-    for(i=0; i<rcs->nclist; i++) {
-        if(rcs->clist[i].cred &&
-            (!identity || rcs->clist[i].cred->identity == identity) &&
-            (type==KCDB_CREDTYPE_ALL || rcs->clist[i].cred->type == type))
-        {
-            r_sel[nr_sel++] = rcs->clist[i].cred;
+    for(i=0; i < cs_dest->nclist; i++) {
+        if(cs_dest->clist[i].cred &&
+           (!identity || cs_dest->clist[i].cred->identity == identity) &&
+           (type_id==KCDB_CREDTYPE_ALL || cs_dest->clist[i].cred->type == type_id)) {
+
+            clist_dest[nclist_dest++] = cs_dest->clist[i].cred;
         }
     }
 
-    for(i=0; i<cs->nclist; i++) {
-        if(cs->clist[i].cred &&
-            (!identity || cs->clist[i].cred->identity == identity) &&
-            (type==KCDB_CREDTYPE_ALL || cs->clist[i].cred->type == type))
-        {
-            c_sel[nc_sel++] = cs->clist[i].cred;
+    for(i=0; i < cs_source->nclist; i++) {
+        if(cs_source->clist[i].cred &&
+           (!identity || cs_source->clist[i].cred->identity == identity) &&
+           (type_id==KCDB_CREDTYPE_ALL || cs_source->clist[i].cred->type == type_id)) {
+
+            clist_src[nclist_src++] = cs_source->clist[i].cred;
         }
     }
 
-    rcs->version++;
+    cs_dest->version++;
 
-    code = kcdb_credset_collect_core(
-        rcs,
-        r_sel,
-        nr_sel,
-        cs,
-        c_sel,
-        nc_sel,
-        delta);
+    code = kcdb_credset_collect_core(cs_dest, clist_dest, nclist_dest,
+                                     cs_source, clist_src, nclist_src,
+                                     delta);
 
-    LeaveCriticalSection(&(rcs->cs));
-    LeaveCriticalSection(&(cs->cs));
+    LeaveCriticalSection(&(cs_dest->cs));
+    LeaveCriticalSection(&(cs_source->cs));
 
-    if(r_sel)
-        PFREE(r_sel);
-    if(c_sel)
-        PFREE(c_sel);
+    if(clist_dest)
+        PFREE(clist_dest);
+    if(clist_src)
+        PFREE(clist_src);
 
-    if (cs_dest == NULL) {
+    if (h_cs_dest == NULL) {
         kcdb_identity_refresh_all();
     }
 
@@ -329,104 +385,105 @@ kcdb_credset_collect(khm_handle cs_dest,
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_credset_collect_filtered(khm_handle cs_dest,
-			      khm_handle cs_src,
+kcdb_credset_collect_filtered(khm_handle h_cs_dest,
+			      khm_handle h_cs_src,
 			      kcdb_cred_filter_func filter,
 			      void * rock,
 			      khm_int32 * delta)
 {
-    kcdb_credset * cs;
-    kcdb_credset * rcs;
+    kcdb_credset * cs_src;
+    kcdb_credset * cs_dest;
     khm_int32 code = KHM_ERROR_SUCCESS;
-    kcdb_cred ** r_sel = NULL;
-    kcdb_cred ** c_sel = NULL;
-    int nr_sel, nc_sel;
+    kcdb_cred ** clist_dest = NULL;
+    kcdb_cred ** clist_src = NULL;
+    int nclist_dest, nclist_src;
     int i;
-    khm_int32 cs_f = 0;
-    khm_int32 rcs_f = 0;
+    khm_int32 cs_src_f = 0;
+    khm_int32 cs_dest_f = 0;
 
-    if((cs_src && !kcdb_credset_is_credset(cs_src)) ||
-        (cs_dest && !kcdb_credset_is_credset(cs_dest)) ||
-        (cs_src == cs_dest)) /* works because credsets use shared
+    if((h_cs_src && !kcdb_credset_is_credset(h_cs_src)) ||
+        (h_cs_dest && !kcdb_credset_is_credset(h_cs_dest)) ||
+        (h_cs_src == h_cs_dest)) /* works because credsets use shared
                                 handles */
         return KHM_ERROR_INVALID_PARAM;
 
-    if(cs_src)
-        cs = (kcdb_credset *) cs_src;
+    if(h_cs_src)
+        cs_src = (kcdb_credset *) h_cs_src;
     else {
-        cs = kcdb_root_credset;
-        cs_f = KCDB_CREDCOLL_FILTER_ROOT;
+        cs_src = kcdb_root_credset;
+        cs_src_f = KCDB_CREDCOLL_FILTER_ROOT;
     }
 
-    if(cs_dest)
-        rcs = (kcdb_credset *) cs_dest;
+    if(h_cs_dest)
+        cs_dest = (kcdb_credset *) h_cs_dest;
     else {
-        rcs = kcdb_root_credset;
-        rcs_f = KCDB_CREDCOLL_FILTER_ROOT;
+        cs_dest = kcdb_root_credset;
+        cs_dest_f = KCDB_CREDCOLL_FILTER_ROOT;
     }
 
-    if (kcdb_credset_is_sealed(rcs))
+    if (kcdb_credset_is_sealed(cs_dest))
         return KHM_ERROR_INVALID_OPERATION;
 
-    EnterCriticalSection(&(cs->cs));
-    EnterCriticalSection(&(rcs->cs));
+    if (cs_src < cs_dest) {
+        EnterCriticalSection(&(cs_src->cs));
+        EnterCriticalSection(&(cs_dest->cs));
+    } else {
+        EnterCriticalSection(&(cs_dest->cs));
+        EnterCriticalSection(&(cs_src->cs));
+    }
 
 #ifdef DEBUG
-    assert(!(rcs->flags & KCDB_CREDSET_FLAG_ENUM));
-    assert(!(cs->flags & KCDB_CREDSET_FLAG_ENUM));
+    assert(!(cs_dest->flags & KCDB_CREDSET_FLAG_ENUM));
+    assert(!(cs_src->flags & KCDB_CREDSET_FLAG_ENUM));
 #endif
 
-    if(rcs->nclist)
-        r_sel = PMALLOC(sizeof(kcdb_cred *) * rcs->nclist);
-    if(cs->nclist)
-        c_sel = PMALLOC(sizeof(kcdb_cred *) * cs->nclist);
-    nr_sel = 0;
-    nc_sel = 0;
+    if (cs_dest->nclist)
+        clist_dest = PMALLOC(sizeof(kcdb_cred *) * cs_dest->nclist);
+    if (cs_src->nclist)
+        clist_src = PMALLOC(sizeof(kcdb_cred *) * cs_src->nclist);
+    nclist_dest = 0;
+    nclist_src = 0;
 
-    rcs->flags |= KCDB_CREDSET_FLAG_ENUM;
+    cs_dest->flags |= KCDB_CREDSET_FLAG_ENUM;
 
-    for(i=0; i<rcs->nclist; i++) {
-        if(rcs->clist[i].cred && 
-           (*filter)((khm_handle)rcs->clist[i].cred, 
-                     KCDB_CREDCOLL_FILTER_DEST | rcs_f, 
-                     rock))
-        {
-            r_sel[nr_sel++] = rcs->clist[i].cred;
+    for (i=0; i < cs_dest->nclist; i++) {
+        if (cs_dest->clist[i].cred && 
+            (*filter)((khm_handle)cs_dest->clist[i].cred, 
+                      KCDB_CREDCOLL_FILTER_DEST | cs_dest_f, 
+                      rock)) {
+            clist_dest[nclist_dest++] = cs_dest->clist[i].cred;
         }
     }
 
-    rcs->flags &= ~KCDB_CREDSET_FLAG_ENUM;
-    cs->flags |= KCDB_CREDSET_FLAG_ENUM;
+    cs_dest->flags &= ~KCDB_CREDSET_FLAG_ENUM;
+    cs_src->flags |= KCDB_CREDSET_FLAG_ENUM;
 
-    for(i=0; i<cs->nclist; i++) {
-        if(cs->clist[i].cred && filter((khm_handle)rcs->clist[i].cred, KCDB_CREDCOLL_FILTER_SRC | cs_f, rock))
-        {
-            c_sel[nc_sel++] = cs->clist[i].cred;
+    for (i=0; i < cs_src->nclist; i++) {
+        if (cs_src->clist[i].cred &&
+            (*filter)((khm_handle)cs_src->clist[i].cred,
+                      KCDB_CREDCOLL_FILTER_SRC | cs_src_f,
+                      rock)) {
+            clist_src[nclist_src++] = cs_src->clist[i].cred;
         }
     }
 
-    cs->flags &= ~KCDB_CREDSET_FLAG_ENUM;
+    cs_src->flags &= ~KCDB_CREDSET_FLAG_ENUM;
 
-    rcs->version++;
+    cs_dest->version++;
 
-    code = kcdb_credset_collect_core(
-        rcs,
-        r_sel,
-        nr_sel,
-        cs,
-        c_sel,
-        nc_sel,
-        delta);
+    code = kcdb_credset_collect_core(cs_dest, clist_dest, nclist_dest,
+                                     cs_src, clist_src, nclist_src,
+                                     delta);
 
-    LeaveCriticalSection(&(rcs->cs));
-    LeaveCriticalSection(&(cs->cs));
+    LeaveCriticalSection(&(cs_dest->cs));
+    LeaveCriticalSection(&(cs_src->cs));
 
-    if(r_sel)
-        PFREE(r_sel);
-    if(c_sel)
-        PFREE(c_sel);
+    if(clist_dest)
+        PFREE(clist_dest);
+    if(clist_src)
+        PFREE(clist_src);
 
-    if (cs_dest == NULL) {
+    if (h_cs_dest == NULL) {
         kcdb_identity_refresh_all();
     }
 
@@ -1056,7 +1113,7 @@ kcdb_credset_unseal(khm_handle credset) {
 
 /* These are protected with cs_credset */
 static void * _creds_comp_rock = NULL;
-static kcdb_cred_comp_func _creds_comp_func = NULL;
+static kcdb_comp_func _creds_comp_func = NULL;
 
 /* Need cs_credset when calling this function. */
 int __cdecl 
@@ -1069,7 +1126,7 @@ kcdb_creds_comp_wrapper(const void * a, const void * b)
 
 KHMEXP khm_int32 KHMAPI 
 kcdb_credset_sort(khm_handle credset,
-		  kcdb_cred_comp_func comp,
+		  kcdb_comp_func comp,
 		  void * rock)
 {
     khm_int32 code = KHM_ERROR_SUCCESS;
@@ -1113,7 +1170,7 @@ kcdb_cred_comp_generic(khm_handle cred1,
     khm_int32 r = 0;
     khm_int32 f1, f2;
     khm_int32 t1, t2;
-    khm_int32 pt;
+    khm_int32 pt = KCDB_CREDTYPE_INVALID;
 
     for(i=0; i<o->nFields; i++) {
         if (o->fields[i].order & KCDB_CRED_COMP_INITIAL_FIRST) {
@@ -1121,18 +1178,34 @@ kcdb_cred_comp_generic(khm_handle cred1,
             if (o->fields[i].attrib == KCDB_ATTR_TYPE_NAME ||
                 o->fields[i].attrib == KCDB_ATTR_TYPE) {
 
+                khm_handle id1 = NULL;
+                khm_handle id2 = NULL;
+                khm_handle idpro = NULL;
+
                 kcdb_cred_get_type(cred1, &t1);
                 kcdb_cred_get_type(cred2, &t2);
-                kcdb_identity_get_type(&pt);
 
-                if (t1 == t2)
-                    r = 0;
-                else if (t1 == pt)
-                    r = -1;
-                else if (t2 == pt)
-                    r = 1;
-                else
-                    r = 0;
+                if (t1 == t2) {
+                    continue;
+                } else {
+                    kcdb_cred_get_identity(cred1, &id1);
+                    kcdb_cred_get_identity(cred2, &id2);
+
+                    if (kcdb_identity_is_equal(id1, id2)) {
+                        kcdb_identity_get_identpro(id1, &idpro);
+                        kcdb_identpro_get_type(idpro, &pt);
+
+                        if (t1 == pt)
+                            r = -1;
+                        else if (t2 == pt)
+                            r = 1;
+
+                        kcdb_identpro_release(idpro);
+                    }
+
+                    kcdb_identity_release(id1);
+                    kcdb_identity_release(id2);
+                }
 
             } else {
 

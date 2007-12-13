@@ -85,128 +85,17 @@ kcdb_attrib_post_message(khm_int32 op, kcdb_attrib_i * ai)
 }
 
 khm_int32 KHMAPI 
-kcdb_attr_sys_cb(khm_handle vcred, 
+kcdb_attr_sys_cb(khm_handle h, 
                  khm_int32 attr, 
                  void * buf, 
                  khm_size * pcb_buf)
 {
-    kcdb_cred * c;
-
-    c = (kcdb_cred *) vcred;
-
-    switch(attr) {
-    case KCDB_ATTR_NAME:
-        return kcdb_cred_get_name(vcred, buf, pcb_buf);
-
-    case KCDB_ATTR_ID:
-        if(buf && *pcb_buf >= sizeof(khm_ui_8)) {
-            *pcb_buf = sizeof(khm_int64);
-            *((khm_ui_8 *) buf) = (khm_ui_8) c->identity;
-            return KHM_ERROR_SUCCESS;
-        } else {
-            *pcb_buf = sizeof(khm_ui_8);
-            return KHM_ERROR_TOO_LONG;
-        }
-
-    case KCDB_ATTR_ID_NAME:
-        return kcdb_identity_get_name((khm_handle) c->identity, 
-                                      (wchar_t *) buf, pcb_buf);
-
-    case KCDB_ATTR_TYPE:
-        if(buf && *pcb_buf >= sizeof(khm_int32)) {
-            *pcb_buf = sizeof(khm_int32);
-            *((khm_int32 *) buf) = c->type;
-            return KHM_ERROR_SUCCESS;
-        } else {
-            *pcb_buf = sizeof(khm_int32);
-            return KHM_ERROR_TOO_LONG;
-        }
-
-    case KCDB_ATTR_TYPE_NAME:
-        return kcdb_credtype_describe(c->type, buf, 
-                                      pcb_buf, KCDB_TS_SHORT);
-
-    case KCDB_ATTR_TIMELEFT:
-        {
-            khm_int32 rv = KHM_ERROR_SUCCESS;
-
-            if(!buf || *pcb_buf < sizeof(FILETIME)) {
-                *pcb_buf = sizeof(FILETIME);
-                rv = KHM_ERROR_TOO_LONG;
-            } else if(!kcdb_cred_buf_exist(c,KCDB_ATTR_EXPIRE)) {
-                *pcb_buf = sizeof(FILETIME);
-                /* setting the timeleft to _I64_MAX has the
-                   interpretation that this credential does not
-                   expire, which is the default behavior if the
-                   expiration time is not known */
-                *((FILETIME *) buf) = IntToFt(_I64_MAX);
-            } else {
-                FILETIME ftc;
-                khm_int64 iftc;
-
-                GetSystemTimeAsFileTime(&ftc);
-                iftc = FtToInt(&ftc);
-
-                *((FILETIME *) buf) =
-                    IntToFt(FtToInt((FILETIME *) 
-                                    kcdb_cred_buf_get(c,KCDB_ATTR_EXPIRE))
-                            - iftc);
-                *pcb_buf = sizeof(FILETIME);
-            }
-
-            return rv;
-        }
-
-    case KCDB_ATTR_RENEW_TIMELEFT:
-        {
-            khm_int32 rv = KHM_ERROR_SUCCESS;
-
-            if(!buf || *pcb_buf < sizeof(FILETIME)) {
-                *pcb_buf = sizeof(FILETIME);
-                rv = KHM_ERROR_TOO_LONG;
-            } else if(!kcdb_cred_buf_exist(c,KCDB_ATTR_RENEW_EXPIRE)) {
-                *pcb_buf = sizeof(FILETIME);
-                /* setting the timeleft to _I64_MAX has the
-                   interpretation that this credential does not
-                   expire, which is the default behavior if the
-                   expiration time is not known */
-                *((FILETIME *) buf) = IntToFt(_I64_MAX);
-            } else {
-                FILETIME ftc;
-                khm_int64 i_re;
-                khm_int64 i_ct;
-
-                GetSystemTimeAsFileTime(&ftc);
-
-                i_re = FtToInt(((FILETIME *)
-                                kcdb_cred_buf_get(c, KCDB_ATTR_RENEW_EXPIRE)));
-                i_ct = FtToInt(&ftc);
-
-                if (i_re > i_ct)
-                    *((FILETIME *) buf) =
-                        IntToFt(i_re - i_ct);
-                else
-                    *((FILETIME *) buf) =
-                        IntToFt(0);
-
-                *pcb_buf = sizeof(FILETIME);
-            }
-
-            return rv;
-        }
-
-    case KCDB_ATTR_FLAGS:
-        if(buf && *pcb_buf >= sizeof(khm_int32)) {
-            *pcb_buf = sizeof(khm_int32);
-            *((khm_int32 *) buf) = c->flags;
-            return KHM_ERROR_SUCCESS;
-        } else {
-            *pcb_buf = sizeof(khm_int32);
-            return KHM_ERROR_TOO_LONG;
-        }
-
-    default:
-        return KHM_ERROR_NOT_FOUND;
+    if (kcdb_handle_is_cred(h)) {
+        return kcdbint_cred_attr_cb(h, attr, buf, pcb_buf);
+    } else if (kcdb_handle_is_identity(h)) {
+        return kcdbint_ident_attr_cb(h, attr, buf, pcb_buf);
+    } else {
+        return KHM_ERROR_INVALID_PARAM;
     }
 }
 
@@ -239,7 +128,7 @@ kcdb_attrib_init(void)
     kcdb_attribs = NULL;
 
     /* register standard attributes */
-    
+
     /* Name */
     attrib.id = KCDB_ATTR_NAME;
     attrib.name = KCDB_ATTRNAME_NAME;
@@ -270,8 +159,8 @@ kcdb_attrib_init(void)
         KCDB_ATTR_FLAG_SYSTEM |
         KCDB_ATTR_FLAG_HIDDEN;
     attrib.compute_cb = kcdb_attr_sys_cb;
-    attrib.compute_min_cbsize = sizeof(khm_int32);
-    attrib.compute_max_cbsize = sizeof(khm_int32);
+    attrib.compute_min_cbsize = sizeof(khm_int64);
+    attrib.compute_max_cbsize = sizeof(khm_int64);
 
     kcdb_attrib_register(&attrib, NULL);
 
@@ -480,6 +369,79 @@ kcdb_attrib_init(void)
         KCDB_ATTR_FLAG_COMPUTED | 
         KCDB_ATTR_FLAG_SYSTEM |
         KCDB_ATTR_FLAG_HIDDEN;
+    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(khm_int32);
+    attrib.compute_max_cbsize = sizeof(khm_int32);
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Display Name */
+    attrib.id = KCDB_ATTR_DISPLAY_NAME;
+    attrib.name = KCDB_ATTRNAME_DISPLAY_NAME;
+    attrib.type = KCDB_TYPE_STRING;
+    LoadString(hinst_kcreddb, IDS_DISPLAY_NAME, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb = NULL;
+    attrib.compute_min_cbsize = 0;
+    attrib.compute_max_cbsize = 0;
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Last Update */
+    attrib.id = KCDB_ATTR_LAST_UPDATE;
+    attrib.name = KCDB_ATTRNAME_LAST_UPDATE;
+    attrib.type = KCDB_TYPE_DATE;
+    LoadString(hinst_kcreddb, IDS_LAST_UPDATE, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED;
+    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(FILETIME);
+    attrib.compute_max_cbsize = sizeof(FILETIME);
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Number of credentials */
+    attrib.id = KCDB_ATTR_N_CREDS;
+    attrib.name = KCDB_ATTRNAME_N_CREDS;
+    attrib.type = KCDB_TYPE_INT32;
+    LoadString(hinst_kcreddb, IDS_N_CREDS, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED |
+        KCDB_ATTR_FLAG_PROPERTY;
+    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(khm_int32);
+    attrib.compute_max_cbsize = sizeof(khm_int32);
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Number of identity credentials */
+    attrib.id = KCDB_ATTR_N_IDCREDS;
+    attrib.name = KCDB_ATTRNAME_N_IDCREDS;
+    attrib.type = KCDB_TYPE_INT32;
+    LoadString(hinst_kcreddb, IDS_N_IDCREDS, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED |
+        KCDB_ATTR_FLAG_PROPERTY;
+    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(khm_int32);
+    attrib.compute_max_cbsize = sizeof(khm_int32);
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Number of initial credentials */
+    attrib.id = KCDB_ATTR_N_INITCREDS;
+    attrib.name = KCDB_ATTRNAME_N_INITCREDS;
+    attrib.type = KCDB_TYPE_INT32;
+    LoadString(hinst_kcreddb, IDS_N_INITCREDS, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED |
+        KCDB_ATTR_FLAG_PROPERTY;
     attrib.compute_cb = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(khm_int32);
     attrib.compute_max_cbsize = sizeof(khm_int32);
@@ -719,9 +681,7 @@ KHMEXP khm_int32 KHMAPI kcdb_attrib_describe(
     if(!ai)
         return KHM_ERROR_NOT_FOUND;
 
-    if((flags & KCDB_TS_SHORT) &&
-        ai->attr.short_desc) 
-    {
+    if ((flags & KCDB_TS_SHORT) && ai->attr.short_desc) {
         if(FAILED(StringCbLength(ai->attr.short_desc, KCDB_MAXCB_SHORT_DESC, &cb_size)))
             return KHM_ERROR_UNKNOWN;
         cb_size += sizeof(wchar_t);

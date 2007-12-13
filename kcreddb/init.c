@@ -42,20 +42,24 @@ void kcdb_init(void) {
     kmq_set_completion_handler(KMSG_KCDB, kcdb_msg_completion);
 
     kcdb_credtype_init();
+    kcdbint_identpro_init();
     kcdbint_ident_init();
     kcdb_credset_init();
     kcdb_cred_init();
     kcdb_type_init();
     kcdb_attrib_init();
+    kcdbint_enum_init();
 }
 
 void kcdb_exit(void) {
 
+    kcdbint_enum_exit();
     kcdb_attrib_exit();
     kcdb_type_exit();
     kcdb_cred_exit();
     kcdb_credset_exit();
     kcdbint_ident_exit();
+    kcdbint_identpro_exit();
     kcdb_credtype_exit();
 
     kmq_set_completion_handler(KMSG_KCDB, NULL);
@@ -80,12 +84,26 @@ khm_handle kcdb_get_config(void) {
 void KHMAPI kcdb_msg_completion(kmq_message * m) {
     if(!m)
         return;
-    if(m->subtype == KMSG_KCDB_IDENT)
+
+    switch (m->subtype) {
+    case KMSG_KCDB_IDENT:
         kcdbint_ident_msg_completion(m);
-    else if(m->subtype == KMSG_KCDB_ATTRIB)
+        break;
+
+    case KMSG_KCDB_ATTRIB:
         kcdb_attrib_msg_completion(m);
-    else if(m->subtype == KMSG_KCDB_TYPE)
+        break;
+
+    case KMSG_KCDB_TYPE:
         kcdb_type_msg_completion(m);
-    else if(m->subtype == KMSG_KCDB_CREDTYPE)
+        break;
+
+    case KMSG_KCDB_CREDTYPE:
         kcdb_credtype_msg_completion(m);
+        break;
+
+    case KMSG_KCDB_IDENTPRO:
+        kcdbint_identpro_msg_completion(m);
+        break;
+    }
 }

@@ -74,5 +74,6 @@ void *  kcdb_buf_get(kcdb_buf * buf, khm_size slot);
 khm_size kcdb_buf_size(kcdb_buf * buf, khm_size slot);
 void    kcdb_buf_set_value_flag(kcdb_buf * buf, khm_size slot);
 khm_size kcdb_buf_slot_by_id(kcdb_buf * buf, khm_ui_2 id);
+khm_size kcdb_buf_first_free_slot(kcdb_buf * buf);
 
 #endif

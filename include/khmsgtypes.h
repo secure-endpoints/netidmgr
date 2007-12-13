@@ -165,6 +165,7 @@
 #define KMSG_KCDB_CREDTYPE  2
 #define KMSG_KCDB_ATTRIB    3
 #define KMSG_KCDB_TYPE      4
+#define KMSG_KCDB_IDENTPRO  5
 
 /*! \brief Generic credentials request
 
@@ -266,6 +267,12 @@
     \note May be sent to individual credential subscriptions.
  */
 #define KMSG_CRED_REFRESH   2
+
+/*! \brief Resource Request
+
+  \see ::kcdb_resource_request
+ */
+#define KMSG_CRED_RESOURCE_REQ 3
 
 /*! \brief Change the password
 
@@ -808,6 +815,12 @@
     - \p vparam : handle to the identity
  */
 #define KMSG_IDENT_NOTIFY_CREATE        13
+
+/*! \brief Resource request
+
+  \see ::kcdb_resource_request
+ */
+#define KMSG_IDENT_RESOURCE_REQ         14
 
 /*@}*/ /* /KMSG_IDENT subtypes */
 

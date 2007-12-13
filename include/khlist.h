@@ -110,12 +110,14 @@
     (pq)->head = (pq)->tail = NULL;             \
     } while(0)
 
+/* Place an element at the tail of the queue */
 #define QPUT(pq, pe)                            \
     do {                                        \
     LPUSH(&(pq)->tail, (pe));                   \
     if(!(pq)->head) (pq)->head = (pe);          \
     } while(0)
 
+/* Place an element at the head of the queue */
 #define QPUSH(pq, pe)                           \
     do {                                        \
     (pe)->next = NULL;                          \

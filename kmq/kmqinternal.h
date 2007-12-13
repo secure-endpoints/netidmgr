@@ -182,7 +182,7 @@ void kmqint_init_msg_types(void);
 void kmqint_exit_msg_types(void);
 void kmqint_free_msg_type(int t);
 void kmqint_msg_type_create(int t);
-void kmqint_msg_type_add_sub(int t, kmq_msg_subscription *s);
+int  kmqint_msg_type_add_sub(int t, kmq_msg_subscription *s);
 void kmqint_msg_type_del_sub(kmq_msg_subscription *s);
 kmq_msg_subscription * kmqint_msg_type_del_sub_hwnd(khm_int32 t, HWND hwnd);
 kmq_msg_subscription * kmqint_msg_type_del_sub_cb(khm_int32 t, kmq_callback_t cb);

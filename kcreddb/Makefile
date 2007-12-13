@@ -27,18 +27,23 @@ MODULE=kcreddb
 !include <../config/Makefile.w32>
 
 INCFILES= \
-	$(INCDIR)\kcreddb.h
+	$(INCDIR)\kcreddb.h	\
+	$(INCDIR)\kmm.h		\
+	$(INCDIR)\khrescache.h
 
 OBJFILES= \
-	$(OBJ)\buf.obj \
-	$(OBJ)\attrib.obj \
-	$(OBJ)\credential.obj \
-	$(OBJ)\credset.obj \
-	$(OBJ)\credtype.obj \
-	$(OBJ)\identity.obj \
-	$(OBJ)\init.obj \
-	$(OBJ)\kcreddbmain.obj \
-	$(OBJ)\type.obj \
+	$(OBJ)\buf.obj		\
+	$(OBJ)\enum.obj		\
+	$(OBJ)\attrib.obj	\
+	$(OBJ)\credential.obj	\
+	$(OBJ)\credset.obj	\
+	$(OBJ)\credtype.obj	\
+	$(OBJ)\identpro.obj	\
+	$(OBJ)\identity.obj	\
+	$(OBJ)\init.obj		\
+	$(OBJ)\kcreddbmain.obj	\
+	$(OBJ)\type.obj		\
+	$(OBJ)\resacq.obj	\
 	$(OBJ)\kcdbconfig.obj
 
 $(OBJ)\kcdbconfig.c: kcdbconfig.csv $(CONFDIR)\csvschema.cfg
@@ -46,6 +51,12 @@ $(OBJ)\kcdbconfig.c: kcdbconfig.csv $(CONFDIR)\csvschema.cfg
 
 $(OBJ)\kcredres.res: lang\en_us\kcredres.rc
 	$(RC2RES)
+
+$(INCDIR)\kmm.h: ..\kmm\kmm.h
+	$(CP) $** $@
+
+$(INCDIR)\khrescache.h: ..\uilib\khrescache.h
+	$(CP) $** $@
 
 all: mkdirs $(INCFILES) $(OBJ)\kcredres.res $(OBJFILES)
 

@@ -1,9 +1,12 @@
 #!ANCHOR=ROOT
 #!SCOPE=Credentials DB
 Name,Type,Value,Description
-KCDB,KC_SPACE,0,Khimaira Configuration DB
+KCDB,KC_SPACE,0,Khimaira Credentials DB
+  IdentityProviderOrder,KC_STRING,"Krb5Ident",Order of identity providers.
   Identity,KC_SPACE,0,Configuration space for identities
     _Schema,KC_SPACE,0,Schema for identities
+      Name,KC_STRING,,The name of the identity.
+      IDProvider,KC_STRING,,The name of the identity provider.
       Sticky,KC_INT32,0,Boolean. Is this a sticky identity?
       Monitor,KC_INT32,1,Boolean. Enables monitoring the identity
       WarnThreshold,KC_INT32,900,In seconds

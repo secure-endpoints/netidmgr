@@ -47,37 +47,42 @@ typedef struct khui_credwnd_outline_t {
     khm_int32   length;     /* number of rows in outline */
     khm_int32   level;      /* outline level */
     khm_int32   col;        /* outline column */
-    wchar_t     *header;    /* character string associated with header */
+    wchar_t     *header;    /* caption for this header */
     khm_int32   attr_id;
-    void *      data;       /* level specific data :
-                               Identity -> handle to identity
-                               Type -> type ID
-                               otherwise -> canonical data buffer
-                            */
-    khm_size    cb_data;
+
+    union {
+        khm_handle  identity;   /* if attr_id == KCDB_ATTR_ID_NAME */
+        khm_int32   credtype;   /* if attr_id == KCDB_ATTR_TYPE */
+        struct {                /* for everything else */
+            void *      rawdata;
+            khm_size    cb_rawdata;
+        };
+    };
 
     khm_size    idx_start;  /* index of the first cred in the credset */
     khm_size    idx_end;    /* index of the last cred in the credset */
+
     TDCL(struct khui_credwnd_outline_t);
 } khui_credwnd_outline;
 
 #define KHUI_CW_O_EXPAND        0x00000001
-#define KHUI_CW_O_STICKY        0x00000002
 #define KHUI_CW_O_VISIBLE       0x00000004
 #define KHUI_CW_O_SHOWFLAG      0x00000008
 #define KHUI_CW_O_SELECTED      0x00000010
 #define KHUI_CW_O_DATAALLOC     0x00000020
 #define KHUI_CW_O_NOOUTLINE     0x00000040
-#define KHUI_CW_O_RELIDENT      0x00000080
 #define KHUI_CW_O_EMPTY         0x00000100
 /* NOTE: KHUI_CW_O_* shares the same bit-space as CW_EXPSTATE_* */
 
 typedef struct khui_credwnd_row_t {
     khm_int32   flags;
     khm_int32   col;
-    khm_handle  data;
-    khm_size idx_start;
-    khm_size idx_end;
+    union {
+        khui_credwnd_outline * outline;
+        khm_handle             credential;
+    };
+    khm_size    idx_start;
+    khm_size    idx_end;
     RECT        r_ext;          /* extents of this row */
 } khui_credwnd_row;
 
@@ -90,9 +95,9 @@ typedef struct khui_credwnd_row_t {
 
 /* row allocation */
 /* initial number of rows to be allocated */
-#define KHUI_CW_ROW_INITIAL     512
+#define KHUI_CW_ROW_INITIAL     16
 /* allocation increment, if we run out of space */
-#define KHUI_CW_ROW_INCREMENT   512
+#define KHUI_CW_ROW_INCREMENT   16
 
 typedef struct khui_credwnd_col_t {
     khm_int32 attr_id;
@@ -105,9 +110,9 @@ typedef struct khui_credwnd_col_t {
 
 /* column allocation */
 /* initial number of columns to be allocated */
-#define KHUI_CW_COL_INITIAL     16
+#define KHUI_CW_COL_INITIAL     8
 /* allocation increment, if we run out of space */
-#define KHUI_CW_COL_INCREMENT   16
+#define KHUI_CW_COL_INCREMENT   8
 
 #define KHUI_CW_COL_AUTOSIZE    0x00000001
 #define KHUI_CW_COL_SORT_INC    0x00000002
@@ -128,20 +133,21 @@ typedef struct khui_credwnd_col_t {
 #define cw_is_custom_attr(i) ((i)<0)
 
 typedef struct tag_khui_credwnd_ident {
-
     khm_handle ident;
-    khm_int32  ident_flags;
-    khm_int32  credtype;
+
     wchar_t    name[KCDB_IDENT_MAXCCH_NAME];
-    wchar_t    credtype_name[KCDB_MAXCCH_NAME];
+    wchar_t    provider_name[KCDB_MAXCCH_NAME];
+    khm_int32  credtype;
 
-    khm_size   credcount;       /* count of all credentials */
-    khm_size   id_credcount;    /* count of identity credentials
-                                   (credentials that are of the
-                                   identity type */
-    khm_size   init_credcount;  /* count of initial credentials */
+    HICON      h_icon_lg;
+    HICON      h_icon_lg_dis;
+
+    khm_int32  ident_flags;
+
     FILETIME   ft_expire;
-
+    khm_size   credcount;
+    khm_size   id_credcount;
+    khm_size   init_credcount;
 } khui_credwnd_ident;
 
 #define CW_IDENT_ALLOC_INCR 4
@@ -184,6 +190,7 @@ typedef struct khui_credwnd_tbl_t {
     khm_int32 hpad;
     khm_int32 vpad;
     khm_int32 hpad_h;       /* horizontal padding correction for headers */
+
     khm_int32 threshold_warn;  /* Warning threshold, in seconds*/
     khm_int32 threshold_critical; /* Critical threshold, in seconds */
 
@@ -221,7 +228,8 @@ typedef struct khui_credwnd_tbl_t {
     HCURSOR hc_hand;        /* the HAND cursor */
     khui_ilist * ilist;     /* image list */
 
-    HICON   hi_lg_ident;    /* large identity icon */
+    HICON     hi_ident_lg;      /* Large identity icon */
+    HICON     hi_ident_lg_dis;  /* Large disabled identity icon */
 
     /* mouse state */
     khm_int32 mouse_state;        /* state of the mouse can be combo of CW_MOUSE_* values */

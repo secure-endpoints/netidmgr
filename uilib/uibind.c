@@ -45,7 +45,7 @@ khui_request_UI_callback(khm_ui_callback cb, void * rock) {
     if (khui_hwnd_main == NULL)
         return KHM_ERROR_NOT_READY;
 
-    if (GetWindowThreadProcressId(khui_hwnd_main, NULL) == GetCurrentThreadId()) {
+    if (GetWindowThreadProcessId(khui_hwnd_main, NULL) == GetCurrentThreadId()) {
         return (*cb)(khui_hwnd_main, rock);
     }
 

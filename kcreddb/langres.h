@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by D:\work\pismere\athena\auth\krb5\src\windows\identity\kcreddb\lang\en_us\kcredres.rc
+// Used by C:\work\pismere\athena\auth\krb5\src\windows\identity\kcreddb\lang\en_us\kcredres.rc
 //
 #define IDS_CREDDB                      101
 #define IDS_NAME                        102
@@ -35,6 +35,11 @@
 #define IDS_RENEW_TIMELEFT              130
 #define IDS_RENEW_EXPIRES               131
 #define IDS_RENEW_LIFETIME              132
+#define IDS_DISPLAY_NAME                133
+#define IDS_LAST_UPDATE                 134
+#define IDS_N_CREDS                     135
+#define IDS_N_IDCREDS                   136
+#define IDS_N_INITCREDS                 137
 
 // Next default values for new objects
 // 

@@ -29,19 +29,19 @@
 
 /* Credentials */
 
-typedef struct kcdb_cred_t {
+typedef struct tag_kcdb_cred {
     khm_int32   magic;
-    khm_ui_8    id; /* serial number */
+    khm_ui_8    id;             /* Serial number (invariant)*/
     kcdb_identity * identity;
-    khm_int32   type;
-    wchar_t *   name;
+    khm_int32   type;           /* Credentials type (invariant) */
+    wchar_t *   name;           /* Name (invariant) */
 
     khm_int32   flags;
     khm_int32   refcount;
 
     kcdb_buf    buf;
 
-    LDCL(struct kcdb_cred_t);
+    LDCL(struct tag_kcdb_cred);
 } kcdb_cred;
 
 #define KCDB_CRED_MAGIC 0x38fb84a6
@@ -67,5 +67,9 @@ extern khm_ui_8 kcdb_cred_id;
 void kcdb_cred_init(void);
 void kcdb_cred_exit(void);
 void kcdb_cred_check_and_delete(khm_handle vcred);
+khm_int32 kcdbint_cred_attr_cb(khm_handle h,
+                               khm_int32 attr,
+                               void * buf,
+                               khm_size *pcb_buf);
 
 #endif

@@ -25,7 +25,7 @@ PluginManager,KC_SPACE,0,Plugin Manager Configuration
     ModuleFailureCountResetTime,KC_INT64,72000,Time after first failure at which the failure count is reset
     _Schema,KC_SPACE,0,Module schema
       ImagePath,KC_STRING,<Path to the library binary>,Path to the DLL (including DLL name)
-#      Flags,KC_INT32,0,Flags (Deprecated)
+#     Flags,KC_INT32,0,Flags (Deprecated)
       Disabled,KC_INT32,0,Module is disabled (Boolean)
       FailureCount,KC_INT32,0,Number of failed loads
       FailureTime,KC_INT64,0,FILETIME of first failure

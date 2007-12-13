@@ -65,14 +65,17 @@ OBJFILES= \
 	$(KMQDIR)\publisher.obj 	\
 	$(KMQDIR)\kmqconfig.obj		\
 	$(KCDBDIR)\buf.obj 		\
+	$(KCDBDIR)\enum.obj 		\
 	$(KCDBDIR)\attrib.obj 		\
 	$(KCDBDIR)\credential.obj 	\
 	$(KCDBDIR)\credset.obj 		\
 	$(KCDBDIR)\credtype.obj 	\
+	$(KCDBDIR)\identpro.obj		\
 	$(KCDBDIR)\identity.obj 	\
 	$(KCDBDIR)\init.obj 		\
 	$(KCDBDIR)\kcreddbmain.obj 	\
 	$(KCDBDIR)\type.obj 		\
+	$(KCDBDIR)\resacq.obj 		\
 	$(KCDBDIR)\kcdbconfig.obj	\
 	$(KMMDIR)\kmmmain.obj 		\
 	$(KMMDIR)\kmm.obj 		\

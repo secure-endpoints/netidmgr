@@ -755,7 +755,7 @@ void kcdb_type_init(void)
     ZeroMemory(kcdb_type_tbl, sizeof(kcdb_type_i *) * (KCDB_TYPE_MAX_ID + 1));
     kcdb_types = NULL;
 
-    /*TODO: register standard data types */
+    /* VOID */
 
     ZeroMemory(&type, sizeof(type));
     type.comp = kcdb_type_void_comp;
@@ -767,6 +767,8 @@ void kcdb_type_init(void)
 
     kcdb_type_register(&type, NULL);
 
+    /* String */
+
     ZeroMemory(&type, sizeof(type));
     type.comp = kcdb_type_string_comp;
     type.dup = kcdb_type_string_dup;
@@ -777,6 +779,8 @@ void kcdb_type_init(void)
     type.flags = KCDB_TYPE_FLAG_CB_AUTO;
 
     kcdb_type_register(&type, NULL);
+
+    /* Date/Time */
 
     ZeroMemory(&type, sizeof(type));
     type.comp = kcdb_type_date_comp;
@@ -791,6 +795,8 @@ void kcdb_type_init(void)
 
     kcdb_type_register(&type, NULL);
 
+    /* Interval */
+
     ZeroMemory(&type, sizeof(type));
     type.comp = kcdb_type_interval_comp;
     type.dup = kcdb_type_interval_dup;
@@ -803,6 +809,8 @@ void kcdb_type_init(void)
     type.flags = KCDB_TYPE_FLAG_CB_FIXED;
 
     kcdb_type_register(&type, NULL);
+
+    /* Int32 */
 
     ZeroMemory(&type, sizeof(type));
     type.comp = kcdb_type_int32_comp;
@@ -817,6 +825,8 @@ void kcdb_type_init(void)
 
     kcdb_type_register(&type, NULL);
 
+    /* Int64 */
+
     ZeroMemory(&type, sizeof(type));
     type.comp = kcdb_type_int64_comp;
     type.dup = kcdb_type_int64_dup;
@@ -829,6 +839,8 @@ void kcdb_type_init(void)
     type.flags = KCDB_TYPE_FLAG_CB_FIXED;
 
     kcdb_type_register(&type, NULL);
+
+    /* Data */
 
     ZeroMemory(&type, sizeof(type));
     type.comp = kcdb_type_data_comp;

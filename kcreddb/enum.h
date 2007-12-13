@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2007 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,43 +25,30 @@
 
 /* $Id$ */
 
-#ifndef __KHIMAIRA_KCREDDBINTERNAL_H__
-#define __KHIMAIRA_KCREDDBINTERNAL_H__
+#ifndef __KHIMAIRA_KCDB_ENUM_H
+#define __KHIMAIRA_KCDB_ENUM_H
 
-#define _NIMLIB_
-#define NOEXPORT
+struct tag_kcdb_enumeration {
+    khm_int32 magic;
+    khm_size  n;
+    khm_size  next;
+    khm_handle * objs;
+};
 
-#include<windows.h>
-#include<kcreddb.h>
-#include<kmq.h>
-#include<khlist.h>
-#include<utils.h>
-#include<kherror.h>
-#include<khmsgtypes.h>
-#include<kconfig.h>
-#include<strsafe.h>
+#define KCDB_ENUM_MAGIC 0x0e21f95b
 
-#include<langres.h>
+#define kcdb_is_enum(e) ((e) && ((kcdb_enumeration) e)->magic == KCDB_ENUM_MAGIC)
 
-#include "buf.h"
-#include "identpro.h"
-#include "identity.h"
-#include "attrib.h"
-#include "type.h"
-#include "credential.h"
-#include "credset.h"
-#include "credtype.h"
-#include "enum.h"
+void
+kcdbint_enum_create(kcdb_enumeration * e);
 
-/* globals */
+void
+kcdbint_enum_alloc(kcdb_enumeration e, khm_size n);
 
-extern HINSTANCE hinst_kcreddb;
+void
+kcdbint_enum_init(void);
 
-extern kconf_schema schema_kcdbconfig[];
-
-void kcdb_init(void);
-void kcdb_exit(void);
-khm_handle kcdb_get_config(void);
-
+void
+kcdbint_enum_exit(void);
 
 #endif

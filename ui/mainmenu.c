@@ -866,8 +866,7 @@ khm_refresh_identity_menus(void) {
     khui_menu_def * renew_def = NULL;
     khui_menu_def * dest_def = NULL;
     khui_menu_def * setdef_def = NULL;
-    wchar_t * idlist = NULL;
-    wchar_t * idname = NULL;
+    kcdb_enumeration id_enum = NULL;
     khm_size cb = 0;
     khm_size n_idents = 0;
     khm_size t;
@@ -879,6 +878,7 @@ khm_refresh_identity_menus(void) {
     khm_boolean sticky_done = FALSE;
     khm_boolean added_dest = FALSE;
     khm_boolean added_setdef = FALSE;
+    khm_handle identity = NULL;
 
     if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow", 0, &csp_cw))) {
         khc_read_int32(csp_cw, L"DefaultSticky", &def_sticky);
@@ -893,42 +893,10 @@ khm_refresh_identity_menus(void) {
 
     idcmd_refreshcycle++;
 
-    do {
-        if (idlist)
-            PFREE(idlist);
-        idlist = NULL;
-        cb = 0;
-
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_ACTIVE,
-                                KCDB_IDENT_FLAG_ACTIVE,
-                                NULL,
-                                &cb,
-                                &n_idents);
-        if (rv != KHM_ERROR_TOO_LONG || cb == 0 || cb == sizeof(wchar_t) * 2)
-            break;
-
-        idlist = PMALLOC(cb);
-#ifdef DEBUG
-        assert(idlist);
-#endif
-
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_ACTIVE,
-                                KCDB_IDENT_FLAG_ACTIVE,
-                                idlist,
-                                &cb,
-                                &n_idents);
-        if (rv == KHM_ERROR_TOO_LONG)
-            continue;
-
-        if (KHM_FAILED(rv)) {
-            /* something else went wrong. hmm. */
-            if (idlist)
-                PFREE(idlist);
-            idlist = NULL;
-        }
-        break;
-
-    } while(TRUE);
+    if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_ACTIVE,
+                                            KCDB_IDENT_FLAG_ACTIVE,
+                                            &id_enum, &n_idents)))
+        n_idents = 0;
 
     renew_def = khui_find_menu(KHUI_MENU_RENEW_CRED);
     dest_def = khui_find_menu(KHUI_MENU_DESTROY_CRED);
@@ -957,7 +925,7 @@ khm_refresh_identity_menus(void) {
         t--;
     }
 
-    if (idlist != NULL && n_idents > 1) {
+    if (n_idents > 1) {
         khui_menu_insert_action(renew_def, 0, KHUI_ACTION_RENEW_ALL, 0);
         khui_menu_insert_action(renew_def, 1, KHUI_MENU_SEP, 0);
 
@@ -965,18 +933,8 @@ khm_refresh_identity_menus(void) {
         khui_menu_insert_action(dest_def,  1, KHUI_MENU_SEP, 0);
     }
 
-    for (idname = idlist; idname && idname[0];
-         idname = multi_string_next(idname)) {
-        khm_handle identity = NULL;
+    while (id_enum && KHM_SUCCEEDED(kcdb_enum_next(id_enum, &identity))) {
 
-        if (KHM_FAILED(kcdb_identity_create(idname, 0, &identity))) {
-#ifdef DEBUG
-            assert(FALSE);
-#endif
-            continue;
-        }
-
-        idflags = 0;
         kcdb_identity_get_flags(identity, &idflags);
 
         if (!(idflags & KCDB_IDENT_FLAG_STICKY) && def_sticky) {
@@ -1007,13 +965,6 @@ khm_refresh_identity_menus(void) {
                                     0);
             added_setdef = TRUE;
         }
-
-        kcdb_identity_release(identity);
-    }
-
-    if (idlist) {
-        PFREE(idlist);
-        idlist = NULL;
     }
 
     if (added_dest) {
@@ -1043,6 +994,9 @@ khm_refresh_identity_menus(void) {
     if (sticky_done) {
         InvalidateRect(khm_hwnd_main_cred, NULL, TRUE);
     }
+
+    if (id_enum != NULL)
+        kcdb_enum_end(id_enum);
 }
 
 khm_boolean

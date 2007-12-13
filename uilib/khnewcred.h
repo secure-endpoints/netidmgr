@@ -365,93 +365,10 @@ typedef LRESULT
                                   WPARAM wParam,
                                   LPARAM lParam);
 
-/*! \brief New credentials acquisition blob
-
-    A pointer to an object of this type is passed in along with the
-    credentials acquisition messages.
-
-    \see \ref cred_acq for more information
-*/
-typedef struct tag_khui_new_creds {
-    khm_int32   magic;          /*!< Internal use */
-
-    khm_int32   subtype;        /*!< Subtype of the request that is
-                                  being handled through this object.
-                                  One of ::KMSG_CRED_NEW_CREDS,
-                                  ::KMSG_CRED_RENEW_CREDS or
-                                  ::KMSG_CRED_PASSWORD */
-
-    CRITICAL_SECTION cs;        /*!< Internal use */
-
-    khm_boolean set_default;    /*!< After a successfull credentials
-                                  acquisition, set the primary
-                                  identity as the default. */
-
-    khm_handle  *identities;    /*!< The list of identities associated
-                                  with this request.  The first
-                                  identity in this list (\a
-                                  identities[0]) is the primary
-                                  identity. */
-
-    khm_size    n_identities;   /*!< Number of identities in the list
-                                  \a identities */
-
-    khm_size    nc_identities;  /*!< Internal use */
-
-    khui_action_context ctx;    /*!< An action context specifying the
-                                  context in which the credentials
-                                  acquisition operation was
-                                  launced. */
-
-    khm_int32   mode;           /*!< The mode of the user interface.
-                                  One of ::KHUI_NC_MODE_MINI or
-                                  ::KHUI_NC_MODE_EXPANDED. */
-
-    HWND        hwnd;           /*!< Handle to the new credentials
-                                  window. */
-
-    struct tag_khui_new_creds_by_type **types;
-                                /*!< Internal use */
-    khm_handle  *type_subs;     /*!< Internal use */
-    khm_size    n_types;        /*!< Internal use */
-    khm_size    nc_types;       /*!< Internal use */
-
-    khm_int32   result;     /*!< One of ::KHUI_NC_RESULT_CANCEL or
-                                ::KHUI_NC_RESULT_PROCESS indicating
-                                the result of the dialog with the
-                                user */
-
-    khm_int32   response;   /*!< Response.  See individual message
-                                documentation for info on what to do
-                                with this field */
-
-    wchar_t     *password;  /*!< Not used. */
-
-    /* UI stuff */
-
-    wchar_t     *banner;        /*!< Internal use */
-    wchar_t     *pname;         /*!< Internal use */
-    khm_size    n_prompts;      /*!< Internal use */
-    khm_size    nc_prompts;     /*!< Internal use */
-    struct tag_khui_new_creds_prompt ** prompts; /*!< Internal use */
-
-    khui_ident_new_creds_cb ident_cb; /*!< Internal use */
-
-    wchar_t     *window_title;  /*!< Internal use */
-
-    LPARAM      ident_aux;      /*!< Auxilliary field which is
-                                  reserved for use by the identity
-                                  provider during the course of
-                                  conducting this dialog. */
-
-} khui_new_creds;
-
-#define KHUI_NC_MAGIC 0x84270427
-
 /*!\name Result values for khui_new_creds_t::result
   @{*/
 #define KHUI_NC_RESULT_PROCESS    0
-#define KHUI_NC_RESULT_CANCEL       1
+#define KHUI_NC_RESULT_CANCEL     1
 /*@}*/
 
 /*!\name Mode values for khui_new_creds_t::mode
@@ -604,7 +521,10 @@ typedef struct tag_khui_new_creds_by_type {
     khm_int32   type;           /*!< The identifier of the credentials
                                   type.  This is a credentials type
                                   identifier allocated with a call to
-                                  kcdb_credtype_register(). */
+                                  kcdb_credtype_register().  Only one
+                                  ::khui_new_creds_by_type object can
+                                  exist per ::khui_new_creds object
+                                  for a given credentials type. */
 
     khm_int32   type_deps[KHUI_MAX_TYPE_DEPS];
                                 /*!< credentials types that this
@@ -638,7 +558,12 @@ typedef struct tag_khui_new_creds_by_type {
 
     HICON       icon;           /*!< Icon for the panel (optional).
                                   Only used if providing a
-                                  user-interface. */
+                                  user-interface.  If NULL, then an
+                                  attempt will be made to determine
+                                  the icon for the credentials type
+                                  using kcdb_get_resource() with a
+                                  resource id of
+                                  KCDB_RES_ICON_NORMAL */
 
     wchar_t    *tooltip;        /*!< Tooltip for the panel (localized,
                                   optional).  If NULL, no tooltip will
@@ -666,7 +591,7 @@ typedef struct tag_khui_new_creds_by_type {
                                   dialog procedure.  Only used of
                                   providing a user-interface. */
 
-    HWND        hwnd_tc;        /*!< Internal use. Do not set */
+    HWND        reserved;        /*!< Internal use. Do not set */
 
     wchar_t    *credtext;       /*!< A brief description of the
                                   current state of this cred
@@ -694,14 +619,9 @@ typedef struct tag_khui_new_creds_by_type {
     KHUI_NC_RESPONSE_PENDING are also stored in the flags. 
 
 @{*/
-#define KHUI_NCT_FLAG_PROCESSED 1024
-#define KHUI_NCT_FLAG_DISABLED  2048
+#define KHUI_NCT_FLAG_PROCESSED 0x00000400
+#define KHUI_NCT_FLAG_DISABLED  0x00000800
 /*@}*/
-
-/*! \brief Width of a new creds dialog panel in dialog units*/
-#define NCDLG_WIDTH     300
-/*! \brief Height of a new creds dialog panel in dialog units*/
-#define NCDLG_HEIGHT    166
 
 /*! \brief A custom prompt */
 typedef struct tag_khui_new_creds_prompt {
@@ -756,7 +676,7 @@ typedef struct tag_khui_new_creds_prompt {
     Refers to the input control of a prompt.  The length includes the
     terminating NULL.
  */
-#define KHUI_MAXCCH_PROMPT_VALUE 256
+#define KHUI_MAXCCH_PROMPT_VALUE 512
 
 /*! \brief Maximum number of bytes that can be entered in an input control
 
@@ -880,7 +800,6 @@ khui_cw_unlock_nc(khui_new_creds * c);
 
     \see khui_cw_del_type()
     \see \ref cred_acq_panel_spec
-    \see ::khui_new_cred_panel
     \see ::khui_new_creds
 */
 KHMEXP khm_int32 KHMAPI 
@@ -952,6 +871,87 @@ khui_cw_set_primary_id(khui_new_creds * c,
 KHMEXP khm_int32 KHMAPI 
 khui_cw_add_identity(khui_new_creds * c, 
                      khm_handle id);
+#pragma deprecated(khui_cw_add_identity)
+
+/*! \brief Get the primary identity
+
+    Obtains a held handle to the primary identity associated with this
+    new credentials operation.  If the call is successful, \a ph
+    receives a handle to the primary identity which should be released
+    with a call to kcdb_identity_release().
+ */
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_primary_id(khui_new_creds * c,
+                       khm_handle * ph);
+
+/*! \brief Set the response for a plugin
+
+    When handling ::KMSG_CRED_DIALOG_PROCESS from within the plugin
+    thread, it is important to set the response by calling this
+    function.  The response can be used to signal whether the plugin
+    successfully obtained credentials or whether further interaction
+    is required, or the credentials acquisition failed.
+
+    The response is a combination of :
+    - ::KHUI_NC_RESPONSE_PENDING
+    - ::KHUI_NC_RESPONSE_FAILED
+    - ::KHUI_NC_RESPONSE_PENDING
+    - ::KHUI_NC_RESPONSE_SUCCESS
+    - ::KHUI_NC_RESPONSE_NOEXIT
+    - ::KHUI_NC_RESPONSE_EXIT
+ */
+KHMEXP khm_int32 KHMAPI 
+khui_cw_set_response(khui_new_creds * c,
+                     khm_int32 type,
+                     khm_int32 response);
+
+/*! \brief Check whether a specified credential type panel succeeded
+
+    This is called during the processing of ::KMSG_CRED_DIALOG_PROCESS
+    to determine whether a specified credential type succeeded in
+    obtaining credentials.  The credential type that is being queried
+    should have also been listed as a dependency when adding the
+    current credentials type, otherwise the type queried may not have
+    been invoked yet.
+
+    \return TRUE iff the queried type has reported that it successfully
+        completed the credentials acquision operation.
+ */
+KHMEXP khm_boolean KHMAPI 
+khui_cw_type_succeeded(khui_new_creds * c,
+                       khm_int32 type);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_set_provider_data(khui_new_creds * c,
+                          khm_handle h_idpro,
+                          void * data);
+
+KHMEXP void * KHMAPI
+khui_cw_get_provider_data(khui_new_creds * c,
+                          khm_handle h_idpro);
+
+/*! \brief Add a row of controls to the identity specifier area
+
+    Only for use by identity provider callbacks that wish to add an
+    identity selector control.  A row of controls consist of a label
+    control and some input control.
+
+    When the ::WMNC_IDENT_INIT message is sent to the identity
+    provider, it receives a handle to the dialog panel in the \a
+    lParam parameter which should be the parent window of both the
+    windows specified here.  The control ID for any controls created
+    must fall within the ::KHUI_CW_ID_MIN and ::KHUI_CW_ID_MAX range.
+
+    Both controls will be resized to fit in the row.
+
+    If \a long_label is TRUE then the size of the label will be larger
+    than normal and will accomodate more text.
+ */
+KHMEXP khm_int32 KHMAPI
+khui_cw_add_control_row(khui_new_creds * c,
+                        HWND label,
+                        HWND input,
+                        khui_control_size size);
 
 /*! \brief Clear all custom prompts
 
@@ -1047,7 +1047,6 @@ KHMEXP khm_int32 KHMAPI
 khui_cw_get_prompt_count(khui_new_creds * c,
                          khm_size * np);
 
-
 /*! \brief Get the value of a custom prompt
 
     Retrieve the value of a specific prompt.  The value is the string
@@ -1065,66 +1064,6 @@ khui_cw_get_prompt_value(khui_new_creds * c,
                          khm_size idx, 
                          wchar_t * buf, 
                          khm_size *cbbuf);
-
-/*! \brief Set the response for a plugin
-
-    When handling ::KMSG_CRED_DIALOG_PROCESS from within the plugin
-    thread, it is important to set the response by calling this
-    function.  The response can be used to signal whether the plugin
-    successfully obtained credentials or whether further interaction
-    is required, or the credentials acquisition failed.
-
-    The response is a combination of :
-    - ::KHUI_NC_RESPONSE_PENDING
-    - ::KHUI_NC_RESPONSE_FAILED
-    - ::KHUI_NC_RESPONSE_PENDING
-    - ::KHUI_NC_RESPONSE_SUCCESS
-    - ::KHUI_NC_RESPONSE_NOEXIT
-    - ::KHUI_NC_RESPONSE_EXIT
- */
-KHMEXP khm_int32 KHMAPI 
-khui_cw_set_response(khui_new_creds * c,
-                     khm_int32 type,
-                     khm_int32 response);
-
-/*! \brief Check whether a specified credential type panel succeeded
-
-    This is called during the processing of ::KMSG_CRED_DIALOG_PROCESS
-    to determine whether a specified credential type succeeded in
-    obtaining credentials.  The credential type that is being queried
-    should have also been listed as a dependency when adding the
-    current credentials type, otherwise the type queried may not have
-    been invoked yet.
-
-    \return TRUE iff the queried type has reported that it successfully
-        completed the credentials acquision operation.
- */
-KHMEXP khm_boolean KHMAPI 
-khui_cw_type_succeeded(khui_new_creds * c,
-                       khm_int32 type);
-
-/*! \brief Add a row of controls to the identity specifier area
-
-    Only for use by identity provider callbacks that wish to add an
-    identity selector control.  A row of controls consist of a label
-    control and some input control.
-
-    When the ::WMNC_IDENT_INIT message is sent to the identity
-    provider, it receives a handle to the dialog panel in the \a
-    lParam parameter which should be the parent window of both the
-    windows specified here.  The control ID for any controls created
-    must fall within the ::KHUI_CW_ID_MIN and ::KHUI_CW_ID_MAX range.
-
-    Both controls will be resized to fit in the row.
-
-    If \a long_label is TRUE then the size of the label will be larger
-    than normal and will accomodate more text.
- */
-KHMEXP khm_int32 KHMAPI
-khui_cw_add_control_row(khui_new_creds * c,
-                        HWND label,
-                        HWND input,
-                        khui_control_size size);
 
 /*!@}*/ /* Credentials acquisition */
 /*!@}*/

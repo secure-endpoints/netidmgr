@@ -228,11 +228,11 @@ KHMEXP khm_int32 KHMAPI kmq_unregister_type(khm_int32 id)
     \brief Adds a subscription to a message type
     \note Obtains ::cs_kmq_types
     */
-void kmqint_msg_type_add_sub(int t, kmq_msg_subscription *s) {
-    kmq_msg_subscription * ts;
+int kmqint_msg_type_add_sub(int t, kmq_msg_subscription *s) {
+    kmq_msg_subscription * ts = NULL;
 
     if(t < 0 || t > KMQ_MSG_TYPE_MAX)
-        return;
+        return FALSE;
 
     if(!msg_types[t])
         kmqint_msg_type_create(t);
@@ -253,6 +253,8 @@ void kmqint_msg_type_add_sub(int t, kmq_msg_subscription *s) {
         LPUSH(&msg_types[t]->subs, s);
     }
     LeaveCriticalSection(&cs_kmq_types);
+
+    return (ts == NULL);
 }
 
 /*! \internal

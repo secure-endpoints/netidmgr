@@ -416,6 +416,19 @@ KHMEXP khm_int32 KHMAPI kmq_create_hwnd_subscription(HWND hw,
  */
 KHMEXP khm_int32 KHMAPI kmq_delete_subscription(khm_handle sub);
 
+/*! \brief Duplicate a subscription
+
+    Creates a duplicate subscription that is identical to the
+    specified subscription.
+
+    Deleting the original subscription has no effect on the duplicate.
+
+    The duplicate subscription must be deleted using
+    kmq_delete_subscription() when it is no longer needed.
+ */
+KHMEXP khm_int32 KHMAPI kmq_duplicate_subscription(khm_handle original,
+                                                   khm_handle * copy);
+
 /*! \brief Post a message to a subscription
 
     Equivalent of kmq_post_msg() but only posts the message to the

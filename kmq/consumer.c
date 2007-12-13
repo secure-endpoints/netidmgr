@@ -312,7 +312,11 @@ KHMEXP khm_int32 KHMAPI kmq_subscribe_hwnd(khm_int32 type, HWND hwnd) {
     s->queue = NULL;
     s->rcpt_type = KMQ_RCPTTYPE_HWND;
     s->recipient.hwnd = hwnd;
-    kmqint_msg_type_add_sub(type, s);
+
+    if (!kmqint_msg_type_add_sub(type, s)) {
+        PFREE(s);
+        return KHM_ERROR_DUPLICATE;
+    }
 
     return KHM_ERROR_SUCCESS;
 }
@@ -330,7 +334,11 @@ KHMEXP khm_int32 KHMAPI kmq_subscribe(khm_int32 type, kmq_callback_t cb) {
     s->queue = kmqint_get_thread_queue();
     s->rcpt_type = KMQ_RCPTTYPE_CB;
     s->recipient.cb = cb;
-    kmqint_msg_type_add_sub(type, s);
+
+    if (!kmqint_msg_type_add_sub(type, s)) {
+        PFREE(s);
+        return KHM_ERROR_DUPLICATE;
+    }
 
     return KHM_ERROR_SUCCESS;
 }
@@ -382,9 +390,39 @@ KHMEXP khm_int32 KHMAPI kmq_create_subscription(kmq_callback_t cb,
     return KHM_ERROR_SUCCESS;
 }
 
+KHMEXP khm_int32 KHMAPI kmq_duplicate_subscription(khm_handle sub,
+                                                   khm_handle * result)
+{
+    kmq_msg_subscription * o;
+    kmq_msg_subscription * s;
+
+    o = (kmq_msg_subscription *) sub;
+    if (!o || o->magic != KMQ_MSG_SUB_MAGIC)
+        return KHM_ERROR_INVALID_PARAM;
+
+    s = PMALLOC(sizeof(kmq_msg_subscription));
+    ZeroMemory(s, sizeof(*s));
+    s->magic = KMQ_MSG_SUB_MAGIC;
+    LINIT(s);
+    s->queue = o->queue;
+    s->rcpt_type = o->rcpt_type;
+    s->recipient = o->recipient;
+
+    EnterCriticalSection(&cs_kmq_global);
+    LPUSH(&kmq_adhoc_subs, s);
+    LeaveCriticalSection(&cs_kmq_global);
+
+    *result = (khm_handle) s;
+
+    return KHM_ERROR_SUCCESS;
+}
+
 KHMEXP khm_int32 KHMAPI kmq_delete_subscription(khm_handle sub)
 {
     kmq_msg_subscription * s;
+#ifdef DEBUG
+    kmq_msg_subscription * e;
+#endif
 
     s = (kmq_msg_subscription *) sub;
 
@@ -393,8 +431,18 @@ KHMEXP khm_int32 KHMAPI kmq_delete_subscription(khm_handle sub)
     s->type = 0;
 
     EnterCriticalSection(&cs_kmq_global);
+#ifdef DEBUG
+    for (e = kmq_adhoc_subs; e; e = LNEXT(e)) {
+        if (e == s)
+            break;
+    }
+#endif
     LDELETE(&kmq_adhoc_subs, s);
     LeaveCriticalSection(&cs_kmq_global);
+
+#ifdef DEBUG
+    assert(e == s);
+#endif
 
     PFREE(s);
 

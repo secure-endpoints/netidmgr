@@ -25,6 +25,9 @@
 /* $Id$ */
 
 #include<kcreddbinternal.h>
+#ifdef DEBUG
+#include<assert.h>
+#endif
 
 CRITICAL_SECTION cs_credtype;
 kcdb_credtype_i ** kcdb_credtype_tbl = NULL;
@@ -50,6 +53,13 @@ void kcdb_credtype_exit(void)
 void kcdb_credtype_check_and_delete(khm_int32 id)
 {
     kcdb_credtype_i * ict;
+
+#ifdef DEBUG
+    assert(id >= 1 && id <= KCDB_CREDTYPE_MAX_ID);
+#endif
+    if (id < 1 || id > KCDB_CREDTYPE_MAX_ID)
+        return;
+
     ict = kcdb_credtype_tbl[id];
     if(!ict)
         return;
@@ -85,7 +95,7 @@ kcdb_credtype_register(const kcdb_credtype * type, khm_int32 * new_id)
     if(!type)
         return KHM_ERROR_INVALID_PARAM;
 
-    if(type->id >= KCDB_CREDTYPE_MAX_ID)
+    if(type->id > KCDB_CREDTYPE_MAX_ID)
         return KHM_ERROR_INVALID_PARAM;
 
     if(type->name) {
@@ -114,7 +124,7 @@ kcdb_credtype_register(const kcdb_credtype * type, khm_int32 * new_id)
 
     EnterCriticalSection(&cs_credtype);
 
-    if(type->id < 0) {
+    if(type->id <= 0) {
         if(KHM_FAILED(kcdb_credtype_get_next_free_id(&id))) {
             LeaveCriticalSection(&cs_credtype);
             return KHM_ERROR_NO_RESOURCES;
@@ -128,7 +138,7 @@ kcdb_credtype_register(const kcdb_credtype * type, khm_int32 * new_id)
         return KHM_ERROR_DUPLICATE;
     }
 
-    for(i=0;i<=KCDB_CREDTYPE_MAX_ID;i++) {
+    for (i=1; i <= KCDB_CREDTYPE_MAX_ID; i++) {
         if(kcdb_credtype_tbl[i] && !wcscmp(kcdb_credtype_tbl[i]->ct.name, type->name)) {
             LeaveCriticalSection(&cs_credtype);
             return KHM_ERROR_DUPLICATE;
@@ -141,12 +151,12 @@ kcdb_credtype_register(const kcdb_credtype * type, khm_int32 * new_id)
     ict->ct.name = PMALLOC(cb_name);
     StringCbCopy(ict->ct.name, cb_name, type->name);
 
-    if(cb_short_desc) {
+    if(cb_short_desc > 0) {
         ict->ct.short_desc = PMALLOC(cb_short_desc);
         StringCbCopy(ict->ct.short_desc, cb_short_desc, type->short_desc);
     }
 
-    if(cb_long_desc) {
+    if(cb_long_desc > 0) {
         ict->ct.long_desc = PMALLOC(cb_long_desc);
         StringCbCopy(ict->ct.long_desc, cb_long_desc, type->long_desc);
     }
@@ -179,7 +189,7 @@ KHMEXP khm_int32 KHMAPI kcdb_credtype_get_info(
 {
     int found = 0;
 
-    if(id < 0 || id > KCDB_CREDTYPE_MAX_ID)
+    if(id < 1 || id > KCDB_CREDTYPE_MAX_ID)
         return KHM_ERROR_INVALID_PARAM;
 
     EnterCriticalSection(&cs_credtype);
@@ -236,7 +246,7 @@ KHMEXP khm_handle KHMAPI kcdb_credtype_get_sub(khm_int32 id)
     kcdb_credtype_i * t;
     khm_handle s;
 
-    if(id < 0 || id > KCDB_CREDTYPE_MAX_ID)
+    if(id < 1 || id > KCDB_CREDTYPE_MAX_ID)
         return NULL;
 
     EnterCriticalSection(&cs_credtype);
@@ -262,7 +272,7 @@ KHMEXP khm_int32 KHMAPI kcdb_credtype_describe(
     kcdb_credtype_i * t;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    if(!cbbuf || id < 0 || id > KCDB_CREDTYPE_MAX_ID)
+    if(!cbbuf || id < 1 || id > KCDB_CREDTYPE_MAX_ID)
         return KHM_ERROR_INVALID_PARAM;
 
     EnterCriticalSection(&cs_credtype);
@@ -305,7 +315,7 @@ KHMEXP khm_int32 KHMAPI kcdb_credtype_get_name(
     kcdb_credtype_i * t;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    if(!cbbuf || id < 0 || id > KCDB_CREDTYPE_MAX_ID)
+    if(!cbbuf || id < 1 || id > KCDB_CREDTYPE_MAX_ID)
         return KHM_ERROR_INVALID_PARAM;
 
     EnterCriticalSection(&cs_credtype);
@@ -340,7 +350,7 @@ KHMEXP khm_int32 KHMAPI kcdb_credtype_get_id(
         return KHM_ERROR_INVALID_PARAM;
 
     EnterCriticalSection(&cs_credtype);
-    for(i=0;i <= KCDB_CREDTYPE_MAX_ID; i++) {
+    for(i=1;i <= KCDB_CREDTYPE_MAX_ID; i++) {
         if(kcdb_credtype_tbl[i] && !wcscmp(name, kcdb_credtype_tbl[i]->ct.name))
             break;
     }
@@ -358,7 +368,7 @@ khm_int32 kcdb_credtype_get_next_free_id(khm_int32 * id)
     int i;
 
     EnterCriticalSection(&cs_credtype);
-    for(i=0;i <= KCDB_CREDTYPE_MAX_ID; i++) {
+    for(i=1;i <= KCDB_CREDTYPE_MAX_ID; i++) {
         if(!kcdb_credtype_tbl[i])
             break;
     }

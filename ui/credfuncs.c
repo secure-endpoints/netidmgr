@@ -220,7 +220,7 @@ kmsg_cred_completion(kmq_message *m)
         nc = (khui_new_creds *) m->vparam;
 
         khm_prep_newcredwnd(nc->hwnd);
-            
+
         /* all the controls have been created.  Now initialize them */
         if (nc->n_types > 0) {
             kmq_post_subs_msg(nc->type_subs, 
@@ -889,6 +889,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
     khui_new_creds * nc;
     LPNETID_DLGINFO pdlginfo;
     khm_size cb;
+    khm_handle def_idpro = NULL;
 
     if (!khm_cred_begin_dialog())
         return;
@@ -899,9 +900,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
 
     khui_context_get(&nc->ctx);
 
-    kcdb_identpro_get_ui_cb((void *) &nc->ident_cb);
-
-    if (nc->ident_cb == NULL) {
+    if (KHM_FAILED(kcdb_identpro_get_default(&def_idpro))) {
         wchar_t title[256];
         wchar_t msg[512];
         wchar_t suggestion[512];
@@ -957,6 +956,21 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         StringCbCopy(nc->window_title, cb, pdlginfo->in.title);
     }
 
+    /* Preselect primary identity */
+
+    if (nc->ctx.identity) {
+        khui_cw_set_primary_id(nc, nc->ctx.identity);
+    } else {
+        khm_handle ident = NULL;
+
+        /* Use the default identity */
+
+        if (KHM_SUCCEEDED(kcdb_identity_get_default_ex(def_idpro, &ident))) {
+            khui_cw_set_primary_id(nc, ident);
+            kcdb_identity_release(ident);
+        }
+    }
+
     khm_create_newcredwnd(khm_hwnd_main, nc);
 
     if (nc->hwnd != NULL) {
@@ -973,6 +987,11 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         nc->result = KHUI_NC_RESULT_CANCEL;
         khm_cred_end_dialog(nc);
         khui_cw_destroy_cred_blob(nc);
+    }
+
+    if (def_idpro) {
+        kcdb_identpro_release(def_idpro);
+        def_idpro = NULL;
     }
 }
 

@@ -239,5 +239,15 @@ typedef struct tag_khm_version {
     khm_ui_2 aux;       /*!< Auxilary level (usually carries a build number) */
 } khm_version;
 
+/* \internal
+   \brief Resource types
+ */
+typedef enum tag_khm_restype {
+    KHM_RESTYPE_NONE,
+    KHM_RESTYPE_STRING,
+    KHM_RESTYPE_ICON,
+    KHM_RESTYPE_BITMAP
+} khm_restype;
+
 /*@}*/
 #endif

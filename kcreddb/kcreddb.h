@@ -83,6 +83,11 @@
 */
 #define KCDB_CBSIZE_AUTO ((khm_size) -1)
 
+struct tag_kcdb_enumeration;
+
+/*! \brief Generic enumeration */
+typedef struct tag_kcdb_enumeration *kcdb_enumeration;
+
 /*!
 \defgroup kcdb_ident Identities
 
@@ -98,9 +103,6 @@ Functions, macros etc. for manipulating identities.
 /*! \brief The maximum number of bytes that can be specified as an identity
            name */
 #define KCDB_IDENT_MAXCB_NAME (sizeof(wchar_t) * KCDB_IDENT_MAXCCH_NAME)
-
-/*! \brief Valid characters in an identity name */
-#define KCDB_IDENT_VALID_CHARS L"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._@-/"
 
 /*!
 \name Flags for identities */
@@ -125,7 +127,6 @@ Functions, macros etc. for manipulating identities.
         or modifying an identity. Once an identity is deleted, it will
         no longer have this flag. */
 #define KCDB_IDENT_FLAG_ACTIVE      0x02000000L
-
 
 /*! \brief The identity has custom attributes assigned
  */
@@ -179,12 +180,12 @@ Functions, macros etc. for manipulating identities.
 
 /*! \brief Expired identity
 
-    This identity has expired and can not be actively used to obtain
-    credentials.  This determination is made based on the input of
-    some external entity.  This flag may only be set by an identity
-    provider.
+  This identity is expired.
+
+  \deprecated This flag is no longer supported.
 */
 #define KCDB_IDENT_FLAG_EXPIRED     0x00000020L
+#pragma deprecated("KCDB_IDENT_FLAG_EXPIRED")
 
 /*! \brief Empty identity
 
@@ -199,22 +200,26 @@ Functions, macros etc. for manipulating identities.
  */
 #define KCDB_IDENT_FLAG_RENEWABLE   0x00000080L
 
-/*! \brief Required user interaction
+/*! \brief Unused
 
-    The identity is in a state which requires user interaction to
-    activate.  Currently, the identity may not be in a state where it
-    can be used to obtain credentials.
+  Use of this flag is deprecated.
 
-    A typical example of this is when the primary password for an
-    identity has expired.
+  \deprecated This flag was not being used.
  */
 #define KCDB_IDENT_FLAG_INTERACT    0x00000100L
+#pragma deprecated("KCDB_IDENT_FLAG_INTERACT")
 
 /*! \brief Has expired credentials
 
-    The identity has expired credentials associated with it.
+  Use of this flag is deprecated.
+
+  \deprecated This flag is no longer supported.  Plug-ins that need to
+  determine whether any credentials belonging to an identity are
+  expired should enumerate the corresponding credentials and check
+  them for expiration.
  */
 #define KCDB_IDENT_FLAG_CRED_EXP    0x00000200L
+#pragma deprecated("KCDB_IDENT_FLAG_CRED_EXP")
 
 /*! \brief Has renewable credentials
 
@@ -242,11 +247,417 @@ Functions, macros etc. for manipulating identities.
  */
 #define KCDB_IDENT_FLAG_UNKNOWN     0x00001000L
 
+/*! \brief The identity requires a refresh
+
+  This flag is set when a change in the root credentials set requires
+  that the properties of the identity to be refreshed with a call to
+  kcdb_identity_refresh().  It is automatically set by KCDB when the
+  root credentials set is modified.  However, an identity provider may
+  choose to set this flag indepently if a refresh is needed.
+
+  kcdb_identity_refresh_all() will only refresh identities for which
+  this flag is set.
+ */
+#define KCDB_IDENT_FLAG_NEEDREFRESH 0x00002000L
+
 /*! \brief Read/write flags mask.
 
     A bitmask that correspond to all the read/write flags in the mask.
 */
-#define KCDB_IDENT_FLAGMASK_RDWR    0x00001fffL
+#define KCDB_IDENT_FLAGMASK_RDWR    0x00003fffL
+
+/*@}*/
+
+/*********************************************************************/
+
+/*! \defgroup kcdb_buf Generic access to KCDB objects
+
+    Currently, credentials and identities both hold record data types.
+    This set of API's allow an application to access fields in the
+    records using a single interface.  Note that credentials only
+    accept regular attributes while identities can hold both
+    attributes and properties.
+
+    Handles to credentials and identities are implicitly also handles
+    to records.  Thus they can be directly used as such.
+*/
+/*@{*/
+
+KHMEXP khm_boolean KHMAPI
+kcdb_handle_is_cred(khm_handle h);
+
+KHMEXP khm_boolean KHMAPI
+kcdb_handle_is_identity(khm_handle h);
+
+KHMEXP khm_boolean KHMAPI
+kcdb_handle_is_identpro(khm_handle h);
+
+/*! \brief Get an attribute from a record by attribute id.
+
+    \param[in] buffer The buffer that is to receive the attribute
+        value.  Set this to NULL if only the required buffer size is
+        to be returned.
+
+    \param[in,out] cbbuf The number of bytes available in \a buffer.
+        If \a buffer is not sufficient, returns KHM_ERROR_TOO_LONG and
+        sets this to the required buffer size.
+
+    \param[out] attr_type Receives the data type of the attribute.
+        Set this to NULL if the type is not required.
+
+    \note Set both \a buffer and \a cbbuf to NULL if only the
+        existence of the attribute is to be checked.  If the attribute
+        exists in this record then the function will return
+        KHM_ERROR_SUCCESS, otherwise it returns KHM_ERROR_NOT_FOUND.
+*/
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_get_attr(khm_handle  record, 
+                  khm_int32   attr_id, 
+                  khm_int32 * attr_type, 
+                  void *      buffer, 
+                  khm_size *  pcb_buf);
+
+/*! \brief Get an attribute from a record by name.
+
+    \param[in] buffer The buffer that is to receive the attribute
+        value.  Set this to NULL if only the required buffer size is
+        to be returned.
+
+    \param[in,out] cbbuf The number of bytes available in \a buffer.
+        If \a buffer is not sufficient, returns KHM_ERROR_TOO_LONG and
+        sets this to the required buffer size.
+
+    \note Set both \a buffer and \a cbbuf to NULL if only the
+        existence of the attribute is to be checked.  If the attribute
+        exists in this record then the function will return
+        KHM_ERROR_SUCCESS, otherwise it returns KHM_ERROR_NOT_FOUND.
+*/
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_get_attrib(khm_handle  record,
+                    const wchar_t *   attr_name,
+                    khm_int32 * attr_type,
+                    void *      buffer,
+                    khm_size *  pcb_buf);
+
+/*! \brief Get the string representation of a record attribute.
+
+    A shortcut function which generates the string representation of a
+    record attribute directly.
+
+    \param[in] record A handle to a record
+
+    \param[in] attr_id The attribute to retrieve
+
+    \param[out] buffer A pointer to a string buffer which receives the
+        string form of the attribute.  Set this to NULL if you only
+        want to determine the size of the required buffer.
+
+    \param[in,out] pcbbuf A pointer to a #khm_int32 that, on entry,
+        holds the size of the buffer pointed to by \a buffer, and on
+        exit, receives the actual number of bytes that were copied.
+
+    \param[in] flags Flags for the string conversion. Can be set to
+        one of KCDB_TS_LONG or KCDB_TS_SHORT.  The default is
+        KCDB_TS_LONG.
+
+    \retval KHM_ERROR_SUCCESS Success
+    \retval KHM_ERROR_NOT_FOUND The given attribute was either invalid
+        or was not defined for this record
+    \retval KHM_ERROR_INVALID_PARAM One or more parameters were invalid
+    \retval KHM_ERROR_TOO_LONG Either \a buffer was NULL or the
+        supplied buffer was insufficient
+*/
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_get_attr_string(khm_handle  record,
+                         khm_int32   attr_id,
+                         wchar_t *   buffer,
+                         khm_size *  pcbbuf,
+                         khm_int32  flags);
+
+/*! \brief Get the string representation of a record attribute by name.
+
+    A shortcut function which generates the string representation of a
+    record attribute directly.
+
+    \param[in] record A handle to a record
+
+    \param[in] attrib The name of the attribute to retrieve
+
+    \param[out] buffer A pointer to a string buffer which receives the
+        string form of the attribute.  Set this to NULL if you only
+        want to determine the size of the required buffer.
+
+    \param[in,out] pcbbuf A pointer to a #khm_int32 that, on entry,
+        holds the size of the buffer pointed to by \a buffer, and on
+        exit, receives the actual number of bytes that were copied.
+
+    \param[in] flags Flags for the string conversion. Can be set to
+        one of KCDB_TS_LONG or KCDB_TS_SHORT.  The default is
+        KCDB_TS_LONG.
+
+    \see kcdb_cred_get_attr_string()
+*/
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_get_attrib_string(khm_handle  record,
+                           const wchar_t *   attr_name,
+                           wchar_t *   buffer,
+                           khm_size *  pcbbuf,
+                           khm_int32   flags);
+
+/*! \brief Set an attribute in a record by attribute id
+
+    \param[in] cbbuf Number of bytes of data in \a buffer.  The
+        individual data type handlers may copy in less than this many
+        bytes in to the record.
+*/
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_set_attr(khm_handle  record,
+                  khm_int32   attr_id,
+                  void *      buffer,
+                  khm_size    cbbuf);
+
+/*! \brief Set an attribute in a record by name
+
+    \param[in] cbbuf Number of bytes of data in \a buffer.  The
+        individual data type handlers may copy in less than this many
+        bytes in to the record.
+*/
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_set_attrib(khm_handle  record,
+                    const wchar_t *   attr_name,
+                    void *      buffer,
+                    khm_size    cbbuf);
+
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_hold(khm_handle  record);
+
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_release(khm_handle record);
+
+/*! \brief Get the next handle in an enumeration
+
+  \param[in] e Handle to the enumeration that was obtained via a call
+    to kcdb_identpro_begin_enum() or kcdb_identity_begin_enum()
+
+  \param[in,out] ph Receives the next object in the enumeration.
+    If a valid handle of the correct type is passed in on entry, that
+    handle will be released during the call.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_enum_next(kcdb_enumeration e, khm_handle * ph);
+
+/*! \brief Resets or rewinds an enumeration
+
+  Resets the state of an enumeration.  Calling kcdb_enum_next() will
+  return the first handle in the list.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_enum_reset(kcdb_enumeration e);
+
+/*! \brief Close an enumeration handle
+
+  Closes a handle returned by kcdb_identpro_begin_enum().
+*/
+KHMEXP khm_int32 KHMAPI
+kcdb_enum_end(kcdb_enumeration e);
+
+/*! \brief Generic comparison function
+
+  Used with kcdb_enum_sort().  The two handles \a h1 and \a h2 will be
+  of the type of object being enumerated.
+
+  The return value should be as follows:
+
+  - less than 0 : If \a h1 should be ordered prior to \a h2
+
+  - greater than 0 : If \a h1 should be ordered after \a h2
+
+  - equal to 0 : If \a h1 should be considered equal to \a h2
+
+  \note Although the function may return zero, in practice the
+  comparion function will not be called if \a h1 and \a h2 are handles
+  t othe same identity provider.
+
+  \note Both \a h1 and \a h2 will be valid handles to
+  identity providers.
+*/
+typedef khm_int32 (KHMAPI * kcdb_comp_func)(khm_handle h1,
+                                            khm_handle h2,
+                                            void * vparam);
+
+/*! \brief Sort an enumeration
+
+  Sorts the identity providers that are contained in the enumeration
+  \a e using the comparison function \a f.  The parameter \a vparam
+  will be passed as-is to the comparison function.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_enum_sort(kcdb_enumeration e,
+               kcdb_comp_func   f,
+               void * vparam);
+
+/*@}*/
+
+/*! \name Resource acquisition
+@{*/
+
+/* Flags for strings */
+
+/*! \brief Short string */
+#define KCDB_RFS_SHORT         0x00000001
+
+/* Flags for icons */
+
+/*! \brief Small icon
+
+  The icon that is returned should have the dimensions corresponding
+  to SM_CXSMICON and SM_CYSMICON.
+
+  If neither KCDB_RFI_SMALL or ::KCDB_RFI_TOOLBAR are specified, the
+  icon should correspond to SM_CXICON and SM_CYICON.
+
+  \see Documentation for GetSystemMetrics() in the Microsoft Platform
+  SDK.
+ */
+#define KCDB_RFI_SMALL         0x00000001
+
+/*! \brief Toolbar icon
+
+  The returned icon should be sized to fit in a toolbar.  This size is
+  usually halfway between SM_CXSMICON and SM_CXICON (typically 24x24).
+
+  If neither KCDB_RFI_SMALL or ::KCDB_RFI_TOOLBAR are specified, the
+  icon should correspond to SM_CXICON and SM_CYICON.
+
+  \see Documentation for GetSystemMetrics() in the Microsoft Platform
+  SDK.
+ */
+#define KCDB_RFI_TOOLBAR       0x00000002
+
+/* Return flags */
+
+/*! \brief Do not cache
+
+  Only applicable to string resources.  If this flag is set, then the
+  returned resource should not be cached.  If the same resource is
+  required again, the caller should call kcdb_get_resource() again.
+ */
+#define KCDB_RFR_NOCACHE       0x00000001
+
+/*! \brief KCDB Resource IDs */
+typedef enum tag_kcdb_resource_id {
+    KCDB_RES_T_NONE = 0,
+
+    KCDB_RES_T_BEGINSTRING,     /* Internal marker*/
+
+    KCDB_RES_DISPLAYNAME,       /*!< Localized display name */
+    KCDB_RES_DESCRIPTION,       /*!< Localized description */
+    KCDB_RES_TOOLTIP,           /*!< A tooltip */
+
+    KCDB_RES_INSTANCE,          /*!< Name of an instance of objects
+                                  belonging to this class */
+
+    KCDB_RES_T_ENDSTRING,       /* Internal marker */
+
+    KCDB_RES_T_BEGINICON = 1024, /* Internal marker */
+
+    KCDB_RES_ICON_NORMAL,       /*!< Icon (normal) */
+    KCDB_RES_ICON_DISABLED,     /*!< Icon (disabled) */
+
+    KCDB_RES_T_ENDICON,         /* Internal marker */
+} kcdb_resource_id;
+
+/*! \brief Acquire a resource for a KCDB Object
+
+  This is a generic interface to obtain localized strings and icons
+  for various KCDB objects.  Currently this function is supported for
+  credentials, credentials types, identities and identity provider
+  handles.
+
+  When calling this function for a credentials type, the type
+  identifier should be cast to a ::khm_handle type, as follows:
+
+  \code
+  kcdb_get_resource((khm_handle) credtype_id, KCDB_RES_DISPLAYNAME, KCDB_RFS_SHORT,
+                    NULL, NULL, buf, &cb_buf);
+  \endcode
+
+  \param[in] h Handle for which resources are queried. \a h could be
+    one of:
+
+    - A handle to an identity
+    - A handle to an identity provider
+    - A credential type identifier. (See above)
+
+  \param[in] r_id Identifier of the resource
+
+  \param[in] flags Additional flags.  For string resources, this is a
+    combination of KCDB_RFS_* constants.  For icon resources, this is
+    a combination of KCDB_RFI_* constants.
+
+  \param[out] prflags Returned flags.  This is optional and can be set
+    to NULL if no flags are desired.  Returned flags are a combination
+    of KCDB_RFR_* values.
+
+  \param[in] vparam Reserved.  Must be NULL.
+
+  \param[out] buf Receives the resource
+
+  \param[in,out] pcb_buf Points to a ::khm_size value that on entry,
+    contains the size of the buffer pointed to by \a buf.  On exit,
+    this will receieve the actual number of bytes used by the
+    resource.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_get_resource(khm_handle h,
+                  kcdb_resource_id r_id,
+                  khm_int32 flags,
+                  khm_int32 *prflags,
+                  void * vparam,
+                  void * buf,
+                  khm_size * pcb_buf);
+
+#ifdef NOEXPORT
+
+KHMEXP khm_int32 KHMAPI
+kcdb_cleanup_resources_by_handle(khm_handle h);
+
+#endif
+
+/*! \brief Resource request message
+
+  Credentials providers receive requests for resources in the form of
+  a <KMSG_CRED, KMSG_CRED_RESOURCE_REQ> message.  The \a vparam of the
+  message is set to this structure.
+
+  Identity providers receive these requests in the form of a
+  <KMSG_IDENT, KMSG_IDENT_RESOURCE_REQ> message.
+
+  Note that the \a cb_struct member will always be set to the size of
+  the structure.
+ */
+typedef struct tag_kcdb_resource_request {
+    khm_int32        magic;     /*!< Set to KCDB_RESOURCE_REQ_MAGIC */
+
+    khm_handle       h_obj; /*!< Handle to the object being queried */
+    kcdb_resource_id res_id;    /*!< Resource identifier */
+    khm_restype      res_type;  /*!< Type of resource requested */
+    khm_int32        flags;     /*!< Flags */
+    khm_int32        rflags;    /*!< Flags to be returned */
+    void *           vparam;    /*!< Parameter */
+    void *           buf; /*!< Buffer which will receive the resource */
+    khm_size         cb_buf;    /*!< On entry, the number of bytes
+                                     available in \a buf.  On exit,
+                                     this should contain the number of
+                                     bytes used. */
+
+    khm_int32        code;      /*!< Return value.  Set this to
+                                   ::KHM_ERROR_SUCCESS if the call was
+                                   successful, or to a suitable error
+                                   code if not. */
+} kcdb_resource_request;
+
+#define KCDB_RESOURCE_REQ_MAGIC 0x31ff606d
 
 /*@}*/
 
@@ -280,13 +691,6 @@ typedef struct tag_kcdb_ident_name_xfer {
                                      always. */
 } kcdb_ident_name_xfer;
 
-typedef struct tag_kcdb_ident_info {
-    khm_handle      identity;
-    khm_int32       fields;
-
-    FILETIME        expiration;
-} kcdb_ident_info;
-
 /*@}*/
 
 /*! \name Identity provider interface functions
@@ -297,6 +701,153 @@ typedef struct tag_kcdb_ident_info {
     the NetIDMgr core application.
 @{*/
 
+/*! \brief Find an identity provider by name
+
+  Identity providers are named after the plug-ins that register them.
+  This function returns a handle to the identity provider.  The handle
+  should be released with a call to kcdb_identpro_release().
+
+  \param[in] name Name of provider, which is the same as the name of
+    the plug-in that registered the identity provider.  The name
+    should be at most ::KCDB_MAXCCH_NAME characters.
+
+  \param[out] vidpro If the call is successful, receives a held handle
+    to the identity provider.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_find(const wchar_t * name, khm_handle * vidpro);
+
+/*! \brief Obtain the name of the identity provider
+
+  The returned name is not localized.  It is the internal name of the
+  plug-in that registered the identity provider.
+
+  The returned name will be less than ::KCDB_MAXCCH_NAME characters.
+
+  \param[out] pname Buffer that receives the name of the plug-in.  If
+    \a pname is NULL, then the required size of the buffer will be
+    returned in \a pcb_name.
+
+  \param[in,out] pcb_name On entry, should contain the size of the
+    buffer pointed to by pname.  On exit, will contain the size of the
+    plug-in name including the NULL terminator.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_get_name(khm_handle vidpro, wchar_t * pname, khm_size * pcb_name);
+
+/*! \brief Get the primary credentials type for an identity provider
+
+  The primary credentials type is registered by an identity provider
+  when it first starts.  It is considered to be the type of credential
+  that will form the basis for identities of this type.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_get_type(khm_handle vidpro, khm_int32 * ptype);
+
+/*! \brief Hold an identity provider
+
+  Call kcdb_identpro_release() to undo a hold.  An identity provider
+  handle should only be considered valid if it is held.  Once it is
+  released, it should no longer be considered valid.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_hold(khm_handle vidpro);
+
+/*! \brief Release a hold obtained on an identity provider
+
+  \see kcdb_identpro_hold()
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_release(khm_handle vidpro);
+
+/*! \brief Begin enumerating identity providers
+
+  This function begins an enumeration of identity provders.  If the
+  call is successful, the caller will receive a pointer to an
+  enumeration handle.  This handle represents a snapshot of the
+  identity providers that were available at the time
+  kcdb_identpro_begin_enum() was called. Once this handle is obtained,
+  kcdb_enum_next(), kcdb_enum_reset() can be used to navigate the
+  enumeration as follows:
+
+  \code
+
+  {
+    kcdb_identpro_enumeration e = NULL;
+    khm_size   n_p;
+    khm_handle h_idpro = NULL;
+
+    if (KHM_SUCCEEDED(kcdb_identpro_begin_enum(&e, &n_p))) {
+
+      // Now n_p has the number of providers that are in the
+      // enumeration, although we won't be using it.
+
+      // Note that h_idpro is initialized to NULL above.
+      while (KHM_SUCCEEDED(kcdb_enum_next(e, &h_idpro))) {
+
+        // Do something with h_idpro
+
+        // The handle in h_idpro will be automatically released during
+        // the next call to kcdb_enum_next().
+
+      }
+
+      kcdb_enum_end(e);
+
+      // h_idpro is guaranteed to be NULL at this point, since the last
+      // call to kcdb_identpro_enum_next() failed.
+
+    }
+  }
+
+  \endcode
+
+  The handle to the enumeration that is returned in \a e should be
+  closed by a call to kcdb_enum_end().
+
+  \param[out] e Receives a handle to the identity provider enumeration
+
+  \param[out] n_providers Receives the number of identity providers
+    found.  Optional.  Set to NULL if this value is not required.
+
+  \retval KHM_ERROR_SUCCESS The call succeeded.  \a e and \a
+    n_providers will contain values as documented above.
+
+  \retval KHM_ERROR_NOT_FOUND There are no identity providers to
+    enumerate.
+
+  \see kcdb_enum_next(), kcdb_enum_sort(), kcdb_enum_reset() and
+  kcdb_enum_end()
+
+  \note Enumeration handles should not be shared across thread
+    boundaries.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_begin_enum(kcdb_enumeration * e, khm_size * n_providers);
+
+/*! \brief Query the default identity provider
+
+  If the call is successful, vidpro recieves a held handle to the
+  current default identity provider.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_get_default(khm_handle * vidpro);
+
+/*! \brief Check if two identity provider handles refer to the same provider
+ */
+KHMEXP khm_boolean KHMAPI
+kcdb_identpro_is_equal(khm_handle idp1, khm_handle idp2);
+
+#ifdef NOEXPORT
+
+/* The follwing functions are only exported for use by the Network
+   Identity Provider application, and are not meant for general use
+   by plug-ins. */
+
+KHMEXP khm_int32 KHMAPI 
+kcdb_identpro_validate_name(const wchar_t * name);
+#pragma deprecated(kcdb_identpro_validate_name)
+
 /*! \brief Validate an identity name
 
     The name that is provided will be passed through sets of
@@ -306,20 +857,29 @@ typedef struct tag_kcdb_ident_info {
     the name passes those tests, then the name is passed down to the
     identity provider's name validation handler.
 
+    \param[in] vidpro Handle to the identity provider
+
+    \param[in] name Identity name to validate
+
     \retval KHM_ERROR_SUCCESS The name is valid
+
     \retval KHM_ERROR_TOO_LONG Too many characters in name
+
     \retval KHM_ERROR_INVALID_NAME There were invalid characters in the name.
+
     \retval KHM_ERROR_NO_PROVIDER There is no identity provider;
-        however the name passed the length and character tests.
+        however the name length is valid.
+
     \retval KHM_ERROR_NOT_IMPLEMENTED The identity provider doesn't
         implement a name validation handler; however the name passed
         the length and character tests.
 
     \see ::KMSG_IDENT_VALIDATE_NAME
  */
-KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_validate_name(const wchar_t * name);
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_validate_name_ex(khm_handle vidpro, const wchar_t * name);
 
+#ifdef KH_API_REMOVED
 /*! \brief Validate an identity
 
     The identity itself needs to be validated.  This may involve
@@ -329,31 +889,48 @@ kcdb_identpro_validate_name(const wchar_t * name);
  */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_validate_identity(khm_handle identity);
+#endif
 
-/*! \brief Canonicalize the name 
-
-
-    \see ::KMSG_IDENT_CANON_NAME
-*/
 KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_canon_name(const wchar_t * name_in, 
                          wchar_t * name_out, 
                          khm_size * cb_name_out);
+#pragma deprecated(kcdb_identpro_canon_name)
+
+/*! \brief Canonicalize the name 
+
+    \see ::KMSG_IDENT_CANON_NAME
+*/
+KHMEXP khm_int32 KHMAPI 
+kcdb_identpro_canon_name_ex(khm_handle vidpro,
+                            const wchar_t * name_in, 
+                            wchar_t * name_out, 
+                            khm_size * cb_name_out);
+
+KHMEXP khm_int32 KHMAPI 
+kcdb_identpro_compare_name(const wchar_t * name1,
+                           const wchar_t * name2);
+#pragma deprecated(kcdb_identpro_compare_name)
 
 /*! \brief Compare two identity names 
 
     \see ::KMSG_IDENT_COMPARE_NAME
 */
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_compare_name(const wchar_t * name1,
-                           const wchar_t * name2);
+kcdb_identpro_compare_name_ex(khm_handle vidpro,
+                              const wchar_t * name1,
+                              const wchar_t * name2);
 
 /*! \brief Set the specified identity as the default 
 
     \see ::KMSG_IDENT_SET_DEFAULT
 */
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_set_default(khm_handle identity);
+kcdb_identpro_set_default_identity(khm_handle identity, khm_boolean ask_id_pro);
+
+/*! \brief Get the default identity for the specified provider */
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_get_default_identity(khm_handle vidpro, khm_handle * vident);
 
 /*! \brief Set the specified identity as searchable 
 
@@ -370,6 +947,10 @@ kcdb_identpro_set_searchable(khm_handle identity,
 KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_update(khm_handle identity);
 
+KHMEXP khm_int32 KHMAPI 
+kcdb_identpro_get_ui_cb(void * rock);
+#pragma deprecated(kcdb_identpro_get_ui_cb)
+
 /*! \brief Obtain the UI callback
 
     \a rock is actually a pointer to a ::khui_ident_new_creds_cb which
@@ -378,7 +959,7 @@ kcdb_identpro_update(khm_handle identity);
     \see ::KMSG_IDENT_GET_UI_CALLBACK
  */
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_get_ui_cb(void * rock);
+kcdb_identpro_get_ui_cb_ex(khm_handle vidpro, void * rock);
 
 /*! \brief Notify an identity provider of the creation of a new identity 
 
@@ -386,6 +967,8 @@ kcdb_identpro_get_ui_cb(void * rock);
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_notify_create(khm_handle identity);
+
+#endif  /* NOEXPORT */
 
 /*@}*/
 
@@ -395,36 +978,68 @@ kcdb_identpro_notify_create(khm_handle identity);
 */
 KHMEXP khm_boolean KHMAPI 
 kcdb_identity_is_valid_name(const wchar_t * name);
+#pragma deprecated(kcdb_identity_is_valid_name)
 
-/*! \brief Create or open an identity.
+/*! \brief Create or open an identity
 
-    If the KCDB_IDENT_FLAG_CREATE flag is specified in the flags
-    parameter a new identity will be created if one does not already
-    exist with the given name.  If an identity by that name already
-    exists, then the existing identity will be opened. The result
-    parameter will receive a held reference to the opened identity.
-    Use kcdb_identity_release() to release the handle.
+    Similar to kcdb_identity_create_ex(), except the name of the
+    identity can optionally include the name of the identity provider
+    to use.  In this case, the format of the \a name parameter would
+    be:
 
-    \param[in] name Name of identity to create
-    \param[in] flags If KCDB_IDENT_FLAG_CREATE is specified, then the
-        identity will be created if it doesn't already exist.
-        Additional flags can be set here which will be assigned to the
-        identity if it is created.  Additional flags have no effect if
-        an existing identity is opened.
-    \param[out] result If the call is successful, this receives a held
-        reference to the identity.  The caller should call
-        kcdb_identity_release() to release the identity once it is no
-        longer needed.
-    */
+    <i>(provider name):(identity name)</i>
+
+    If the provider name is not present, the default identity provider
+    is assumed.
+ */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_create(const wchar_t *name, 
                      khm_int32 flags, 
                      khm_handle * result);
 
+/*! \brief Create or open an identity.
+
+    If the ::KCDB_IDENT_FLAG_CREATE flag is specified in the flags
+    parameter, a new identity will be created if one does not already
+    exist with the given name for the identity provider.  If an
+    identity by that name already exists, then the existing identity
+    will be opened. The result parameter will receive a held reference
+    to the opened identity.  Use kcdb_identity_release() to release
+    the handle.
+
+    \param[in] vidpro Handle to the identity provider
+
+    \param[in] name Name of identity to create. Should be at most
+        ::KCDB_IDENT_MAXCCH_NAME characters including the NULL
+        terminator.  The name provided here will not be considered to
+        be a display name and hence is not required to be localized.
+        A localized display name can be set for an identity by setting
+        the ::KCDB_ATTR_DISPLAY_NAME attribute.
+
+    \param[in] flags If ::KCDB_IDENT_FLAG_CREATE is specified, then
+        the identity will be created if it doesn't already exist.
+        Additional flags can be set here which will be assigned to the
+        identity if it is created.  Additional flags have no effect if
+        an existing identity is opened.
+
+    \param[out] result If the call is successful, this receives a held
+        reference to the identity.  The caller should call
+        kcdb_identity_release() to release the identity once it is no
+        longer needed.
+
+    \note Identity names are only unique per identity provider.
+
+    */
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_create_ex(khm_handle vidpro,
+                        const wchar_t * name,
+                        khm_int32 flags,
+                        khm_handle * result);
+
 /*! \brief Mark an identity for deletion.
 
     The identity will be marked for deletion.  The
-    KCDB_IDENT_FLAG_ACTIVE will no longer be present for this
+    ::KCDB_IDENT_FLAG_ACTIVE will no longer be present for this
     identity.  Once all references to the identity are released, it
     will be removed from memory.  All associated credentials will also
     be removed. */
@@ -433,9 +1048,9 @@ kcdb_identity_delete(khm_handle id);
 
 /*! \brief Set or unset the specified flags in the specified identity.
 
-    Only flags that are in KCDB_IDENT_FLAGMASK_RDWR can be specifed in
-    the \a flags parameter or the \a mask parameter.  The flags set in
-    the \a mask parameter of the identity will be set to the
+    Only flags that are in ::KCDB_IDENT_FLAGMASK_RDWR can be specifed
+    in the \a flags parameter or the \a mask parameter.  The flags set
+    in the \a mask parameter of the identity will be set to the
     corresponding values in the \a flags parameter.
 
     If ::KCDB_IDENT_FLAG_INVALID is set using this function, then the
@@ -459,10 +1074,11 @@ kcdb_identity_delete(khm_handle id);
       will return an error.
 
     \note kcdb_identity_set_flags() is not atomic.  Even if the
-    function returns a failure code, some flags in the identity may
-    have been set.  When calling kcdb_identity_set_flags() always
-    check the flags in the identity using kcdb_identity_get_flags() to
-    check which flags have been set and which have failed.
+      function returns a failure code, some flags in the identity may
+      have been set.  If the call to kcdb_identity_set_flags() fails,
+      the caller should check the flags in the identity using
+      kcdb_identity_get_flags() to check which flags have been set and
+      which have failed.
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_set_flags(khm_handle id, 
@@ -471,7 +1087,7 @@ kcdb_identity_set_flags(khm_handle id,
 
 /*! \brief Return all the flags for the identity
 
-    The returned flags may include internal flags.
+    \note The returned flags may include internal flags.
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_get_flags(khm_handle id, 
@@ -479,23 +1095,31 @@ kcdb_identity_get_flags(khm_handle id,
 
 /*! \brief Return the name of the identity 
 
+    The returned name is not a localized display name.  To obtain the
+    localized display name for an identity, query the
+    ::KCDB_ATTR_DISPLAY_NAME attribute, or use the kcdb_get_resource()
+    function.
+
     \param[out] buffer Buffer to copy the identity name into.  The
         maximum size of an identity name is \a KCDB_IDENT_MAXCB_NAME.
         If \a buffer is \a NULL, then the required size of the buffer
         is returned in \a pcbsize.
 
-    \param[in,out] pcbsize Size of buffer in bytes. */
+    \param[in,out] pcbsize Size of buffer in bytes.
+*/
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_get_name(khm_handle id, 
                        wchar_t * buffer, 
                        khm_size * pcbsize);
 
-/*! \brief Set the specified identity as the default.
+/*! \brief Set the specified identity as the default
 
-    Specifying NULL effectively makes none of the identities the
-    default.
+    Each identity provider maintains a default identity.  Setting an
+    identity as the default will make it the default identity for the
+    corresponding identity provider.  Other providers will be
+    unaffected.
 
-    \see kcdb_identity_set_flags()
+    \see kcdb_identity_set_flags(), kcdb_identity_set_default_int()
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_set_default(khm_handle id);
@@ -516,10 +1140,15 @@ kcdb_identity_set_default(khm_handle id);
       to notify the KCDB that the specified identity is the default.
       This does not result in the invocation of any other semantics to
       make the identity the default other than releasing the previous
-      defualt identity and making the specified one the default.
+      default identity and making the specified one the default.
  */
 KHMEXP khm_int32 KHMAPI
 kcdb_identity_set_default_int(khm_handle id);
+
+/*! \deprecated Use kcdb_identity_get_default_ex() instead. */
+KHMEXP khm_int32 KHMAPI 
+kcdb_identity_get_default(khm_handle * pvid);
+#pragma deprecated(kcdb_identity_get_default)
 
 /*! \brief Get the default identity
 
@@ -529,8 +1158,8 @@ kcdb_identity_set_default_int(khm_handle id);
     If there is no default identity, then the handle pointed to by \a
     pvid is set to \a NULL and the function returns
     KHM_ERROR_NOT_FOUND. */
-KHMEXP khm_int32 KHMAPI 
-kcdb_identity_get_default(khm_handle * pvid);
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_get_default_ex(khm_handle vidpro, khm_handle * pvid);
 
 /*! \brief Get the configuration space for the identity. 
 
@@ -570,6 +1199,7 @@ kcdb_identity_hold(khm_handle id);
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_release(khm_handle id);
 
+#ifdef NOEXPORT
 /*! \brief Set the identity provider subscription
 
     If there was a previous subscription, that subscription will be
@@ -579,13 +1209,19 @@ kcdb_identity_release(khm_handle id);
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_set_provider(khm_handle sub);
+#endif
 
 /*! \brief Set the primary credentials type
 
     The primary credentials type is designated by the identity
     provider.  As such, this function should only be called by an
     identity provider.
- */
+
+    \note It is invalid to call this function from outside an identity
+      provider plug-in thread.  The \a cred_type will become the
+      primary credentials type for the identity provider that calls
+      this function as identified by the calling thread.
+*/
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_set_type(khm_int32 cred_type);
 
@@ -601,17 +1237,33 @@ kcdb_identity_set_type(khm_int32 cred_type);
     \retval KHM_ERROR_NOT_FOUND There is currently no registered
         identity provider.  If \a sub was not NULL, the handle it
         points to has been set to NULL.
+
+    \deprecated This function should no longer be used.  Plug-ins must
+        not send messages directly to identity providers.
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_get_provider(khm_handle * sub);
+#pragma deprecated(kcdb_identity_get_provider)
+
+/*! \brief Retrieve the identity provider for an identity
+
+    Returns a handle to the identity provider that provided this
+    identity.  If the call is successful, the returned handle must be
+    released wit ha call to kcdb_identpro_release().
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_get_identpro(khm_handle h_ident, khm_handle * h_identpro);
 
 /*! \brief Retrieve the identity provider credentials type
 
     This is the credentials type that the identity provider has
     designated as the primary credentials type.
+
+    \deprecated Use kcdb_identpro_get_type() instead.
  */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_get_type(khm_int32 * ptype);
+#pragma deprecated(kcdb_identity_get_type)
 
 /*! \brief Returns TRUE if the two identities are equal
 
@@ -768,54 +1420,7 @@ kcdb_identity_get_attrib_string(khm_handle identity,
 
 /*! \brief Enumerate identities
 
-    Enumerates all the active identities that match the criteria
-    specified using \a and_flags and \a eq_flags.  The condition is
-    applied to all active identities as follows:
-
-    \code
-    (identity->flags & and_flags) == (eq_flags & and_flags)
-    \endcode
-
-    Essentially, if a flag is set in \a and_flags, then that flag in
-    the identity should equal the setting in \a eq_flags.
-
-    \param[in] and_flags See above
-
-    \param[in] eq_flags See above
-
-    \param[out] name_buf Buffer to receive the list of identity names.
-        Can be NULL if only the required size of the buffer or the
-        number of matching identities is required.  The list is
-        returned as a multi string.
-
-    \param[in,out] pcb_buf Number of bytes in buffer pointed to by \a
-        name_buf on entry.  On exit, will receive the number of bytes
-        copied.  Can be NULL only if \a name_buf is also NULL.  If \a
-        name_buf is NULL or if \a pcb_buf indicates that the buffer is
-        insufficient, this will receive the number of bytes required
-        and the return value of the function will be
-        KHM_ERROR_TOO_LONG
-
-    \param[out] pn_idents Receives the number of identities that match
-        the given criteria.
-
-    \retval KHM_ERROR_SUCCESS If \a name_buf was valid, the buffer now
-        contains a multi string of identities that matched.  If \a
-        pn_idents was valid, it contains the number of identities
-        matched.
-
-    \retval KHM_ERROR_TOO_LONG No buffer was supplied or the supplied
-        buffer was insufficient.  If \a pn_idents was valid, it
-        contains the number of identities.
-
-    \retval KHM_ERROR_INVALID_PARAM None of the parameters \a name_buf,
-        \a pcb_buf and \a pn_idents were supplied, or \a pcb_buf was
-        NULL when \a name_buf was not.
-
-    \note Calling this function to obtain the required size of the
-        buffer and then calling it with a that sized buffer is not
-        guaranteed to work since the list of identities may change
-        between the two calls.
+    \deprecated Use kcdb_identity_begin_enum() et. al. instead.
   */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_enum(khm_int32 and_flags,
@@ -823,6 +1428,7 @@ kcdb_identity_enum(khm_int32 and_flags,
                    wchar_t * name_buf,
                    khm_size * pcb_buf,
                    khm_size * pn_idents);
+#pragma deprecated(kcdb_identity_enum)
 
 /*! \brief Refresh identity attributes based on root credential set
 
@@ -847,6 +1453,89 @@ kcdb_identity_refresh(khm_handle vid);
  */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_refresh_all(void);
+
+/*! \brief Begin enumerating identities
+
+  This function begins an enumeration of identities.  If the call is
+  successful, the caller will receive a pointer to an enumeration
+  handle.  This handle represents a snapshot of the identities that
+  were available at the time kcdb_identity_begin_enum() was called and
+  which passed the filter criteria.  The filter criteria is based on
+  the flags of the identity as follows:
+
+  \code
+  (identity->flags & and_flags) == (eq_flags & and_flags)
+  \endcode
+
+  Essentially, if a flag is set in \a and_flags, then that flag in
+  the identity should equal the setting in \a eq_flags.
+
+  Only active identities are considered as candidates for enumeration
+  (see ::KCDB_IDENT_FLAG_ACTIVE).
+
+  The generic enumeration functions kcdb_enum_next(),
+  kcdb_enum_sort(), kcdb_enum_reset() can be used to navigate and
+  manage the enumeration.
+
+  \code
+
+  {
+    kcdb_enumeration e = NULL;
+    khm_size   n_id;
+    khm_handle h_id = NULL;
+
+    if (KHM_SUCCEEDED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_STICKY,
+                                               KCDB_IDENT_FLAG_STICKY,
+                                               &e, &n_id))) {
+
+      // Now n_id has the number of sticky active identities that were
+      // included in the enumeration, although we won't be using it.
+
+      // Note that h_id is initialized to NULL above.
+      while (KHM_SUCCEEDED(kcdb_enum_next(e, &h_id))) {
+
+        // Do something with h_id
+
+        // The handle in h_id will be automatically released during
+        // the next call to kcdb_enum_next().
+
+      }
+
+      kcdb_enum_end(e);
+
+      // h_id is guaranteed to be NULL at this point, since the last
+      // call to kcdb_enum_next() failed.
+
+    }
+  }
+
+  \endcode
+
+  The handle to the enumeration that is returned in \a e should be
+  closed by a call to kcdb_enum_end().
+
+  \param[out] e Receives a handle to the identity enumeration
+
+  \param[out] p_nidentities Receives the number of identities found.
+    This parameter is optional.  Set to NULL if this value is not
+    required.
+
+  \retval KHM_ERROR_SUCCESS The call succeeded.
+
+  \retval KHM_ERROR_NOT_FOUND No identities found that match the
+    criteria.
+
+  \see kcdb_enum_next(), kcdb_enum_reset(), kcdb_enum_end(), kcdb_enum_sort()
+
+  \note Enumeration handles should not be shared across thread
+    boundaries.
+    
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_begin_enum(khm_int32 and_flags,
+                         khm_int32 eq_flags,
+                         kcdb_enumeration * e,
+                         khm_size * pn_identites);
 
 /* KSMG_KCDB_IDENT notifications are structured as follows:
    type=KMSG_KCDB
@@ -897,22 +1586,6 @@ typedef khm_int32
 (KHMAPI *kcdb_cred_filter_func)(khm_handle cred, 
                                 khm_int32 flags, 
                                 void * rock);
-
-/*! \brief Credentials compare function.
-
-    Asserts a weak ordering on the credentials that are passed in as
-    \a cred1 and \a cred2.  It should return:
-
-    - a negative value if \a cred1 < \a cred2
-    - zero if \a cred1 == \a cred2
-    - a postive value if \a cred1 > \a cred2
-    \see kcdb_credset_sort()
-    \see ::kcdb_credtype
-*/
-typedef khm_int32 
-(KHMAPI *kcdb_cred_comp_func)(khm_handle cred1, 
-                              khm_handle cred2, 
-                              void * rock);
 
 /*! \defgroup kcdb_credset Credential sets */
 /*@{*/
@@ -1015,6 +1688,9 @@ kcdb_credset_delete(khm_handle credset);
         - They refer to the same identity
         - Both have the same credential type
         - Both have the same name
+        - A comparison function supplied by the credentials provider
+          indicates that the credentials are equal. (see
+          kcdb_credtype_register())
 
     \note This is the only supported way of modifying the root
         credential store.
@@ -1380,7 +2056,7 @@ kcdb_credset_apply(khm_handle credset,
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_credset_sort(khm_handle credset,
-                  kcdb_cred_comp_func comp,
+                  kcdb_comp_func comp,
                   void * rock);
 
 /*! \brief Seal a credential set
@@ -2168,7 +2844,7 @@ typedef struct tag_kcdb_type {
     the case that the string is truncated to facilitate displaying in
     a constrainted space.  
 */
-#define KCDB_TS_SHORT   1
+#define KCDB_TS_SHORT   KCDB_RFS_SHORT
 
 /*! \brief Specify that the long form of the string representation should be returned 
 
@@ -2197,7 +2873,7 @@ typedef struct tag_kcdb_type {
     defined in this type definition support the KCDB_CBSIZE_AUTO
     value.
 */
-#define KCDB_TYPE_FLAG_CB_AUTO      16
+#define KCDB_TYPE_FLAG_CB_AUTO      0x00000010
 
 /*! \brief The \a cb_min member is valid.
 
@@ -2208,7 +2884,7 @@ typedef struct tag_kcdb_type {
     KCDB_TYPE_FLAG_CB_MAX then, \a cb_min must be less than or equal
     to \a cb_max. 
 */
-#define KCDB_TYPE_FLAG_CB_MIN       128
+#define KCDB_TYPE_FLAG_CB_MIN       0x00000080
 
 /*! \brief The \a cb_max member is valid.
 
@@ -2218,7 +2894,7 @@ typedef struct tag_kcdb_type {
     \note If this flag is used in conjunction with \a
         KCDB_TYPE_FLAG_CB_MIN then, \a cb_min must be less than or
         equal to \a cb_max. */
-#define KCDB_TYPE_FLAG_CB_MAX       256
+#define KCDB_TYPE_FLAG_CB_MAX       0x00000100
 
 /*! \brief Denotes that objects of this type have a fixed size.
 
@@ -2323,23 +2999,27 @@ FtCompare(LPFILETIME pft1, LPFILETIME pft2);
 
 /*! \brief Convert a FILETIME to a 64 bit int
 */
-KHMEXP khm_int64 KHMAPI FtToInt(LPFILETIME pft);
+KHMEXP khm_int64 KHMAPI
+FtToInt(LPFILETIME pft);
 
 /*! \brief Convert a 64 bit int to a FILETIME
 */
-KHMEXP FILETIME KHMAPI IntToFt(khm_int64 i);
+KHMEXP FILETIME KHMAPI
+IntToFt(khm_int64 i);
 
 /*! \brief Calculate the difference between two FILETIMEs
 
     Returns the value of ft1 - ft2
  */
-KHMEXP FILETIME KHMAPI FtSub(LPFILETIME ft1, LPFILETIME ft2);
+KHMEXP FILETIME KHMAPI
+FtSub(LPFILETIME ft1, LPFILETIME ft2);
 
 /*! \brief Calculate the sum of two FILETIMEs
 
     Return the value of ft1 + ft2
  */
-KHMEXP FILETIME KHMAPI FtAdd(LPFILETIME ft1, LPFILETIME ft2);
+KHMEXP FILETIME KHMAPI
+FtAdd(LPFILETIME ft1, LPFILETIME ft2);
 
 /*! \brief Convert a FILETIME inverval to a string
 */
@@ -2792,10 +3472,11 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 */
 #define KCDB_ATTR_ID            1
 
-/*! \brief The name of the identity 
+/*! \brief The name of the identity
 
     - \b Type: STRING
-    - \b Flags: REQUIRED, COMPUTED, SYSTEM
+    - \b Flags: REQUIRED, COMPUTED, SYSTEM, ALTVIEW
+    - \b Alt ID: KCDB_ATTR_ID
  */
 #define KCDB_ATTR_ID_NAME       2
 
@@ -2809,14 +3490,15 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 /*! \brief Type name for the credential 
 
     - \b Type: STRING
-    - \b Flags: REQUIRED, COMPUTED, SYSTEM
+    - \b Flags: REQUIRED, COMPUTED, SYSTEM, ALTVIEW
+    - \b Alt ID: KCDB_ATTR_TYPE
 */
 #define KCDB_ATTR_TYPE_NAME     4
 
 /*! \brief Name of the parent credential 
 
     - \b Type: STRING
-    - \b Flags: SYSTEM
+    - \b Flags: SYSTEM, HIDDEN
 */
 #define KCDB_ATTR_PARENT_NAME   5
 
@@ -2844,10 +3526,17 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 /*! \brief Time left till expiration 
 
     - \b Type: INTERVAL
-    - \b Flags: SYSTEM, COMPUTED, VOLATILE
+    - \b Flags: SYSTEM, COMPUTED, VOLATILE, ALTVIEW
+    - \b Alt ID: KCDB_ATTR_EXPIRE
 */
 #define KCDB_ATTR_TIMELEFT      9
 
+/*! \brief Renewable time left
+
+    - \b Type: INTERVAL
+    - \b Flags: SYSTEM, COMPUTED, VOLATILE, ALTVIEW
+    - \b Alt ID: KCDB_ATTR_RENEW_EXPIRE
+ */
 #define KCDB_ATTR_RENEW_TIMELEFT 10
 
 /*! \brief Location of the credential
@@ -2864,6 +3553,11 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 */
 #define KCDB_ATTR_LIFETIME      12
 
+/*! \brief Renewable lifetime of the credential
+
+    - \b Type: INTERVAL
+    - \b Flags: SYSTEM
+ */
 #define KCDB_ATTR_RENEW_LIFETIME 13
 
 /*! \brief Flags for the credential
@@ -2872,6 +3566,60 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
     - \b Flags: REQUIRED, COMPUTED, SYSTEM, HIDDEN
  */
 #define KCDB_ATTR_FLAGS         14
+
+/*! \brief Display name
+
+  This is the display name that will be used to display the credential
+  or identity to the user. If this attribute is not found, then
+  KCDB_ATTR_NAME will be used instead.
+
+  The display name is expected to be localized, while the name is not.
+
+    - \b Type: STRING
+    - \b Flags: SYSTEM
+ */
+#define KCDB_ATTR_DISPLAY_NAME  15
+
+/*! \brief Time at which the object was last updated
+
+    - \b Type: DATE
+    - \b Flags: SYSTEM, COMPUTED
+ */
+#define KCDB_ATTR_LAST_UPDATE   16
+
+/*! \brief Number of credentials
+
+  Number of credentials in the root credentials set that are
+  associated with this identity.
+
+    - \b Type: INT32
+    - \b Flags: SYSTEM, COMPUTED, PROPERTY
+ */
+#define KCDB_ATTR_N_CREDS       (KCDB_ATTR_MIN_PROP_ID + 0)
+
+/*! \brief Number of identity credentials
+
+  Number of identity credentials in the root credentials set that are
+  associated with this identity.
+
+  An identity credential is a credential that is of the identity
+  credentials type.
+
+    - \b Type: INT32
+    - \b Flags: SYSTEM, COMPUTED, PROPERTY
+
+ */
+#define KCDB_ATTR_N_IDCREDS     (KCDB_ATTR_MIN_PROP_ID + 1)
+
+/*! \brief Number of initial credentials
+
+  Number of identity credentials in the root credentials set that are
+  associated with this identity and are marked as initial credentials.
+
+    - \b Type: INT32
+    - \b Flags: SYSTEM, COMPUTED, PROPERTY
+*/
+#define KCDB_ATTR_N_INITCREDS   (KCDB_ATTR_MIN_PROP_ID + 2)
 
 /*@}*/
 
@@ -2894,6 +3642,11 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 #define KCDB_ATTRNAME_LOCATION      L"Location"
 #define KCDB_ATTRNAME_LIFETIME      L"Lifetime"
 #define KCDB_ATTRNAME_RENEW_LIFETIME L"RenewLifetime"
+#define KCDB_ATTRNAME_DISPLAY_NAME  L"DisplayName"
+#define KCDB_ATTRNAME_LAST_UPDATE   L"LastUpdate"
+#define KCDB_ATTRNAME_N_CREDS       L"NCredentials"
+#define KCDB_ATTRNAME_N_IDCREDS     L"NIDCredentials"
+#define KCDB_ATTRNAME_N_INITCREDS   L"NInitCredentials"
 
 /*@}*/
 
@@ -2927,14 +3680,14 @@ typedef struct tag_kcdb_credtype {
                                   kmq_delete_subscription() when the
                                   credentials type is unregistered.*/
 
-    kcdb_cred_comp_func is_equal; /*!< Used as an additional clause
-                                  when comparing two credentials for
-                                  equality.  The function this is
-                                  actually a comparison function, it
-                                  should return zero if the two
-                                  credentials are equal and non-zero
-                                  if they are not.  The addtional \a
-                                  rock parameter is always zero.
+    kcdb_comp_func is_equal; /*!< Used as an additional clause when
+                                  comparing two credentials for
+                                  equality.  The function is actually
+                                  a comparison function, it should
+                                  return zero if the two credentials
+                                  are equal and non-zero if they are
+                                  not.  The addtional \a rock
+                                  parameter is always zero.
 
                                   It can be assumed that the identity,
                                   name and credentials type have
@@ -3104,6 +3857,8 @@ kcdb_credtype_get_name(khm_int32 id,
     Given a credentials type, this function returns the credentials
     type specific subcription.  It may return NULL if the subscription
     is not available.
+
+    \note The returned handle should NOT be released.
  */
 KHMEXP khm_handle KHMAPI 
 kcdb_credtype_get_sub(khm_int32 id);
@@ -3146,165 +3901,6 @@ kcdb_credtype_describe(khm_int32 id,
 KHMEXP khm_int32 KHMAPI 
 kcdb_credtype_get_id(const wchar_t * name, 
                      khm_int32 * id);
-
-/*@}*/
-
-/*********************************************************************/
-
-/*! \defgroup kcdb_buf Generic access to buffer 
-
-    Currently, credentials and identities both hold record data types.
-    This set of API's allow an application to access fields in the
-    records using a single interface.  Note that credentials only
-    accept regular attributes while identities can hold both
-    attributes and properties.
-
-    Handles to credentials and identities are implicitly also handles
-    to records.  Thus they can be directly used as such.
-*/
-/*@{*/
-
-/*! \brief Get an attribute from a record by attribute id.
-
-    \param[in] buffer The buffer that is to receive the attribute
-        value.  Set this to NULL if only the required buffer size is
-        to be returned.
-
-    \param[in,out] cbbuf The number of bytes available in \a buffer.
-        If \a buffer is not sufficient, returns KHM_ERROR_TOO_LONG and
-        sets this to the required buffer size.
-
-    \param[out] attr_type Receives the data type of the attribute.
-        Set this to NULL if the type is not required.
-
-    \note Set both \a buffer and \a cbbuf to NULL if only the
-        existence of the attribute is to be checked.  If the attribute
-        exists in this record then the function will return
-        KHM_ERROR_SUCCESS, otherwise it returns KHM_ERROR_NOT_FOUND.
-*/
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_get_attr(khm_handle  record, 
-                  khm_int32   attr_id, 
-                  khm_int32 * attr_type, 
-                  void *      buffer, 
-                  khm_size *  pcb_buf);
-
-/*! \brief Get an attribute from a record by name.
-
-    \param[in] buffer The buffer that is to receive the attribute
-        value.  Set this to NULL if only the required buffer size is
-        to be returned.
-
-    \param[in,out] cbbuf The number of bytes available in \a buffer.
-        If \a buffer is not sufficient, returns KHM_ERROR_TOO_LONG and
-        sets this to the required buffer size.
-
-    \note Set both \a buffer and \a cbbuf to NULL if only the
-        existence of the attribute is to be checked.  If the attribute
-        exists in this record then the function will return
-        KHM_ERROR_SUCCESS, otherwise it returns KHM_ERROR_NOT_FOUND.
-*/
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_get_attrib(khm_handle  record,
-                    const wchar_t *   attr_name,
-                    khm_int32 * attr_type,
-                    void *      buffer,
-                    khm_size *  pcb_buf);
-
-/*! \brief Get the string representation of a record attribute.
-
-    A shortcut function which generates the string representation of a
-    record attribute directly.
-
-    \param[in] record A handle to a record
-
-    \param[in] attr_id The attribute to retrieve
-
-    \param[out] buffer A pointer to a string buffer which receives the
-        string form of the attribute.  Set this to NULL if you only
-        want to determine the size of the required buffer.
-
-    \param[in,out] pcbbuf A pointer to a #khm_int32 that, on entry,
-        holds the size of the buffer pointed to by \a buffer, and on
-        exit, receives the actual number of bytes that were copied.
-
-    \param[in] flags Flags for the string conversion. Can be set to
-        one of KCDB_TS_LONG or KCDB_TS_SHORT.  The default is
-        KCDB_TS_LONG.
-
-    \retval KHM_ERROR_SUCCESS Success
-    \retval KHM_ERROR_NOT_FOUND The given attribute was either invalid
-        or was not defined for this record
-    \retval KHM_ERROR_INVALID_PARAM One or more parameters were invalid
-    \retval KHM_ERROR_TOO_LONG Either \a buffer was NULL or the
-        supplied buffer was insufficient
-*/
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_get_attr_string(khm_handle  record,
-                         khm_int32   attr_id,
-                         wchar_t *   buffer,
-                         khm_size *  pcbbuf,
-                         khm_int32  flags);
-
-/*! \brief Get the string representation of a record attribute by name.
-
-    A shortcut function which generates the string representation of a
-    record attribute directly.
-
-    \param[in] record A handle to a record
-
-    \param[in] attrib The name of the attribute to retrieve
-
-    \param[out] buffer A pointer to a string buffer which receives the
-        string form of the attribute.  Set this to NULL if you only
-        want to determine the size of the required buffer.
-
-    \param[in,out] pcbbuf A pointer to a #khm_int32 that, on entry,
-        holds the size of the buffer pointed to by \a buffer, and on
-        exit, receives the actual number of bytes that were copied.
-
-    \param[in] flags Flags for the string conversion. Can be set to
-        one of KCDB_TS_LONG or KCDB_TS_SHORT.  The default is
-        KCDB_TS_LONG.
-
-    \see kcdb_cred_get_attr_string()
-*/
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_get_attrib_string(khm_handle  record,
-                           const wchar_t *   attr_name,
-                           wchar_t *   buffer,
-                           khm_size *  pcbbuf,
-                           khm_int32   flags);
-
-/*! \brief Set an attribute in a record by attribute id
-
-    \param[in] cbbuf Number of bytes of data in \a buffer.  The
-        individual data type handlers may copy in less than this many
-        bytes in to the record.
-*/
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_set_attr(khm_handle  record,
-                  khm_int32   attr_id,
-                  void *      buffer,
-                  khm_size    cbbuf);
-
-/*! \brief Set an attribute in a record by name
-
-    \param[in] cbbuf Number of bytes of data in \a buffer.  The
-        individual data type handlers may copy in less than this many
-        bytes in to the record.
-*/
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_set_attrib(khm_handle  record,
-                    const wchar_t *   attr_name,
-                    void *      buffer,
-                    khm_size    cbbuf);
-
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_hold(khm_handle  record);
-
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_release(khm_handle record);
 
 /*@}*/
 

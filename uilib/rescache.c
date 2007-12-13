@@ -29,49 +29,292 @@
 
 #include<khuidefs.h>
 #include<utils.h>
+#include<assert.h>
+#include<strsafe.h>
 
-hashtable * h_bitmaps;
+CRITICAL_SECTION cs_res;
 
-khm_int32 
-hash_id(const void *p) {
-#pragma warning(push)
-#pragma warning(disable: 4311)
-    return (khm_int32) p;
-#pragma warning(pop)
+typedef struct tag_cached_resource {
+    khm_handle       owner;
+    khm_restype      type;
+    khm_int32        id;
+
+    union {
+        const wchar_t * str;
+        HANDLE       h_gdiobj;
+    };
+    khm_size         cb_buf;
+
+    LDCL(struct tag_cached_resource);
+} cached_resource;
+
+cached_resource * cached_resources;
+hashtable * ht_resources;
+
+static khm_int32
+hash_resource(const void * k)
+{
+    const cached_resource * r = (const cached_resource *) k;
+    size_t s;
+
+    s = (size_t) r->owner;
+    return (khm_int32) (((s >> 3) + r->id) << 2) + r->type;
 }
 
-khm_int32 
-comp_id(const void *p1, const void *p2) {
-#pragma warning(push)
-#pragma warning(disable: 4311)
-    return ((khm_int32)p1) - ((khm_int32)p2);
-#pragma warning(pop)
+static khm_int32
+comp_resource(const void * k1, const void * k2)
+{
+    const cached_resource * r1 = (const cached_resource *) k1;
+    const cached_resource * r2 = (const cached_resource *) k2;
+
+    return
+        (r1->owner != r2->owner)? ((r1->owner < r2->owner)? -1: 1):
+        ((r1->type != r2->type)? r1->type - r2->type: r1->id - r2->id);
 }
 
-void 
-del_ref_object(const void *k, void * data) {
-    DeleteObject((HGDIOBJ) data);
+static void
+del_ref_resource(const void * k, void * d)
+{
+    cached_resource * r = (cached_resource *) d;
+
+    switch (r->type) {
+    case KHM_RESTYPE_STRING:
+        break;
+
+    case KHM_RESTYPE_ICON:
+        DestroyIcon(r->h_gdiobj);
+        break;
+
+    case KHM_RESTYPE_BITMAP:
+        DeleteObject(r->h_gdiobj);
+        break;
+
+    default:
+#ifdef DEBUG
+        assert(FALSE);
+#endif
+    }
+
+    PFREE(r);
+    LDELETE(&cached_resources, r);
 }
 
 KHMEXP void KHMAPI 
 khui_init_rescache(void) {
-    h_bitmaps = hash_new_hashtable(127, hash_id, comp_id, NULL, 
-                                   del_ref_object);
+    InitializeCriticalSection(&cs_res);
+    ht_resources = hash_new_hashtable(127, hash_resource, comp_resource,
+                                      NULL, del_ref_resource);
 }
 
 KHMEXP void KHMAPI 
 khui_exit_rescache(void) {
-    hash_del_hashtable(h_bitmaps);
+    EnterCriticalSection(&cs_res);
+
+    hash_del_hashtable(ht_resources);
+
+    LeaveCriticalSection(&cs_res);
+    DeleteCriticalSection(&cs_res);
 }
 
-KHMEXP void KHMAPI 
-khui_cache_bitmap(UINT id, HBITMAP hbm) {
-    hash_add(h_bitmaps, (void *)(size_t) id, (void *) hbm);
+/* Owner is one of the following:
+
+   - Credential type identifier
+   - Identity handler
+   - Identity provider handle
+   - HMODULE
+ */
+KHMEXP khm_int32 KHMAPI
+khui_cache_add_resource(khm_handle owner, khm_int32 id,
+                        khm_restype type,
+                        const void * buf, khm_size cb_buf)
+{
+    cached_resource * r;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    EnterCriticalSection(&cs_res);
+    switch (type) {
+    case KHM_RESTYPE_STRING:
+        {
+            const wchar_t * s;
+            size_t cb_s, cb_req;
+            wchar_t * d;
+
+            s = (const wchar_t *) buf;
+
+            if (FAILED(StringCbLength(s, KCDB_MAXCB_LONG_DESC, &cb_s))) {
+                rv = KHM_ERROR_INVALID_PARAM;
+                break;
+            }
+
+            cb_s += sizeof(wchar_t);
+            cb_req = cb_s + sizeof(cached_resource);
+
+            r = PMALLOC(cb_req);
+
+            r->owner = owner;
+            r->id = id;
+            r->type = type;
+
+            d = (wchar_t *) &r[1];
+            r->str = d;
+            r->cb_buf = cb_s;
+            LINIT(r);
+
+            StringCbCopy(d, cb_s, s);
+
+            LPUSH(&cached_resources, r);
+
+            hash_add(ht_resources, r, r);
+        }
+        break;
+
+    case KHM_RESTYPE_ICON:
+    case KHM_RESTYPE_BITMAP:
+        {
+            HANDLE hres;
+
+            if (buf == NULL || cb_buf != sizeof(HANDLE)) {
+                rv = KHM_ERROR_INVALID_PARAM;
+                break;
+            }
+
+            hres = *(HANDLE *)buf;
+
+            r = PMALLOC(sizeof(*r));
+
+            r->owner = owner;
+            r->id = id;
+            r->type = type;
+
+            r->h_gdiobj = hres;
+            r->cb_buf = sizeof(hres);
+            LINIT(r);
+
+            LPUSH(&cached_resources, r);
+
+            hash_add(ht_resources, r, r);
+        }
+        break;
+
+    default:
+#ifdef DEBUG
+        assert(FALSE);
+#endif
+        rv = KHM_ERROR_INVALID_PARAM;
+    }
+    LeaveCriticalSection(&cs_res);
+
+    return rv;
 }
 
-KHMEXP HBITMAP KHMAPI 
-khui_get_cached_bitmap(UINT id) {
-    return (HBITMAP) hash_lookup(h_bitmaps, (void *)(size_t) id);
+KHMEXP khm_int32 KHMAPI
+khui_cache_get_resource(khm_handle owner, khm_int32 id, khm_restype type,
+                        void * buf, khm_size *pcb_buf)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    cached_resource k;
+    cached_resource * r;
+
+    EnterCriticalSection(&cs_res);
+
+    ZeroMemory(&k, sizeof(k));
+    k.owner = owner;
+    k.id = id;
+    k.type = type;
+
+    r = (cached_resource *) hash_lookup(ht_resources, &k);
+
+    if (r == NULL) {
+        rv = KHM_ERROR_NOT_FOUND;
+        goto _exit;
+    }
+
+    switch (type) {
+    case KHM_RESTYPE_STRING:
+        if (buf != NULL && *pcb_buf >= r->cb_buf) {
+            StringCbCopy((wchar_t *) buf, *pcb_buf, r->str);
+            *pcb_buf = r->cb_buf;
+        } else {
+            rv = KHM_ERROR_TOO_LONG;
+            *pcb_buf = r->cb_buf;
+        }
+        break;
+
+    case KHM_RESTYPE_ICON:
+    case KHM_RESTYPE_BITMAP:
+        if (buf != NULL && *pcb_buf >= sizeof(HANDLE)) {
+            HANDLE * ph = (HANDLE *) buf;
+
+            *ph = r->h_gdiobj;
+            *pcb_buf = sizeof(HANDLE);
+        } else {
+            rv = KHM_ERROR_TOO_LONG;
+            *pcb_buf = sizeof(HANDLE);
+        }
+        break;
+
+    default:
+        rv = KHM_ERROR_UNKNOWN;
+#ifdef DEBUG
+        assert(FALSE);
+#endif
+    }
+
+ _exit:
+    LeaveCriticalSection(&cs_res);
+
+    return rv;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cache_del_resource(khm_handle owner, khm_int32 id, khm_restype type)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    cached_resource k;
+    cached_resource * r;
+
+    EnterCriticalSection(&cs_res);
+
+    ZeroMemory(&k, sizeof(k));
+    k.owner = owner;
+    k.id = id;
+    k.type = type;
+
+    r = hash_lookup(ht_resources, &k);
+
+    if (r == NULL) {
+        rv = KHM_ERROR_NOT_FOUND;
+        goto _exit;
+    }
+
+    LDELETE(&cached_resources, r);
+    hash_del(ht_resources, r);
+
+ _exit:
+    LeaveCriticalSection(&cs_res);
+
+    return rv;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cache_del_by_owner(khm_handle owner)
+{
+    cached_resource * r;
+    cached_resource * rn;
+    int n_removed = 0;
+
+    EnterCriticalSection(&cs_res);
+    for (r = cached_resources; r; r = rn) {
+        rn = LNEXT(r);
+
+        if (r->owner == owner) {
+            hash_del(ht_resources, r);
+            n_removed++;
+        }
+    }
+    LeaveCriticalSection(&cs_res);
+
+    return (n_removed > 0)? KHM_ERROR_SUCCESS : KHM_ERROR_NOT_FOUND;
 }
 
 KHMEXP khui_ilist * KHMAPI 
