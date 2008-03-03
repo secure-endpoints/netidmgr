@@ -28,7 +28,7 @@
 #define __KHIMAIRA_KCREDDBINTERNAL_H__
 
 #define _NIMLIB_
-#define NOEXPORT
+#define NIMPRIVATE
 
 #include<windows.h>
 #include<kcreddb.h>

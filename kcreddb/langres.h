@@ -4,6 +4,7 @@
 //
 #define IDS_CREDDB                      101
 #define IDS_NAME                        102
+#define IDI_ID                          102
 #define IDS_IDENTITY                    103
 #define IDS_ISSUED                      104
 #define IDS_EXPIRES                     105
@@ -40,12 +41,18 @@
 #define IDS_N_CREDS                     135
 #define IDS_N_IDCREDS                   136
 #define IDS_N_INITCREDS                 137
+#define IDS_FTS_REL_POS                 138
+#define IDS_FTS_REL_NEG                 139
+#define IDS_FTS_REL_TOM                 140
+#define IDS_FTS_REL_YEST                141
+#define IDS_FTS_REL_TOD                 144
+#define IDS_FTS_TS                      145
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        102
+#define _APS_NEXT_RESOURCE_VALUE        143
 #define _APS_NEXT_COMMAND_VALUE         40001
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101

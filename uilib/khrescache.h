@@ -29,7 +29,7 @@
 
 #include<khdefs.h>
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 
 KHMEXP void KHMAPI 
 khui_init_rescache(void);
@@ -62,7 +62,46 @@ khui_cache_del_resource(khm_handle owner, khm_int32 id, khm_restype type);
 KHMEXP khm_int32 KHMAPI
 khui_cache_del_by_owner(khm_handle owner);
 
-#endif
+#endif  /* NIMPRIVATE */
+
+#define KHUI_PREFIX_ICO    L"ICO:"
+#define KHUI_PREFIX_ICODLL L"ICODLL:"
+#define KHUI_PREFIX_IMG    L"IMG:"
+#define KHUI_PREFIX_IMGDLL L"IMGDLL:"
+
+#define KHUI_LIFR_SMALL    0x00000001
+#define KHUI_LIFR_TOOLBAR  0x00000002
+#define KHUI_LIFR_FROMLIB  0x00010000
+
+/*! \brief Load an icon from a resource path
+
+  Resource paths are of the form:
+
+  ICO:c:\path\to\iconfile.ico
+  ICODLL:c:\path\to\dllfile.dll,resid
+  IMG:c:\path\to\imagefile.bmp
+  IMGDLL:c:\path\to\dllfile.dll,resid
+
+  \param[in] respath Path to file containing resource
+
+  \param[in] flags   Flags.  This is a combination of :
+     - ::KHUI_LIFR_SMALL
+     - ::KHUI_LIFR_TOOLBAR
+
+  \param[out] picon Receives a handle to the icon if the call is
+     successful.
+
+  \note For IMG and IMGDLL resources, only BMP files are supported.
+ */
+KHMEXP khm_int32 KHMAPI
+khui_load_icon_from_resource_path(const wchar_t * respath, khm_int32 flags,
+                                  HICON * picon);
+
+
+KHMEXP khm_int32 KHMAPI
+khui_load_icons_from_path(const wchar_t * path, khm_restype restype,
+                          khm_int32 index, khm_int32 flags,
+                          HICON * picon, khm_size * pn_icons);
 
 typedef struct khui_ilist_t {
     int cx;

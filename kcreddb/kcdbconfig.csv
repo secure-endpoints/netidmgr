@@ -3,6 +3,7 @@
 Name,Type,Value,Description
 KCDB,KC_SPACE,0,Khimaira Credentials DB
   IdentityProviderOrder,KC_STRING,"Krb5Ident",Order of identity providers.
+  IdentSerial,KC_INT64,0,Identity Serial Number.
   Identity,KC_SPACE,0,Configuration space for identities
     _Schema,KC_SPACE,0,Schema for identities
       Name,KC_STRING,,The name of the identity.
@@ -15,6 +16,8 @@ KCDB,KC_SPACE,0,Khimaira Credentials DB
       AllowCritical,KC_INT32,1,Boolean. Allow critical.
       AutoRenewThreshold,KC_INT32,60,In seconds
       AllowAutoRenew,KC_INT32,1,Boolean.
+      IconNormal,KC_STRING,,Resource path for the icon representing the identity.  This path may contain unexpanded environment strings.
+      IdentSerial,KC_INT64,0,Identity serial number.
     _Schema,KC_ENDSPACE,0,
   Identity,KC_ENDSPACE,0,
 KCDB,KC_ENDSPACE,0,

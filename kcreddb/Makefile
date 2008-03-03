@@ -44,6 +44,8 @@ OBJFILES= \
 	$(OBJ)\kcreddbmain.obj	\
 	$(OBJ)\type.obj		\
 	$(OBJ)\resacq.obj	\
+	$(OBJ)\filetime.obj	\
+	$(OBJ)\strfuncs.obj	\
 	$(OBJ)\kcdbconfig.obj
 
 $(OBJ)\kcdbconfig.c: kcdbconfig.csv $(CONFDIR)\csvschema.cfg

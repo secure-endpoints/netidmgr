@@ -32,15 +32,19 @@ extern void alert_init(void);
 extern void alert_exit(void);
 extern void ps_init(void);
 extern void ps_exit(void);
+extern void cfgui_init(void);
+extern void cfgui_exit(void);
 
 void
 uilib_process_attach(void) {
     alert_init();
     ps_init();
+    cfgui_init();
 }
 
 void
 uilib_process_detach(void) {
+    cfgui_exit();
     ps_exit();
     alert_exit();
 }

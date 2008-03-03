@@ -35,7 +35,6 @@
 #include<strsafe.h>
 
 khm_int32 cfgui_node_serial;
-LONG init_once = 0;
 CRITICAL_SECTION cs_cfgui;
 khui_config_node_i * cfgui_root_config;
 HWND hwnd_cfgui = NULL;
@@ -73,10 +72,15 @@ cfgui_free_node(khui_config_node_i * node) {
     if (node->reg.long_desc)
         PFREE((void *) node->reg.long_desc);
 
-    node->magic = 0;
+#ifdef DEBUG
+    /* This node shouldn't have a parent, children nor siblings */
+    assert(TFIRSTCHILD(node) == NULL);
+    assert(TPARENT(node) == NULL);
+    assert(LNEXT(node) == NULL);
+    assert(LPREV(node) == NULL);
+#endif
 
-    if (node->owner)
-        kmm_release_plugin(node->owner);
+    node->magic = 0;
 
     ZeroMemory(node, sizeof(*node));
 
@@ -99,6 +103,7 @@ cfgui_release_node(khui_config_node_i * node) {
     if (node->refcount == 0 &&
         (node->flags & KHUI_CN_FLAG_DELETED)) {
         khui_config_node_i * parent;
+
         parent = TPARENT(node);
 #ifdef DEBUG
         assert(TFIRSTCHILD(node) == NULL);
@@ -109,17 +114,6 @@ cfgui_release_node(khui_config_node_i * node) {
         cfgui_release_node(parent);
     }
     LeaveCriticalSection(&cs_cfgui);
-}
-
-static void 
-cfgui_init_once(void) {
-    if (init_once == 0 &&
-        InterlockedIncrement(&init_once) == 1) {
-        InitializeCriticalSection(&cs_cfgui);
-        cfgui_root_config = cfgui_create_new_node();
-        cfgui_node_serial = 0;
-        hwnd_cfgui = NULL;
-    }
 }
 
 KHMEXP khm_int32 KHMAPI
@@ -135,8 +129,6 @@ khui_cfg_register(khui_config_node vparent,
     wchar_t * name;
     wchar_t * short_desc;
     wchar_t * long_desc;
-
-    cfgui_init_once();
 
     if (!reg ||
         FAILED(StringCbLength(reg->name,
@@ -167,6 +159,8 @@ khui_cfg_register(khui_config_node vparent,
 
     node->reg = *reg;
     node->reg.flags &= KHUI_CNFLAGMASK_STATIC;
+    if (node->reg.flags & KHUI_CNFLAG_PLURAL)
+        node->reg.flags |= KHUI_CNFLAG_SUBPANEL;
 
     name = PMALLOC(cb_name);
     StringCbCopy(name, cb_name, reg->name);
@@ -186,14 +180,9 @@ khui_cfg_register(khui_config_node vparent,
         parent = cfgui_node_i_from_handle(vparent);
     }
 
-    /* plugin handles should not be obtained lightly.  For the moment,
-       the cleanup of nodes doesn't happen until module unload and
-       module unload doesn't happen until all the plugin and module
-       handles have been freed. */
-    /* node->owner = kmm_this_plugin(); */
-
     EnterCriticalSection(&cs_cfgui);
     TADDCHILD(parent, node);
+    cfgui_hold_node(parent);
 
     if (hwnd_cfgui) {
         SendMessage(hwnd_cfgui, KHUI_WM_CFG_NOTIFY,
@@ -202,7 +191,7 @@ khui_cfg_register(khui_config_node vparent,
 
     LeaveCriticalSection(&cs_cfgui);
 
-    /* when the root config list changes, we need to notify the UI.
+    /* When the root config list changes, we need to notify the UI.
        this way, the Options menu can be kept in sync. */
     if (parent == cfgui_root_config) {
         kmq_post_message(KMSG_ACT, KMSG_ACT_SYNC_CFG, 0, 0);
@@ -219,11 +208,9 @@ khui_cfg_open(khui_config_node vparent,
     khui_config_node_i * c;
     size_t sz;
 
-    cfgui_init_once();
-
     if ((vparent &&
          !cfgui_is_valid_node_handle(vparent)) ||
-        FAILED(StringCbLength(name, KHUI_MAXCCH_NAME, &sz)) ||
+        FAILED(StringCbLength(name, KHUI_MAXCB_NAME, &sz)) ||
         !result)
         return KHM_ERROR_INVALID_PARAM;
 
@@ -270,6 +257,11 @@ khui_cfg_remove(khui_config_node vnode) {
                     MAKEWPARAM(0, WMCFG_SYNC_NODE_LIST), 0);
     }
 
+    /* when the root config list changes, we need to notify the UI.
+       this way, the Options menu can be kept in sync. */
+    if (TPARENT(node) == cfgui_root_config) {
+        kmq_post_message(KMSG_ACT, KMSG_ACT_SYNC_CFG, 0, 0);
+    }
     LeaveCriticalSection(&cs_cfgui);
 
     return KHM_ERROR_SUCCESS;
@@ -334,8 +326,6 @@ khui_cfg_get_first_child(khui_config_node vparent,
     khui_config_node_i * parent;
     khui_config_node_i * c;
 
-    cfgui_init_once();
-
     if((vparent && !cfgui_is_valid_node_handle(vparent)) ||
        !result)
         return KHM_ERROR_INVALID_PARAM;
@@ -377,8 +367,6 @@ khui_cfg_get_first_subpanel(khui_config_node vparent,
     khui_config_node_i * parent;
     khui_config_node_i * c;
 
-    cfgui_init_once();
-
     if((vparent && !cfgui_is_valid_node_handle(vparent)) ||
        !result)
         return KHM_ERROR_INVALID_PARAM;
@@ -414,7 +402,6 @@ khui_cfg_get_first_subpanel(khui_config_node vparent,
         return KHM_ERROR_NOT_FOUND;
 }
 
-
 KHMEXP khm_int32 KHMAPI
 khui_cfg_get_next(khui_config_node vnode,
                   khui_config_node * result) {
@@ -431,8 +418,9 @@ khui_cfg_get_next(khui_config_node vnode,
         node = cfgui_node_i_from_handle(vnode);
         for(nxt_node = LNEXT(node);
             nxt_node &&
-                ((node->reg.flags ^ nxt_node->reg.flags) & 
-                 KHUI_CNFLAG_SUBPANEL);
+                ((nxt_node->flags & KHUI_CN_FLAG_DELETED) ||
+                 ((node->reg.flags ^ nxt_node->reg.flags) & 
+                  KHUI_CNFLAG_SUBPANEL));
             nxt_node = LNEXT(nxt_node));
         if (nxt_node)
             cfgui_hold_node(nxt_node);
@@ -490,7 +478,7 @@ khui_cfg_get_reg(khui_config_node vnode,
 
     khui_config_node_i * node;
 
-    cfgui_init_once();
+    
 
     if ((vnode && !cfgui_is_valid_node_handle(vnode)) ||
         !reg)
@@ -515,108 +503,6 @@ khui_cfg_get_reg(khui_config_node vnode,
         return KHM_ERROR_INVALID_PARAM;
 }
 
-KHMEXP HWND KHMAPI
-khui_cfg_get_hwnd(khui_config_node vnode) {
-    khui_config_node_i * node;
-    HWND hwnd;
-
-    cfgui_init_once();
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return NULL;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else 
-        node = NULL;
-
-    if (node)
-        hwnd = node->hwnd;
-    else
-        hwnd = NULL;
-    LeaveCriticalSection(&cs_cfgui);
-
-    return hwnd;
-}
-
-KHMEXP LPARAM KHMAPI
-khui_cfg_get_param(khui_config_node vnode) {
-    khui_config_node_i * node;
-    LPARAM param;
-
-    cfgui_init_once();
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return 0;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else 
-        node = NULL;
-
-    if (node)
-        param = node->param;
-    else
-        param = 0;
-    LeaveCriticalSection(&cs_cfgui);
-
-    return param;
-}
-
-KHMEXP void KHMAPI
-khui_cfg_set_hwnd(khui_config_node vnode, HWND hwnd) {
-    khui_config_node_i * node;
-
-    cfgui_init_once();
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else
-        node = NULL;
-
-    if (node)
-        node->hwnd = hwnd;
-    LeaveCriticalSection(&cs_cfgui);
-}
-
-KHMEXP void KHMAPI
-khui_cfg_set_param(khui_config_node vnode, LPARAM param) {
-    khui_config_node_i * node;
-
-    cfgui_init_once();
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else
-        node = NULL;
-
-    if (node)
-        node->param = param;
-    LeaveCriticalSection(&cs_cfgui);
-}
-
 static void
 clear_node_data(khui_config_node_i * node) {
     node->n_data = 0;
@@ -624,176 +510,98 @@ clear_node_data(khui_config_node_i * node) {
 
 static cfg_node_data *
 get_node_data(khui_config_node_i * node,
-              void * key, 
+              khui_config_node_i * ctx_node,
               khm_boolean create) {
     khm_size i;
 
     for (i=0; i<node->n_data; i++) {
-        if (node->data[i].key == key)
+        if (node->data[i].ctx_node == ctx_node)
             return &(node->data[i]);
     }
 
     if (!create)
         return NULL;
 
-    if (node->n_data + 1 > node->nc_data) {
-        cfg_node_data * newdata;
-
-        node->nc_data = UBOUNDSS((node->n_data + 1),
+    if (node->n_data == node->nc_data) {
+        node->nc_data = UBOUNDSS(node->n_data + 1,
                                  KHUI_NODEDATA_ALLOC_INCR,
                                  KHUI_NODEDATA_ALLOC_INCR);
 #ifdef DEBUG
         assert(node->nc_data >= node->n_data + 1);
 #endif
-        newdata = PMALLOC(sizeof(*newdata) * node->nc_data);
+        node->data = PREALLOC(node->data, sizeof(node->data[0]) * node->nc_data);
 #ifdef DEBUG
-        assert(newdata);
+        assert(node->data);
 #endif
-        ZeroMemory(newdata, sizeof(*newdata) * node->nc_data);
-
-        if (node->data && node->n_data > 0) {
-            memcpy(newdata, node->data, node->n_data * sizeof(*newdata));
-            PFREE(node->data);
-        }
-        node->data = newdata;
     }
 
-    node->data[node->n_data].key = key;
-    node->data[node->n_data].hwnd = NULL;
-    node->data[node->n_data].param = 0;
-    node->data[node->n_data].flags = 0;
+    i = node->n_data++;
+    node->data[i].ctx_node = ctx_node;
+    node->data[i].hwnd = NULL;
+    node->data[i].param = 0;
+    node->data[i].flags = 0;
 
-    node->n_data++;
-
-    return &(node->data[node->n_data - 1]);
+    return &(node->data[i]);
 }
 
-KHMEXP HWND KHMAPI
-khui_cfg_get_hwnd_inst(khui_config_node vnode,
-                       khui_config_node noderef) {
-    khui_config_node_i * node;
-    cfg_node_data * data;
-    HWND hwnd;
+/* Macros for basic getters and setters */
 
-    cfgui_init_once();
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return NULL;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else 
-        node = NULL;
-
-    if (node) {
-        data = get_node_data(node, noderef, FALSE);
-        if (data)
-            hwnd = data->hwnd;
-        else
-            hwnd = NULL;
-    } else
-        hwnd = NULL;
-    LeaveCriticalSection(&cs_cfgui);
-
-    return hwnd;
-}
-
-KHMEXP LPARAM KHMAPI
-khui_cfg_get_param_inst(khui_config_node vnode,
-                        khui_config_node noderef) {
-    khui_config_node_i * node;
-    cfg_node_data * data;
-    LPARAM lParam;
-
-    cfgui_init_once();
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return 0;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else 
-        node = NULL;
-
-    if (node) {
-        data = get_node_data(node, noderef, FALSE);
-        if (data)
-            lParam = data->param;
-        else
-            lParam = 0;
-    } else
-        lParam = 0;
-    LeaveCriticalSection(&cs_cfgui);
-
-    return lParam;
-}
-
-KHMEXP void KHMAPI
-khui_cfg_set_hwnd_inst(khui_config_node vnode, 
-                       khui_config_node noderef,
-                       HWND hwnd) {
-    khui_config_node_i * node;
-    cfg_node_data * data;
-
-    cfgui_init_once();
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else 
-        node = NULL;
-
-    if (node) {
-        data = get_node_data(node, noderef, TRUE);
-        if (data)
-            data->hwnd = hwnd;
+#define FBODY_OP(Type, Member, DDCL1, DDCL2, COND, LVALUE, RVALUE, RV ) \
+    {                                                                   \
+        khui_config_node_i * node;                                      \
+        DDCL1; DDCL2;                                                   \
+        EnterCriticalSection(&cs_cfgui);                                \
+        if (cfgui_is_valid_node_handle(vnode))                          \
+            node = cfgui_node_i_from_handle(vnode);                     \
+        else if (!vnode)                                                \
+            node = cfgui_root_config;                                   \
+        else                                                            \
+            node = NULL;                                                \
+        if (COND) {                                                     \
+            LVALUE = RVALUE;                                            \
+        }                                                               \
+        LeaveCriticalSection(&cs_cfgui);                                \
+        RV;                                                             \
     }
-    LeaveCriticalSection(&cs_cfgui);
-}
 
-KHMEXP void KHMAPI
-khui_cfg_set_param_inst(khui_config_node vnode, 
-                        khui_config_node noderef,
-                        LPARAM param) {
-    khui_config_node_i * node;
-    cfg_node_data * data;
+#define DEFUN_GET_OP(Type, Member, ExtName)                             \
+    KHMEXP Type KHMAPI khui_cfg_get_ ## ExtName (khui_config_node vnode) \
+         FBODY_OP(Type, Member, Type Member = (Type) 0, (void) 0, node, Member, node->Member, return Member)
 
-    cfgui_init_once();
+#define DEFUN_SET_OP(Type, Member, ExtName)                             \
+    KHMEXP void KHMAPI khui_cfg_set_ ## ExtName                         \
+    (khui_config_node vnode,                                            \
+     Type Member)                                                       \
+         FBODY_OP(Type, Member, (void) 0, (void) 0, node, node->Member, Member, return)
 
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return;
+#define DEFUN_GET_OP_INST(Type, Member, ExtName)                        \
+    KHMEXP Type KHMAPI khui_cfg_get_ ## ExtName ## _inst                \
+    (khui_config_node vnode, khui_config_node ctx)                      \
+         FBODY_OP(Type, Member, cfg_node_data * pdata, Type Member = (Type) 0, node && (pdata = get_node_data(node, ctx, FALSE)), Member, pdata->Member, return Member)
 
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode))
-        node = cfgui_node_i_from_handle(vnode);
-    else if (!vnode)
-        node = cfgui_root_config;
-    else 
-        node = NULL;
+#define DEFUN_SET_OP_INST(Type, Member, ExtName)                        \
+    KHMEXP void KHMAPI khui_cfg_set_ ## ExtName ## _inst                \
+    (khui_config_node vnode, khui_config_node ctx,                      \
+     Type Member)                                                       \
+         FBODY_OP(Type, Member, cfg_node_data * pdata, (void) 0, node && (pdata = get_node_data(node, ctx, TRUE)), pdata->Member, Member, return)
 
-    if (node) {
-        data = get_node_data(node, noderef, TRUE);
-        if (data)
-            data->param = param;
-    }
-    LeaveCriticalSection(&cs_cfgui);
-}
+DEFUN_GET_OP(HWND,hwnd,hwnd);
+DEFUN_SET_OP(HWND,hwnd,hwnd);
+DEFUN_GET_OP(LPARAM,param,param);
+DEFUN_SET_OP(LPARAM,param,param);
+DEFUN_GET_OP(void *,private_data, data);
+DEFUN_SET_OP(void *,private_data, data);
+DEFUN_GET_OP_INST(HWND,hwnd,hwnd);
+DEFUN_SET_OP_INST(HWND,hwnd,hwnd);
+DEFUN_GET_OP_INST(LPARAM,param,param);
+DEFUN_SET_OP_INST(LPARAM,param,param);
+DEFUN_GET_OP(khm_int32, flags, flags);
 
+#undef DEFUN_SET_OP
+#undef DEFUN_GET_OP
+#undef DEFUN_SET_OP_INST
+#undef DEFUN_GET_OP_INST
+#undef FBODY_OP
 
 /* called with cs_cfgui held  */
 static void 
@@ -814,9 +622,6 @@ cfgui_clear_params(khui_config_node_i * node) {
 
 KHMEXP void KHMAPI
 khui_cfg_clear_params(void) {
-
-    cfgui_init_once();
-
     EnterCriticalSection(&cs_cfgui);
     cfgui_clear_params(cfgui_root_config);
     LeaveCriticalSection(&cs_cfgui);
@@ -895,9 +700,7 @@ recalc_node_flags(khui_config_node vnode, khm_boolean plural) {
             (!plural && (subpanel->reg.flags & KHUI_CNFLAG_PLURAL)))
             continue;
 
-        data = get_node_data(subpanel,
-                             vnode,
-                             FALSE);
+        data = get_node_data(subpanel, vnode, FALSE);
 
         if (data) {
             flags |= data->flags;
@@ -924,7 +727,6 @@ khui_cfg_set_flags_inst(khui_config_init_data * d,
     khui_config_node_i * node;
     cfg_node_data * data;
 
-    cfgui_init_once();
     if (!cfgui_is_valid_node_handle(d->this_node))
         return;
 
@@ -955,27 +757,6 @@ khui_cfg_set_flags_inst(khui_config_init_data * d,
         }
     }
     LeaveCriticalSection(&cs_cfgui);
-}
-
-KHMEXP khm_int32 KHMAPI
-khui_cfg_get_flags(khui_config_node vnode) {
-    khui_config_node_i * node;
-    khm_int32 flags = 0;
-
-    if (vnode &&
-        !cfgui_is_valid_node_handle(vnode))
-        return 0;
-
-    EnterCriticalSection(&cs_cfgui);
-    if (cfgui_is_valid_node_handle(vnode)) {
-
-        node = cfgui_node_i_from_handle(vnode);
-
-        flags = node->flags;
-    }
-    LeaveCriticalSection(&cs_cfgui);
-
-    return flags;
 }
 
 KHMEXP khm_int32 KHMAPI
@@ -1056,8 +837,9 @@ khui_cfg_get_dialog_data(HWND hwnd_dlg,
                          void ** extra) {
     khui_config_init_data * d;
 
-    d = (khui_config_init_data *) (LONG_PTR) GetWindowLongPtr(hwnd_dlg,
-                                                              DWLP_USER);
+    d = (khui_config_init_data *) (LONG_PTR)
+        GetWindowLongPtr(hwnd_dlg, DWLP_USER);
+
 #ifdef DEBUG
     assert(d);
 #endif
@@ -1073,16 +855,36 @@ KHMEXP khm_int32 KHMAPI
 khui_cfg_free_dialog_data(HWND hwnd_dlg) {
     khui_config_init_data * d;
 
-    d = (khui_config_init_data *) (LONG_PTR) GetWindowLongPtr(hwnd_dlg,
-                                                              DWLP_USER);
+    d = (khui_config_init_data *) (LONG_PTR)
+        GetWindowLongPtr(hwnd_dlg, DWLP_USER);
+
 #ifdef DEBUG
     assert(d);
 #endif
 
     if (d) {
+        if (d->ctx_node)
+            khui_cfg_release(d->ctx_node);
+        if (d->this_node)
+            khui_cfg_release(d->this_node);
+        if (d->ref_node)
+            khui_cfg_release(d->ref_node);
+        ZeroMemory(d, sizeof(*d));
         PFREE(d);
         SetWindowLongPtr(hwnd_dlg, DWLP_USER, 0);
     }
 
     return (d)?KHM_ERROR_SUCCESS: KHM_ERROR_NOT_FOUND;
 }
+
+void cfgui_init(void) {
+    InitializeCriticalSection(&cs_cfgui);
+    cfgui_root_config = cfgui_create_new_node();
+    cfgui_node_serial = 0;
+    hwnd_cfgui = NULL;
+}
+
+void cfgui_exit(exit) {
+    DeleteCriticalSection(&cs_cfgui);
+}
+

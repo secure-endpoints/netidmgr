@@ -43,7 +43,7 @@
 #include<kherror.h>
 #include<kplugin.h>
 
-#define NOEXPORT
+#define NIMPRIVATE
 
 #include<utils.h>
 #include<kconfig.h>

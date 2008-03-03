@@ -37,7 +37,7 @@
 #define KHERR_FACILITY khm_facility
 #define KHERR_FACILITY_ID 3
 
-#define NOEXPORT
+#define NIMPRIVATE
 
 #include<netidmgr.h>
 
@@ -46,6 +46,7 @@
 #include<intalert.h>
 
 #include<resource.h>
+#include<appearance.h>
 #include<credfuncs.h>
 #include<appglobal.h>
 #include<mainwnd.h>
@@ -59,6 +60,7 @@
 #include<propertywnd.h>
 #include<configwnd.h>
 #include<aboutwnd.h>
+#include<iconselectwnd.h>
 #include<debugfuncs.h>
 #include<taskbar.h>
 #include<windowctl.h>

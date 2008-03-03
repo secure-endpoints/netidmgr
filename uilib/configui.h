@@ -27,29 +27,41 @@
 #ifndef __KHIMAIRA_CONFIGUI_H
 #define __KHIMAIRA_CONFIGUI_H
 
+struct tag_khui_config_node_i;
+
 typedef struct tag_cfg_node_data {
-    void *      key;
+    struct tag_khui_config_node_i * ctx_node;
     HWND        hwnd;
     LPARAM      param;
     khm_int32   flags;
 } cfg_node_data;
 
 typedef struct tag_khui_config_node_i {
-    khm_int32   magic;
+    khm_int32   magic;          /* == KHUI_CONFIG_NODE_MAGIC */
 
-    khui_config_node_reg reg;
-    kmm_plugin  owner;
-    khm_int32   id;
+    khui_config_node_reg reg;   /* registration information */
+    khm_int32   id;             /* serial number */
 
-    HWND        hwnd;
-    LPARAM      param;
+    HWND        hwnd;           /* window handle to the dialog for this node */
+    LPARAM      param;          /* parameter, usually a handle to a
+                                   tree view control node. */
 
-    cfg_node_data * data;
+    cfg_node_data * data;       /* for subpanels, the window handles,
+                                   parameter and flags need to be maintained for each  */
     khm_size    n_data;
     khm_size    nc_data;
 
+    void *      private_data;   /* private data set with
+                                   khui_cfg_set_data() */
+
     khm_int32   refcount;
-    khm_int32   flags;
+    khm_int32   flags;          /* reg.flags is copied here during
+                                   configuration node registration.
+                                   From then on, this field will be
+                                   updated with dynamic flags to
+                                   reflect the state of the node.
+                                   Note that reg.flags will not be
+                                   modified with dynamic flags. */
     TDCL(struct tag_khui_config_node_i);
 } khui_config_node_i;
 

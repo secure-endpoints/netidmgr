@@ -425,18 +425,17 @@ kcdb_identity_set_provider(khm_handle sub)
     }
 
     if (sub) {
-        kmq_send_sub_msg(sub,
-                         KMSG_IDENT,
-                         KMSG_IDENT_INIT,
-                         0, 0);
+        rv = kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_INIT, 0, 0);
+
+        if (KHM_FAILED(rv)) {
+            kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_EXIT, 0, 0);
+            identpro_mark_for_deletion(p);
+        }
     } else {
         EnterCriticalSection(&cs_identpro);
         sub = p->sub;
         LeaveCriticalSection(&cs_identpro);
-        kmq_send_sub_msg(sub,
-                         KMSG_IDENT,
-                         KMSG_IDENT_EXIT,
-                         0, 0);
+        kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_EXIT, 0, 0);
         identpro_mark_for_deletion(p);
     }
 
@@ -1103,7 +1102,7 @@ kcdb_identpro_notify_create(khm_handle identity)
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_get_ui_cb_ex(khm_handle vidpro, void * rock)
+kcdb_identpro_get_idsel_factory(khm_handle vidpro, kcdb_idsel_factory * pf)
 {
     khm_handle sub;
     khm_int32 rv;
@@ -1114,8 +1113,8 @@ kcdb_identpro_get_ui_cb_ex(khm_handle vidpro, void * rock)
     sub = identpro_get_sub(vidpro);
 
     if (sub != NULL) {
-        rv = kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_GET_UI_CALLBACK,
-                              0, rock);
+        rv = kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_GET_IDSEL_FACTORY,
+                              0, pf);
     } else {
         rv = KHM_ERROR_NO_PROVIDER;
     }
@@ -1130,6 +1129,7 @@ KHMEXP khm_int32 KHMAPI
 kcdb_identpro_get_ui_cb(void * rock)
 {
     kcdb_identpro_i * p;
+    khm_handle sub;
     khm_int32 rv;
 
     EnterCriticalSection(&cs_identpro);
@@ -1138,8 +1138,14 @@ kcdb_identpro_get_ui_cb(void * rock)
         identpro_hold(p);
     LeaveCriticalSection(&cs_identpro);
 
-    rv = kcdb_identpro_get_ui_cb_ex(kcdb_handle_from_identpro(p),
-                                    rock);
+    if (p) {
+        sub = identpro_get_sub(kcdb_handle_from_identpro(p));
+
+        rv = kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_GET_UI_CALLBACK,
+                              0, rock);
+    } else {
+        rv = KHM_ERROR_NO_PROVIDER;
+    }
 
     if (p)
         identpro_release(p);

@@ -68,6 +68,7 @@ void khm_init_gui(void) {
 
     khui_init_actions();
     khui_init_rescache();
+    khm_init_themes();
     khui_init_menu();
     khui_init_toolbar();
     khm_init_notifier();
@@ -83,6 +84,7 @@ void khm_exit_gui(void) {
     khm_exit_notifier();
     khui_exit_toolbar();
     khui_exit_menu();
+    khm_exit_themes();
     khui_exit_rescache();
     khui_exit_actions();
 

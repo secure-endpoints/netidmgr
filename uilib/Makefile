@@ -53,7 +53,8 @@ INCFILES=			\
 	$(INCDIR)\khtracker.h	\
 	$(INCDIR)\khremote.h	\
 	$(INCDIR)\intaction.h	\
-	$(INCDIR)\intalert.h
+	$(INCDIR)\intalert.h	\
+	$(INCDIR)\intnewcred.h
 
 $(OBJ)\actiondef.c: actions.csv actiondef.cfg
 	$(CCSV) $** $@

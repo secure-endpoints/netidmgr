@@ -44,11 +44,48 @@
 #include<khconfigui.h>
 #include<khtracker.h>
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 #include<khrescache.h>
 #endif
 
 #include<khremote.h>
+
+/*! \brief Maximum length of a name in characters
+
+    The length includes the terminating NULL
+ */
+#define KHUI_MAXCCH_NAME 256
+
+/*! \brief Maximum length of a name in bytes
+
+    The length includes the terminating NULL
+ */
+#define KHUI_MAXCB_NAME (KHUI_MAXCCH_NAME * sizeof(wchar_t))
+
+/*! \brief Maximum length of a long description in characters
+
+    The length includes the terminating NULL
+ */
+#define KHUI_MAXCCH_LONG_DESC 1024
+
+/*! \brief Maximum length of a long description in bytes
+
+    The length includes the terminating NULL
+ */
+#define KHUI_MAXCB_LONG_DESC (KHUI_MAXCCH_LONG_DESC * sizeof(wchar_t))
+
+/*! \brief Maximum length of a short description in chracters
+
+    The length includes the terminating NULL
+ */
+#define KHUI_MAXCCH_SHORT_DESC 256
+
+/*! \brief Maximum length of a short description in bytes
+
+    The length includes the terminating NULL
+ */
+#define KHUI_MAXCB_SHORT_DESC (KHUI_MAXCCH_SHORT_DESC * sizeof(wchar_t))
+
 
 /*! \internal */
 KHMEXP void KHMAPI

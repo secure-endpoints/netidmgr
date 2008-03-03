@@ -143,11 +143,6 @@ static int compare_pobj(const void * e1, const void * e2)
     if (*p1 == *p2)
         return 0;
 
-#ifdef DEBUG
-    assert(kcdb_is_identity(*p1) || kcdb_is_identpro(*p1));
-    assert(kcdb_is_identpro(*p2) || kcdb_is_identpro(*p2));
-#endif
-
     return (*compare_func)(*p1, *p2, compare_param);
 }
 

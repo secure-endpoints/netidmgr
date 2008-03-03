@@ -282,19 +282,11 @@ kmsg_cred_completion(kmq_message *m)
                 if (nc->subtype == KMSG_CRED_RENEW_CREDS &&
                     nc->ctx.scope == KHUI_SCOPE_IDENT &&
                     nc->ctx.identity != NULL) {
-                    khm_handle tcs = NULL; /* credential set */
-                    khm_size count = 0;
-                    khm_int32 id_ctype = KCDB_CREDTYPE_INVALID;
-                    khm_int32 delta = 0;
+                    khm_int32 count = 0;
 
-                    kcdb_identity_get_type(&id_ctype);
-                    kcdb_credset_create(&tcs);
-                    kcdb_credset_collect(tcs, NULL,
-                                         nc->ctx.identity,
-                                         id_ctype,
-                                         &delta);
-                    kcdb_credset_get_size(tcs, &count);
-                    kcdb_credset_delete(tcs);
+                    cb = sizeof(count);
+                    kcdb_identity_get_attr(nc->ctx.identity, KCDB_ATTR_N_IDCREDS, NULL,
+                                           &count, &cb);
 
                     if (count == 0) {
                         goto done_with_op;
@@ -652,67 +644,19 @@ void khm_cred_destroy_identity(khm_handle identity)
 
 void khm_cred_renew_all_identities(void)
 {
-    khm_size count;
-    khm_size cb = 0;
+    kcdb_enumeration e;
     khm_size n_idents = 0;
-    khm_int32 rv;
-    wchar_t * ident_names = NULL;
-    wchar_t * this_ident;
+    khm_handle h_ident;
 
-    kcdb_credset_get_size(NULL, &count);
-
-    /* if there are no credentials, we just skip over the renew
-       action. */
-
-    if (count == 0)
+    if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_EMPTY, 0,
+                                            &e, &n_idents)))
         return;
 
-    ident_names = NULL;
-
-    while (TRUE) {
-        if (ident_names) {
-            PFREE(ident_names);
-            ident_names = NULL;
-        }
-
-        cb = 0;
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
-                                NULL,
-                                &cb, &n_idents);
-
-        if (n_idents == 0 || rv != KHM_ERROR_TOO_LONG ||
-            cb == 0)
-            break;
-
-        ident_names = PMALLOC(cb);
-        ident_names[0] = L'\0';
-
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_EMPTY, 0,
-                                ident_names,
-                                &cb, &n_idents);
-
-        if (KHM_SUCCEEDED(rv))
-            break;
+    while (KHM_SUCCEEDED(kcdb_enum_next(e, &h_ident))) {
+        khm_cred_renew_identity(h_ident);
     }
 
-    if (ident_names) {
-        for (this_ident = ident_names;
-             this_ident && *this_ident;
-             this_ident = multi_string_next(this_ident)) {
-            khm_handle ident;
-
-            if (KHM_FAILED(kcdb_identity_create(this_ident, 0,
-                                                &ident)))
-                continue;
-
-            khm_cred_renew_identity(ident);
-
-            kcdb_identity_release(ident);
-        }
-
-        PFREE(ident_names);
-        ident_names = NULL;
-    }
+    kcdb_enum_end(e);
 }
 
 void khm_cred_renew_identity(khm_handle identity)
@@ -811,10 +755,6 @@ void khm_cred_change_password(wchar_t * title)
     dialog_nc = nc;
 
     khui_context_get(&nc->ctx);
-
-    kcdb_identpro_get_ui_cb((void *) &nc->ident_cb);
-
-    assert(nc->ident_cb);
 
     if (title) {
 
@@ -1013,19 +953,12 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
        who's dependencies are all satisfied */
     EnterCriticalSection(&nc->cs);
 
-    /* if any types have already completed, we mark them are processed
-       and skip them */
-    for (i=0; i < nc->n_types; i++) {
-        t = nc->types[i];
-        if(t->flags & KHUI_NC_RESPONSE_COMPLETED)
-            t->flags |= KHUI_NCT_FLAG_PROCESSED;
-    }
-
     for(i=0; i<nc->n_types; i++) {
-        t = nc->types[i];
+        t = nc->types[i].nct;
 
-        if((t->flags & KHUI_NCT_FLAG_PROCESSED) ||
-           (t->flags & KHUI_NC_RESPONSE_COMPLETED))
+        if (t->flags & (KHUI_NCT_FLAG_PROCESSED |
+                        KHUI_NC_RESPONSE_COMPLETED |
+                        KHUI_NCT_FLAG_DISABLED))
             continue;
 
         for(j=0; j<t->n_type_deps; j++) {
@@ -1036,13 +969,16 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
                 break;
         }
 
-        if(j<t->n_type_deps) /* there are unmet dependencies */
+        if (j < t->n_type_deps) /* there are unmet dependencies */
             continue;
 
         /* all dependencies for this type have been met. */
         subs[n_subs++] = kcdb_credtype_get_sub(t->type);
         t->flags |= KHUI_NCT_FLAG_PROCESSED;
         cont = TRUE;
+
+        if (n_subs == KHUI_MAX_NCTYPES)
+            break;
     }
 
     LeaveCriticalSection(&nc->cs);
@@ -1079,8 +1015,9 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     /* check dependencies and stuff first */
     EnterCriticalSection(&nc->cs);
     for(i=0; i<nc->n_types; i++) {
-        nc->types[i]->flags &= ~ KHUI_NCT_FLAG_PROCESSED;
+        nc->types[i].nct->flags &= ~ KHUI_NCT_FLAG_PROCESSED;
     }
+    nc->response = 0;
     LeaveCriticalSection(&nc->cs);
 
     /* Consindering all that can go wrong here and the desire to
@@ -1159,7 +1096,12 @@ khm_cred_process_startup_actions(void) {
         khm_startup.renew ||
         khm_startup.destroy ||
         khm_startup.autoinit) {
-        kcdb_identity_get_default(&defident);
+        khm_handle idpro;
+
+        if (KHM_SUCCEEDED(kcdb_identpro_get_default(&idpro))) {
+            kcdb_identpro_get_default_identity(idpro, &defident);
+            kcdb_identpro_release(idpro);
+        }
     }
 
     /* For asynchronous actions, we trigger the action and then exit
@@ -1222,23 +1164,15 @@ khm_cred_process_startup_actions(void) {
         }
 
         if (khm_startup.autoinit) {
-            khm_size count = 0;
-            khm_handle credset = NULL;
-            khm_int32 ctype_ident = KCDB_CREDTYPE_INVALID;
-            khm_int32 delta = 0;
+            khm_int32 count = 0;
+            khm_size cb;
 
             khm_startup.autoinit = FALSE;
 
-            kcdb_credset_create(&credset);
-            kcdb_identity_get_type(&ctype_ident);
-
-            kcdb_credset_collect(credset, NULL,
-                                 defident, ctype_ident,
-                                 &delta);
-
-            kcdb_credset_get_size(credset, &count);
-
-            kcdb_credset_delete(credset);
+            if (defident) {
+                cb = sizeof(count);
+                kcdb_identity_get_attr(defident, KCDB_ATTR_N_IDCREDS, NULL, &count, &cb);
+            }
 
             if (count == 0) {
                 if (defident)
@@ -1341,12 +1275,10 @@ void
 khm_cred_addr_change(void) {
     khm_handle csp_cw = NULL;
     khm_int32 check_net = 0;
-
-    wchar_t * ids = NULL;
-    wchar_t * t;
+    kcdb_enumeration e = NULL;
+    khm_handle ident;
     khm_size cb;
     khm_size n_idents;
-
     FILETIME ft_now;
     FILETIME ft_exp;
     FILETIME ft_issue;
@@ -1361,45 +1293,16 @@ khm_cred_addr_change(void) {
     if (!check_net)
         return;
 
-    while(TRUE) {
-        if (ids)
-            PFREE(ids);
-        ids = NULL;
-
-        if (kcdb_identity_enum(KCDB_IDENT_FLAG_VALID |
-                               KCDB_IDENT_FLAG_RENEWABLE,
-                               KCDB_IDENT_FLAG_VALID |
-                               KCDB_IDENT_FLAG_RENEWABLE,
-                               NULL,
-                               &cb,
-                               &n_idents) != KHM_ERROR_TOO_LONG)
-            break;
-
-        ids = PMALLOC(cb);
-
-        if (KHM_SUCCEEDED
-            (kcdb_identity_enum(KCDB_IDENT_FLAG_VALID |
-                                KCDB_IDENT_FLAG_RENEWABLE,
-                                KCDB_IDENT_FLAG_VALID |
-                                KCDB_IDENT_FLAG_RENEWABLE,
-                                ids,
-                                &cb,
-                                &n_idents)))
-            break;
-    }
-
-    if (!ids)
+    if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_VALID |
+                                            KCDB_IDENT_FLAG_RENEWABLE,
+                                            KCDB_IDENT_FLAG_VALID |
+                                            KCDB_IDENT_FLAG_RENEWABLE,
+                                            &e, &n_idents)))
         return;
 
     GetSystemTimeAsFileTime(&ft_now);
 
-    for (t=ids; t && *t; t = multi_string_next(t)) {
-        khm_handle ident;
-
-
-        if (KHM_FAILED
-            (kcdb_identity_create(t, 0, &ident)))
-            continue;
+    while (KHM_SUCCEEDED(kcdb_enum_next(e, &ident))) {
 
         cb = sizeof(ft_issue);
 
@@ -1428,7 +1331,7 @@ khm_cred_addr_change(void) {
 
             }
         }
-
-        kcdb_identity_release(ident);
     }
+
+    kcdb_enum_end(e);
 }

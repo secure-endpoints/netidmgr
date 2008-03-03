@@ -55,10 +55,6 @@ config_id_dlgproc(HWND hwnd,
     switch (uMsg) {
     case WM_INITDIALOG:
         {
-            wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-            khm_size cb;
-            khm_int32 rv;
-
             d = malloc(sizeof(*d));
             assert(d);
             ZeroMemory(d, sizeof(*d));
@@ -69,12 +65,12 @@ config_id_dlgproc(HWND hwnd,
                persistent strucutre, so we have to make a copy. */
             d->cfg = *((khui_config_init_data *) lParam);
 
-            cb = sizeof(idname);
-            rv = khui_cfg_get_name(d->cfg.ctx_node, idname, &cb);
-            assert(KHM_SUCCEEDED(rv));
-
-            rv = kcdb_identity_create(idname, 0, &d->ident);
-            assert(KHM_SUCCEEDED(rv));
+            /* The private data associated with a configuration node
+               that represents an identity is a held identity
+               handle. */
+            d->ident = khui_cfg_get_data(d->cfg.ctx_node);
+            assert(d->ident != NULL);
+            kcdb_identity_hold(d->ident);
 
             /* TODO: perform any other required initialization */
 

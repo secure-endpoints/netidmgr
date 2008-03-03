@@ -69,6 +69,7 @@ IDI_APPICON_OK          ICON                    "..\\..\\images\\app_state_ok.ic
 IDI_CFG_PLUGIN          ICON                    "..\\..\\images\\cfg_plugin.ico"
 IDI_CFG_PLUGIN_ERR      ICON                    "..\\..\\images\\cfg_plugin_err.ico"
 IDI_CFG_PLUGIN_DIS      ICON                    "..\\..\\images\\cfg_plugin_dis.ico"
+IDI_ID_NEW              ICON                    "..\\..\\images\\id_new.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -160,16 +161,16 @@ END
 // Dialog
 //
 
-IDD_NC_PRIVINT_ADVANCED DIALOGEX 0, 0, 370, 160
+IDD_NC_PRIVINT_ADVANCED DIALOGEX 0, 0, 370, 214
 STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_NC_TAB,"SysTabControl32",0x0,6,3,357,140
-    LTEXT           "Static",IDC_NC_R_PROMPTS,9,19,349,120,NOT WS_VISIBLE | NOT WS_GROUP
+    CONTROL         "",IDC_NC_TAB,"SysTabControl32",WS_TABSTOP,6,3,357,192
+    LTEXT           "Static",IDC_NC_R_PROMPTS,9,19,349,172,NOT WS_VISIBLE | NOT WS_GROUP
     CONTROL         "Make this the default identity",IDC_NC_MAKEDEFAULT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,150,109,10
-    PUSHBUTTON      "&<< Basic options",IDC_NC_ADVANCED,274,145,89,15
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,204,109,10
+    PUSHBUTTON      "&<< Basic options",IDC_NC_ADVANCED,274,199,89,15
 END
 
 IDD_PP_IDENT DIALOGEX 0, 0, 235, 156
@@ -318,11 +319,16 @@ STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "Always show in the credentials list (Pinned)",IDC_CFG_STICKY,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,34,151,10
-    CONTROL         "Monitor credential expiration",IDC_CFG_MONITOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,7,107,10
-    CONTROL         "Automatically renew",IDC_CFG_RENEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,20,81,10
-    PUSHBUTTON      "Remove identity ...",IDC_CFG_REMOVE,139,122,78,14
+    ICON            "",IDC_CFG_ICON,7,7,21,20,SS_REALSIZEIMAGE
+    LTEXT           "",IDC_CFG_DESC,38,7,190,14
+    RTEXT           "",IDC_CFG_TYPE,38,26,190,8
+    PUSHBUTTON      "&Change icon ...",IDC_CFG_CHICON,7,37,61,14
+    PUSHBUTTON      "R&eset icon",IDC_CFG_RESETICON,71,37,45,14
+    CONTROL         "&Monitor credential expiration",IDC_CFG_MONITOR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,38,60,107,10
+    CONTROL         "&Automatically renew",IDC_CFG_RENEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,38,74,81,10
+    CONTROL         "Always show in the credentials list (&Pinned)",IDC_CFG_STICKY,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,38,87,151,10
+    PUSHBUTTON      "&Remove identity ...",IDC_CFG_REMOVE,150,130,78,14
 END
 
 IDD_ABOUT DIALOGEX 0, 0, 324, 238
@@ -383,16 +389,16 @@ BEGIN
     LTEXT           "© 2005-2007 Massachusetts Institute of Technology\n© 2006-2007 Secure Endpoints Inc.",IDC_COPYRIGHT,7,258,240,21,NOT WS_GROUP
 END
 
-IDD_NC_CONTAINER DIALOGEX 0, 0, 370, 217
+IDD_NC_CONTAINER DIALOGEX 0, 0, 370, 270
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-EXSTYLE WS_EX_TOPMOST | WS_EX_CONTEXTHELP
+EXSTYLE WS_EX_TOPMOST | WS_EX_CONTEXTHELP | WS_EX_CONTROLPARENT | WS_EX_APPWINDOW
 CAPTION "Obtain New Credentials"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "Identity Selector",IDC_NC_R_IDSEL,0,0,370,30,NOT WS_VISIBLE | WS_BORDER
     LTEXT           "Main Content (Mini)",IDC_NC_R_MAIN,0,30,370,120,NOT WS_VISIBLE | WS_BORDER
-    LTEXT           "Main Content (Extension)",IDC_NC_R_MAIN_LG,0,150,370,40,NOT WS_VISIBLE | WS_BORDER
-    LTEXT           "Navigation",IDC_NC_R_NAV,0,190,370,26,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "Main Content (Extension)",IDC_NC_R_MAIN_LG,0,150,370,94,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "Navigation",IDC_NC_R_NAV,0,244,370,25,NOT WS_VISIBLE | WS_BORDER
 END
 
 IDD_NC_PRIVINT_BASIC DIALOGEX 0, 0, 370, 120
@@ -412,8 +418,8 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "",IDC_IDPROVLIST,"SysListView32",LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,6,7,357,44
-    LTEXT           "Identity Specifier",IDC_NC_R_IDSPEC,6,55,357,95,WS_BORDER
+    CONTROL         "",IDC_IDPROVLIST,"SysListView32",LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,6,7,357,44
+    CTEXT           "Please select an identity provider from the list above.",IDC_NC_R_IDSPEC,6,55,357,95,SS_CENTERIMAGE | NOT WS_VISIBLE
 END
 
 IDD_NC_NAV DIALOGEX 0, 0, 370, 26
@@ -422,18 +428,19 @@ EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "Show &details",IDC_NC_DETAILS,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,7,9,56,10
-    PUSHBUTTON      "< &Back",ID_WIZBACK,152,5,50,14,NOT WS_VISIBLE
-    PUSHBUTTON      "&Next >",ID_WIZNEXT,203,5,50,14,NOT WS_VISIBLE
-    PUSHBUTTON      "&Finish",ID_WIZFINISH,253,5,50,14,NOT WS_VISIBLE
+    PUSHBUTTON      "< &Back",IDC_BACK,152,5,50,14,NOT WS_VISIBLE
+    PUSHBUTTON      "&Next >",IDC_NEXT,202,5,50,14,NOT WS_VISIBLE
+    PUSHBUTTON      "&Finish",IDC_FINISH,258,5,50,14,NOT WS_VISIBLE
     PUSHBUTTON      "&Cancel",IDCANCEL,313,5,50,14
+    PUSHBUTTON      "&Abort",IDC_NC_ABORT,313,5,50,14,NOT WS_VISIBLE
 END
 
 IDD_NC_IDSEL DIALOGEX 0, 0, 370, 30
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS | WS_SYSMENU
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    PUSHBUTTON      "",IDC_IDSEL,0,0,369,30
+    PUSHBUTTON      "   ",IDC_IDSEL,0,0,369,30,BS_NOTIFY
 END
 
 IDD_NC_PROMPTS DIALOGEX 0, 0, 350, 84
@@ -441,7 +448,6 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "TplPanel",IDC_NC_TPL_PANEL,7,7,336,70,NOT WS_VISIBLE | WS_BORDER
     LTEXT           "UI Row",IDC_NC_TPL_ROW,7,7,336,17,NOT WS_VISIBLE | WS_BORDER
     LTEXT           "TplLabel",IDC_NC_TPL_LABEL,7,8,83,10,NOT WS_VISIBLE | WS_BORDER
     LTEXT           "TplInput",IDC_NC_TPL_INPUT,97,7,246,13,NOT WS_VISIBLE | WS_BORDER
@@ -451,11 +457,12 @@ BEGIN
 END
 
 IDD_NC_NOPROMPTS DIALOGEX 0, 0, 350, 84
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_POPUP | WS_SYSMENU
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Click 'Finish' to obtain credentials ...",IDC_STATIC,7,7,115,8
+    LTEXT           "Click 'Finish' to obtain credentials ...",IDC_TEXT,7,7,336,18
+    CONTROL         "",IDC_PROGRESS,"msctls_progress32",NOT WS_VISIBLE,7,25,336,10
 END
 
 IDD_NC_PROGRESS DIALOGEX 0, 0, 370, 120
@@ -463,6 +470,16 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+END
+
+IDD_ICON_OFN DIALOGEX 0, 0, 173, 233
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_LIST,"SysListView32",LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,29,28,130,191
+    LTEXT           "Static",IDC_OFN_POS,0,0,8,226,NOT WS_VISIBLE
+    GROUPBOX        "Select an icon below",IDC_STATIC,21,17,145,209
 END
 
 
@@ -481,6 +498,7 @@ BEGIN
         VERTGUIDE, 9
         VERTGUIDE, 358
         TOPMARGIN, 3
+        BOTTOMMARGIN, 198
     END
 
     IDD_PP_IDENT, DIALOG
@@ -570,6 +588,7 @@ BEGIN
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 228
+        VERTGUIDE, 38
         TOPMARGIN, 7
         BOTTOMMARGIN, 144
     END
@@ -615,10 +634,10 @@ BEGIN
 
     IDD_NC_CONTAINER, DIALOG
     BEGIN
-        BOTTOMMARGIN, 216
+        BOTTOMMARGIN, 269
         HORZGUIDE, 30
         HORZGUIDE, 150
-        HORZGUIDE, 190
+        HORZGUIDE, 244
     END
 
     IDD_NC_PRIVINT_BASIC, DIALOG
@@ -664,6 +683,7 @@ BEGIN
         RIGHTMARGIN, 343
         TOPMARGIN, 7
         BOTTOMMARGIN, 77
+        HORZGUIDE, 25
     END
 
     IDD_NC_PROGRESS, DIALOG
@@ -671,6 +691,12 @@ BEGIN
         LEFTMARGIN, 6
         RIGHTMARGIN, 363
         TOPMARGIN, 7
+    END
+
+    IDD_ICON_OFN, DIALOG
+    BEGIN
+        RIGHTMARGIN, 166
+        BOTTOMMARGIN, 226
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -740,16 +766,15 @@ STRINGTABLE
 BEGIN
     IDS_NC_IDENTITY         "&Identity"
     IDS_NC_IDENTS           "&Identities"
-    IDS_NC_CREDTEXT_ID_NONE "<p><b>(No identities specified)</b></p>"
-    IDS_NC_CREDTEXT_ID_ONE  "<p>Selected identity: <b>%s</b></p>"
-    IDS_NC_CREDTEXT_ID_MANY "<p>Primary identity: <b>%s</b></p><p>Additional identities: <b>%s</b></p>"
-    IDS_NC_CREDTEXT_ID_INVALID "<font color=""red"">%s (invalid)</font>"
+    IDS_NC_NPR_CHOOSEDIF    "Please choose a different identity."
+    IDS_NC_NPR_CLICKFINISH  "Click 'Finish' to obtain new credentials ..."
+    IDS_NC_NPR_CHOOSE       "Please choose an identity."
+    IDS_ICON_FILTER         "Icons,*.ICO,Bitmaps,*.BMP,Binaries,*.DLL;*.EXE,All Files,*.*"
     IDS_WTPOST_INIT_CREDS   " - Initial credentials"
     IDS_WTPOST_NEW_CREDS    " - New credentials"
     IDS_ACTION_RENEW_CRED   "R&enew credentials"
     IDS_ACTION_DESTROY_CRED "De&stroy credentials"
     IDS_DEFAULT_FONT        "MS Shell Dlg"
-    IDS_NC_CREDTEXT_TABS    "<settab pos=""15""><settab pos=""30""><settab pos=""45"">"
     IDS_NOTIFY_PREFIX       "Network Identity Manager - "
     IDS_NOTIFY_READY        "Ready"
     IDS_NOTIFY_ATTENTION    "Attention"
@@ -763,12 +788,9 @@ BEGIN
     IDS_PACTION_CLOSE       "&Close"
     IDS_ALERT_NOSEL_TITLE   "No credentials selected"
     IDS_ALERT_NOSEL         "Please select a credential, a credential type or an identity."
-    IDS_NC_CREDTEXT_ID_VALID "<font color=""blue"">%s</font>"
-    IDS_NC_CREDTEXT_ID_UNCHECKED "<font color=""grey"">%s (Unverified)</font>"
     IDS_PROP_COL_PROPERTY   "Property"
     IDS_PROP_COL_VALUE      "Value"
     IDS_NC_NEW_IDENT        "( New identity ... )"
-    IDS_NC_CREDTEXT_ID_CHECKING "<font color=""grey"">%s (Checking...)</font>"
     IDS_ACTION_OPEN_APP     "Show Network Identity Manager window"
     IDS_CTX_NEW_IDENT       "Obaining new identity"
     IDS_CTX_NEW_CREDS       "Obtaining new credentials"
@@ -845,9 +867,6 @@ BEGIN
     IDS_CW_DEFAULT          "(Default)"
     IDS_ACTION_OPT_PLUGINS  "Plugins"
     IDS_NC_SETDEF           "&Set as default identity"
-    IDS_NC_ID_DEF           "<p>This identity is the default</p>"
-    IDS_NC_ID_WDEF          "<p>Will be the default. (<a id=""NotDef"">Don't make default</a>)</p>"
-    IDS_NC_ID_NDEF          "<p>Not default identity.  (<a id=""MakeDef"">make default</a>)</p>"
     IDS_PACTION_YES         "&Yes"
     IDS_PACTION_NO          "&No"
     IDS_PACTION_YESALL      "Y&es to all"
@@ -962,6 +981,8 @@ STRINGTABLE
 BEGIN
     IDS_IDACTION_SETDEF     "%s"
     IDS_ACTION_VIEW_ALL_IDS "All identities"
+    IDS_NC_NEW_IDENT_D      "Click here to specify an identity that is not listed."
+    IDS_NC_IDSEL_PROMPT     "Choose an identity ..."
 END
 
 #endif    // English (U.S.) resources

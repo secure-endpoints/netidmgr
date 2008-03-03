@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2005-2008 Massachusetts Institute of Technology
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -246,7 +246,8 @@ typedef enum tag_khm_restype {
     KHM_RESTYPE_NONE,
     KHM_RESTYPE_STRING,
     KHM_RESTYPE_ICON,
-    KHM_RESTYPE_BITMAP
+    KHM_RESTYPE_BITMAP,
+    KHM_RESTYPE_FONT
 } khm_restype;
 
 /*@}*/

@@ -66,6 +66,15 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_ID                  ICON                    "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\kcreddb\\images\\id.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
 // String Table
 //
 
@@ -116,6 +125,16 @@ BEGIN
     IDS_N_CREDS             "Number of Credentials"
     IDS_N_IDCREDS           "Number of Identity Credentials"
     IDS_N_INITCREDS         "Number of Initial Credentials"
+    IDS_FTS_REL_POS         "in %s"
+    IDS_FTS_REL_NEG         "%s ago"
+    IDS_FTS_REL_TOM         "tomorrow at %s"
+    IDS_FTS_REL_YEST        "yesterday at %s"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_FTS_REL_TOD         "at %s"
+    IDS_FTS_TS              "%1 %2"
 END
 
 #endif    // English (U.S.) resources

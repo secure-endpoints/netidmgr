@@ -790,8 +790,12 @@
 
     - \a vparam : pointer to a ::khui_ident_new_creds_cb which will
          receive the call back.
+
+    \deprecated This message is deprecated.  Newer identity providers
+    are only required to support ::KMSG_IDENT_GET_IDSEL_FACTORY.
  */
 #define KMSG_IDENT_GET_UI_CALLBACK      12
+#pragma deprecated("KMSG_IDENT_GET_UI_CALLBACK")
 
 /*! \brief Notification of the creation of an identity
 
@@ -821,6 +825,23 @@
   \see ::kcdb_resource_request
  */
 #define KMSG_IDENT_RESOURCE_REQ         14
+
+/*! \brief Retrieve identity selector callback function
+
+  When the Network Identity Manager application needs to perform an
+  identity selection, it will request an identity selector callback
+  from the identity provider.  This callback is then responsible for
+  creating and managing the dialog that will be presented to the user
+  for the purpose of selecting an identity.
+
+  Message parameters:
+
+  - \a uparam : Not used
+
+  - \a vparam : pointer to a ::khui_idsel_factory which will
+       receive the callback.
+ */
+#define KMSG_IDENT_GET_IDSEL_FACTORY   15
 
 /*@}*/ /* /KMSG_IDENT subtypes */
 

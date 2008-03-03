@@ -29,6 +29,7 @@
 #include<perfstat.h>
 #include<hashtable.h>
 #include<stdlib.h>
+#include<assert.h>
 
 KHMEXP hashtable * KHMAPI hash_new_hashtable(khm_int32 n, 
                                hash_function_t hash, 
@@ -76,6 +77,11 @@ KHMEXP void KHMAPI hash_add(hashtable * h, const void * key, void * data) {
     hash_bin * b;
 
     hv = h->hash(key) % h->n;
+    if (hv < 0)
+        hv += h->n;
+#ifdef DEBUG
+    assert(hv >= 0 && hv < h->n);
+#endif
     b = h->bins[hv];
     while(b) {
         if(!h->comp(b->key, key)) {
@@ -107,6 +113,11 @@ KHMEXP void KHMAPI hash_del(hashtable * h, const void * key) {
     int hv;
 
     hv = h->hash(key) % h->n;
+    if (hv < 0)
+        hv += h->n;
+#ifdef DEBUG
+    assert(hv >= 0 && hv < h->n);
+#endif
 
     b = h->bins[hv];
     while(b) {
@@ -127,6 +138,11 @@ KHMEXP void * KHMAPI hash_lookup(hashtable * h, const void * key) {
     int hv;
 
     hv = h->hash(key) % h->n;
+    if (hv < 0)
+        hv += h->n;
+#ifdef DEBUG
+    assert(hv >= 0 && hv < h->n);
+#endif
 
     b = h->bins[hv];
 
@@ -145,6 +161,12 @@ KHMEXP khm_boolean KHMAPI hash_exist(hashtable * h, const void * key) {
     int hv;
 
     hv = h->hash(key) % h->n;
+    if (hv < 0)
+        hv += h->n;
+#ifdef DEBUG
+    assert(hv >= 0 && hv < h->n);
+#endif
+
     b = h->bins[hv];
     while(b) {
         if(!h->comp(b->key, key))

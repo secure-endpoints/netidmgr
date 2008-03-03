@@ -44,8 +44,11 @@ get_resource_from_cred_type(kcdb_resource_request * preq)
 {
     khm_handle sub;
     khm_int32  rv;
+    khm_int32 ctype;
 
-    sub = kcdb_credtype_get_sub((khm_int32)(INT_PTR) preq->h_obj);
+    ctype = (khm_int32)(INT_PTR) preq->h_obj;
+
+    sub = kcdb_credtype_get_sub(ctype);
     if (sub == NULL)
         return KHM_ERROR_INVALID_PARAM;
 
@@ -58,12 +61,17 @@ get_resource_from_cred_type(kcdb_resource_request * preq)
     if (preq->code == KHM_ERROR_NOT_IMPLEMENTED) {
         rv = KHM_ERROR_NOT_FOUND;
 
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-
         switch (preq->res_id) {
+        case KCDB_RES_INSTANCE:
+        case KCDB_RES_DISPLAYNAME:
+            rv = kcdb_credtype_describe(ctype, preq->buf, &preq->cb_buf,
+                                        (preq->flags & KCDB_RFS_SHORT));
+            break;
         }
+
+#ifdef DEBUG
+        assert(rv != KHM_ERROR_NOT_FOUND);
+#endif
     }
 
     return rv;
@@ -75,6 +83,7 @@ get_resource_from_identity(kcdb_resource_request * preq)
     kcdb_identity * id = (kcdb_identity *) preq->h_obj;
     khm_int32 rv;
     khm_size cb;
+    khm_handle csp_id;
 
 #ifdef DEBUG
     assert(kcdb_is_identity(id));
@@ -92,6 +101,7 @@ get_resource_from_identity(kcdb_resource_request * preq)
 
         preq->cb_buf = cb;
         return KHM_ERROR_SUCCESS;
+
     }
 
     if (!kcdb_is_identity(id) || !kcdb_is_identpro(id->id_pro) ||
@@ -104,15 +114,76 @@ get_resource_from_identity(kcdb_resource_request * preq)
     if (KHM_FAILED(rv))
         return rv;
 
-    if (preq->code == KHM_ERROR_NOT_IMPLEMENTED) {
+    if (preq->code == KHM_ERROR_NOT_IMPLEMENTED ||
+        preq->code == KHM_ERROR_NOT_FOUND) {
         rv = KHM_ERROR_NOT_FOUND;
 
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-
         switch (preq->res_id) {
+        case KCDB_RES_ICON_DISABLED:
+        case KCDB_RES_ICON_NORMAL:
+            if (preq->buf == NULL || preq->cb_buf < sizeof(HICON)) {
+                preq->cb_buf = sizeof(HICON);
+                return KHM_ERROR_TOO_LONG;
+            }
+
+            if (KHM_SUCCEEDED(kcdb_identity_get_config(preq->h_obj, 0, &csp_id))) {
+                wchar_t icopath[MAX_PATH];
+                HICON h = NULL;
+
+                cb = sizeof(icopath);
+                if (KHM_SUCCEEDED(khc_read_string(csp_id, L"IconNormal", icopath, &cb))) {
+                    khui_load_icon_from_resource_path(icopath, preq->flags, &h);
+                }
+
+                if (h != NULL) {
+                    *((HICON *) preq->buf) = h;
+                    preq->cb_buf = sizeof(HICON);
+                    rv = KHM_ERROR_SUCCESS;
+                }
+
+                khc_close_space(csp_id);
+            }
+
+            if (KHM_FAILED(rv)) {
+                HICON h;
+                int cx, cy;
+
+                if (preq->flags & KCDB_RFI_SMALL) {
+                    cx = GetSystemMetrics(SM_CXSMICON);
+                    cy = GetSystemMetrics(SM_CYSMICON);
+                } else if (preq->flags & KCDB_RFI_TOOLBAR) {
+#ifdef DEBUG
+                    assert(FALSE);
+#endif
+                    cx = cy = 24;   /* Placeholder */
+                } else {
+                    cx = GetSystemMetrics(SM_CXICON);
+                    cy = GetSystemMetrics(SM_CYICON);
+                }
+
+                h = (HICON) LoadImage(hinst_kcreddb, MAKEINTRESOURCE(IDI_ID),
+                                      IMAGE_ICON, cx, cy, LR_DEFAULTCOLOR);
+                if (h != NULL) {
+                    *((HICON *) preq->buf) = h;
+                    preq->cb_buf = sizeof(HICON);
+                    rv = KHM_ERROR_SUCCESS;
+                } else {
+                    rv = KHM_ERROR_NOT_FOUND;
+                }
+            }
+            break;
+
+        case KCDB_RES_DESCRIPTION:
+            /* If we can't find a description, we look for a display
+               name instead */
+            rv = kcdb_get_resource(preq->h_obj, KCDB_RES_DISPLAYNAME, preq->flags,
+                                   &preq->rflags, preq->vparam, preq->buf, &preq->cb_buf);
+            break;
         }
+
+#ifdef DEBUG
+        assert(rv != KHM_ERROR_NOT_FOUND);
+#endif
     }
 
     return rv;
@@ -139,15 +210,17 @@ get_resource_from_identpro(kcdb_resource_request * preq)
     if (KHM_FAILED(rv))
         return rv;
 
-    if (preq->code == KHM_ERROR_NOT_IMPLEMENTED) {
-        rv = KHM_ERROR_NOT_FOUND;
+    if (preq->code == KHM_ERROR_NOT_IMPLEMENTED ||
+        preq->code == KHM_ERROR_NOT_FOUND) {
 
-#ifdef DEBUG
-        assert(FALSE);
-#endif
+        rv = KHM_ERROR_NOT_FOUND;
 
         switch (preq->res_id) {
         }
+
+#ifdef DEBUG
+        assert(rv != KHM_ERROR_NOT_FOUND);
+#endif
     }
 
     return rv;
@@ -177,13 +250,12 @@ get_resource_from_credential(kcdb_resource_request * preq)
     if (preq->code == KHM_ERROR_NOT_IMPLEMENTED) {
         rv = KHM_ERROR_NOT_FOUND;
 
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-
         switch (preq->res_id) {
-
         }
+
+#ifdef DEBUG
+        assert(rv != KHM_ERROR_NOT_FOUND);
+#endif
     }
 
     return rv;
@@ -224,11 +296,16 @@ get_resource_from_owner(kcdb_resource_request * preq)
 static khm_int32
 get_resource_with_cache(kcdb_resource_request * preq)
 {
-    khm_int32 rv;
+    khm_int32 rv = KHM_ERROR_NOT_FOUND;
 
-    rv = khui_cache_get_resource(preq->h_obj,
-                                 MAKERESID(preq->res_id, preq->flags),
-                                 preq->res_type, preq->buf, &preq->cb_buf);
+    if (!(preq->flags & KCDB_RF_SKIPCACHE)) {
+        rv = khui_cache_get_resource(preq->h_obj,
+                                     MAKERESID(preq->res_id, preq->flags),
+                                     preq->res_type, preq->buf, &preq->cb_buf);
+    }
+
+    preq->flags &= ~KCDB_RF_SKIPCACHE; /* this flag only applies to
+                                          the first lookup. */
 
     if (rv == KHM_ERROR_NOT_FOUND) {
         if (preq->buf && preq->cb_buf >= BUFSIZE) {

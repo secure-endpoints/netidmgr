@@ -2,6 +2,7 @@
 // Microsoft Visual C++ generated include file.
 // Used by C:\work\pismere\athena\auth\krb5\src\windows\identity\ui\lang\en_us\khapp.rc
 //
+#define IDC_NC_ABORT                    3
 #define IDI_MAIN_APP                    104
 #define IDD_PP_CRED                     106
 #define IDD_PP_IDENT                    107
@@ -78,13 +79,13 @@
 #define IDB_TK_REFRESH_SM               145
 #define IDS_NC_IDENTS                   145
 #define IDB_TK_SM                       146
-#define IDS_NC_CREDTEXT_ID_NONE         146
+#define IDS_NC_NPR_CHOOSEDIF            146
 #define IDB_HELP_SM                     147
-#define IDS_NC_CREDTEXT_ID_ONE          147
+#define IDS_NC_NPR_CLICKFINISH          147
 #define IDB_HELP                        148
-#define IDS_NC_CREDTEXT_ID_MANY         148
+#define IDS_NC_NPR_CHOOSE               148
 #define IDB_LOGO_SHADE                  149
-#define IDS_NC_CREDTEXT_ID_INVALID      149
+#define IDS_ICON_FILTER                 149
 #define IDS_WTPOST_INIT_CREDS           150
 #define IDS_WTPOST_NEW_CREDS            151
 #define IDB_WDG_EXPAND                  152
@@ -94,7 +95,6 @@
 #define IDB_ID_SM                       154
 #define IDS_DEFAULT_FONT                154
 #define IDB_WDG_EXPAND_HI               155
-#define IDS_NC_CREDTEXT_TABS            155
 #define IDB_WDG_COLLAPSE_HI             156
 #define IDS_NOTIFY_PREFIX               156
 #define IDB_WDG_CREDTYPE                157
@@ -108,20 +108,16 @@
 #define IDB_FLAG_CRITICAL               161
 #define IDS_PACTION_CANCEL              161
 #define IDS_PACTION_CLOSE               162
-#define IDD_NC_NEWCRED                  162
 #define IDD_NC_PRIVINT_ADVANCED         162
 #define IDS_ALERT_NOSEL_TITLE           163
 #define IDS_ALERT_NOSEL                 164
 #define IDI_ENABLED                     165
-#define IDS_NC_CREDTEXT_ID_VALID        165
 #define IDI_DISABLED                    166
-#define IDS_NC_CREDTEXT_ID_UNCHECKED    166
 #define IDS_PROP_COL_PROPERTY           167
 #define IDS_PROP_COL_VALUE              168
 #define IDI_NOTIFY_NONE                 169
 #define IDS_NC_NEW_IDENT                169
 #define IDI_NOTIFY_INFO                 170
-#define IDS_NC_CREDTEXT_ID_CHECKING     170
 #define IDI_NOTIFY_WARN                 171
 #define IDS_ACTION_OPEN_APP             171
 #define IDI_NOTIFY_ERROR                172
@@ -223,7 +219,9 @@
 #define IDD_NC_NOPROMPTS                220
 #define IDS_MENU_SETDEF                 221
 #define IDD_NC_PROGRESS                 221
+#define IDI_ID_NEW                      221
 #define IDS_PACTION_NEXT                222
+#define IDD_ICON_OFN                    222
 #define IDS_ERR_TITLE_NO_IDENTPRO       223
 #define IDS_ERR_MSG_NO_IDENTPRO         224
 #define IDS_ERR_SUGG_NO_IDENTPRO        225
@@ -231,9 +229,6 @@
 #define IDS_CW_DEFAULT                  227
 #define IDS_ACTION_OPT_PLUGINS          228
 #define IDS_NC_SETDEF                   229
-#define IDS_NC_ID_DEF                   230
-#define IDS_NC_ID_WDEF                  231
-#define IDS_NC_ID_NDEF                  232
 #define IDS_PACTION_YES                 233
 #define IDS_PACTION_NO                  234
 #define IDS_PACTION_YESALL              235
@@ -323,9 +318,8 @@
 #define IDS_IDACTIONT_SETDEF            319
 #define IDS_IDACTION_SETDEF             320
 #define IDS_ACTION_VIEW_ALL_IDS         321
-#define IDS_NC_NOPROMPT                 322
-#define IDC_NC_CREDTEXT_LABEL           1009
-#define IDC_NC_CREDTEXT                 1012
+#define IDS_NC_NEW_IDENT_D              322
+#define IDS_NC_IDSEL_PROMPT             323
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027
@@ -333,7 +327,6 @@
 #define IDC_PP_PROPLIST                 1035
 #define IDC_PP_CPROPLIST                1036
 #define IDC_NC_TPL_ROW                  1039
-#define IDC_NC_TPL_PANEL                1040
 #define IDC_NC_TPL_LABEL                1041
 #define IDC_NC_TPL_INPUT                1042
 #define IDC_NC_TPL_LABEL_LG             1043
@@ -419,6 +412,17 @@
 #define IDC_IDSEL                       1164
 #define IDC_NC_TAB                      1165
 #define IDC_NC_R_PROMPTS                1166
+#define IDC_BACK                        1169
+#define IDC_NEXT                        1170
+#define IDC_FINISH                      1171
+#define IDC_TEXT                        1173
+#define IDC_PROGRESS                    1174
+#define IDC_CFG_TYPE                    1177
+#define IDC_CFG_CHICON                  1178
+#define IDC_CFG_RESETICON               1179
+#define IDC_LIST1                       1180
+#define IDC_LIST                        1180
+#define IDC_OFN_POS                     0x045f
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -431,9 +435,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        221
+#define _APS_NEXT_RESOURCE_VALUE        223
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1169
+#define _APS_NEXT_CONTROL_VALUE         1181
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

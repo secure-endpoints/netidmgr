@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2005-2008 Massachusetts Institute of Technology
+ * Copyright (c) 2008 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -86,7 +87,7 @@ enum khui_wm_cfg_notifications {
 
 /*! \brief Registration information for a configuration node
 
-    \see khui_cfg_register_node()
+    \see khui_cfg_register()
 */
 typedef struct tag_khui_config_node_reg {
     const wchar_t * name;       /*!< Internal identifier
@@ -122,10 +123,14 @@ typedef struct tag_khui_config_node_reg {
     DLGPROC   dlg_proc;         /*!< Dialog procedure */
 
     khm_int32 flags;            /*!< Flags.  Can be a combination of
-                                  ::KHUI_CNFLAG_SORT_CHILDREN and
-                                  ::KHUI_CNFLAG_SUBPANEL*/
+                                  ::KHUI_CNFLAG_SORT_CHILDREN,
+                                  ::KHUI_CNFLAG_SUBPANEL, and ::KHUI_CNFLAG_PLURAL*/
 
 } khui_config_node_reg;
+
+/* We should extend the data structure to include a parameter value.
+   This parameter can, for the case of identities, be an identity
+   handle. */
 
 /*! \brief Sort the child nodes by short description */
 #define KHUI_CNFLAG_SORT_CHILDREN 0x0001
@@ -133,7 +138,12 @@ typedef struct tag_khui_config_node_reg {
 /*! \brief Is a subpanel */
 #define KHUI_CNFLAG_SUBPANEL      0x0002
 
-/*! \brief Node represents a panel that is replicated for all child nodes */
+/*! \brief Node represents a subpanel that is replicated for all child nodes
+
+  If this flags is specified when registering a configuration node,
+  khui_cfg_register() will automatically add the
+  ::KHUI_CNFLAG_SUBPANEL flag.
+*/
 #define KHUI_CNFLAG_PLURAL        0x0004
 
 /*! \brief System node
@@ -156,44 +166,21 @@ typedef struct tag_khui_config_node_reg {
  */
 #define KHUI_CNFLAG_APPLIED       0x0200
 
+/*! \brief Flag mask for static flags
+
+  These are the set of flags that do not change for the lifetime of a
+  configuration node.  They are the only flags (and can only be
+  specified) when calling khui_cfg_register().
+ */
 #define KHUI_CNFLAGMASK_STATIC    0x00ff
+
+/*! \brief Flag mask for dynamic flags
+
+  These are the set of flags that may change during the lifetime of a
+  configuration node.  They are the only flags that can be specified
+  when calling khui_cfg_set_flags() and khui_cfg_set_flags_inst().
+ */
 #define KHUI_CNFLAGMASK_DYNAMIC   0x0f00
-
-/*! \brief Maximum length of the name in characters
-
-    The length includes the terminating NULL
- */
-#define KHUI_MAXCCH_NAME 256
-
-/*! \brief Maximum length of the name in bytes
-
-    The length includes the terminating NULL
- */
-#define KHUI_MAXCB_NAME (KHUI_MAXCCH_NAME * sizeof(wchar_t))
-
-/*! \brief Maximum length of the long description in characters
-
-    The length includes the terminating NULL
- */
-#define KHUI_MAXCCH_LONG_DESC 1024
-
-/*! \brief Maximum length of the long description in bytes
-
-    The length includes the terminating NULL
- */
-#define KHUI_MAXCB_LONG_DESC (KHUI_MAXCCH_LONG_DESC * sizeof(wchar_t))
-
-/*! \brief Maximum length of the short description in chracters
-
-    The length includes the terminating NULL
- */
-#define KHUI_MAXCCH_SHORT_DESC 256
-
-/*! \brief Maximum length of the short description in bytes
-
-    The length includes the terminating NULL
- */
-#define KHUI_MAXCB_SHORT_DESC (KHUI_MAXCCH_SHORT_DESC * sizeof(wchar_t))
 
 /*! \brief Width of a configuration dialog in dialog units
 
@@ -227,7 +214,7 @@ typedef struct tag_khui_config_node_reg {
 
 /*! \brief A handle to a configuration node
 
-    \see khui_cfg_open_node(), khui_cfg_close_node()
+    \see khui_cfg_open(), khui_cfg_release(), khui_cfg_hold()
 */
 typedef khm_handle khui_config_node;
 
@@ -247,9 +234,7 @@ typedef struct tag_khui_config_init_data {
     khui_config_node ref_node;  /*!< The parent node of the subpanel
                                   node.  In nodes which have the
                                   ::KHUI_CNFLAG_PLURAL, this would be
-                                  different from the \a node. This is
-                                  the node under which the subpanel
-                                  was registered. */
+                                  different from the \a ctx_node. */
 } khui_config_init_data;
 
 /*! \brief Register a configuration node
@@ -263,19 +248,15 @@ typedef struct tag_khui_config_init_data {
 
     \param[in] reg Registration information
 
-    \param[out] new_id Receives the new unique identifier of the
-        configuration node.  Pass in NULL if the new identifier is not
-        required.
-
     \retval KHM_ERROR_SUCCESS Success
     \retval KHM_ERROR_INVALID_PARAM One or more parameters, or fields
         of reg were invalid
     \retval KHM_ERROR_DUPLICATE A node with the same name exists as a
         child of the specified parent node.
 
-    \note The name (not the short or long description) of the node can
-        not be the same as the name of a custom action.  See
-        khui_action_create().
+    \note For top level configuration nodes, the name (not the short
+        or long description) of the node can not be the same as the
+        name of a custom action.  See khui_action_create().
  */
 KHMEXP khm_int32 KHMAPI
 khui_cfg_register(khui_config_node parent,
@@ -443,13 +424,40 @@ KHMEXP khm_int32 KHMAPI
 khui_cfg_get_reg(khui_config_node node,
                  khui_config_node_reg * reg);
 
+/*! \brief Associate private data with a configuration node
+
+    The data that is associated with the configuration node is
+    entirely up to the caller.  It is recommended that private data
+    only be set by those who registered the configuration node.
+
+    If the node already had private data associated with it, the new
+    data pointer will overwrite the previous pointer.  The application
+    will not perform any cleanup for private data if the configuration
+    node is removed.  It is the responsibility of the caller to do so.
+ */
+KHMEXP void KHMAPI
+khui_cfg_set_data(khui_config_node node, void * pdata);
+
+/*! \brief Retreive private data associated with a configuration node
+
+    The private data pointer that is retrieved is the same as the
+    pointer that was specified in the last successful call to
+    khui_cfg_set_data() for the same configuration node.  If there is
+    an error or if private data has not been associated with the node,
+    the return value would be NULL.
+ */
+KHMEXP void * KHMAPI
+khui_cfg_get_data(khui_config_node node);
+
+#ifdef NIMPRIVATE
+
 /*! \brief Internal use
 
     This function is used internally by NetIDMgr.  Do not use.
 */
 KHMEXP HWND KHMAPI
 khui_cfg_get_hwnd_inst(khui_config_node node,
-                       khui_config_node noderef);
+                       khui_config_node ctx_node);
 
 /*! \brief Internal use
 
@@ -457,7 +465,7 @@ khui_cfg_get_hwnd_inst(khui_config_node node,
 */
 KHMEXP LPARAM KHMAPI
 khui_cfg_get_param_inst(khui_config_node node,
-                        khui_config_node noderef);
+                        khui_config_node ctx_node);
 
 /*! \brief Internal use
 
@@ -465,7 +473,7 @@ khui_cfg_get_param_inst(khui_config_node node,
 */
 KHMEXP void KHMAPI
 khui_cfg_set_hwnd_inst(khui_config_node node, 
-                       khui_config_node noderef,
+                       khui_config_node ctx_node,
                        HWND hwnd);
 
 /*! \brief Internal use
@@ -474,7 +482,7 @@ khui_cfg_set_hwnd_inst(khui_config_node node,
 */
 KHMEXP void KHMAPI
 khui_cfg_set_param_inst(khui_config_node node, 
-                        khui_config_node noderef,
+                        khui_config_node ctx_node,
                         LPARAM param);
 
 /*! \brief Internal use
@@ -518,6 +526,8 @@ khui_cfg_clear_params(void);
 */
 KHMEXP void KHMAPI
 khui_cfg_set_configui_handle(HWND hwnd);
+
+#endif  /* NIMPRIVATE */
 
 /*! \brief Update the state for the specified node
 

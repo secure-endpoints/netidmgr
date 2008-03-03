@@ -912,7 +912,7 @@ cfgui_dlgproc(HWND hwnd,
     return FALSE;
 }
 
-static void 
+static void
 cfgui_create_window(khui_config_node node) {
 #ifdef DEBUG
     assert(cfgui_hwnd == NULL);
@@ -949,71 +949,51 @@ khm_show_config_pane(khui_config_node node) {
     }
 }
 
-void khm_refresh_config(void) {
-    khm_size cb;
-    khm_size n_idents;
-    wchar_t * idents = NULL;
-    wchar_t * t;
-    khm_int32 rv;
-    int n_tries = 0;
-    khui_config_node cfg_ids = NULL;
-    khui_config_node cfg_r = NULL;
+/* Goes through all the active identities that have configuration
+   information associated with it and makes sure that there is a
+   corresponding configuration panel.*/
+
+static void
+refresh_identity_config_panels(void) {
+    khm_handle ident = NULL;
+    kcdb_enumeration e = NULL;
+
     khui_config_node cfg_iter = NULL;
-    khui_menu_def * omenu;
-    khm_boolean refresh_menu = FALSE;
+    khui_config_node cfg_ids = NULL;
 
-    do {
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_CONFIG,
-                                KCDB_IDENT_FLAG_CONFIG,
-                                NULL,
-                                &cb,
-                                &n_idents);
-
-        if (rv != KHM_ERROR_TOO_LONG ||
-            n_idents == 0)
-            return;
-
-        if (idents)
-            PFREE(idents);
-        idents = PMALLOC(cb);
-#ifdef DEBUG
-        assert(idents);
-#endif
-
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_CONFIG,
-                                KCDB_IDENT_FLAG_CONFIG,
-                                idents,
-                                &cb,
-                                &n_idents);
-
-        n_tries++;
-    } while(KHM_FAILED(rv) &&
-            n_tries < 5);
-
-    if (KHM_FAILED(rv))
+    if (KHM_FAILED(khui_cfg_open(NULL, L"KhmIdentities", &cfg_ids)))
         goto _cleanup;
 
-    if (KHM_FAILED(khui_cfg_open(NULL,
-                                 L"KhmIdentities",
-                                 &cfg_ids)))
-        goto _cleanup;
+    if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_CONFIG,
+                                            KCDB_IDENT_FLAG_CONFIG,
+                                            &e, NULL)))
+        goto _done_adding;
 
-    for(t = idents; t && *t; t = multi_string_next(t)) {
-        khui_config_node cfg_id = NULL;
+    while (KHM_SUCCEEDED(kcdb_enum_next(e, &ident))) {
+        khui_config_node cfg_id;
+        wchar_t cfgname[KCDB_MAXCCH_NAME];
+        khm_size cb;
 
-        rv = khui_cfg_open(cfg_ids,
-                           t,
-                           &cfg_id);
+        cb = sizeof(cfgname);
+        if (KHM_FAILED(kcdb_identity_get_short_name(ident, FALSE, cfgname, &cb)))
+            continue;
 
-        if (KHM_FAILED(rv)) {
+        if (KHM_SUCCEEDED(khui_cfg_open(cfg_ids, cfgname, &cfg_id))) {
+            /* it's already there */
+            khui_cfg_release(cfg_id);
+            continue;
+        } else {
             khui_config_node_reg reg;
             wchar_t wshort[KHUI_MAXCCH_SHORT_DESC];
             wchar_t wlong[KHUI_MAXCCH_LONG_DESC];
-            wchar_t wfmt[KHUI_MAXCCH_SHORT_DESC];
+
+            wchar_t wfmt[KHUI_MAXCCH_NAME];
+            wchar_t widname[KHUI_MAXCCH_SHORT_DESC];
+            khm_size cb;
 
             ZeroMemory(&reg, sizeof(reg));
 
-            reg.name = t;
+            reg.name = cfgname;
             reg.short_desc = wshort;
             reg.long_desc = wlong;
             reg.h_module = khm_hInstance;
@@ -1021,83 +1001,108 @@ void khm_refresh_config(void) {
             reg.dlg_proc = khm_cfg_identity_proc;
             reg.flags = 0;
 
+            cb = sizeof(widname);
+            kcdb_get_resource(ident, KCDB_RES_DISPLAYNAME, KCDB_RFS_SHORT,
+                              NULL, NULL, widname, &cb);
+
             LoadString(khm_hInstance, IDS_CFG_IDENTITY_SHORT,
                        wfmt, ARRAYLENGTH(wfmt));
-            StringCbPrintf(wshort, sizeof(wshort), wfmt, t);
+            StringCbPrintf(wshort, sizeof(wshort), wfmt, widname);
 
             LoadString(khm_hInstance, IDS_CFG_IDENTITY_LONG,
                        wfmt, ARRAYLENGTH(wfmt));
-            StringCbPrintf(wlong, sizeof(wlong), wfmt, t);
+            StringCbPrintf(wlong, sizeof(wlong), wfmt, widname);
 
-            khui_cfg_register(cfg_ids,
-                              &reg);
-        } else {
-            khui_cfg_release(cfg_id);
+            khui_cfg_register(cfg_ids, &reg);
+
+            if (KHM_SUCCEEDED(khui_cfg_open(cfg_ids, cfgname, &cfg_id))) {
+                khui_cfg_set_data(cfg_id, ident);
+                kcdb_identity_hold(ident);
+                khui_cfg_release(cfg_id);
+            }
         }
-    }
+    } /* while enumerating through e */
+
+    kcdb_enum_end(e);
+
+ _done_adding:
 
     for (khui_cfg_get_first_child(cfg_ids, &cfg_iter);
          cfg_iter;
          khui_cfg_get_next_release(&cfg_iter)) {
 
-        wchar_t cfgname[KCDB_IDENT_MAXCCH_NAME];
-        khm_size cb;
-        khm_handle tident = NULL;
-        khm_int32 tflags = 0;
+        khm_int32 flags = 0;
 
-        cb = sizeof(cfgname);
-        khui_cfg_get_name(cfg_iter, cfgname, &cb);
+        ident = khui_cfg_get_data(cfg_iter);
 
-        if (KHM_FAILED(kcdb_identity_create(cfgname, 0, &tident)) ||
-            KHM_FAILED(kcdb_identity_get_flags(tident, &tflags)) ||
-            !(tflags & KCDB_IDENT_FLAG_ACTIVE) ||
-            !(tflags & KCDB_IDENT_FLAG_CONFIG)) {
-
+        if (ident == NULL ||
+            KHM_FAILED(kcdb_identity_get_flags(ident, &flags)) ||
+            (flags & (KCDB_IDENT_FLAG_ACTIVE|
+                      KCDB_IDENT_FLAG_CONFIG)) != (KCDB_IDENT_FLAG_ACTIVE |
+                                                   KCDB_IDENT_FLAG_CONFIG)) {
             /* this configuration node needs to be removed */
 
+            if (ident)          /* undo the hold done above for for
+                                   configuration node data */
+                kcdb_identity_release(ident);
+            khui_cfg_set_data(cfg_iter, NULL);
             khui_cfg_remove(cfg_iter);
         }
-
-        if (tident)
-            kcdb_identity_release(tident);
     }
 
-    /* Now iterate through the root level configuration nodes and make
-       sure we have a menu item for each of them. */
-    if (KHM_FAILED(khui_cfg_get_first_child(NULL, &cfg_r)))
-        goto _cleanup;
+ _cleanup:
+    if (cfg_ids) {
+        khui_cfg_release(cfg_ids);
+    }
+}
+
+/* Makes sure that each top level configuration node has a
+   corresponding menu item in the 'Options' menu.*/
+static void
+refresh_config_menu_items(void) {
+    khui_menu_def * omenu;
+    khm_boolean refresh_menu = FALSE;
+    khui_config_node cfg_r = NULL;
 
     omenu = khui_find_menu(KHUI_MENU_OPTIONS);
-    if (omenu == NULL)
-        goto _cleanup;
+    if (omenu == NULL) {
+#ifdef DEBUG
+        assert(FALSE);
+#endif
+        return;
+    }
 
     khui_action_lock();
 
-    do {
-        khm_int32 action;
-        khm_int32 flags;
+    for (khui_cfg_get_first_child(NULL, &cfg_r);
+         cfg_r != NULL;
+         khui_cfg_get_next_release(&cfg_r)) {
+
+        khm_int32     flags;
         khui_action * paction;
-        wchar_t cname[KHUI_MAXCCH_NAME];
-        wchar_t wshort[KHUI_MAXCCH_SHORT_DESC];
-        khm_size cb;
-        khm_handle sub;
-        khui_config_node_reg reg;
+        wchar_t       cname[KHUI_MAXCCH_NAME];
+        khm_size      cb;
 
         flags = khui_cfg_get_flags(cfg_r);
         if (flags & KHUI_CNFLAG_SYSTEM)
-            goto _next_cfg;
+            continue;
 
         cb = sizeof(cname);
         if (KHM_FAILED(khui_cfg_get_name(cfg_r, cname, &cb))) {
 #ifdef DEBUG
             assert(FALSE);
 #endif
-            goto _next_cfg;
+            continue;
         }
 
         paction = khui_find_named_action(cname);
 
         if (!paction) {
+            khm_handle sub;
+            khui_config_node_reg reg;
+            wchar_t wshort[KHUI_MAXCCH_SHORT_DESC];
+            khm_int32 action;
+
             khui_cfg_get_reg(cfg_r, &reg);
 
             kmq_create_hwnd_subscription(khm_hwnd_main, &sub);
@@ -1105,29 +1110,22 @@ void khm_refresh_config(void) {
             StringCbCopy(wshort, sizeof(wshort), reg.short_desc);
             StringCbCat(wshort, sizeof(wshort), L" ...");
 
-            action = khui_action_create(cname,
-                                        wshort,
-                                        reg.long_desc,
+            action = khui_action_create(cname, wshort, reg.long_desc,
                                         (void *) CFGACTION_MAGIC,
-                                        KHUI_ACTIONTYPE_TRIGGER,
-                                        sub);
+                                        KHUI_ACTIONTYPE_TRIGGER, sub);
 
             if (action == 0) {
 #ifdef DEBUG
                 assert(FALSE);
 #endif
-                goto _next_cfg;
+                continue;
             }
 
             khui_menu_insert_action(omenu, (khm_size) -1, action, 0);
 
             refresh_menu = TRUE;
         }
-
-    _next_cfg:
-        if (KHM_FAILED(khui_cfg_get_next_release(&cfg_r)))
-            break;
-    } while(cfg_r);
+    }
 
     khui_action_unlock();
 
@@ -1135,15 +1133,13 @@ void khm_refresh_config(void) {
         khui_refresh_actions();
     }
 
- _cleanup:
-    if (cfg_ids)
-        khui_cfg_release(cfg_ids);
+}
 
-    if (cfg_r)
-        khui_cfg_release(cfg_r);
+void khm_refresh_config(void) {
 
-    if (idents)
-        PFREE(idents);
+    refresh_identity_config_panels();
+    refresh_config_menu_items();
+
 }
 
 void khm_init_config(void) {

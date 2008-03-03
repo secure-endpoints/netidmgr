@@ -37,15 +37,3 @@ all: mkdirs $(INCFILES) $(OBJFILES)
 clean::
 	if exist "$(INCDIR)" $(RM) $(INCFILES)
 
-# Tests
-
-test:: util_test
-
-util_test: $(OBJ)\utiltest.exe
-	$(OBJ)\utiltest.exe
-
-$(OBJ)\utiltest.exe: $(OBJ)\utiltest.obj
-	$(EXECONLINK) $(OBJFILES)
-
-$(OBJ)\utiltest.obj: test\utiltest.c
-	$(C2OBJ)

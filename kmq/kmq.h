@@ -149,7 +149,7 @@ typedef kmq_message *kmq_call;
  */
 typedef void (KHMAPI *kmq_msg_completion_handler)(kmq_message *);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 
 KHMEXP khm_int32 KHMAPI kmq_init(void);
 

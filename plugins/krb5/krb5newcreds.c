@@ -81,7 +81,7 @@ k5_handle_wm_initdialog(HWND hwnd,
 
     nct->aux = (LPARAM) d;
 
-    if (d->nc->subtype == KMSG_CRED_NEW_CREDS) {
+    if (khui_cw_get_subtype(d->nc) == KMSG_CRED_NEW_CREDS) {
         khui_tracker_initialize(&d->tc_lifetime);
         khui_tracker_initialize(&d->tc_renew);
 
@@ -116,7 +116,7 @@ k5_handle_wm_destroy(HWND hwnd,
 
     nct->aux = 0;
 
-    if (d->nc->subtype == KMSG_CRED_NEW_CREDS) {
+    if (khui_cw_get_subtype(d->nc) == KMSG_CRED_NEW_CREDS) {
         khui_tracker_kill_controls(&d->tc_renew);
         khui_tracker_kill_controls(&d->tc_lifetime);
     }
@@ -131,6 +131,7 @@ LRESULT
 k5_force_password_change(k5_dlg_data * d) {
     /* we are turning this dialog into a change password dialog... */
     wchar_t wbuf[KHUI_MAXCCH_BANNER];
+    khm_handle ident = NULL;
 
     khui_cw_clear_prompts(d->nc);
 
@@ -156,19 +157,17 @@ k5_force_password_change(k5_dlg_data * d) {
     d->pwd_change = TRUE;
 
     if (is_k5_identpro &&
-        d->nc->n_identities > 0 &&
-        d->nc->identities[0]) {
+        KHM_SUCCEEDED(khui_cw_get_primary_id(d->nc, &ident))) {
 
-        kcdb_identity_set_flags(d->nc->identities[0],
+        kcdb_identity_set_flags(ident,
                                 KCDB_IDENT_FLAG_VALID,
                                 KCDB_IDENT_FLAG_VALID);
-
+        kcdb_identity_release(ident);
+        ident = NULL;
     }
 
-    PostMessage(d->nc->hwnd, KHUI_WM_NC_NOTIFY,
-                MAKEWPARAM(0, WMNC_UPDATE_CREDTEXT),
-                (LPARAM) d->nc);
-
+    khui_cw_notify_dialog(d->nc, WMNC_UPDATE_CREDTEXT,
+                          FALSE, d->nc);
     return TRUE;
 }
 
@@ -188,7 +187,7 @@ k5_handle_wmnc_notify(HWND hwnd,
             if (d == NULL)
                 return TRUE;
 
-            if (d->nc->subtype == KMSG_CRED_NEW_CREDS) {
+            if (khui_cw_get_subtype(d->nc) == KMSG_CRED_NEW_CREDS) {
                 khui_tracker_reposition(&d->tc_lifetime);
                 khui_tracker_reposition(&d->tc_renew);
             }
@@ -208,7 +207,7 @@ k5_handle_wmnc_notify(HWND hwnd,
             if (d == NULL)
                 return TRUE;
 
-            if (d->nc->subtype == KMSG_CRED_PASSWORD)
+            if (khui_cw_get_subtype(d->nc) == KMSG_CRED_PASSWORD)
                 return TRUE;
 
             /* we save the value of the 'sync' field here because some
@@ -275,89 +274,6 @@ k5_handle_wmnc_notify(HWND hwnd,
         }
         break;
 
-    case WMNC_UPDATE_CREDTEXT:
-        {
-            k5_dlg_data * d;
-            khui_new_creds * nc;
-            khui_new_creds_by_type * nct;
-            wchar_t sbuf[1024];
-            wchar_t fbuf[256];
-            wchar_t tbuf[256];
-            size_t cbsize;
-            khm_int32 flags;
-
-            d = (k5_dlg_data *)(LONG_PTR) 
-                GetWindowLongPtr(hwnd, DWLP_USER);
-            if (d == NULL)
-                return TRUE;
-
-            nc = d->nc;
-            khui_cw_find_type(nc, credtype_id_krb5, &nct);
-
-            if(nct == NULL)
-                break;
-
-            if(nct->credtext)
-                PFREE(nct->credtext);
-            nct->credtext = NULL;
-
-            tbuf[0] = L'\0';
-
-            if (nc->n_identities > 0 &&
-                KHM_SUCCEEDED(kcdb_identity_get_flags(nc->identities[0], 
-                                                      &flags)) &&
-                (flags & KCDB_IDENT_FLAG_VALID) &&
-                nc->subtype == KMSG_CRED_NEW_CREDS &&
-                !d->pwd_change) {
-
-                if (is_k5_identpro)
-                    k5_get_realm_from_nc(nc, tbuf, ARRAYLENGTH(tbuf));
-                else
-                    GetDlgItemText(hwnd, IDC_NCK5_REALM, tbuf, 
-                                   ARRAYLENGTH(tbuf));
-
-                /*TODO: if additional realms were specified, then those
-                  must be listed as well */
-                LoadString(hResModule, IDS_KRB5_CREDTEXT_0, 
-                           fbuf, ARRAYLENGTH(fbuf));
-                StringCbPrintf(sbuf, sizeof(sbuf), fbuf, 
-                               tbuf);
-
-                StringCbLength(sbuf, sizeof(sbuf), &cbsize);
-                cbsize += sizeof(wchar_t);
-
-                nct->credtext = PMALLOC(cbsize);
-
-                StringCbCopy(nct->credtext, cbsize, sbuf);
-            } else if (nc->n_identities > 0 &&
-                       (nc->subtype == KMSG_CRED_PASSWORD ||
-                        (nc->subtype == KMSG_CRED_NEW_CREDS && d->pwd_change))) {
-                cbsize = sizeof(tbuf);
-                kcdb_identity_get_name(nc->identities[0], tbuf, &cbsize);
-
-                LoadString(hResModule, IDS_KRB5_CREDTEXT_P0,
-                           fbuf, ARRAYLENGTH(fbuf));
-                StringCbPrintf(sbuf, sizeof(sbuf), fbuf, tbuf);
-
-                StringCbLength(sbuf, sizeof(sbuf), &cbsize);
-                cbsize += sizeof(wchar_t);
-
-                nct->credtext = PMALLOC(cbsize);
-
-                StringCbCopy(nct->credtext, cbsize, sbuf);
-            } else {
-                if (d->cred_message) {
-                    StringCbLength(d->cred_message, KHUI_MAXCB_BANNER,
-                                   &cbsize);
-                    cbsize += sizeof(wchar_t);
-
-                    nct->credtext = PMALLOC(cbsize);
-
-                    StringCbCopy(nct->credtext, cbsize, d->cred_message);
-                }
-            }
-        }
-        break;
 
     case WMNC_IDENTITY_CHANGE:
         {
@@ -384,7 +300,7 @@ k5_handle_wmnc_notify(HWND hwnd,
             if (d == NULL)
                 break;
 
-            if(!d->sync && d->nc->result == KHUI_NC_RESULT_PROCESS) {
+            if(!d->sync && khui_cw_get_result(d->nc) == KHUI_NC_RESULT_PROCESS) {
                 kmq_post_sub_msg(k5_sub, KMSG_CRED, 
                                  KMSG_CRED_DIALOG_NEW_OPTIONS, 
                                  0, (void *) d->nc);
@@ -526,10 +442,10 @@ k5_handle_wm_command(HWND hwnd,
         wchar_t realm[KCDB_IDENT_MAXCCH_NAME];
         wchar_t *r;
         khm_size cbsize;
-        khm_handle ident;
+        khm_handle ident = NULL;
         int idx;
 
-        if(d->nc->n_identities > 0) {
+        if(KHM_SUCCEEDED(khui_cw_get_primary_id(d->nc, &ident))) {
             if(notif == CBN_SELCHANGE) {
                 idx = (int) SendDlgItemMessage(hwnd, IDC_NCK5_REALM, 
                                                CB_GETCURSEL, 0, 0);
@@ -540,11 +456,14 @@ k5_handle_wm_command(HWND hwnd,
                                realm, ARRAYLENGTH(realm));
             }
             cbsize = sizeof(idname);
-            if(KHM_SUCCEEDED(kcdb_identity_get_name(d->nc->identities[0], 
-                                                  idname, &cbsize))) {
+            if(KHM_SUCCEEDED(kcdb_identity_get_name(ident, idname, &cbsize))) {
+                kcdb_identity_release(ident);
+                ident = NULL;
+
                 r = wcschr(idname, L'@');
-                if(r && !wcscmp(realm, r+1))
+                if(r && !wcscmp(realm, r+1)) {
                     return 0; /* nothing to do */
+                }
 
                 if(!r) {
                     r = idname + wcslen(idname);
@@ -562,14 +481,17 @@ k5_handle_wm_command(HWND hwnd,
                     khui_cw_set_primary_id(d->nc, ident);
                     kcdb_identity_release(ident);
                 }
+
                 return 0;
             }
+
+            kcdb_identity_release(ident);
+            ident = NULL;
         }
 
         /* if we get here, we have a new realm, but there is no
            identity */
-        PostMessage(d->nc->hwnd, KHUI_WM_NC_NOTIFY, 
-                    MAKEWPARAM(0, WMNC_UPDATE_CREDTEXT), 0);
+        khui_cw_notify_dialog(d->nc, WMNC_UPDATE_CREDTEXT, FALSE, 0);
     }
 
     return 0;
@@ -1308,6 +1230,7 @@ void
 k5_read_dlg_params(k5_dlg_data * d, khm_handle identity)
 {
     k5_params p;
+    khui_action_context * pctx = NULL;
 
     khm_krb5_get_identity_params(identity, &p);
 
@@ -1327,11 +1250,11 @@ k5_read_dlg_params(k5_dlg_data * d, khm_handle identity)
 
     /* however, if this has externally supplied defaults, we have to
        use them too. */
-    if (d->nc && d->nc->ctx.vparam &&
-        d->nc->ctx.cb_vparam == sizeof(NETID_DLGINFO)) {
+    if (d->nc && (pctx = khui_cw_get_ctx(d->nc)) != NULL &&
+        pctx->vparam && pctx->cb_vparam == sizeof(NETID_DLGINFO)) {
         LPNETID_DLGINFO pdlginfo;
 
-        pdlginfo = (LPNETID_DLGINFO) d->nc->ctx.vparam;
+        pdlginfo = (LPNETID_DLGINFO) pctx->vparam;
         if (pdlginfo->size == NETID_DLGINFO_V1_SZ &&
             pdlginfo->in.use_defaults == 0) {
             d->forwardable = pdlginfo->in.forwardable;
@@ -1518,6 +1441,7 @@ k5_prep_kinit_job(khui_new_creds * nc)
     size_t size;
     khm_handle ident;
     LPNETID_DLGINFO pdlginfo;
+    khui_action_context * pctx = NULL;
 
     khui_cw_find_type(nc, credtype_id_krb5, &nct);
     if (!nct)
@@ -1530,8 +1454,7 @@ k5_prep_kinit_job(khui_new_creds * nc)
 	return;
 
     khui_cw_lock_nc(nc);
-    ident = nc->identities[0];
-    kcdb_identity_hold(ident);
+    khui_cw_get_primary_id(nc, &ident);
     khui_cw_unlock_nc(nc);
 
     cbbuf = sizeof(idname);
@@ -1569,8 +1492,9 @@ k5_prep_kinit_job(khui_new_creds * nc)
                                    assigned k5_kinit_fiber_proc(). */
 
     /* if we have external parameters, we should use them as well */
-    if (nc->ctx.cb_vparam == sizeof(NETID_DLGINFO) &&
-        (pdlginfo = nc->ctx.vparam) &&
+    pctx = khui_cw_get_ctx(nc);
+    if (pctx && pctx->cb_vparam == sizeof(NETID_DLGINFO) &&
+        (pdlginfo = pctx->vparam) != NULL &&
         pdlginfo->size == NETID_DLGINFO_V1_SZ) {
         wchar_t * t;
 
@@ -1837,7 +1761,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
             nct->h_module = hResModule;
             nct->dlg_proc = k5_nc_dlg_proc;
-            if (nc->subtype == KMSG_CRED_PASSWORD)
+            if (khui_cw_get_subtype(nc) == KMSG_CRED_PASSWORD)
                 nct->dlg_template = MAKEINTRESOURCE(IDD_NC_KRB5_PASSWORD);
             else
                 nct->dlg_template = MAKEINTRESOURCE(IDD_NC_KRB5);
@@ -1931,7 +1855,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 EnableWindow(hw_realms, FALSE);
             }
 
-            if (nc->subtype == KMSG_CRED_NEW_CREDS) {
+            if (khui_cw_get_subtype(nc) == KMSG_CRED_NEW_CREDS) {
                 k5_read_dlg_params(d, NULL);
             }
 
@@ -1945,6 +1869,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             khui_new_creds * nc;
             khui_new_creds_by_type * nct;
             k5_dlg_data * d;
+            khm_handle ident = NULL;
             
             nc = (khui_new_creds *) vparam;
 
@@ -1964,13 +1889,16 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
 	    /* ?: It might be better to not load identity defaults if
 	       the user has already changed options in the dialog. */
-            if(/* !d->dirty && */ nc->n_identities > 0 &&
-               nc->subtype == KMSG_CRED_NEW_CREDS) {
+            if(khui_cw_get_subtype(nc) == KMSG_CRED_NEW_CREDS &&
+               KHM_SUCCEEDED(khui_cw_get_primary_id(nc, &ident))) {
 
-                k5_read_dlg_params(d, nc->identities[0]);
+                k5_read_dlg_params(d, ident);
 
                 PostMessage(nct->hwnd_panel, KHUI_WM_NC_NOTIFY, 
                             MAKEWPARAM(0,WMNC_DIALOG_SETUP), 0);
+
+                kcdb_identity_release(ident);
+                ident = NULL;
             }
 
             khui_cw_unlock_nc(nc);
@@ -1986,6 +1914,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             khui_new_creds * nc;
             khui_new_creds_by_type * nct;
             k5_dlg_data * d;
+            khm_handle ident = NULL;
 
             nc = (khui_new_creds *) vparam;
 
@@ -1998,12 +1927,12 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             if (d == NULL)
                 break;
 
-            if (nc->subtype == KMSG_CRED_PASSWORD) {
+            if (khui_cw_get_subtype(nc) == KMSG_CRED_PASSWORD) {
                 khm_size n_prompts = 0;
 
                 khui_cw_get_prompt_count(nc, &n_prompts);
 
-                if (nc->n_identities == 0) {
+                if (KHM_FAILED(khui_cw_get_primary_id(nc, &ident))) {
                     if (n_prompts)
                         khui_cw_clear_prompts(nc);
                 } else if (n_prompts != 3) {
@@ -2031,11 +1960,14 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                                        wbuf, NULL, KHUI_NCPROMPT_FLAG_HIDDEN);
                 }
 
+                if (ident)
+                    kcdb_identity_release(ident);
+
                 return KHM_ERROR_SUCCESS;
             }
             /* else; nc->subtype == KMSG_CRED_NEW_CREDS */
 
-            assert(nc->subtype == KMSG_CRED_NEW_CREDS);
+            assert(khui_cw_get_subtype(nc) == KMSG_CRED_NEW_CREDS);
 
             /* If we are forcing a password change, then we don't do
                anything here.  Note that if the identity changed, then
@@ -2053,13 +1985,14 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             khui_cw_clear_prompts(nc);
 #endif
 
+            khui_cw_get_primary_id(nc, &ident);
+
             /* if the fiber is already in a kinit, cancel it */
             if(g_fjob.state == FIBER_STATE_KINIT) {
                 khm_boolean clear_prompts = TRUE;
 
                 khui_cw_lock_nc(nc);
-                if (nc->n_identities > 0 &&
-                    kcdb_identity_is_equal(nc->identities[0], g_fjob.identity)) {
+                if (kcdb_identity_is_equal(ident, g_fjob.identity)) {
                     clear_prompts = FALSE;
                 }
                 khui_cw_unlock_nc(nc);
@@ -2075,11 +2008,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
             khui_cw_lock_nc(nc);
 
-            if(nc->n_identities > 0) {
-                khm_handle ident = nc->identities[0];
-
-                kcdb_identity_hold(ident);
-
+            if(ident) {
                 k5_prep_kinit_job(nc);
 
                 /* after the switch to the fiber, the dialog will be
@@ -2206,10 +2135,8 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                 /* since the attributes of the identity have changed,
                    we should update the cred text as well */
-                kcdb_identity_release(ident);
                 khui_cw_lock_nc(nc);
-                PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
-                            MAKEWPARAM(0, WMNC_UPDATE_CREDTEXT), 0);
+                khui_cw_notify_dialog(nc, WMNC_UPDATE_CREDTEXT, FALSE, 0);
             } else {
                 khui_cw_unlock_nc(nc);
                 khui_cw_clear_prompts(nc);
@@ -2217,6 +2144,9 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             }
 
             khui_cw_unlock_nc(nc);
+
+            if (ident)
+                kcdb_identity_release(ident);
         }
         break;
 
@@ -2225,6 +2155,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             khui_new_creds * nc;
             khui_new_creds_by_type * nct;
             k5_dlg_data * d;
+            khm_handle ident = NULL;
 
             khm_int32 r = 0;
 
@@ -2238,7 +2169,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             /* reset the null_password flag, just in case */
             g_fjob.null_password = FALSE;
 
-            if (nc->subtype == KMSG_CRED_NEW_CREDS) {
+            if (khui_cw_get_subtype(nc) == KMSG_CRED_NEW_CREDS) {
                 d = (k5_dlg_data *) nct->aux;
                 if (d == NULL)
                     break;
@@ -2253,7 +2184,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 _describe();
 
                 if (g_fjob.state == FIBER_STATE_KINIT) {
-                    if(nc->result == KHUI_NC_RESULT_CANCEL) {
+                    if(khui_cw_get_result(nc) == KHUI_NC_RESULT_CANCEL) {
                         g_fjob.command = FIBER_CMD_CANCEL;
                         SwitchToFiber(k5_kinit_fiber);
 
@@ -2265,7 +2196,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                         g_fjob.code = 0;
 
 			_reportf(L"Cancelling");
-                    } else if (nc->result == KHUI_NC_RESULT_PROCESS) {
+                    } else if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
                         khui_cw_sync_prompt_values(nc);
                         g_fjob.command = FIBER_CMD_CONTINUE;
                         SwitchToFiber(k5_kinit_fiber);
@@ -2279,10 +2210,10 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                     }
                 } else {
                     /* we weren't in a KINIT state */
-                    if (nc->result == KHUI_NC_RESULT_CANCEL) {
+                    if (khui_cw_get_result(nc) == KHUI_NC_RESULT_CANCEL) {
                         /* nothing to report */
                         g_fjob.code = 0;
-                    } else if (nc->result == KHUI_NC_RESULT_PROCESS) {
+                    } else if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
                         /* g_fjob.code should have the result of the
                            last kinit attempt.  We should leave it
                            as-is */
@@ -2294,34 +2225,30 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                     }
                 }
 
+                assert(ident == NULL);
+                khui_cw_get_primary_id(nc, &ident);
+
                 /* special case: if there was no password entered, and
                    if there is a valid TGT we allow the credential
                    acquisition to go through */
                 if (g_fjob.state == FIBER_STATE_NONE &&
                     g_fjob.code &&
                     g_fjob.null_password &&
-
-                    (nc->n_identities == 0 ||
-                     nc->identities[0] == NULL ||
-                     KHM_SUCCEEDED(kcdb_credset_find_filtered
-                                   (NULL,
-                                    -1,
-                                    k5_find_tgt_filter,
-                                    nc->identities[0],
-                                    NULL,
-                                    NULL)))) {
+                    ident != NULL &&
+                    KHM_SUCCEEDED(kcdb_credset_find_filtered
+                                  (NULL, -1, k5_find_tgt_filter,
+                                   ident, NULL, NULL))) {
 		    _reportf(L"No password entered, but a valid TGT exists. Continuing");
                     g_fjob.code = 0;
 		} else if (g_fjob.state == FIBER_STATE_NONE &&
                            g_fjob.code == 0 &&
-                           nc->n_identities > 0 &&
-                           nc->identities[0] != NULL) {
+                           ident != NULL) {
 
                     /* we had a password and we used it to get
                        tickets.  We should reset the IMPORTED flag now
                        since the tickets are not imported. */
 
-                    khm_krb5_set_identity_flags(nc->identities[0],
+                    khm_krb5_set_identity_flags(ident,
                                                 K5IDFLAG_IMPORTED,
                                                 0);
                 }
@@ -2351,15 +2278,13 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                     assert(g_fjob.state == FIBER_STATE_NONE);
 #endif
 
-                    if (g_fjob.valid_principal &&
-                        nc->n_identities > 0 &&
-                        nc->identities[0]) {
+                    if (g_fjob.valid_principal && ident) {
                         /* the principal was valid, so we can go ahead
                            and update the LRU */
-                        k5_update_LRU(nc->identities[0]);
+                        k5_update_LRU(ident);
                     }
 
-                } else if (nc->result == KHUI_NC_RESULT_PROCESS &&
+                } else if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS &&
                            g_fjob.state == FIBER_STATE_NONE) {
                     krb5_context ctx = NULL;
 
@@ -2372,10 +2297,9 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                        should save the current settings in the
                        identity config space */
 
-                    assert(nc->n_identities > 0);
-                    assert(nc->identities[0]);
+                    assert(ident != NULL);
 
-                    k5_write_dlg_params(d, nc->identities[0], g_fjob.ccache);
+                    k5_write_dlg_params(d, ident, g_fjob.ccache);
 
                     /* We should also quickly refresh the credentials
                        so that the identity flags and ccache
@@ -2387,26 +2311,31 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                     khm_krb5_list_tickets(&ctx);
 
-                    if (nc->set_default) {
+                    if (khui_cw_get_use_as_default(nc)) {
 			_reportf(L"Setting default identity");
-                        kcdb_identity_set_default(nc->identities[0]);
+                        kcdb_identity_set_default(ident);
                     }
 
                     /* If there is no default identity, then make this the default */
-                    kcdb_identity_refresh(nc->identities[0]);
+                    kcdb_identity_refresh(ident);
                     {
+                        khm_handle idpro = NULL;
                         khm_handle tdefault = NULL;
 
-                        if (KHM_SUCCEEDED(kcdb_identity_get_default(&tdefault))) {
+                        if (KHM_SUCCEEDED(kcdb_identpro_find(L"Krb5Ident", &idpro)) &&
+                            KHM_SUCCEEDED(kcdb_identity_get_default_ex(idpro, &tdefault))) {
                             kcdb_identity_release(tdefault);
                         } else {
 			    _reportf(L"There was no default identity.  Setting default");
-                            kcdb_identity_set_default(nc->identities[0]);
+                            kcdb_identity_set_default(ident);
                         }
+
+                        if (idpro != NULL)
+                            kcdb_identpro_release(idpro);
                     }
 
                     /* and update the LRU */
-                    k5_update_LRU(nc->identities[0]);
+                    k5_update_LRU(ident);
 
                     if (ctx != NULL)
                         pkrb5_free_context(ctx);
@@ -2438,12 +2367,17 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                                          KHUI_NC_RESPONSE_PENDING | r);
                 }
 
+                if (ident)
+                    kcdb_identity_release(ident);
+                ident = NULL;
+
                 _end_task();
-            } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+            } else if (khui_cw_get_subtype(nc) == KMSG_CRED_RENEW_CREDS) {
 
                 FILETIME ftidexp = {0,0};
                 FILETIME ftcurrent;
                 khm_size cb;
+                khui_action_context * pctx = NULL;
 
                 GetSystemTimeAsFileTime(&ftcurrent);
 
@@ -2451,41 +2385,43 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 _report_mr0(KHERR_NONE, MSG_CTX_RENEW_CREDS);
                 _describe();
 
-                if (nc->ctx.scope == KHUI_SCOPE_IDENT ||
-                    (nc->ctx.scope == KHUI_SCOPE_CREDTYPE &&
-                     nc->ctx.cred_type == credtype_id_krb5) ||
-		    (nc->ctx.scope == KHUI_SCOPE_CRED &&
-		     nc->ctx.cred_type == credtype_id_krb5)) {
+                pctx = khui_cw_get_ctx(nc);
+
+                if (pctx->scope == KHUI_SCOPE_IDENT ||
+                    (pctx->scope == KHUI_SCOPE_CREDTYPE &&
+                     pctx->cred_type == credtype_id_krb5) ||
+		    (pctx->scope == KHUI_SCOPE_CRED &&
+		     pctx->cred_type == credtype_id_krb5)) {
                     int code;
 
-		    if (nc->ctx.scope == KHUI_SCOPE_CRED &&
-			nc->ctx.cred != NULL) {
+		    if (pctx->scope == KHUI_SCOPE_CRED &&
+			pctx->cred != NULL) {
 
 			/* get the expiration time for the identity first. */
 			cb = sizeof(ftidexp);
 #ifdef DEBUG
-			assert(nc->ctx.identity != NULL);
+			assert(pctx->identity != NULL);
 #endif
-			kcdb_identity_get_attr(nc->ctx.identity,
+			kcdb_identity_get_attr(pctx->identity,
 					       KCDB_ATTR_EXPIRE,
 					       NULL,
 					       &ftidexp,
 					       &cb);
 
-			code = khm_krb5_renew_cred(nc->ctx.cred);
+			code = khm_krb5_renew_cred(pctx->cred);
 
-                    } else if (nc->ctx.scope == KHUI_SCOPE_IDENT &&
-			       nc->ctx.identity != 0) {
+                    } else if (pctx->scope == KHUI_SCOPE_IDENT &&
+			       pctx->identity != 0) {
                         /* get the current identity expiration time */
                         cb = sizeof(ftidexp);
 
-                        kcdb_identity_get_attr(nc->ctx.identity,
+                        kcdb_identity_get_attr(pctx->identity,
                                                KCDB_ATTR_EXPIRE,
                                                NULL,
                                                &ftidexp,
                                                &cb);
 
-                        code = khm_krb5_renew_ident(nc->ctx.identity);
+                        code = khm_krb5_renew_ident(pctx->identity);
                     } else {
 
 			_reportf(L"No identity specified.  Can't renew Kerberos tickets");
@@ -2499,7 +2435,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                         khui_cw_set_response(nc, credtype_id_krb5, 
                                              KHUI_NC_RESPONSE_EXIT | 
                                              KHUI_NC_RESPONSE_SUCCESS);
-                    } else if (nc->ctx.identity == 0) {
+                    } else if (pctx->identity == NULL) {
 
                         _report_mr0(KHERR_ERROR, MSG_ERR_NO_IDENTITY);
 
@@ -2554,8 +2490,10 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 }
 
                 _end_task();
-            } else if (nc->subtype == KMSG_CRED_PASSWORD &&
-                       nc->result == KHUI_NC_RESULT_PROCESS) {
+            } else if (khui_cw_get_subtype(nc) == KMSG_CRED_PASSWORD &&
+                       khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
+
+                khm_handle ident;
 
             change_password:
                 /* we jump here if there was a password change forced */
@@ -2566,14 +2504,16 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                 khui_cw_lock_nc(nc);
 
-                if (nc->result == KHUI_NC_RESULT_CANCEL) {
+                ident = NULL;
+                khui_cw_get_primary_id(nc, &ident);
+
+                if (khui_cw_get_result(nc) == KHUI_NC_RESULT_CANCEL) {
 
                     khui_cw_set_response(nc, credtype_id_krb5,
                                          KHUI_NC_RESPONSE_SUCCESS |
                                          KHUI_NC_RESPONSE_EXIT);
 
-                } else if (nc->n_identities == 0 ||
-                    nc->identities[0] == NULL) {
+                } else if (ident == NULL) {
                     _report_mr0(KHERR_ERROR, MSG_PWD_NO_IDENTITY);
                     _suggest_mr(MSG_PWD_S_NO_IDENTITY, KHERR_SUGGEST_RETRY);
 
@@ -2595,12 +2535,10 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                     khm_size cb;
                     khm_int32 rv = KHM_ERROR_SUCCESS;
                     long code = 0;
-                    khm_handle ident;
 
                     khui_cw_get_prompt_count(nc, &n_prompts);
                     assert(n_prompts == 3);
 
-                    ident = nc->identities[0];
                     cb = sizeof(widname);
                     rv = kcdb_identity_get_name(ident, widname, &cb);
                     if (KHM_FAILED(rv)) {
@@ -2682,12 +2620,12 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                             goto _pwd_exit;
                         }
 
-                        if (nc->subtype == KMSG_CRED_PASSWORD) {
+                        if (khui_cw_get_subtype(nc) == KMSG_CRED_PASSWORD) {
                             /* since this was just a password change,
                                we need to load new credentials options
                                from the configuration store. */
 
-                            k5_read_dlg_params(d, nc->identities[0]);
+                            k5_read_dlg_params(d, ident);
                         }
 
                         /* the password change phase is now done */
@@ -2716,12 +2654,12 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                         /* save the settings that we used for
                            obtaining the ticket. */
-                        if (nc->subtype == KMSG_CRED_NEW_CREDS) {
+                        if (khui_cw_get_subtype(nc) == KMSG_CRED_NEW_CREDS) {
 
-                            k5_write_dlg_params(d, nc->identities[0], NULL);
+                            k5_write_dlg_params(d, ident, NULL);
 
                             /* and then update the LRU too */
-                            k5_update_LRU(nc->identities[0]);
+                            k5_update_LRU(ident);
                         }
 
                         /* and do a quick refresh of the krb5 tickets
@@ -2731,22 +2669,27 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                         /* if there was no default identity, we make
                            this one the default. */
-                        kcdb_identity_refresh(nc->identities[0]);
+                        kcdb_identity_refresh(ident);
                         {
+                            khm_handle idpro = NULL;
                             khm_handle tdefault = NULL;
 
-                            if (KHM_SUCCEEDED(kcdb_identity_get_default(&tdefault))) {
+                            if (KHM_SUCCEEDED(kcdb_identpro_find(L"Krb5Ident", &idpro)) &&
+                                KHM_SUCCEEDED(kcdb_identity_get_default_ex(idpro, &tdefault))) {
                                 kcdb_identity_release(tdefault);
                             } else {
                                 _reportf(L"There was no default identity.  Setting defualt");
-                                kcdb_identity_set_default(nc->identities[0]);
+                                kcdb_identity_set_default(ident);
                             }
+
+                            if (idpro)
+                                kcdb_identpro_release(idpro);
                         }
 
                         if (ctx != NULL)
                             pkrb5_free_context(ctx);
 
-                        if (nc->subtype == KMSG_CRED_PASSWORD) {
+                        if (khui_cw_get_subtype(nc) == KMSG_CRED_PASSWORD) {
                             /* if we obtained new credentials as a
                                result of successfully changing the
                                password, we also schedule an identity
@@ -2760,7 +2703,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                             khui_context_create(&ctx,
                                                 KHUI_SCOPE_IDENT,
-                                                nc->identities[0],
+                                                ident,
                                                 KCDB_CREDTYPE_INVALID,
                                                 NULL);
                             khui_action_trigger(KHUI_ACTION_RENEW_CRED,
@@ -2822,6 +2765,9 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                 khui_cw_unlock_nc(nc);
 
+                if (ident)
+                    kcdb_identity_release(ident);
+
                 _end_task();
             } /* KMSG_CRED_PASSWORD */
         }
@@ -2862,6 +2808,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
             if (t != K5_LSAIMPORT_NEVER) {
                 krb5_context ctx = NULL;
+                khm_handle idpro = NULL;
                 khm_handle id_default = NULL;
                 khm_handle id_imported = NULL;
                 BOOL imported;
@@ -2879,13 +2826,17 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
                     kcdb_identity_refresh(id_imported);
 
-                    if (KHM_SUCCEEDED(kcdb_identity_get_default(&id_default))) {
+                    if (KHM_SUCCEEDED(kcdb_identpro_find(L"Krb5Ident", &idpro)) &&
+                        KHM_SUCCEEDED(kcdb_identity_get_default_ex(idpro, &id_default))) {
                         kcdb_identity_release(id_default);
                         id_default = NULL;
                     } else {
                         _reportf(L"There was no default identity.  Setting default");
                         kcdb_identity_set_default(id_imported);
                     }
+
+                    if (idpro)
+                        kcdb_identpro_release(idpro);
 
                     /* and update the LRU */
                     k5_update_LRU(id_imported);

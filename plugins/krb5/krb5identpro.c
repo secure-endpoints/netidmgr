@@ -32,22 +32,24 @@
 #include<krb5.h>
 #include<assert.h>
 
-#define K5_NCID_UN_LABEL    (KHUI_CW_ID_MIN + 0)
-#define K5_NCID_UN          (KHUI_CW_ID_MIN + 1)
-#define K5_NCID_REALM_LABEL (KHUI_CW_ID_MIN + 2)
-#define K5_NCID_REALM       (KHUI_CW_ID_MIN + 3)
-
 #define NC_UNCHANGE_TIMEOUT 3000
 #define NC_UNCHANGE_TIMER   2
 #define NC_REALMCHANGE_TIMEOUT NC_UNCHANGE_TIMEOUT
 #define NC_REALMCHANGE_TIMER 3
 
-typedef struct tag_k5_new_cred_data {
-    HWND hw_username_label;
-    HWND hw_username;
-    HWND hw_realm_label;
-    HWND hw_realm;
-} k5_new_cred_data;
+khm_handle k5_identpro = NULL;     /* Handle to self */
+
+
+/************************************************************/
+/*                Identity Selector Control                 */
+/************************************************************/
+
+struct idsel_dlg_data {
+    khm_int32 magic;            /* Always IDSEL_DLG_DATA_MAGIC */
+    khm_handle ident;           /* Current selection */
+};
+
+#define IDSEL_DLG_DATA_MAGIC 0xa1fbcc16
 
 static
 void
@@ -79,62 +81,74 @@ trim_str(wchar_t * s, khm_size cch) {
         *last_ws = L'\0';
 }
 
-/* Runs in the UI thread */
-int 
-k5_get_realm_from_nc(khui_new_creds * nc, 
-                     wchar_t * buf, 
-                     khm_size cch_buf) {
-    k5_new_cred_data * d;
-    khm_size s;
+/* Display a balloon prompt for the edit control in a combo box.  If
+   title and text are NULL, then hides the ballon instead.
 
-    d = (k5_new_cred_data *) nc->ident_aux;
-    buf[0] = L'\0';
-    GetWindowText(d->hw_realm, buf, (int) cch_buf);
-    trim_str(buf, cch_buf);
+   Requires XP.
 
-    StringCchLength(buf, cch_buf, &s);
+   TODO: Make it backwards compatible with 2000.
+ */
+static void
+show_combobox_balloon(HWND combobox, const wchar_t * title,
+                      const wchar_t * text, int iicon)
+{
+    COMBOBOXINFO ci;
+    EDITBALLOONTIP bt;
 
-    return (int) s;
+    ZeroMemory(&ci, sizeof(ci));
+    ci.cbSize = sizeof(ci);
+
+    if (!GetComboBoxInfo(combobox, &ci) || ci.hwndItem == NULL)
+        return;
+
+    if (text != NULL) {
+        ZeroMemory(&bt, sizeof(bt));
+
+        bt.cbStruct = sizeof(bt);
+        bt.pszTitle = title;
+        bt.pszText = text;
+        bt.ttiIcon = iicon;
+
+        Edit_ShowBalloonTip(ci.hwndItem, &bt);
+    } else {
+        Edit_HideBalloonTip(ci.hwndItem);
+    }
 }
 
-/* set the primary identity of a new credentials dialog depending on
-   the selection of the username and realm
-
-   Runs in the UI thread
-*/
+/* Get the identity that has been selected in the UI.
+ */
 static void 
-set_identity_from_ui(khui_new_creds * nc,
-                     k5_new_cred_data * d) {
+set_identity_from_ui(HWND hwnd) {
+    struct idsel_dlg_data * d;
     wchar_t un[KCDB_IDENT_MAXCCH_NAME];
     wchar_t * realm;
     khm_size cch;
     khm_size cch_left;
-    khm_handle ident;
+    khm_handle ident = NULL;
     LRESULT idx = CB_ERR;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    cch = GetWindowTextLength(d->hw_username);
-
-    /* we already set the max length of the edit control to be this.
-       shouldn't exceed it unless the edit control is confused. */
-    assert(cch < KCDB_IDENT_MAXCCH_NAME - 1);
-
-    GetWindowText(d->hw_username, un, ARRAYLENGTH(un));
+    d = (struct idsel_dlg_data *) (LONG_PTR) GetWindowLongPtr(hwnd, DWLP_USER);
+#ifdef DEBUG
+    assert(d && d->magic == IDSEL_DLG_DATA_MAGIC);
+#endif
+ 
+    cch = GetDlgItemText(hwnd, IDC_NC_UN, un, ARRAYLENGTH(un));
+    if (cch == 0) {
+        rv = KHM_ERROR_INVALID_NAME;
+        goto _set_ident;
+    }
     trim_str(un, ARRAYLENGTH(un));
 
     realm = khm_get_realm_from_princ(un);
     if (realm)          /* realm was specified */
-        goto _set_ident;
-
-    /* the cch we got from GetWindowTextLength can not be trusted to
-       be exact.  For caveats see MSDN for GetWindowTextLength. */
-    StringCchLength(un, KCDB_IDENT_MAXCCH_NAME, &cch);
+        goto _create_ident;
 
     if (cch >= KCDB_IDENT_MAXCCH_NAME - 3) {
         /* has to allow space for the '@' and at least a single
            character realm, and the NULL terminator. */
         rv = KHM_ERROR_TOO_LONG;
-        goto _set_null_ident;
+        goto _set_ident;
     }
 
     realm = un + cch;   /* now points at terminating NULL */
@@ -143,116 +157,110 @@ set_identity_from_ui(khui_new_creds * nc,
     *realm++ = L'@';
     *realm = L'\0';
     cch_left--;
-
-    cch = GetWindowTextLength(d->hw_realm);
-    if (cch == 0 || cch >= cch_left) {
+    
+    cch = GetDlgItemText(hwnd, IDC_NC_REALM, realm, (int) cch_left);
+    if (cch == 0) {
         rv = KHM_ERROR_INVALID_NAME;
-        goto _set_null_ident;
+        goto _set_ident;
     }
 
-    GetWindowText(d->hw_realm, realm, (int) cch_left);
     trim_str(realm, cch_left);
 
+ _create_ident:
+    if (KHM_FAILED(rv = kcdb_identity_create_ex(k5_identpro, un,
+                                                KCDB_IDENT_FLAG_CREATE,
+                                                &ident))) {
+        ident = NULL;
+    }
+
  _set_ident:
-    if (KHM_FAILED(rv = kcdb_identity_create(un,
-                                             KCDB_IDENT_FLAG_CREATE,
-                                             &ident))) {
-        goto _set_null_ident;
+
+    if (d->ident != NULL && kcdb_identity_is_equal(d->ident, ident)) {
+        goto _cleanup;
     }
 
-    khui_cw_set_primary_id(nc, ident);
+    if (d->ident != NULL)
+        kcdb_identity_release(d->ident);
 
-    kcdb_identity_release(ident);
-    return;
+    d->ident = ident;
 
- _set_null_ident:
+    if (ident) {
+        HICON icon = NULL;
+        khm_size cb;
+
+        cb = sizeof(icon);
+        kcdb_get_resource(ident, KCDB_RES_ICON_NORMAL, 0, NULL, NULL, &icon, &cb);
+
+        SendDlgItemMessage(hwnd, IDC_NC_ICON, STM_SETICON, (WPARAM) icon, 0);
+    } else {
+        SendDlgItemMessage(hwnd, IDC_NC_ICON, STM_SETICON, 0, 0);
+    }
+    
+    ident = NULL;
+
     {
-        khui_new_creds_by_type * nct = NULL;
-        wchar_t cmsg[256];
+        HWND parent;
 
-        khui_cw_find_type(nc, credtype_id_krb5, &nct);
-        if (nct && nct->hwnd_panel) {
-
-            switch(rv) {
-            case KHM_ERROR_TOO_LONG:
-                LoadString(hResModule, IDS_NCERR_IDENT_TOO_LONG,
-                           cmsg, ARRAYLENGTH(cmsg));
-                break;
-
-            case KHM_ERROR_INVALID_NAME:
-                LoadString(hResModule, IDS_NCERR_IDENT_INVALID,
-                           cmsg, ARRAYLENGTH(cmsg));
-                break;
-
-            default:
-                LoadString(hResModule, IDS_NCERR_IDENT_UNKNOWN,
-                           cmsg, ARRAYLENGTH(cmsg));
-            }
-
-            SendMessage(nct->hwnd_panel,
-                        KHUI_WM_NC_NOTIFY,
-                        MAKEWPARAM(0, K5_SET_CRED_MSG),
-                        (LPARAM) cmsg);
+        parent = GetParent(hwnd);
+        if (parent) {
+            PostMessage(parent, KHUI_WM_NC_NOTIFY, MAKEWPARAM(0, WMNC_IDENTITY_CHANGE),
+                        (LPARAM) hwnd);
         }
-
-        khui_cw_set_primary_id(nc, NULL);
     }
+
+ _cleanup:
+    if (ident) {
+        kcdb_identity_release(ident);
+    }
+
     return;
 }
 
 /* runs in the UI thread */
 static BOOL
-update_crossfeed(khui_new_creds * nc,
-                 k5_new_cred_data * d,
-                 int ctrl_id_src) {
+update_crossfeed(HWND hwnd, khm_boolean from_uname) {
     wchar_t un[KCDB_IDENT_MAXCCH_NAME];
     wchar_t * un_realm;
     wchar_t realm[KCDB_IDENT_MAXCCH_NAME];
     khm_size cch;
     khm_size cch_left;
     int idx;
+    HWND hw_realm;
+    HWND hw_un;
 
-    cch = (khm_size) GetWindowTextLength(d->hw_username);
+    hw_realm = GetDlgItem(hwnd, IDC_NC_REALM);
+    hw_un = GetDlgItem(hwnd, IDC_NC_UN);
+
 #ifdef DEBUG
-    assert(cch < KCDB_IDENT_MAXCCH_NAME);
+    assert(hw_realm != NULL);
+    assert(hw_un != NULL);
 #endif
-    if (cch == 0)
-        return FALSE;
 
-    GetWindowText(d->hw_username,
-                  un,
-                  ARRAYLENGTH(un));
+    un[0] = L'\0';
+    GetWindowText(hw_un, un, ARRAYLENGTH(un));
     trim_str(un, ARRAYLENGTH(un));
 
     un_realm = khm_get_realm_from_princ(un);
 
     if (un_realm == NULL) {
-        EnableWindow(d->hw_realm, TRUE);
+        EnableWindow(hw_realm, TRUE);
         return FALSE;
     }
 
-    if (ctrl_id_src == K5_NCID_UN) {
+    if (from_uname) {
 
-        idx = (int)SendMessage(d->hw_realm,
-                               CB_FINDSTRINGEXACT,
-                               (WPARAM) -1,
-                               (LPARAM) un_realm);
+        idx = (int)SendMessage(hw_realm, CB_FINDSTRINGEXACT,
+                               -1, (LPARAM) un_realm);
 
         if (idx != CB_ERR) {
             wchar_t srealm[KCDB_IDENT_MAXCCH_NAME];
 
-            cch = SendMessage(d->hw_realm,
-                              CB_GETLBTEXTLEN,
-                              (WPARAM) idx,
-                              0);
+            cch = SendMessage(hw_realm, CB_GETLBTEXTLEN, idx, 0);
 
 #ifdef DEBUG
             assert(cch < ARRAYLENGTH(srealm) - 1);
 #endif
-            SendMessage(d->hw_realm,
-                        CB_GETLBTEXT,
-                        (WPARAM) idx,
-                        (LPARAM) srealm);
+            SendMessage(hw_realm, CB_GETLBTEXT, idx, (LPARAM) srealm);
 
             if (!_wcsicmp(srealm, un_realm) && wcscmp(srealm, un_realm)) {
                 /* differ only by case */
@@ -260,26 +268,23 @@ update_crossfeed(khui_new_creds * nc,
                 StringCchCopy(un_realm, ARRAYLENGTH(un) - (un_realm - un),
                               srealm);
 
-                SetWindowText(d->hw_username, un);
+                SetWindowText(hw_un, un);
             }
         }
 
-        SendMessage(d->hw_realm,
-                    CB_SELECTSTRING,
-                    (WPARAM) -1,
-                    (LPARAM) un_realm);
+        SendMessage(hw_realm, CB_SELECTSTRING, -1, (LPARAM) un_realm);
 
-        SetWindowText(d->hw_realm,
-                      un_realm);
+        SetWindowText(hw_realm, un_realm);
 
-        if (GetFocus() == d->hw_realm) {
-            HWND hw_next = GetNextDlgTabItem(nc->hwnd, d->hw_realm,
-                                             FALSE);
+        if (GetFocus() == hw_realm) {
+            HWND hw_next = NULL;
+
+            hw_next = GetNextDlgTabItem(hwnd, hw_realm, FALSE);
             if (hw_next)
                 SetFocus(hw_next);
         }
 
-        EnableWindow(d->hw_realm, FALSE);
+        EnableWindow(hw_realm, FALSE);
 
         return TRUE;
     }
@@ -287,7 +292,7 @@ update_crossfeed(khui_new_creds * nc,
 
     cch_left = KCDB_IDENT_MAXCCH_NAME - (un_realm - un);
 
-    cch = (khm_size) GetWindowTextLength(d->hw_realm);
+    cch = (khm_size) GetWindowTextLength(hw_realm);
 
 #ifdef DEBUG
     assert(cch < KCDB_IDENT_MAXCCH_NAME);
@@ -295,242 +300,85 @@ update_crossfeed(khui_new_creds * nc,
     if (cch == 0)
         return FALSE;
 
-    GetWindowText(d->hw_realm, realm,
-                  ARRAYLENGTH(realm));
+    GetWindowText(hw_realm, realm, ARRAYLENGTH(realm));
     trim_str(realm, ARRAYLENGTH(realm));
 
-    idx = (int)SendMessage(d->hw_realm,
-                           CB_FINDSTRINGEXACT,
-                           (WPARAM) -1,
-                           (LPARAM) realm);
+    idx = (int)SendMessage(hw_realm, CB_FINDSTRINGEXACT,
+                           -1, (LPARAM) realm);
 
     if (idx != CB_ERR) {
         wchar_t srealm[KCDB_IDENT_MAXCCH_NAME];
 
-        SendMessage(d->hw_realm,
-                    CB_GETLBTEXT,
-                    (WPARAM) idx,
-                    (LPARAM) srealm);
+        SendMessage(hw_realm, CB_GETLBTEXT, idx, (LPARAM) srealm);
 
         if (!_wcsicmp(srealm, realm) && wcscmp(srealm, realm)) {
             StringCbCopy(realm, sizeof(realm), srealm);
 
-            SetWindowText(d->hw_realm, srealm);
+            SetWindowText(hw_realm, srealm);
         }
     }
 
     StringCchCopy(un_realm, cch_left, realm);
 
-    SendMessage(d->hw_username,
-                CB_SELECTSTRING,
-                (WPARAM) -1,
-                (LPARAM) un);
+    SendMessage(hw_un, CB_SELECTSTRING, -1, (LPARAM) un);
 
-    SetWindowText(d->hw_username, un);
+    SetWindowText(hw_un, un);
 
     return TRUE;    
 }
 
-/* Handle window messages for the identity specifiers
+/* Dialog procedure for IDD_NC_KRB5_IDSEL
 
    runs in UI thread */
-static LRESULT 
-handle_wnd_msg(khui_new_creds * nc,
-               HWND hwnd,
-               UINT uMsg,
-               WPARAM wParam,
-               LPARAM lParam) {
-    k5_new_cred_data * d;
-
-    d = (k5_new_cred_data *) nc->ident_aux;
-
+static INT_PTR CALLBACK
+k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
     switch(uMsg) {
-    case WM_COMMAND:
-        switch(wParam) {
-        case MAKEWPARAM(K5_NCID_UN, CBN_EDITCHANGE):
-            /* the username has changed.  Instead of handling this
-               for every keystroke, set a timer that elapses some
-               time afterwards and then handle the event. */
-            SetTimer(hwnd, NC_UNCHANGE_TIMER, 
-                     NC_UNCHANGE_TIMEOUT, NULL);
-            return TRUE;
-
-        case MAKEWPARAM(K5_NCID_UN, CBN_KILLFOCUS):
-        case MAKEWPARAM(K5_NCID_UN, CBN_CLOSEUP):
-            KillTimer(hwnd, NC_UNCHANGE_TIMER);
-
-            update_crossfeed(nc,d,K5_NCID_UN);
-            set_identity_from_ui(nc,d);
-            return TRUE;
-
-        case MAKEWPARAM(K5_NCID_REALM,CBN_EDITCHANGE):
-            SetTimer(hwnd, NC_REALMCHANGE_TIMER,
-                     NC_REALMCHANGE_TIMEOUT, NULL);
-            return TRUE;
-
-        case MAKEWPARAM(K5_NCID_REALM,CBN_KILLFOCUS):
-        case MAKEWPARAM(K5_NCID_REALM,CBN_CLOSEUP):
-            KillTimer(hwnd, NC_REALMCHANGE_TIMER);
-
-            update_crossfeed(nc,d,K5_NCID_REALM);
-            set_identity_from_ui(nc, d);
-            return TRUE;
-        }
-        break;
-
-    case WM_TIMER:
-        if(wParam == NC_UNCHANGE_TIMER) {
-            KillTimer(hwnd, NC_UNCHANGE_TIMER);
-
-            update_crossfeed(nc, d, K5_NCID_UN);
-            set_identity_from_ui(nc,d);
-            return TRUE;
-        } else if (wParam == NC_REALMCHANGE_TIMER) {
-            KillTimer(hwnd, NC_REALMCHANGE_TIMER);
-
-            update_crossfeed(nc, d, K5_NCID_REALM);
-            set_identity_from_ui(nc, d);
-            return TRUE;
-        }
-        break;
-    }
-    return FALSE;
-}
-
-/* UI Callback
-
-   runs in UI thread */
-static LRESULT KHMAPI 
-ui_cb(khui_new_creds * nc,
-      UINT cmd,
-      HWND hwnd,
-      UINT uMsg,
-      WPARAM wParam,
-      LPARAM lParam) {
-
-    k5_new_cred_data * d;
-
-    d = (k5_new_cred_data *) nc->ident_aux;
-
-    switch(cmd) {
-    case WMNC_IDENT_INIT:
+    case WM_INITDIALOG:
         {
+            struct idsel_dlg_data * d;
+
             wchar_t defident[KCDB_IDENT_MAXCCH_NAME];
-            wchar_t wbuf[1024];
             wchar_t * ms = NULL;
-            wchar_t * t;
+            wchar_t * t = NULL;
             wchar_t * defrealm = NULL;
             LRESULT lr;
             khm_size cb_ms;
             khm_size cb;
-            HWND hw_parent;
             khm_int32 rv;
-            khm_handle hident;
+            khm_handle hident = NULL;
 
-            hw_parent = (HWND) lParam;
-            defident[0] = L'\0';
-
-#ifdef DEBUG
-            assert(d == NULL);
-            assert(hw_parent != NULL);
-#endif
+            HWND hw_realm;
+            HWND hw_un;
 
             d = PMALLOC(sizeof(*d));
-            assert(d);
             ZeroMemory(d, sizeof(*d));
+            d->magic = IDSEL_DLG_DATA_MAGIC;
 
-            khui_cw_lock_nc(nc);
-            nc->ident_aux = (LPARAM) d;
-            khui_cw_unlock_nc(nc);
+#pragma warning(push)
+#pragma warning(disable: 4244)
+            SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR) d);
+#pragma warning(pop)
 
-            LoadString(hResModule, IDS_NC_USERNAME, 
-                       wbuf, ARRAYLENGTH(wbuf));
+            hw_realm = GetDlgItem(hwnd, IDC_NC_REALM);
+            hw_un = GetDlgItem(hwnd, IDC_NC_UN);
 
-            d->hw_username_label = CreateWindow
-                (L"STATIC",
-                 wbuf,
-                 SS_SIMPLE | WS_CHILD | WS_VISIBLE,
-                 0, 0, 100, 100, /* bogus values */
-                 hw_parent,
-                 (HMENU) K5_NCID_UN_LABEL,
-                 hInstance,
-                 NULL);
-            assert(d->hw_username_label != NULL);
+#ifdef DEBUG
+            assert(hw_realm != NULL);
+            assert(hw_un != NULL);
+#endif
 
-            d->hw_username = CreateWindow
-                (L"COMBOBOX",
-                 L"",
-                 CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | 
-                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL,
-                 0, 0, 100, 100, /* bogus values */
-                 hw_parent,
-                 (HMENU) K5_NCID_UN,
-                 hInstance,
-                 NULL);
-            assert(d->hw_username != NULL);
+            SendMessage(hw_un, CB_LIMITTEXT, (KCDB_IDENT_MAXCCH_NAME - 1), 0);
+            SendMessage(hw_un, CB_SETEXTENDEDUI, TRUE, 0);
 
-            SendMessage(d->hw_username,
-                        CB_LIMITTEXT,
-                        (WPARAM)(KCDB_IDENT_MAXCCH_NAME - 1),
-                        0);
+            SendMessage(hw_realm, CB_LIMITTEXT, (KCDB_IDENT_MAXCCH_NAME - 1), 0);
+            SendMessage(hw_realm, CB_SETEXTENDEDUI, TRUE, 0);
 
-            SendMessage(d->hw_username,
-                        CB_SETEXTENDEDUI,
-                        (WPARAM) TRUE,
-                        0);
-
-            khui_cw_add_control_row(nc,
-                                    d->hw_username_label,
-                                    d->hw_username,
-                                    KHUI_CTRLSIZE_SMALL);
-
-            LoadString(hResModule, IDS_NC_REALM,
-                       wbuf, ARRAYLENGTH(wbuf));
-
-            d->hw_realm_label = CreateWindow
-                (L"STATIC",
-                 wbuf,
-                 SS_SIMPLE | WS_CHILD | WS_VISIBLE,
-                 0, 0, 100, 100, /* bogus */
-                 hw_parent,
-                 (HMENU) K5_NCID_REALM_LABEL,
-                 hInstance,
-                 NULL);
-            assert(d->hw_realm_label != NULL);
-
-            d->hw_realm = CreateWindow
-                (L"COMBOBOX",
-                 L"",
-                 CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | 
-                 WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL,
-                 0, 0, 100, 100, /* bogus */
-                 hw_parent,
-                 (HMENU) K5_NCID_REALM,
-                 hInstance,
-                 NULL);
-            assert(d->hw_realm != NULL);
-
-            SendMessage(d->hw_realm,
-                        CB_LIMITTEXT,
-                        (WPARAM) (KCDB_IDENT_MAXCCH_NAME - 1),
-                        0);
-
-            SendMessage(d->hw_realm,
-                        CB_SETEXTENDEDUI,
-                        (WPARAM) TRUE,
-                        0);
-
-            khui_cw_add_control_row(nc,
-                                    d->hw_realm_label,
-                                    d->hw_realm,
-                                    KHUI_CTRLSIZE_SMALL);
+            defident[0] = L'\0';
 
             /* add the LRU realms and principals to the dropdown
                lists */
-            rv = khc_read_multi_string(csp_params,
-                                       L"LRUPrincipals",
-                                       NULL,
-                                       &cb_ms);
+            rv = khc_read_multi_string(csp_params, L"LRUPrincipals", NULL, &cb_ms);
 
             if (rv != KHM_ERROR_TOO_LONG || cb_ms <= sizeof(wchar_t) * 2)
                 goto _add_lru_realms;
@@ -539,10 +387,7 @@ ui_cb(khui_new_creds * nc,
             assert(ms != NULL);
 
             cb = cb_ms;
-            rv = khc_read_multi_string(csp_params,
-                                       L"LRUPrincipals",
-                                       ms,
-                                       &cb);
+            rv = khc_read_multi_string(csp_params, L"LRUPrincipals", ms, &cb);
 
             assert(KHM_SUCCEEDED(rv));
 
@@ -550,30 +395,18 @@ ui_cb(khui_new_creds * nc,
                if no other default is known */
             StringCbCopy(defident, sizeof(defident), ms);
 
-            t = ms;
-            while(t && *t) {
-                SendMessage(d->hw_username,
-                            CB_ADDSTRING,
-                            0,
-                            (LPARAM) t);
-
-                t = multi_string_next(t);
+            for (t = ms; t && *t; t = multi_string_next(t)) {
+                SendMessage(hw_un, CB_ADDSTRING, 0, (LPARAM) t);
             }
 
         _add_lru_realms:
             /* add the default realm first */
             defrealm = khm_krb5_get_default_realm();
             if (defrealm) {
-                SendMessage(d->hw_realm,
-                            CB_ADDSTRING,
-                            0,
-                            (LPARAM) defrealm);
+                SendMessage(hw_realm, CB_ADDSTRING, 0, (LPARAM) defrealm);
             }
 
-            rv = khc_read_multi_string(csp_params,
-                                       L"LRURealms",
-                                       NULL,
-                                       &cb);
+            rv = khc_read_multi_string(csp_params, L"LRURealms", NULL, &cb);
 
             if (rv != KHM_ERROR_TOO_LONG)
                 goto _done_adding_lru;
@@ -590,25 +423,16 @@ ui_cb(khui_new_creds * nc,
                 cb_ms = cb;
             }
 
-            rv = khc_read_multi_string(csp_params,
-                                       L"LRURealms",
-                                       ms,
-                                       &cb);
+            rv = khc_read_multi_string(csp_params, L"LRURealms", ms, &cb);
 
             assert(KHM_SUCCEEDED(rv));
 
             for (t = ms; t && *t; t = multi_string_next(t)) {
-                lr = SendMessage(d->hw_realm,
-                                 CB_FINDSTRINGEXACT,
-                                 (WPARAM) -1,
-                                 (LPARAM) t);
+                lr = SendMessage(hw_realm, CB_FINDSTRINGEXACT, -1, (LPARAM) t);
                 if (lr != CB_ERR)
                     continue;
 
-                SendMessage(d->hw_realm,
-                            CB_ADDSTRING,
-                            0,
-                            (LPARAM) t);
+                SendMessage(hw_realm, CB_ADDSTRING, 0, (LPARAM) t);
             }
 	  _done_adding_lru:
 
@@ -628,53 +452,38 @@ ui_cb(khui_new_creds * nc,
 	    ms = khm_krb5_get_realm_list();
 	    if(ms) {
 		for (t = ms; t && *t; t = multi_string_next(t)) {
-		    lr = SendMessage(d->hw_realm,
-				      CB_FINDSTRINGEXACT,
-				      (WPARAM) -1,
-				      (LPARAM) t);
+		    lr = SendMessage(hw_realm, CB_FINDSTRINGEXACT, -1, (LPARAM) t);
 		    if (lr != CB_ERR)
 			continue;
 
-		    SendMessage(d->hw_realm,
-				 CB_ADDSTRING,
-				 0,
-				 (LPARAM) t);
+		    SendMessage(hw_realm, CB_ADDSTRING, 0, (LPARAM) t);
 		}
 	    }
+
         _done_adding_all_realms:
 
             /* set the current selection of the realms list */
             if (defrealm) {
-                SendMessage(d->hw_realm,
-                            CB_SELECTSTRING,
-                            (WPARAM) -1,
-                            (LPARAM) defrealm);
+                SendMessage(hw_realm, CB_SELECTSTRING, -1, (LPARAM) defrealm);
             } else {
-                SendMessage(d->hw_realm,
-                            CB_SETCURSEL,
-                            (WPARAM) 0,
-                            (LPARAM) 0);
+                SendMessage(hw_realm, CB_SETCURSEL, 0, 0);
             }
 
-            if (defrealm)
+            if (defrealm) {
                 PFREE(defrealm);
-
-            if (ms)
-                PFREE(ms);
-
-            /* now see about that default identity */
-            if (nc->ctx.identity) {
-                cb = sizeof(defident);
-                kcdb_identity_get_name(nc->ctx.identity,
-                                       defident,
-                                       &cb);
+                defrealm = NULL;
             }
 
-            if (defident[0] == L'\0' &&
-                KHM_SUCCEEDED(kcdb_identity_get_default(&hident))) {
+            if (ms) {
+                PFREE(ms);
+                ms = NULL;
+            }
+
+            if (KHM_SUCCEEDED(kcdb_identity_get_default_ex(k5_identpro, &hident))) {
                 cb = sizeof(defident);
                 kcdb_identity_get_name(hident, defident, &cb);
                 kcdb_identity_release(hident);
+                hident = NULL;
             }
 
             if (defident[0] == L'\0') {
@@ -691,84 +500,170 @@ ui_cb(khui_new_creds * nc,
                 *--t = L'\0';
                 t++;
 
-                SendMessage(d->hw_realm,
-                            CB_SELECTSTRING,
-                            (WPARAM) -1,
-                            (LPARAM) t);
-
-                SendMessage(d->hw_realm,
-                            WM_SETTEXT,
-                            0,
-                            (LPARAM) t);
+                SendMessage(hw_realm, CB_SELECTSTRING, -1, (LPARAM) t);
+                SetWindowText(hw_realm, t);
             }
 
             if (defident[0] != L'\0') {
                 /* there is a username */
-                SendMessage(d->hw_username,
-                            CB_SELECTSTRING,
-                            (WPARAM) -1,
-                            (LPARAM) defident);
-
-                SendMessage(d->hw_username,
-                            WM_SETTEXT,
-                            0,
-                            (LPARAM) defident);
+                SendMessage(hw_un, CB_SELECTSTRING, -1, (LPARAM) defident);
+                SetWindowText(hw_un, defident);
             }
 
-            set_identity_from_ui(nc, d);
+            set_identity_from_ui(hwnd);
+        }
+        return FALSE;
+
+    case WM_DESTROY:
+        {
+            struct idsel_dlg_data * d;
+
+            d = (struct idsel_dlg_data *)(LONG_PTR)
+                GetWindowLongPtr(hwnd, DWLP_USER);
+
+#ifdef DEBUG
+            assert(d != NULL);
+            assert(d->magic == IDSEL_DLG_DATA_MAGIC);
+#endif
+            if (d && d->magic == IDSEL_DLG_DATA_MAGIC) {
+                if (d->ident) {
+                    kcdb_identity_release(d->ident);
+                    d->ident = NULL;
+                }
+
+                d->magic = 0;
+                PFREE(d);
+            }
+#pragma warning(push)
+#pragma warning(disable: 4244)
+            SetWindowLongPtr(hwnd, DWLP_USER, 0);
+#pragma warning(pop)
         }
         return TRUE;
 
-    case WMNC_IDENT_WMSG:
-        return handle_wnd_msg(nc, hwnd, uMsg, wParam, lParam);
+    case WM_COMMAND:
+        switch(wParam) {
+        case MAKEWPARAM(IDC_NC_UN, CBN_EDITCHANGE):
+            /* the username has changed.  Instead of handling this
+               for every keystroke, set a timer that elapses some
+               time afterwards and then handle the event. */
+            SetTimer(hwnd, NC_UNCHANGE_TIMER, 
+                     NC_UNCHANGE_TIMEOUT, NULL);
+            return TRUE;
 
-    case WMNC_IDENT_PREPROCESS:
-        {
-#ifdef DEBUG
-            assert(d != NULL);
-#endif
-            if (d) {
-                set_identity_from_ui(nc, d);
-            }
+        case MAKEWPARAM(IDC_NC_UN, CBN_KILLFOCUS):
+        case MAKEWPARAM(IDC_NC_UN, CBN_CLOSEUP):
+            KillTimer(hwnd, NC_UNCHANGE_TIMER);
+
+            update_crossfeed(hwnd, TRUE);
+            set_identity_from_ui(hwnd);
+            return TRUE;
+
+        case MAKEWPARAM(IDC_NC_REALM,CBN_EDITCHANGE):
+            SetTimer(hwnd, NC_REALMCHANGE_TIMER,
+                     NC_REALMCHANGE_TIMEOUT, NULL);
+            return TRUE;
+
+        case MAKEWPARAM(IDC_NC_REALM,CBN_KILLFOCUS):
+        case MAKEWPARAM(IDC_NC_REALM,CBN_CLOSEUP):
+            KillTimer(hwnd, NC_REALMCHANGE_TIMER);
+
+            update_crossfeed(hwnd, FALSE);
+            set_identity_from_ui(hwnd);
+            return TRUE;
         }
-        return TRUE;
+        break;
 
-    case WMNC_IDENT_EXIT:
+    case WM_TIMER:
+        if(wParam == NC_UNCHANGE_TIMER) {
+            KillTimer(hwnd, NC_UNCHANGE_TIMER);
+
+            update_crossfeed(hwnd, TRUE);
+            set_identity_from_ui(hwnd);
+            return TRUE;
+        } else if (wParam == NC_REALMCHANGE_TIMER) {
+            KillTimer(hwnd, NC_REALMCHANGE_TIMER);
+
+            update_crossfeed(hwnd, FALSE);
+            set_identity_from_ui(hwnd);
+            return TRUE;
+        }
+        break;
+
+    case KHUI_WM_NC_NOTIFY:
         {
-#ifdef DEBUG
-            assert(d != NULL);
-#endif
-            khui_cw_lock_nc(nc);
-            nc->ident_aux = 0;
-            khui_cw_unlock_nc(nc);
-            
-            /* since we created all the windows as child windows of
-               the new creds window, they will be destroyed when that
-               window is destroyed. */
-            PFREE(d);
+            struct idsel_dlg_data * d;
+            khm_handle * ph;
+
+            d = (struct idsel_dlg_data *)(LONG_PTR)
+                GetWindowLongPtr(hwnd, DWLP_USER);
+
+            switch (HIWORD(wParam)) {
+            case WMNC_IDSEL_GET_IDENT:
+                ph = (khm_handle *) lParam;
+
+                set_identity_from_ui(hwnd);
+                if (ph) {
+                    *ph = d->ident;
+                    if (d->ident)
+                        kcdb_identity_hold(d->ident);
+                }
+                break;
+            }
         }
         return TRUE;
     }
     return FALSE;
 }
 
+/* Identity Selector control factory
+
+   Runs in UI thread */
+static khm_int32 KHMAPI 
+idsel_factory(HWND hwnd_parent, HWND * phwnd_return) {
+
+    HWND hw_dlg;
+
+    hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_NC_KRB5_IDSEL),
+                          hwnd_parent, k5_idspec_dlg_proc);
+
+#ifdef DEBUG
+    assert(hw_dlg);
+#endif
+    *phwnd_return = hw_dlg;
+
+    return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
+}
+
+/************************************************************/
+/*         Message Handler for KMSG_IDENT messages          */
+/************************************************************/
+
 static khm_int32
-k5_ident_validate_name(khm_int32 msg_type,
-                      khm_int32 msg_subtype,
-                      khm_ui_4 uparam,
-                      void * vparam) {
+k5_ident_get_idsel_factory(khm_int32 msg_type,
+                           khm_int32 msg_subtype,
+                           khm_ui_4 uparam,
+                           void * vparam)
+{
+    kcdb_idsel_factory * pcb;
+
+    pcb = (kcdb_idsel_factory *) vparam;
+
+    *pcb = idsel_factory;
+
+    return KHM_ERROR_SUCCESS;
+}
+
+static khm_int32
+k5_validate_name(const wchar_t * name)
+{
     krb5_principal princ = NULL;
     char princ_name[KCDB_IDENT_MAXCCH_NAME];
-    kcdb_ident_name_xfer * nx;
     krb5_error_code code;
     wchar_t * atsign;
 
-    nx = (kcdb_ident_name_xfer *) vparam;
-
-    if(UnicodeStrToAnsi(princ_name, sizeof(princ_name),
-                        nx->name_src) == 0) {
-        nx->result = KHM_ERROR_INVALID_NAME;
-        return KHM_ERROR_SUCCESS;
+    if(UnicodeStrToAnsi(princ_name, sizeof(princ_name), name) == 0) {
+        return KHM_ERROR_INVALID_NAME;
     }
 
     assert(k5_identpro_ctx != NULL);
@@ -778,22 +673,32 @@ k5_ident_validate_name(khm_int32 msg_type,
                             &princ);
 
     if (code) {
-        nx->result = KHM_ERROR_INVALID_NAME;
-        return KHM_ERROR_SUCCESS;
+        return KHM_ERROR_INVALID_NAME;
     }
 
     if (princ != NULL)
-        pkrb5_free_principal(k5_identpro_ctx,
-                             princ);
+        pkrb5_free_principal(k5_identpro_ctx, princ);
 
     /* krb5_parse_name() accepts principal names with no realm or an
        empty realm.  We don't. */
-    atsign = wcschr(nx->name_src, L'@');
+    atsign = wcschr(name, L'@');
     if (atsign == NULL || atsign[1] == L'\0') {
-        nx->result = KHM_ERROR_INVALID_NAME;
-    } else {
-        nx->result = KHM_ERROR_SUCCESS;
+        return KHM_ERROR_INVALID_NAME;
     }
+
+    return KHM_ERROR_SUCCESS;
+}
+
+static khm_int32
+k5_ident_validate_name(khm_int32 msg_type,
+                      khm_int32 msg_subtype,
+                      khm_ui_4 uparam,
+                      void * vparam) {
+    kcdb_ident_name_xfer * nx;
+
+    nx = (kcdb_ident_name_xfer *) vparam;
+
+    nx->result = k5_validate_name(nx->name_src);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -934,20 +839,6 @@ k5_ident_set_default(khm_int32 msg_type,
 }
 
 static khm_int32
-k5_ident_get_ui_cb(khm_int32 msg_type,
-                   khm_int32 msg_subtype,
-                   khm_ui_4 uparam,
-                   void * vparam) {
-    khui_ident_new_creds_cb * cb;
-
-    cb = (khui_ident_new_creds_cb *) vparam;
-
-    *cb = ui_cb;
-
-    return KHM_ERROR_SUCCESS;
-}
-
-static khm_int32
 k5_ident_notify_create(khm_int32 msg_type,
                        khm_int32 msg_subtype,
                        khm_ui_4 uparam,
@@ -971,7 +862,7 @@ k5_ident_notify_create(khm_int32 msg_type,
 
     khm_handle def_ident;
 
-    if (KHM_SUCCEEDED(kcdb_identity_get_default(&def_ident))) {
+    if (KHM_SUCCEEDED(kcdb_identity_get_default_ex(k5_identpro, &def_ident))) {
         kcdb_identity_release(def_ident);
 
         return KHM_ERROR_SUCCESS;
@@ -1199,7 +1090,7 @@ k5_ident_update(khm_int32 msg_type,
     }
 #endif
 
-    if (KHM_SUCCEEDED(kcdb_identity_get_default(&tident))) {
+    if (KHM_SUCCEEDED(kcdb_identity_get_default_ex(k5_identpro, &tident))) {
         kcdb_identity_release(tident);
         goto _iu_cleanup;
     }
@@ -1281,8 +1172,9 @@ k5_refresh_default_identity(krb5_context ctx) {
             _reportf(L"Checking if [%S] is a valid identity name", namepart);
 
             AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), namepart);
-            if (kcdb_identity_is_valid_name(princ_nameW)) {
-                kcdb_identity_create(princ_nameW, KCDB_IDENT_FLAG_CREATE, &ident);
+            if (KHM_SUCCEEDED(k5_validate_name(princ_nameW))) {
+                kcdb_identity_create_ex(k5_identpro, princ_nameW,
+                                        KCDB_IDENT_FLAG_CREATE, &ident);
                 if (ident) {
                     _reportf(L"Setting [%S] as the default identity", namepart);
                     kcdb_identity_set_default_int(ident);
@@ -1304,7 +1196,8 @@ k5_refresh_default_identity(krb5_context ctx) {
 
     _reportf(L"Found principal [%s]", princ_nameW);
 
-    if (KHM_FAILED(kcdb_identity_create(princ_nameW, KCDB_IDENT_FLAG_CREATE, &ident))) {
+    if (KHM_FAILED(kcdb_identity_create_ex(k5_identpro, princ_nameW,
+                                           KCDB_IDENT_FLAG_CREATE, &ident))) {
         _reportf(L"Failed to create identity");
         goto _nc_cleanup;
     }
@@ -1342,6 +1235,12 @@ k5_ident_init(khm_int32 msg_type,
     khm_boolean found_default;
     khm_handle ident;
 
+    /* First get a handle to self.  Something is very wrong if we
+       can't do that. */
+    if (KHM_FAILED(kcdb_identpro_find(L"Krb5Ident", &k5_identpro))) {
+        return KHM_ERROR_UNKNOWN;
+    }
+
     found_default = k5_refresh_default_identity(k5_identpro_ctx);
 
     if (!found_default) {
@@ -1355,10 +1254,12 @@ k5_ident_init(khm_int32 msg_type,
         if (KHM_SUCCEEDED(khc_read_string(csp_params, L"LastDefaultIdent",
                                           widname, &cb))) {
             ident = NULL;
-            kcdb_identity_create(widname, KCDB_IDENT_FLAG_CREATE, &ident);
+            kcdb_identity_create_ex(k5_identpro, widname,
+                                    KCDB_IDENT_FLAG_CREATE, &ident);
             if (ident) {
                 kcdb_identity_set_default_int(ident);
                 kcdb_identity_release(ident);
+                ident = NULL;
 
                 found_default = TRUE;
             }
@@ -1377,8 +1278,6 @@ k5_ident_init(khm_int32 msg_type,
            Krb5Cred, by the time this code runs, we already have a
            listing of Kerberos 5 tickets and identities. */
 
-        wchar_t * idlist = NULL;
-        wchar_t * thisid;
         khm_size cb = 0;
         khm_size n_idents = 0;
         khm_int32 rv;
@@ -1387,26 +1286,13 @@ k5_ident_init(khm_int32 msg_type,
         FILETIME ft_now;
         FILETIME ft_threshold;
         BOOL match_all = FALSE;
-
-        rv = kcdb_identity_enum(0, 0, NULL, &cb, &n_idents);
+        kcdb_enumeration e = NULL;
 
         TimetToFileTimeInterval(5 * 60, &ft_threshold);
         GetSystemTimeAsFileTime(&ft_now);
         ft_now = FtAdd(&ft_now, &ft_threshold);
 
-        while (rv == KHM_ERROR_TOO_LONG && n_idents > 0) {
-            if (idlist) {
-                PFREE(idlist);
-                idlist = NULL;
-            }
-
-            idlist = PMALLOC(cb);
-
-            if (idlist == NULL)
-                break;
-
-            rv = kcdb_identity_enum(0, 0, idlist, &cb, &n_idents);
-        }
+        rv = kcdb_identity_begin_enum(0, 0, &e, &n_idents);
 
         if (KHM_SUCCEEDED(rv)) {
 
@@ -1416,30 +1302,26 @@ k5_ident_init(khm_int32 msg_type,
 
         try_again:
 
-            for (thisid = idlist;
-                 thisid && *thisid && !found_default;
-                 thisid = multi_string_next(thisid)) {
+#ifdef DEBUG
+            assert(ident == NULL);
+#endif
+            ident = NULL;
 
-                if (KHM_SUCCEEDED(kcdb_identity_create(thisid, 0, &ident))) {
-                    khm_size cb_ft = sizeof(FILETIME);
-                    cb = sizeof(ccname);
+            while (KHM_SUCCEEDED(kcdb_enum_next(e, &ident))) {
+                khm_size cb_ft = sizeof(FILETIME);
+                cb = sizeof(ccname);
 
-                    if (KHM_SUCCEEDED(kcdb_identity_get_attr(ident, attr_id_krb5_ccname,
-                                                             NULL, ccname, &cb)) &&
-                        (match_all ||
-                         (KHM_SUCCEEDED(kcdb_identity_get_attr(ident, KCDB_ATTR_EXPIRE,
-                                                               NULL, &ft_expire, &cb_ft)) &&
-                          CompareFileTime(&ft_expire, &ft_now) > 0))) {
+                if (KHM_SUCCEEDED(kcdb_identity_get_attr(ident, attr_id_krb5_ccname,
+                                                         NULL, ccname, &cb)) &&
+                    (match_all ||
+                     (KHM_SUCCEEDED(kcdb_identity_get_attr(ident, KCDB_ATTR_EXPIRE,
+                                                           NULL, &ft_expire, &cb_ft)) &&
+                      CompareFileTime(&ft_expire, &ft_now) > 0))) {
 
-                        /* found one */
-                        k5_ident_set_default_int(ident);
-                        kcdb_identity_set_default_int(ident);
-                        found_default = TRUE;
-
-                    }
-
-                    kcdb_identity_release(ident);
-                    ident = NULL;
+                    /* found one */
+                    k5_ident_set_default_int(ident);
+                    kcdb_identity_set_default_int(ident);
+                    found_default = TRUE;
                 }
             }
 
@@ -1447,11 +1329,8 @@ k5_ident_init(khm_int32 msg_type,
                 match_all = TRUE;
                 goto try_again;
             }
-        }
 
-        if (idlist) {
-            PFREE(idlist);
-            idlist = NULL;
+            kcdb_enum_end(e);
         }
     }
 
@@ -1485,6 +1364,91 @@ k5_ident_compare_name(khm_int32 msg_type,
        specifiers.  So we can just pass in 0's. */
     px->result = k5_ident_name_comp_func(px->name_src, 0,
                                          px->name_alt, 0);
+
+    return KHM_ERROR_SUCCESS;
+}
+
+static khm_int32
+k5_ident_resource_req(kcdb_resource_request * preq)
+{
+    wchar_t buf[KCDB_MAXCCH_SHORT_DESC];
+    HICON   hicon;
+    BOOL found = TRUE;
+    size_t cb = 0;
+
+    buf[0] = L'\0';
+    hicon = NULL;
+
+    if (preq->h_obj != NULL) {
+
+        /* This is a resource request for a specific identity
+           specified by h_obj */
+        switch(preq->res_id) {
+
+            /* These are resources that we don't specify here.
+               Returning without setting preq->code will result in NIM
+               providing default resources. */
+        case KCDB_RES_DESCRIPTION:
+        case KCDB_RES_ICON_DISABLED:
+        case KCDB_RES_ICON_NORMAL:
+            return KHM_ERROR_SUCCESS;
+
+        default:
+            assert(FALSE);
+        }
+
+    } else {
+
+        /* This is a resource request for the identity provider */
+        switch(preq->res_id) {
+        case KCDB_RES_DISPLAYNAME:
+            LoadString(hResModule, IDS_ID_DISPLAYNAME, buf, ARRAYLENGTH(buf));
+            break;
+
+        case KCDB_RES_DESCRIPTION:
+            LoadString(hResModule, IDS_ID_DESCRIPTION, buf, ARRAYLENGTH(buf));
+            break;
+
+        case KCDB_RES_TOOLTIP:
+            LoadString(hResModule, IDS_ID_TOOLTIP, buf, ARRAYLENGTH(buf));
+            break;
+
+        case KCDB_RES_INSTANCE:
+            LoadString(hResModule, IDS_ID_INSTANCE, buf, ARRAYLENGTH(buf));
+            break;
+
+        case KCDB_RES_ICON_NORMAL:
+            hicon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_KERBEROS),
+                              IMAGE_ICON, 0, 0,
+                              LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
+            break;
+
+        default:
+            found = FALSE;
+        }
+    }
+
+    if (found && buf[0] != L'\0' &&
+        SUCCEEDED(StringCbLength(buf, sizeof(buf), &cb))) {
+        cb += sizeof(wchar_t);
+        if (preq->buf == NULL || preq->cb_buf < cb) {
+            preq->cb_buf = cb;
+            preq->code = KHM_ERROR_TOO_LONG;
+        } else {
+            StringCbCopy(preq->buf, preq->cb_buf, buf);
+            preq->cb_buf = cb;
+            preq->code = KHM_ERROR_SUCCESS;
+        }
+    } else if (found && hicon != NULL) {
+        if (preq->buf == NULL || preq->cb_buf < sizeof(HICON)) {
+            preq->cb_buf = sizeof(HICON);
+            preq->code = KHM_ERROR_TOO_LONG;
+        } else {
+            *((HICON *) preq->buf) = hicon;
+            preq->cb_buf = sizeof(HICON);
+            preq->code = KHM_ERROR_SUCCESS;
+        }
+    }
 
     return KHM_ERROR_SUCCESS;
 }
@@ -1562,17 +1526,20 @@ k5_msg_ident(khm_int32 msg_type,
         /* TODO: handle KMSG_IDENT_ENUM_KNOWN */
         break;
 
-    case KMSG_IDENT_GET_UI_CALLBACK:
-        return k5_ident_get_ui_cb(msg_type,
-                                  msg_subtype,
-                                  uparam,
-                                  vparam);
+    case KMSG_IDENT_GET_IDSEL_FACTORY:
+        return k5_ident_get_idsel_factory(msg_type,
+                                          msg_subtype,
+                                          uparam,
+                                          vparam);
 
     case KMSG_IDENT_NOTIFY_CREATE:
         return k5_ident_notify_create(msg_type,
                                       msg_subtype,
                                       uparam,
                                       vparam);
+
+    case KMSG_IDENT_RESOURCE_REQ:
+        return k5_ident_resource_req(vparam);
     }
 
     return KHM_ERROR_SUCCESS;

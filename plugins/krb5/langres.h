@@ -134,6 +134,12 @@
 #define IDS_CFG_RE_MDD                  216
 #define IDS_KVNO_SHORT_DESC             217
 #define IDS_KVNO_LONG_DESC              218
+#define IDS_ID_DISPLAYNAME              219
+#define IDI_KERBEROS                    219
+#define IDS_ID_DESCRIPTION              220
+#define IDD_NC_KRB5_IDSEL               220
+#define IDS_ID_TOOLTIP                  221
+#define IDS_ID_INSTANCE                 222
 #define IDC_NCK5_RENEWABLE              1002
 #define IDC_NCK5_FORWARDABLE            1004
 #define IDC_NCK5_REALM                  1005
@@ -202,15 +208,21 @@
 #define IDC_CFG_ADDRESSLESS             1077
 #define IDC_CFG_FORWARD                 1078
 #define IDC_CHECK1                      1079
+#define IDC_NC_UN                       1080
+#define IDC_NC_REALM                    1081
+#define IDC_GRPBOX                      1082
+#define IDC_NC_UN_LBL                   1083
+#define IDC_NC_REALM_LBL                1084
+#define IDC_NC_ICON                     1085
 #define ID_FOO_BAR                      40001
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        219
+#define _APS_NEXT_RESOURCE_VALUE        221
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1080
+#define _APS_NEXT_CONTROL_VALUE         1086
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

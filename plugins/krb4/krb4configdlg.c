@@ -156,8 +156,6 @@ typedef struct tag_k4_id_data {
 
 void
 k4_id_read_params(k4_id_data * d) {
-    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-    khm_size cb;
     khm_handle ident = NULL;
     khm_handle csp_ident = NULL;
     khm_handle csp_idk4 = NULL;
@@ -166,11 +164,7 @@ k4_id_read_params(k4_id_data * d) {
 
     khc_read_int32(csp_params, L"Krb4NewCreds", &d->gettix);
 
-    *idname = 0;
-    cb = sizeof(idname);
-    khui_cfg_get_name(d->cfg.ctx_node, idname, &cb);
-
-    kcdb_identity_create(idname, 0, &ident);
+    ident = khui_cfg_get_data(d->cfg.ctx_node);
 
     if (ident == NULL) {
         d->gettix = 0;
@@ -216,8 +210,6 @@ k4_id_read_params(k4_id_data * d) {
 
 khm_boolean
 k4_id_write_params(HWND hwnd, k4_id_data * d) {
-    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-    khm_size cb_idname = sizeof(idname);
     khm_handle ident = NULL;
     khm_int32 flags = 0;
     khm_handle csp_ident = NULL;
@@ -225,10 +217,7 @@ k4_id_write_params(HWND hwnd, k4_id_data * d) {
     khm_int32 gettix = 0;
     khm_boolean applied = FALSE;
 
-    khui_cfg_get_name(d->cfg.ctx_node, idname, &cb_idname);
-
-    kcdb_identity_create(idname, 0, &ident);
-
+    ident = khui_cfg_get_data(d->cfg.ctx_node);
     if (ident == NULL)
         return FALSE;
 

@@ -57,22 +57,13 @@ typedef struct tag_k5_id_dlg_data {
 static void
 k5_id_read_params(k5_id_dlg_data * d) {
 
-    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
     khm_size cb;
     khm_int32 rv;
     khm_int32 t;
     khm_handle csp_ident = NULL;
 
-    cb = sizeof(idname);
-    rv = khui_cfg_get_name(d->cfg.ctx_node, idname, &cb);
-#ifdef DEBUG
-    assert(KHM_SUCCEEDED(rv));
-#endif
-
-    rv = kcdb_identity_create(idname, 0, &d->ident);
-#ifdef DEBUG
-    assert(KHM_SUCCEEDED(rv));
-#endif
+    d->ident = khui_cfg_get_data(d->cfg.ctx_node);
+    assert(d->ident != NULL);
 
     khm_krb5_get_identity_config(d->ident, 0, &csp_ident);
 

@@ -76,6 +76,8 @@ OBJFILES= \
 	$(KCDBDIR)\kcreddbmain.obj 	\
 	$(KCDBDIR)\type.obj 		\
 	$(KCDBDIR)\resacq.obj 		\
+	$(KCDBDIR)\filetime.obj		\
+	$(KCDBDIR)\strfuncs.obj		\
 	$(KCDBDIR)\kcdbconfig.obj	\
 	$(KMMDIR)\kmmmain.obj 		\
 	$(KMMDIR)\kmm.obj 		\
@@ -127,3 +129,33 @@ clean::
 	if exist $(DLLFILE) $(RM) $(DLLFILE)
 	if exist $(DLLFILE).manifest $(RM) $(DLLFILE).manifest
 
+# Tests
+
+TESTER=$(BINDIR)\tests.exe
+
+{tests}.c{$(OBJ)}.obj:
+	$(C2OBJ)
+
+test:: $(TESTER) $(BINDIR)\restest.dll
+	$(CD) tests
+	$(TESTER)
+	$(CD) ..
+
+TESTOBJS= \
+	$(OBJ)\main.obj			\
+	$(OBJ)\tests.obj		\
+	$(OBJ)\util_ms_test.obj		\
+	$(OBJ)\uilib_res_test.obj	\
+	$(OBJ)\uilib_cfg_test.obj
+
+TESTLIBS= \
+	user32.lib
+
+$(BINDIR)\restest.dll: $(OBJ)\restest.res
+	$(DLLRESLINK)
+
+$(OBJ)\restest.res: tests\restest.rc
+	$(RC2RES)
+
+$(TESTER): $(LIBFILE) $(TESTOBJS)
+	$(EXECONLINK) $(TESTLIBS)

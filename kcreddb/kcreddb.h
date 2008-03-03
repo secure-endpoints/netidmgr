@@ -501,6 +501,17 @@ kcdb_enum_sort(kcdb_enumeration e,
 /*! \name Resource acquisition
 @{*/
 
+/* General flags */
+
+/*! \brief Skip the cache
+
+  If this flag is specified, kcdb_get_resource() will directly query
+  the owner of the resource rather than checking in the cache.  If the
+  owner provides a new resource, then the cached resource is
+  discarded.
+ */
+#define KCDB_RF_SKIPCACHE      0x00000100
+
 /* Flags for strings */
 
 /*! \brief Short string */
@@ -567,6 +578,8 @@ typedef enum tag_kcdb_resource_id {
     KCDB_RES_T_ENDICON,         /* Internal marker */
 } kcdb_resource_id;
 
+#define KCDB_HANDLE_FROM_CREDTYPE(t) ((khm_handle)(khm_ssize) t)
+
 /*! \brief Acquire a resource for a KCDB Object
 
   This is a generic interface to obtain localized strings and icons
@@ -578,7 +591,7 @@ typedef enum tag_kcdb_resource_id {
   identifier should be cast to a ::khm_handle type, as follows:
 
   \code
-  kcdb_get_resource((khm_handle) credtype_id, KCDB_RES_DISPLAYNAME, KCDB_RFS_SHORT,
+  kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(credtype_id), KCDB_RES_DISPLAYNAME, KCDB_RFS_SHORT,
                     NULL, NULL, buf, &cb_buf);
   \endcode
 
@@ -617,7 +630,7 @@ kcdb_get_resource(khm_handle h,
                   void * buf,
                   khm_size * pcb_buf);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 
 KHMEXP khm_int32 KHMAPI
 kcdb_cleanup_resources_by_handle(khm_handle h);
@@ -690,6 +703,8 @@ typedef struct tag_kcdb_ident_name_xfer {
                                      kherror.h, though it is not
                                      always. */
 } kcdb_ident_name_xfer;
+
+typedef khm_int32 (KHMAPI * kcdb_idsel_factory)(HWND, HWND *);
 
 /*@}*/
 
@@ -838,7 +853,7 @@ kcdb_identpro_get_default(khm_handle * vidpro);
 KHMEXP khm_boolean KHMAPI
 kcdb_identpro_is_equal(khm_handle idp1, khm_handle idp2);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 
 /* The follwing functions are only exported for use by the Network
    Identity Provider application, and are not meant for general use
@@ -953,13 +968,10 @@ kcdb_identpro_get_ui_cb(void * rock);
 
 /*! \brief Obtain the UI callback
 
-    \a rock is actually a pointer to a ::khui_ident_new_creds_cb which
-    is to receive the callback.
-
-    \see ::KMSG_IDENT_GET_UI_CALLBACK
+    \see ::KMSG_IDENT_GET_IDSEL_CB
  */
 KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_get_ui_cb_ex(khm_handle vidpro, void * rock);
+kcdb_identpro_get_idsel_factory(khm_handle vidpro, kcdb_idsel_factory * pcb);
 
 /*! \brief Notify an identity provider of the creation of a new identity 
 
@@ -968,7 +980,7 @@ kcdb_identpro_get_ui_cb_ex(khm_handle vidpro, void * rock);
 KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_notify_create(khm_handle identity);
 
-#endif  /* NOEXPORT */
+#endif  /* NIMPRIVATE */
 
 /*@}*/
 
@@ -1199,7 +1211,7 @@ kcdb_identity_hold(khm_handle id);
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_release(khm_handle id);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 /*! \brief Set the identity provider subscription
 
     If there was a previous subscription, that subscription will be
@@ -1217,10 +1229,13 @@ kcdb_identity_set_provider(khm_handle sub);
     provider.  As such, this function should only be called by an
     identity provider.
 
+    The \a cred_type will become the primary credentials type for the
+    identity provider that calls this function as identified by the
+    calling thread.
+
     \note It is invalid to call this function from outside an identity
-      provider plug-in thread.  The \a cred_type will become the
-      primary credentials type for the identity provider that calls
-      this function as identified by the calling thread.
+      provider plug-in thread.
+
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_set_type(khm_int32 cred_type);
@@ -1453,6 +1468,40 @@ kcdb_identity_refresh(khm_handle vid);
  */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_refresh_all(void);
+
+#ifdef NIMPRIVATE
+
+/*! \brief Query the serial number for the identity
+
+    Each identity is assigned a serial number at the time it is
+    created.  The following properties are guaranteed for identity
+    serial numbers:
+
+    - Will be associated with the identity represented by \a vid as
+      long as \a vid is held.
+
+    - Will not be used to identify a different identity during this
+      session.
+
+    However, note the following:
+
+    - If the hold on the identity is released, and the identity is
+      recreated, it may be assigned a new serial number.  The serial
+      number is only associated with the identity for the lifetime of
+      the identity object, which might end once you release the hold.
+
+    \param[in] vid Handle to the identity
+    \param[out] pserial Receives the serial number
+
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_get_serial(khm_handle vid, khm_ui_8 * pserial);
+
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_get_short_name(khm_handle vid, khm_boolean escape_chars,
+                             wchar_t * buf, khm_size * pcb_buf);
+#endif
+
 
 /*! \brief Begin enumerating identities
 
@@ -2982,12 +3031,12 @@ TimetToFileTimeInterval(time_t t, LPFILETIME pft);
 /*! \brief Convert a FILETIME interval to seconds
 */
 KHMEXP long KHMAPI 
-FtIntervalToSeconds(LPFILETIME pft);
+FtIntervalToSeconds(const FILETIME * pft);
 
 /*! \brief Convert a FILETIME interval to milliseconds
 */
 KHMEXP long KHMAPI 
-FtIntervalToMilliseconds(LPFILETIME pft);
+FtIntervalToMilliseconds(const FILETIME * pft);
 
 /*! \brief Compare two FILETIME values
 
@@ -3000,7 +3049,7 @@ FtCompare(LPFILETIME pft1, LPFILETIME pft2);
 /*! \brief Convert a FILETIME to a 64 bit int
 */
 KHMEXP khm_int64 KHMAPI
-FtToInt(LPFILETIME pft);
+FtToInt(const FILETIME * pft);
 
 /*! \brief Convert a 64 bit int to a FILETIME
 */
@@ -3012,21 +3061,54 @@ IntToFt(khm_int64 i);
     Returns the value of ft1 - ft2
  */
 KHMEXP FILETIME KHMAPI
-FtSub(LPFILETIME ft1, LPFILETIME ft2);
+FtSub(const FILETIME * ft1, const FILETIME * ft2);
 
 /*! \brief Calculate the sum of two FILETIMEs
 
     Return the value of ft1 + ft2
  */
 KHMEXP FILETIME KHMAPI
-FtAdd(LPFILETIME ft1, LPFILETIME ft2);
+FtAdd(const FILETIME * ft1, const FILETIME * ft2);
 
 /*! \brief Convert a FILETIME inverval to a string
 */
 KHMEXP khm_int32 KHMAPI 
-FtIntervalToString(LPFILETIME data, 
+FtIntervalToString(const FILETIME * data, 
                    wchar_t * buffer, 
                    khm_size * cb_buf);
+
+#define FTSE_INTERVAL      0x00010000
+#define FTSE_RELATIVE      0x00020000
+#define FTSE_RELATIVE_DAY  0x00040000
+
+/*! \brief Convert a FILETIME to a string
+
+  Generates a string representation of a \a FILETIME value.  The
+  representation is determined by \a flags as follows:
+
+  - ::FTSE_INTERVAL : The \a pft represents an interval.  If this flag
+    is not specified, it will be assumed that the \a pft represents an
+    absolute \a FILETIME value.
+
+  - ::FTSE_RELATIVE : The string representation should be relative to
+    the current time.  For example if the current time is 5pm and \a
+    pft specifies 6pm, then the relative representation would be "in 1
+    hour".  This flag can't be used with ::FTSE_INTERVAL.
+
+  - ::FTSE_RELATIVE_DAY : Similar to ::FTSE_RELATIVE, but specifies
+    the time in absolute terms while specifying the day in relative
+    terms.  E.g.  If the current time is 5pm Saturday and \a pft
+    specifies 6pm on Sunday, the this representation would give
+    "tomorrow at 6pm".
+
+  - ::KCDB_TS_SHORT : Make the string short.  If there are alternate
+    representations, choose the shortest.
+
+ */
+KHMEXP khm_int32 KHMAPI
+FtToStringEx(const FILETIME * pft, khm_int32 flags,
+             long * ms_to_change,
+             wchar_t * buffer, khm_size * cb_buf);
 
 /*! \brief Parse a string representing an interval into a FILETIME interval
 
@@ -3059,18 +3141,19 @@ FtIntervalToString(LPFILETIME data,
         the result was placed in \a pft.
 */
 KHMEXP khm_int32 KHMAPI 
-IntervalStringToFt(FILETIME * pft, wchar_t * str);
+IntervalStringToFt(FILETIME * pft, const wchar_t * str);
 
 /*! \brief Return number of milliseconds till next representation change
 
    Returns the number of milliseconds that must elapse away from the
-   interval specified in pft \a for the representation of pft to change
-   from whatever it is right now.
+   interval specified in pft \a for the representation of pft to
+   change from whatever it is right now as returned by
+   FtIntervalToString().
 
    Returns 0 if the representation is not expected to change.
 */
 KHMEXP long KHMAPI 
-FtIntervalMsToRepChange(LPFILETIME pft);
+FtIntervalMsToRepChange(const FILETIME * pft);
 
 /*! \brief Convert a safe ANSI string to a Unicode string
 
@@ -3096,6 +3179,12 @@ AnsiStrToUnicode( wchar_t * wstr, size_t cbwstr, const char * astr);
 */
 KHMEXP int KHMAPI 
 UnicodeStrToAnsi( char * dest, size_t cbdest, const wchar_t * src);
+
+/*! \brief Similar to printf, except uses FormatMessage to expand inserts
+
+ */
+KHMEXP khm_int32
+FormatString(wchar_t * buf, khm_size cb_buf, const wchar_t * format, ...);
 /*@}*/
 
 /*! \name Standard type identifiers and names 

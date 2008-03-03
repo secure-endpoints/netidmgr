@@ -252,7 +252,10 @@ enum khui_wm_nc_notifications {
     /*!< Sent to the new creds window to clear any custom prompts.
 
       Only sent to the new credentials window.
+
+      \deprecated This message is deprecated.
      */
+#pragma deprecated(WMNC_CLEAR_PROMPTS)
 
     WMNC_SET_PROMPTS,
     /*!< Sent to the new creds window to set custom prompts.
@@ -292,6 +295,17 @@ enum khui_wm_nc_notifications {
     WMNC_UPDATE_LAYOUT,
     /*!< Update the layout of a dialog or window.  This is an internal
       message. */
+
+    WMNC_IDSEL_GET_IDENT,
+    /*!< Sent to an identity selection dialog to query the current
+       identity selection.  The \a lParam parameter contains a pointer
+       to an identity handle.  This should be set to a held handle for
+       the selected identity or to NULL if there is no current
+       identity. */
+
+    WMNC_IDENTITY_STATE,
+    /*!< Sent to the new credentials window to indicate that the
+       identity state has changed for an identity. */
 };
 
 /*! \brief Plugins can use WMNC_NOTIFY message codes from here on up
@@ -300,41 +314,44 @@ enum khui_wm_nc_notifications {
  */
 #define WMNC_USER 2048
 
-/*! \brief Notifications to the identity provider
+/*! \brief Notifications for identity providers
 
     These notifications are sent through to the identity provider's UI
-    callback that was obtained using a ::KMSG_IDENT_GET_UI_CB message.
+    callback that was obtained using a ::KMSG_IDENT_GET_UI_CALLBACK
+    message.
 
     The callback routine is called from the context of the UI thread
     and is expected to not make any blocking calls.  One of the
     following commands will be passed in as the \a cmd parameter to
     the callback.
+
+    The documentation below only applies when the notification code is
+    used with ::kcdb_idsel_cb type callbacks that were obtained
+    through ::KMSG_IDENT_GET_IDSEL_CB.  ::KMSG_IDENT_GET_UI_CALLBACK
+    as well as ::khui_ident_new_creds_cb have been deprecated.
  */
 enum khui_wm_nc_ident_notify {
     WMNC_IDENT_INIT,            
     /*!< Initialize an identity selector for a new credentials
-         dialog. The \a lParam parameter contains a handle to the
-         dialog window which will contain the identity selector
-         controls.  The identity provider may make use of the \a
-         ident_aux field of the ::khui_new_creds structure to hold any
-         data pertaining to the credentials acquisition dialog.*/
+         dialog. The \a vparam parameter contains a pointer to
+         a ::wmnc_ident_init_data structure. */
+#pragma deprecated(WMNC_IDENT_INIT)
 
     WMNC_IDENT_WMSG,
-    /*!< Windows message.  Presumably sent from one of the controls
-         that was created by the identity provider.  The callback is
-         expected to return TRUE if it processed the message or FALSE
-         if it did not.  The \a uMsg, \a wParam and \a lParam
-         parameters are set to the values passed in by Windows. */
+    /*!< Windows message.
+
+      \deprecated This notification is deprecated. */
+#pragma deprecated(WMNC_IDENT_WMSG)
 
     WMNC_IDENT_EXIT,
-    /*!< Terminate a credentials acquisition dialog. Sent just before
-      the dialog is terminated. */
+    /*!< Sent when the callback is no longer required. */
+#pragma deprecated(WMNC_IDENT_EXIT)
 
     WMNC_IDENT_PREPROCESS,
-    /*!< The identity is about to be fetched from the \a
-       ::khui_new_creds structure.  The callback is expected to ensure
-       that the primary identity listed in that structure is
-       consistent with the user selection. */
+    /*!< Sent before the dialog is to be processed.
+
+      \deprecated This notification is deprecated.*/
+#pragma deprecated(WMNC_IDENT_PREPROCESS)
 };
 
 /*! \name Standard credtext link IDs
@@ -420,7 +437,7 @@ typedef LRESULT
 
     Set along with KHUI_NC_RESPONSE_NOEXIT although it is not
     required.  Setting this bit will automatically add the
-    KHUI_NC_RESPONSE_NOEXIT.
+    KHUI_NC_RESPONSE_NOEXIT bit.
 
     If this bit is set, all dependent plugins will be set on hold
     until another round of processing clears the pending bit.
@@ -858,6 +875,17 @@ KHMEXP khm_int32 KHMAPI
 khui_cw_set_primary_id(khui_new_creds * c, 
                        khm_handle id);
 
+/*! \brief Get the primary identity
+
+    Obtains a held handle to the primary identity associated with this
+    new credentials operation.  If the call is successful, \a ph
+    receives a handle to the primary identity which should be released
+    with a call to kcdb_identity_release().
+ */
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_primary_id(khui_new_creds * c,
+                       khm_handle * ph);
+
 /*! \brief Add an additional identity to the new credentials acquisition
 
     Individual plugins are free to decide how to handle additional
@@ -872,17 +900,6 @@ KHMEXP khm_int32 KHMAPI
 khui_cw_add_identity(khui_new_creds * c, 
                      khm_handle id);
 #pragma deprecated(khui_cw_add_identity)
-
-/*! \brief Get the primary identity
-
-    Obtains a held handle to the primary identity associated with this
-    new credentials operation.  If the call is successful, \a ph
-    receives a handle to the primary identity which should be released
-    with a call to kcdb_identity_release().
- */
-KHMEXP khm_int32 KHMAPI
-khui_cw_get_primary_id(khui_new_creds * c,
-                       khm_handle * ph);
 
 /*! \brief Set the response for a plugin
 
@@ -904,6 +921,98 @@ KHMEXP khm_int32 KHMAPI
 khui_cw_set_response(khui_new_creds * c,
                      khm_int32 type,
                      khm_int32 response);
+
+KHMEXP khui_action_context * KHMAPI
+khui_cw_get_ctx(khui_new_creds * c);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_subtype(khui_new_creds * c);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_result(khui_new_creds * c);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notification,
+                      khm_boolean sync_required, void * param);
+
+KHMEXP khm_boolean KHMAPI
+khui_cw_get_use_as_default(khui_new_creds * c);
+
+/*! \brief Progress is not known or not applicable
+
+  If this flag is specified, then no progress information is displayed
+  to the user.
+
+  \see khui_cw_notify_identity_state()
+ */
+#define KHUI_CWNIS_NOPROGRESS 0x00000001
+
+/*! \brief The identity has been validated
+
+  The validity of the identity has been determined. The supplied state
+  string will be used as the identity status.
+
+  \see khui_cw_notify_identity_state()
+ */
+#define KHUI_CWNIS_VALIDATED  0x00000002
+
+/*! \brief The identity is ready for credential acquisition
+
+  The identity is now ready for credentials acquisition.  This enables
+  the 'Finish' button on the new credentials dialog so that the user
+  can proceed to acquire credentials.
+
+  \see khui_cw_notify_identity_state()
+ */
+#define KHUI_CWNIS_READY      0x00000004
+
+/*! \brief Notify identity state changes
+
+  During the new credentials operation, if an identity needs to be
+  validated, the primary credentials provider calls this function to
+  notify the application of changes to the identity state.
+
+  When the user selects a primary identity, the credentials provider
+  should provide a privileged interaction panel for any privileged
+  interaction that must take place.  If such a panel is not necessary,
+  then the application will provide a placeholder panel that simply
+  notifies the user that the dialog is ready to be processed.
+  However, if the privileged interaction panel can't be presented
+  until the identity is validated, then the credentials provider
+  should call this function instead.
+
+  \param[in] c Pointer to new credentials structure
+
+  \param[in] state_string A localized NULL-terminated string not
+      exceeding KHUI_MAXCCH_BANNER characters including the
+      terminating NULL.  If this string is NULL, the status will not
+      be updated.
+
+  \param[in] flags Flags.  This is a combination of the following
+      values:
+
+      - ::KHUI_CWNIS_READY
+      - ::KHUI_CWNIS_VALIDATED
+      - ::KHUI_CWNIS_NOPROGRESS
+
+      Note that unless ::KHUI_CWNIS_READY is specified, the 'Finish'
+      button of the dialog will not be displayed.
+
+  \param[in] progress The current progress of the identity validation
+      process, if any.  The progress value is specified as an integer
+      between 0 and 100 inclusive.  If the progress is not applicable,
+      the \a flags parameter must specify ::KHUI_CWNIS_NOPROGRESS, in
+      which case no progress information will be shown to the user.
+      Alternatively, you can pass in -1 for this parameter to indicate
+      that progress is being made, but the extent is not known.  On
+      systems that support it, this will be represented by a
+      continously scrolling marquee.
+ */
+KHMEXP khm_int32 KHMAPI
+khui_cw_notify_identity_state(khui_new_creds * c,
+                              const wchar_t * state_string,
+                              khm_int32 flags,
+                              khm_int32 progress);
 
 /*! \brief Check whether a specified credential type panel succeeded
 

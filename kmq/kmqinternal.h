@@ -36,7 +36,7 @@
 #include<khmsgtypes.h>
 #include<kconfig.h>
 
-#define NOEXPORT
+#define NIMPRIVATE
 
 #include<utils.h>
 #include<strsafe.h>

@@ -29,38 +29,203 @@
 
 #include "khnewcred.h"
 
-#ifndef NOEXPORT
-#error  NOEXPORT must be defined for intnewcred.h to be used
+#ifndef NIMPRIVATE
+#error  NIMPRIVATE must be defined for intnewcred.h to be used
 #endif
 
-/*! \internal
-    \brief Privileged interaction queue */
-typedef struct tag_khui_new_creds_privint {
-    HWND       hwnd;            /* Invariant */
-    wchar_t    caption[KCDB_MAXCCH_SHORT_DESC]; /* Invariant */
+struct tag_khui_new_creds_type_int;
 
-    LDCL(struct tag_khui_new_creds_privint);
-} khui_new_creds_privint;
+/*! \brief Page and page navigation */
+typedef enum tag_nc_page {
+    NC_PAGE_NONE = 0,
+    NC_PAGE_IDSPEC,
+    NC_PAGE_CREDOPT_BASIC,
+    NC_PAGE_CREDOPT_ADV,
+    NC_PAGE_PASSWORD,
+    NC_PAGE_PROGRESS,
+
+    NC_PAGET_NEXT,
+    NC_PAGET_PREV,
+    NC_PAGET_FINISH,
+    NC_PAGET_CANCEL
+} nc_page;
+
 
 /*! \internal
-    \brief Internal representation for a credentials type for a new credentials operation
+    \brief Privileged interaction panels
+
+    These start life either on a ::khui_new_creds_type_int structure
+    or on the nc_privint::legacy_panels structure depending on how it
+    was created.  When the wizard is ready to show the panel, it will
+    dequeue the panel object and enqueue it at the end of the
+    nc_privint::shown structure.
+*/
+typedef struct tag_khui_new_creds_privint_panel {
+    khm_int32  magic;
+
+    HWND       hwnd;                            /*!< (Invariant) */
+    wchar_t    caption[KCDB_MAXCCH_SHORT_DESC]; /*!< (Invariant) */
+
+    khui_new_creds * nc;        /*!< New Credentials dialog that owns
+                                  this panel.  */
+    struct tag_khui_new_creds_type_int * provider;
+                                /*!< Credentials type that provided
+                                  this panel, if known. */
+
+    /* For basic custom prompting */
+    khm_boolean use_custom;     /*!< Use custom prompting
+                                   instead. (hwnd must be NULL).  This
+                                   should only be set to TRUE if all
+                                   the prompts have been specified. */
+    wchar_t    *banner;         /*!< Banner text */
+    wchar_t    *pname;          /*!< Heading */
+    khui_new_creds_prompt ** prompts; /*!< Individual prompts */
+    khm_size   n_prompts;            /*!< Number of prompts */
+    khm_size   nc_prompts;           /*!< Total number of prompts allocated */
+
+    LDCL(struct tag_khui_new_creds_privint_panel);
+} khui_new_creds_privint_panel;
+
+#define KHUI_NEW_CREDS_PRIVINT_PANEL_MAGIC 0x31e80e7b
+
+#define IDC_NCC_PNAME  1001
+#define IDC_NCC_BANNER 1002
+#define IDC_NCC_CTL    1010
+
+/*! \internal
+    \brief A credentials type for a new credentials operation
  */
 typedef struct tag_khui_new_creds_type_int {
-    khui_new_creds_by_type * nct; /*!< Credential type */
-    khm_handle sub;               /*!< Subscription */
+    khui_new_creds_by_type * nct;    /*!< Credential type */
+    const wchar_t * display_name;    /*!< Display name */
+    khm_boolean is_id_credtype;      /*!< Is this the identity
+                                        credentials type? */
 
-    QDCL(khui_new_creds_privint);
+    QDCL(khui_new_creds_privint_panel); /*!< Queue of privileged
+                                           interaction panels */
 } khui_new_creds_type_int;
 
+
+
 /*! \internal
-    \brief Internal structure for keeping track of identity providers during new credentials operation */
+    \brief Identity Provider for a new credentials operation
+
+    Internal structure for keeping track of identity providers during
+    new credentials operation */
 typedef struct tag_khui_new_creds_idpro {
     khm_handle h;               /*!< Handle to identity provider */
-    khui_ident_new_creds_cb cb; /*!< UI Callback */
-
-    HICON      icon_lg;
+    HWND       hwnd_panel;      /*!< Identity selector panel */
+    kcdb_idsel_factory cb;      /*!< Identity selector factory */
     void *     data;            /*!< Provider data */
 } khui_new_creds_idpro;
+
+
+
+typedef struct tag_nc_idspec {
+    HWND hwnd;
+
+    khm_boolean initialized;    /* Has the identity provider list been
+                                   initialized? */
+    khm_ssize   idx_current;    /* Index of last provider */
+
+    nc_page     prev_page;      /* Previous page, if we allow back
+                                   navigation */
+} nc_idspec;
+
+
+typedef struct tag_nc_ident_display {
+    khm_handle  hident;
+    HICON       icon;
+    wchar_t     display_string[KCDB_IDENT_MAXCCH_NAME];
+    wchar_t     type_string[KCDB_MAXCCH_SHORT_DESC];
+    wchar_t     status[KCDB_MAXCCH_SHORT_DESC];
+} nc_ident_display;
+
+
+
+typedef struct tag_nc_idsel {
+    HWND        hwnd;
+
+    HFONT       hf_idname;
+    HFONT       hf_type;
+    HFONT       hf_status;
+    COLORREF    cr_idname;
+    COLORREF    cr_type;
+    COLORREF    cr_status;
+
+    nc_ident_display id;
+} nc_idsel;
+
+
+
+#define NC_PRIVINT_PANEL -1
+
+typedef struct tag_nc_privint {
+    HWND        hwnd_basic;     /*!< Handle to Basic window */
+    HWND        hwnd_advanced;  /*!< Handle to Advanced window */
+    HWND        hwnd_noprompts; /*!< Handle to no-prompt dialog */
+
+    khui_new_creds_privint_panel * legacy_panel;
+                                /*!< Legacy privileged interaction
+                                   panel.  Only created if
+                                   necessary. */
+
+    struct {
+        khm_boolean show_blank; /*!< Show a blank panel instead of the
+                                   tail of this queue. */
+        QDCL(khui_new_creds_privint_panel);
+    } shown;                    /*!< Queue of privileged interaction
+                                   panels that have been shown.  The
+                                   currently displayed, or to be
+                                   displayed, panel is always at the
+                                   bottom of the queue. */
+
+    khm_boolean initialized;    /*!< Has the tab control been
+                                   initialized? */
+    HWND        hwnd_current;   /*!< Handle to currently selected
+                                   panel window */
+    int         idx_current;    /*!< Index of currently selected panel
+                                   in nc or NC_PRIVINT_PANEL if it's
+                                   the privileged interaction
+                                   panel. */
+
+    int         noprompt_flags; /*!< Flags used by hwnd_noprompts.
+                                   Combination of NC_NPF_* values. */
+
+    /* The marquee is running */
+#define NC_NPF_MARQUEE       0x0001
+} nc_privint;
+
+
+
+typedef struct tag_nc_nav {
+    HWND        hwnd;
+
+    khm_int32   transitions;    /*!< Combination of NC_TRANS_* */
+#define NC_TRANS_NEXT        0x0001
+#define NC_TRANS_PREV        0x0002
+#define NC_TRANS_FINISH      0x0004
+#define NC_TRANS_ABORT       0x0008
+#define NC_TRANS_SHOWDETAILS 0x0010
+
+} nc_nav;
+
+typedef struct tag_nc_progress {
+    HWND        hwnd;
+} nc_progress;
+
+
+/*! \brief Notification data for the WMNC_IDENTITY_STATE notification
+
+  \see khui_cw_notify_identity_state()
+*/
+typedef struct tag_nc_identity_state_notification {
+    const wchar_t * state_string;
+    khm_int32       flags;      /*!< Combination of KHUI_CWNIS_* flags
+                                   defined in khnewcred.h */
+    khm_int32       progress;
+} nc_identity_state_notification;
+
 
 /*! \internal
     \brief New Credentials Operation Data
@@ -89,10 +254,8 @@ typedef struct tag_khui_new_creds {
                                   identity in this list (\a
                                   identities[0]) is the primary
                                   identity. */
-
     khm_size    n_identities;   /*!< Number of identities in the list
                                   \a identities */
-
     khm_size    nc_identities;  /*!< Number of handles allocated in \a
                                    identities */
 
@@ -110,24 +273,23 @@ typedef struct tag_khui_new_creds {
 
     khui_new_creds_type_int *types;
                                 /*!< Credential types */
-    void        *reserved0;     /*!< Not used */
+    khm_handle *type_subs;      /*!< Type subscriptions.  We keep this
+                                   list separate so we can use it with
+                                   kmq_{send,post}_subs_msg(). */
     khm_size    n_types;        /*!< Number of types */
     khm_size    nc_types;       /*!< Number allocated */
 
-    khm_int32   result;     /*!< One of ::KHUI_NC_RESULT_CANCEL or
-                                ::KHUI_NC_RESULT_PROCESS indicating
-                                the result of the dialog with the
-                                user */
+    khm_int32   result;         /*!< One of ::KHUI_NC_RESULT_CANCEL or
+                                  ::KHUI_NC_RESULT_PROCESS indicating
+                                  the result of the dialog with the
+                                  user */
 
-    khm_int32   response;   /*!< Response.  See individual message
-                                documentation for info on what to do
-                                with this field when handling
-                                different subtypes. */
+    khm_int32   response;       /*!< Response.  See individual message
+                                  documentation for info on what to do
+                                  with this field when handling
+                                  different subtypes. */
 
-    void        *reserved1;  /*!< Not used. */
-
-    /* UI stuff */
-
+    void        *reserved1;         /*!< Not used. */
     void        *reserved2;         /*!< Not used */
     void        *reserved3;         /*!< Not used */
     khm_size    reserved4;          /*!< Not used */
@@ -147,9 +309,25 @@ typedef struct tag_khui_new_creds {
            compatibility --- */
 
     khui_new_creds_idpro * providers; /*!< Identity providers */
-    khm_size    n_providers;
-    khm_size    nc_providers;
+    khm_size    n_providers;          /*!< Number of identity providers */
+    khm_size    nc_providers;         /*!< Internal */
 
+    /* New Identity Wizard components*/
+    nc_idspec   idspec;         /*!< Identity specifier */
+    nc_idsel    idsel;          /*!< Identity selector */
+    nc_privint  privint;        /*!< Privileged interaction */
+    nc_nav      nav;            /*!< Navigation */
+    nc_progress progress;       /*!< Progress window */
+
+    /* Mode and sequence */
+    nc_page     page;           /*!< Current wizard page */
+
+    /* Behavior */
+    khm_boolean flashing_enabled; /*!< The window maybe still flashing
+                                    from the last call to
+                                    FlashWindowEx(). */
+    khm_boolean force_topmost;  /*!< Force New Credentials window to
+                                  the top */
 } khui_new_creds;
 
 #define KHUI_NC_MAGIC 0x84270427
@@ -169,9 +347,9 @@ khui_cw_del_provider(khui_new_creds * c,
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_get_next_privint(khui_new_creds * c,
-                         khui_new_creds_privint ** ppp);
+                         khui_new_creds_privint_panel ** ppp);
 
 KHMEXP khm_int32 KHMAPI
-khui_cw_free_privint(khui_new_creds_privint * pp);
+khui_cw_free_privint(khui_new_creds_privint_panel * pp);
 
 #endif

@@ -606,7 +606,7 @@ khc_read_binary(khm_handle conf,
 KHMEXP khm_int32 KHMAPI 
 khc_write_string(khm_handle conf, 
                  const wchar_t * value_name, 
-                 wchar_t * buf);
+                 const wchar_t * buf);
 
 /*! \brief Write a multi-string value to a configuration space
 

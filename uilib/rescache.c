@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#define NOEXPORT
+#define NIMPRIVATE
 #define _NIMLIB_
 
 #include<khuidefs.h>
@@ -35,9 +35,11 @@
 CRITICAL_SECTION cs_res;
 
 typedef struct tag_cached_resource {
+    /* Keys { */
     khm_handle       owner;
     khm_restype      type;
     khm_int32        id;
+    /* } Keys */
 
     union {
         const wchar_t * str;
@@ -48,8 +50,9 @@ typedef struct tag_cached_resource {
     LDCL(struct tag_cached_resource);
 } cached_resource;
 
-cached_resource * cached_resources;
-hashtable * ht_resources;
+static cached_resource * cached_resources;
+static cached_resource * discarded_resources;
+static hashtable * ht_resources;
 
 static khm_int32
 hash_resource(const void * k)
@@ -77,16 +80,25 @@ del_ref_resource(const void * k, void * d)
 {
     cached_resource * r = (cached_resource *) d;
 
+    LDELETE(&cached_resources, r);
+
     switch (r->type) {
     case KHM_RESTYPE_STRING:
+        PFREE(r);
         break;
+
+        /* For icons and bitmaps, we can't immediately delete the GDI
+           object because the UI might still be using the handle.
+           Therefore, we move the resource to the discarded_resources
+           list where it will be disposed of later. */
 
     case KHM_RESTYPE_ICON:
-        DestroyIcon(r->h_gdiobj);
+        LPUSH(&discarded_resources, r);
         break;
 
+    case KHM_RESTYPE_FONT:
     case KHM_RESTYPE_BITMAP:
-        DeleteObject(r->h_gdiobj);
+        LPUSH(&discarded_resources, r);
         break;
 
     default:
@@ -94,14 +106,13 @@ del_ref_resource(const void * k, void * d)
         assert(FALSE);
 #endif
     }
-
-    PFREE(r);
-    LDELETE(&cached_resources, r);
 }
 
 KHMEXP void KHMAPI 
 khui_init_rescache(void) {
     InitializeCriticalSection(&cs_res);
+    cached_resources = NULL;
+    discarded_resources = NULL;
     ht_resources = hash_new_hashtable(127, hash_resource, comp_resource,
                                       NULL, del_ref_resource);
 }
@@ -112,6 +123,34 @@ khui_exit_rescache(void) {
 
     hash_del_hashtable(ht_resources);
 
+#ifdef DEBUG
+    assert(cached_resources == NULL);
+#endif
+
+    while (discarded_resources) {
+        cached_resource *r;
+
+        LPOP(&discarded_resources, &r);
+
+        switch (r->type) {
+        case KHM_RESTYPE_ICON:
+            DestroyIcon(r->h_gdiobj);
+            break;
+
+        case KHM_RESTYPE_FONT:
+        case KHM_RESTYPE_BITMAP:
+            DeleteObject(r->h_gdiobj);
+            break;
+
+        default:
+#ifdef DEBUG
+            assert(FALSE);
+#endif
+        }
+
+        PFREE(r);
+    }
+
     LeaveCriticalSection(&cs_res);
     DeleteCriticalSection(&cs_res);
 }
@@ -119,9 +158,10 @@ khui_exit_rescache(void) {
 /* Owner is one of the following:
 
    - Credential type identifier
-   - Identity handler
+   - Identity handle
    - Identity provider handle
    - HMODULE
+   - Pointer to an object in the process address space
  */
 KHMEXP khm_int32 KHMAPI
 khui_cache_add_resource(khm_handle owner, khm_int32 id,
@@ -168,6 +208,7 @@ khui_cache_add_resource(khm_handle owner, khm_int32 id,
         }
         break;
 
+    case KHM_RESTYPE_FONT:
     case KHM_RESTYPE_ICON:
     case KHM_RESTYPE_BITMAP:
         {
@@ -240,6 +281,7 @@ khui_cache_get_resource(khm_handle owner, khm_int32 id, khm_restype type,
         }
         break;
 
+    case KHM_RESTYPE_FONT:
     case KHM_RESTYPE_ICON:
     case KHM_RESTYPE_BITMAP:
         if (buf != NULL && *pcb_buf >= sizeof(HANDLE)) {
@@ -544,4 +586,319 @@ khui_draw_bitmap(HDC hdc, int x, int y, khui_bitmap * kbm) {
 
     SelectObject(hdcb, hbmold);
     DeleteDC(hdcb);
+}
+
+static const struct s_respath_prefixes {
+    const wchar_t * prefix;
+    khm_size        cch;
+} respath_prefixes[] = {
+    { KHUI_PREFIX_ICO, ARRAYLENGTH(KHUI_PREFIX_ICO) - 1 },
+    { KHUI_PREFIX_IMG, ARRAYLENGTH(KHUI_PREFIX_IMG) - 1 },
+    { KHUI_PREFIX_ICODLL, ARRAYLENGTH(KHUI_PREFIX_ICODLL) - 1 },
+    { KHUI_PREFIX_IMGDLL, ARRAYLENGTH(KHUI_PREFIX_IMGDLL) - 1}
+};
+
+static HICON
+HICON_from_HBITMAP(HBITMAP hbm, SIZE * ps)
+{
+    HICON hicon = NULL;
+    HBITMAP bmask = NULL;
+    WORD   *pdata = NULL;
+    int    n_per_line;
+    size_t cb;
+    ICONINFO iinfo;
+
+    /* number of WORDs per scanline */
+    n_per_line = (ps->cx - 1) / (sizeof(WORD)*8) + 1;
+
+    /* number of bytes for bitmap */
+    cb = n_per_line * ps->cy * sizeof(WORD);
+
+    pdata = (WORD *) PMALLOC(cb);
+#ifdef DEBUG
+    assert(pdata);
+#endif
+    if (pdata == NULL)
+        goto _img_cleanup;
+
+    memset(pdata, 0, cb);
+
+    bmask = CreateBitmap(ps->cx, ps->cy,
+                         1, /* number of color planes */
+                         1, /* number of bits per pixel */
+                         pdata /* pixel data */);
+    if (bmask == NULL)
+        goto _img_cleanup;
+
+    memset(&iinfo, 0, sizeof(iinfo));
+
+    iinfo.fIcon = TRUE;
+    iinfo.hbmMask = bmask;
+    iinfo.hbmColor = hbm;
+
+    hicon = CreateIconIndirect(&iinfo);
+
+ _img_cleanup:
+    if (bmask)
+        DeleteObject(bmask);
+    if (pdata)
+        PFREE(pdata);
+
+    return hicon;
+}
+
+struct image_enum_data {
+    int       n_skip;           /* number of images to skip */
+    int       n_images;         /* number of matching images found so
+                                   far (not counting ones we
+                                   skipped). */
+
+    int       n_copied;         /* number of images extracted as icons */
+
+    SIZE      s;                /* dimensions of icon */
+
+    khm_restype restype;        /* type of resource we are looking for */
+    khm_size  nc_picon;         /* number of handles we can return */
+    HICON *   picon;            /* return handles */
+
+    khm_boolean need_count;     /* do we need an icon count? */
+};
+
+/* EnumResNameProc for use with EnumResourceNames(). */
+static BOOL CALLBACK
+image_enum_proc(HMODULE hm,
+               LPCTSTR lptype,
+               LPTSTR lpname,
+               LONG_PTR param)
+{
+    struct image_enum_data * d;
+    HICON icon;
+
+    d = (struct image_enum_data *) param;
+
+    if (d->n_skip == 0) {
+
+        if (d->nc_picon > 0) {
+            HANDLE hobj;
+
+            hobj = LoadImage(hm, lpname,
+                             (d->restype == KHM_RESTYPE_ICON)?IMAGE_ICON:IMAGE_BITMAP,
+                             d->s.cx, d->s.cy,
+                             LR_DEFAULTCOLOR);
+
+            if (hobj == NULL) {
+                icon = NULL;
+            } else if (d->restype == KHM_RESTYPE_ICON) {
+                icon = CopyIcon((HICON) hobj);
+                DestroyIcon((HICON) hobj);
+            } else {
+                icon = HICON_from_HBITMAP((HBITMAP) hobj, &d->s);
+                DeleteObject(hobj);
+            }
+
+            if (icon) {
+                *d->picon++ = icon;
+                d->nc_picon --;
+                d->n_copied++;
+            }
+        }
+
+        d->n_images++;
+
+        if (d->nc_picon == 0 && !d->need_count)
+            return FALSE;
+
+    } else
+        d->n_skip--;
+
+    return TRUE;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_load_icons_from_path(const wchar_t * spath, khm_restype restype,
+                          khm_int32 index, khm_int32 flags,
+                          HICON * picon, khm_size * pn_icons)
+{
+    wchar_t path[MAX_PATH];
+    HICON hicon = NULL;
+    HANDLE hobj = NULL;
+    SIZE s;
+
+    if (restype != KHM_RESTYPE_BITMAP &&
+        restype != KHM_RESTYPE_ICON)
+        return KHM_ERROR_INVALID_PARAM;
+
+    if (flags & KHUI_LIFR_SMALL) {
+        s.cx = GetSystemMetrics(SM_CXSMICON);
+        s.cy = GetSystemMetrics(SM_CYSMICON);
+    } else if (flags & KHUI_LIFR_TOOLBAR) {
+        s.cx = s.cy = 24;
+    } else {
+        s.cx = GetSystemMetrics(SM_CXICON);
+        s.cy = GetSystemMetrics(SM_CYICON);
+    }
+
+    /* spath can contain unexpanded environment strings */
+    if (wcschr(spath, L'%')) {
+        DWORD dwrv;
+
+        dwrv = ExpandEnvironmentStrings(spath, path, ARRAYLENGTH(path));
+        if (dwrv == 0 || dwrv > ARRAYLENGTH(path)) {
+            return KHM_ERROR_TOO_LONG;
+        }
+    } else
+        StringCchCopy(path, ARRAYLENGTH(path), spath);
+
+    if (flags & KHUI_LIFR_FROMLIB) {
+        HMODULE hm;
+        struct image_enum_data d;
+        khm_int32 rv = KHM_ERROR_UNKNOWN;
+
+        hm = LoadLibraryEx(path, NULL, LOAD_LIBRARY_AS_DATAFILE);
+        if (hm == NULL) {
+            rv = KHM_ERROR_NOT_FOUND;
+            goto _dll_cleanup;
+        }
+
+        memset(&d, 0, sizeof(d));
+        d.n_skip = index;
+        d.nc_picon = (picon != NULL)?*pn_icons:0;
+        d.s = s;
+        d.restype = restype;
+        d.picon = picon;
+        d.need_count = (picon == NULL);
+
+        EnumResourceNames(hm, (restype == KHM_RESTYPE_ICON)?RT_GROUP_ICON:RT_BITMAP,
+                          image_enum_proc, (LONG_PTR) &d);
+
+        if (picon != NULL)
+            *pn_icons = d.n_copied;
+        else
+            *pn_icons = d.n_images;
+
+        if (d.n_copied < d.n_images)
+            rv = KHM_ERROR_TOO_LONG;
+        else if (d.n_copied > 0)
+            rv = KHM_ERROR_SUCCESS;
+        else
+            rv = KHM_ERROR_NOT_FOUND;
+
+    _dll_cleanup:
+        if (hm)
+            FreeLibrary(hm);
+
+        return rv;
+
+    } else {
+        /* We are loading a .ico or a .bmp file.  In this case we
+           already know we are only going to find at most one icon. */
+
+        if (picon == NULL || *pn_icons < 1) {
+            *pn_icons = 1;
+            return KHM_ERROR_TOO_LONG;
+        }
+
+        hobj = LoadImage(NULL, path, ((restype == KHM_RESTYPE_ICON)?IMAGE_ICON:IMAGE_BITMAP),
+                         s.cx, s.cy, LR_DEFAULTCOLOR|LR_LOADFROMFILE);
+        if (hobj == NULL) {
+            DWORD gle = GetLastError();
+            if (gle == ERROR_FILE_NOT_FOUND ||
+                gle == ERROR_PATH_NOT_FOUND) {
+                return KHM_ERROR_NOT_FOUND;
+            }
+            return KHM_ERROR_UNKNOWN;
+        }
+
+        if (restype == KHM_RESTYPE_ICON) {
+            *picon = (HICON) hobj;
+            *pn_icons = 1;
+            return KHM_ERROR_SUCCESS;
+        } else {
+            *picon = HICON_from_HBITMAP((HBITMAP) hobj, &s);
+            DeleteObject(hobj);
+            if (*picon) {
+                *pn_icons = 1;
+                return KHM_ERROR_SUCCESS;
+            } else
+                return KHM_ERROR_UNKNOWN;
+        }
+    }
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_load_icon_from_resource_path(const wchar_t * respath, khm_int32 flags,
+                                  HICON * picon)
+{
+    wchar_t path[MAX_PATH];
+    int index;
+    size_t len;
+    int method;
+    khm_restype restype;
+    khm_size n = 1;
+
+    if (respath == NULL || picon == NULL ||
+        FAILED(StringCchLength(respath, MAX_PATH, &len)))
+        return KHM_ERROR_INVALID_PARAM;
+
+    for (method = 0; method < ARRAYLENGTH(respath_prefixes); method ++) {
+        if (wcsncmp(respath, respath_prefixes[method].prefix,
+                    respath_prefixes[method].cch) == 0)
+            break;
+    }
+
+    {
+        /* The respath is expected to be in the format :
+           "<prefix>:<path>[,<index>]"
+         */
+        const wchar_t * colon;
+        const wchar_t * ppath;
+        const wchar_t * comma;
+
+        colon = wcschr(respath, L':');
+        if (colon == NULL)
+            return KHM_ERROR_INVALID_PARAM;
+
+        ppath = colon + 1;
+
+        comma = wcsrchr(ppath, L',');
+
+        if (comma)
+            len = comma - ppath;
+        else
+            len -= ppath - respath;
+
+        StringCchCopyN(path, ARRAYLENGTH(path), ppath, len);
+
+        if (comma)
+            index = _wtoi(comma + 1);
+        else
+            index = 0;
+    }
+
+    switch (method) {
+    case 0:                     /* ICO: */
+        restype = KHM_RESTYPE_ICON;
+        flags &= ~KHUI_LIFR_FROMLIB;
+        break;
+
+    case 1:                     /* IMG: */
+        restype = KHM_RESTYPE_BITMAP;
+        flags &= ~KHUI_LIFR_FROMLIB;
+        break;
+
+    case 2:                     /* ICODLL: */
+        restype = KHM_RESTYPE_ICON;
+        flags |= KHUI_LIFR_FROMLIB;
+        break;
+
+    case 3:                     /* IMGDLL: */
+        restype = KHM_RESTYPE_BITMAP;
+        flags |= KHUI_LIFR_FROMLIB;
+        break;
+
+    default:
+        return KHM_ERROR_INVALID_PARAM;
+    }
+
+    return khui_load_icons_from_path(path, restype, index, flags, picon, &n);
 }

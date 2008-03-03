@@ -48,10 +48,7 @@ read_params(HWND hwnd, dlg_data * d) {
 
     hdc = GetWindowDC(hwnd);
 
-    khm_get_cw_element_font(hdc,
-                            NULL,
-                            FALSE,
-                            &d->lf_base);
+    khm_get_element_lfont(hdc, KHM_FONT_BASE, FALSE, &d->lf_base);
 
     d->lf_work = d->lf_base;
 
@@ -64,7 +61,7 @@ write_params(dlg_data * d) {
     khm_boolean applied = FALSE;
 
     if (memcmp(&d->lf_work, &d->lf_base, sizeof(LOGFONT))) {
-        khm_set_cw_element_font(NULL, &d->lf_work);
+        khm_set_element_lfont(KHM_FONT_BASE, &d->lf_work);
         d->lf_base = d->lf_work;
         applied = TRUE;
     }
@@ -370,7 +367,7 @@ khm_cfg_appearance_proc(HWND hwnd,
 
             hdc = GetWindowDC(hwnd);
 
-            khm_get_cw_element_font(hdc, NULL, TRUE, &d->lf_work);
+            khm_get_element_lfont(hdc, KHM_FONT_BASE, TRUE, &d->lf_work);
 
             ReleaseDC(hwnd, hdc);
 

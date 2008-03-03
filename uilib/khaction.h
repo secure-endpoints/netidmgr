@@ -82,7 +82,7 @@ typedef struct tag_khui_action khui_action;
  */
 #define KHUI_ACTIONSTATE_DELETED    8
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 #define ACTION_SIMPLE(c,cap,des,top) \
     {c,KHUI_ACTIONTYPE_TRIGGER,NULL,0,0,0,0,0,cap,des,top,NULL,NULL,NULL,NULL,NULL,NULL,NULL,0}
 
@@ -141,7 +141,7 @@ typedef struct tag_khui_action_ref {
  */
 #define KHUI_ACTIONREF_PACTION      0x04
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 /*! \brief Action should be freed
 
     \note This flag is reserved for internal use in the NetIDMgr
@@ -173,7 +173,7 @@ typedef struct tag_khui_action_ref {
  */
 #define KHUI_ACTIONREF_DEFAULT      0x20
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 #define MENU_ACTION(c) {0,c}
 #define MENU_DEFACTION(c) {KHUI_ACTIONREF_DEFAULT, c}
 #define MENU_SUBMENU(s) {KHUI_ACTIONREF_SUBMENU,s}
@@ -216,7 +216,7 @@ typedef struct tag_khui_menu_def {
 			      list. */
 } khui_menu_def;
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 #define CONSTMENU(c,s,i) {c,s,(khm_size)-1,(khm_size)-1,i}
 #endif
 
@@ -262,12 +262,12 @@ typedef struct tag_khui_menu_def {
 */
 #define KHUI_MENUSTATE_ALLOCD   1
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 /* predefined system menu */
 #define KHUI_MENUSTATE_SYSTEM   2
 #endif
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 
 /*! \brief Accelerator definition */
 typedef struct tag_khui_accel_def {
@@ -288,7 +288,7 @@ extern int khui_n_actions;
 extern khui_menu_def khui_all_menus[];
 extern int khui_n_all_menus;
 
-#endif /* NOEXPORT */
+#endif /* NIMPRIVATE */
 
 /* functions */
 
@@ -402,7 +402,7 @@ khui_menu_insert_action(khui_menu_def * d, khm_size idx, khm_int32 cmd, khm_int3
 #define khui_menu_add_action(d,c) khui_menu_insert_action((d),-1,(c),0)
 #pragma deprecated(khui_menu_add_action)
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 
 /*! \brief Insert an action by reference into a menu
 
@@ -810,7 +810,7 @@ khui_context_cursor_filter(khm_handle cred,
  */
 KHMEXP khm_boolean KHMAPI khui_get_cmd_accel_string(khm_int32 cmd, wchar_t * buf, khm_size bufsiz);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 /*! \brief Initializes the global accelerator table
  */
 KHMEXP HACCEL KHMAPI khui_create_global_accel_table(void);
@@ -822,7 +822,7 @@ KHMEXP HACCEL KHMAPI khui_create_global_accel_table(void);
  */
 KHMEXP khui_menu_def * KHMAPI khui_find_menu(khm_int32 action);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 
 /* internal */
 KHMEXP void KHMAPI
@@ -858,7 +858,7 @@ khui_action_trigger(khm_int32 action, khui_action_context * ctx);
 */
 KHMEXP khui_action * KHMAPI khui_find_action(khm_int32 action);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 /*! \brief Get the length of the action list */
 KHMEXP size_t KHMAPI khui_action_list_length(khui_action_ref * ref);
 #endif
@@ -916,7 +916,7 @@ KHMEXP size_t KHMAPI khui_action_list_length(khui_action_ref * ref);
 
     \note For named custom actions, the name of the action can not be
         the same as the name of a configuration node.  See
-        khui_cfg_register_node().
+        khui_cfg_register().
  */
 KHMEXP khm_int32 KHMAPI
 khui_action_create(const wchar_t * name,
@@ -982,7 +982,7 @@ KHMEXP void KHMAPI khui_check_radio_action(khui_menu_def * d, khm_int32 action);
  */
 KHMEXP void KHMAPI khui_check_action(khm_int32 cmd, khm_boolean check);
 
-#ifdef NOEXPORT
+#ifdef NIMPRIVATE
 /*!\cond INTERNAL */
 
 /*! \brief Initialize actions

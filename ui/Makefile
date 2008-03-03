@@ -32,6 +32,7 @@ MANIFESTFILE=$(BINDIR)\netidmgr.exe.static.manifest
 OBJFILES= 			\
 	$(OBJ)\main.obj 	\
 	$(OBJ)\mainmenu.obj 	\
+	$(OBJ)\appearance.obj	\
 	$(OBJ)\toolbar.obj 	\
 	$(OBJ)\statusbar.obj 	\
 	$(OBJ)\notifier.obj 	\
@@ -51,10 +52,11 @@ OBJFILES= 			\
 	$(OBJ)\debugfuncs.obj	\
 	$(OBJ)\taskbar.obj	\
 	$(OBJ)\windowctl.obj	\
-	$(OBJ)\cfg_general_wnd.obj \
-	$(OBJ)\cfg_identities_wnd.obj \
-	$(OBJ)\cfg_notif_wnd.obj \
-	$(OBJ)\cfg_plugins_wnd.obj \
+	$(OBJ)\iconselectwnd.obj	\
+	$(OBJ)\cfg_general_wnd.obj	\
+	$(OBJ)\cfg_identities_wnd.obj	\
+	$(OBJ)\cfg_notif_wnd.obj	\
+	$(OBJ)\cfg_plugins_wnd.obj	\
 	$(OBJ)\cfg_appear_wnd.obj
 
 RESFILES= \

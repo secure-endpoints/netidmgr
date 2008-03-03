@@ -1574,7 +1574,7 @@ _exit:
 KHMEXP khm_int32 KHMAPI 
 khc_write_string(khm_handle pconf, 
                  const wchar_t * pvalue, 
-                 wchar_t * buf) 
+                 const wchar_t * buf) 
 {
     HKEY pk = NULL;
     kconf_conf_space * c;

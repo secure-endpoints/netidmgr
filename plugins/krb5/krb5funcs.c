@@ -232,60 +232,18 @@ tc_prep_idlist(identlist * idlist) {
     khm_size cb_ids = 0;
     khm_size n_ids = 0;
     khm_size i;
-    wchar_t * ids = NULL;
-    wchar_t *thisid;
+    kcdb_enumeration e = NULL;
+    khm_handle ident = NULL;
 
     idlist->list = NULL;
     idlist->n_list = 0;
     idlist->nc_list = 0;
 
-    do {
-
-        if (ids) {
-            PFREE(ids);
-            ids = NULL;
-        }
-
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_ACTIVE,
-                                KCDB_IDENT_FLAG_ACTIVE,
-                                NULL,
-                                &cb_ids,
-                                &n_ids);
-
-        if (rv != KHM_ERROR_TOO_LONG)
-            break;              /* something else is wrong */
-
-        if (n_ids == 0 || cb_ids == 0)
-            break;              /* no identities to process */
-
-#ifdef DEBUG
-        assert(cb_ids > 0);
-#endif
-
-        ids = PMALLOC(cb_ids);
-#ifdef DEBUG
-        assert(ids != NULL);
-#endif
-        if (ids == NULL)
-            break;
-
-        rv = kcdb_identity_enum(KCDB_IDENT_FLAG_ACTIVE,
-                                KCDB_IDENT_FLAG_ACTIVE,
-                                ids,
-                                &cb_ids,
-                                &n_ids);
-
-        if (KHM_SUCCEEDED(rv))
-            break;
-
-    } while (TRUE);
-
-    if (ids == NULL)
-        return;
+    rv = kcdb_identity_begin_enum(KCDB_IDENT_FLAG_ACTIVE,
+                                  KCDB_IDENT_FLAG_ACTIVE,
+                                  &e, &n_ids);
 
     if (KHM_FAILED(rv) || n_ids == 0) {
-        if (ids)
-            PFREE(ids);
         return;
     }
 
@@ -293,16 +251,8 @@ tc_prep_idlist(identlist * idlist) {
 
     idlist->list = PCALLOC(idlist->nc_list, sizeof(idlist->list[0]));
 
-    for (i = 0, thisid = ids;
-         thisid && thisid[0];
-         thisid = multi_string_next(thisid)) {
-
-        khm_handle ident;
-
-        rv = kcdb_identity_create(thisid, 0, &ident);
-
-        if (KHM_FAILED(rv))
-            continue;
+    i = 0;
+    while (KHM_SUCCEEDED(kcdb_enum_next(e, &ident))) {
 
         idlist->list[i].ident = ident;
         idlist->list[i].count = 0;
@@ -312,7 +262,7 @@ tc_prep_idlist(identlist * idlist) {
 
     idlist->n_list = i;
 
-    PFREE(ids);
+    kcdb_enum_end(e);
 }
 
 static ident_data *

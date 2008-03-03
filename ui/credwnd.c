@@ -52,179 +52,6 @@ cw_select_row(khui_credwnd_tbl * tbl, int row, WPARAM wParam);
 
 
 void
-khm_set_cw_element_font(wchar_t * name, LOGFONT * pfont) {
-    khm_handle csp_cw = NULL;
-    wchar_t * element_name;
-
-    if (name == NULL)
-        element_name = L"FontBase";
-    else
-        element_name = name;
-
-    if (KHM_FAILED(khc_open_space(NULL, L"CredWindow", KHM_PERM_WRITE,
-                                  &csp_cw)))
-        return;
-
-    khc_write_binary(csp_cw, element_name, pfont, sizeof(LOGFONT));
-
-    khc_close_space(csp_cw);
-}
-
-void
-khm_get_cw_element_font(HDC hdc, wchar_t * name, BOOL use_default, LOGFONT * pfont) {
-    khm_handle csp_cw = NULL;
-    khm_size cb;
-    wchar_t * element_name;
-    khm_boolean try_derive = FALSE;
-
-    if (name == NULL)
-        element_name = L"FontBase";
-    else
-        element_name = name;
-
-    if (use_default)
-        goto _use_defaults;
-
-    if (KHM_FAILED(khc_open_space(NULL, L"CredWindow", 0,
-                                  &csp_cw)))
-        goto _use_defaults;
-
-    cb = sizeof(LOGFONT);
-    if (KHM_FAILED(khc_read_binary(csp_cw, element_name, pfont,
-                                   &cb)) ||
-        cb != sizeof(LOGFONT)) {
-        try_derive = TRUE;
-    }
-
-    if (try_derive) {
-        cb = sizeof(LOGFONT);
-        if (!name ||
-            KHM_FAILED(khc_read_binary(csp_cw, L"FontBase", pfont,
-                                       &cb)) ||
-            cb != sizeof(LOGFONT)) {
-            khc_close_space(csp_cw);
-            goto _use_defaults;
-        }
-
-        if (!wcscmp(name, L"FontHeaderBold") ||
-            !wcscmp(name, L"FontBold")) {
-
-            pfont->lfWeight = FW_BOLD;
-
-        }
-    }
-
-    khc_close_space(csp_cw);
-
-    return;
-
- _use_defaults:
-
-    ZeroMemory(pfont, sizeof(*pfont));
-
-    if (name == NULL) {
-        LOGFONT lf = {
-            0,0,
-            0,0,
-            FW_THIN,
-            FALSE,
-            FALSE,
-            FALSE,
-            DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS,
-            DEFAULT_QUALITY,
-            FF_SWISS,
-            L"MS Shell Dlg"};
-
-        lf.lfHeight = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-
-        *pfont = lf;
-
-    } else if (!wcscmp(name, L"FontHeader")) {
-        LOGFONT lf = {
-            0,0,
-            0,0,
-            FW_THIN,
-            FALSE,
-            FALSE,
-            FALSE,
-            DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS,
-            DEFAULT_QUALITY,
-            FF_SWISS,
-            L"MS Shell Dlg"};
-
-        lf.lfHeight = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-
-        *pfont = lf;
-
-    } else if (!wcscmp(name, L"FontHeaderBold")) {
-        LOGFONT lf = {
-            0,0,
-            0,0,
-            FW_BOLD,
-            FALSE,
-            FALSE,
-            FALSE,
-            DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS,
-            DEFAULT_QUALITY,
-            FF_SWISS,
-            L"MS Shell Dlg"};
-
-        lf.lfHeight = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-
-        *pfont = lf;
-
-    } else if (!wcscmp(name, L"FontNormal")) {
-        LOGFONT lf = {
-            0,0,
-            0,0,
-            FW_THIN,
-            FALSE,
-            FALSE,
-            FALSE,
-            DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS,
-            DEFAULT_QUALITY,
-            FF_SWISS,
-            L"MS Shell Dlg"};
-
-        lf.lfHeight = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-
-        *pfont = lf;
-
-    } else if (!wcscmp(name, L"FontBold")) {
-        LOGFONT lf = {
-            0,0,
-            0,0,
-            FW_BOLD,
-            FALSE,
-            FALSE,
-            FALSE,
-            DEFAULT_CHARSET,
-            OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS,
-            DEFAULT_QUALITY,
-            FF_SWISS,
-            L"MS Shell Dlg"};
-
-        lf.lfHeight = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
-
-        *pfont = lf;
-
-    } else {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-    }
-}
-
-void
 cw_refresh_attribs(HWND hwnd) {
     khm_int32 act;
     kcdb_attrib * attrib;
@@ -448,37 +275,6 @@ cw_save_view(khui_credwnd_tbl * tbl, wchar_t * view_name) {
         PFREE(col_list);
 }
 
-static COLORREF
-cw_mix_colors(COLORREF c1, COLORREF c2, int alpha) {
-    int r = (GetRValue(c1) * alpha + GetRValue(c2) * (255 - alpha)) / 255;
-    int g = (GetGValue(c1) * alpha + GetGValue(c2) * (255 - alpha)) / 255;
-    int b = (GetBValue(c1) * alpha + GetBValue(c2) * (255 - alpha)) / 255;
-
-#ifdef DEBUG
-    assert(alpha >= 0 && alpha < 256);
-#endif
-
-    return RGB(r,g,b);
-}
-
-static COLORREF
-cw_get_theme_color(khm_handle hc, const wchar_t * name, COLORREF ref_color) {
-    khm_int32 t;
-    COLORREF c;
-    int alpha;
-
-    if (KHM_FAILED(khc_read_int32(hc, name, &t))) {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-        return ref_color;
-    }
-
-    alpha = ((t >> 24) & 0xff);
-    c = (COLORREF) (t & 0xffffff);
-    return cw_mix_colors(ref_color, c, alpha);
-}
-
 void 
 cw_load_view(khui_credwnd_tbl * tbl, wchar_t * view, HWND hwnd) {
     khm_handle hc_cw = NULL;
@@ -492,7 +288,6 @@ cw_load_view(khui_credwnd_tbl * tbl, wchar_t * view, HWND hwnd) {
     wchar_t * iter = NULL;
     int i;
     HDC hdc;
-    LOGFONT log_font;
     khm_int32 t;
     const wchar_t * viewval;
     khm_boolean reopen_csp = FALSE;
@@ -698,21 +493,16 @@ _skip_col:
 
     hdc = GetWindowDC(hwnd);
 
-    khm_get_cw_element_font(hdc, L"FontHeader", FALSE, &log_font);
-    tbl->hf_header = CreateFontIndirect(&log_font);
+    tbl->hf_header = khm_get_element_font(KHM_FONT_HEADER);
 
     if(tbl->hf_header && tbl->hwnd_header)
         SendMessage(tbl->hwnd_header, WM_SETFONT, (WPARAM) tbl->hf_header, 0);
 
-    khm_get_cw_element_font(hdc, L"FontHeaderBold", FALSE, &log_font);
-    tbl->hf_bold_header = CreateFontIndirect(&log_font);
+    tbl->hf_bold_header = khm_get_element_font(KHM_FONT_HEADERSEL);
 
+    tbl->hf_normal = khm_get_element_font(KHM_FONT_NORMAL);
 
-    khm_get_cw_element_font(hdc, L"FontNormal", FALSE, &log_font);
-    tbl->hf_normal = CreateFontIndirect(&log_font);
-
-    khm_get_cw_element_font(hdc, L"FontBold", FALSE, &log_font);
-    tbl->hf_bold = CreateFontIndirect(&log_font);
+    tbl->hf_bold = khm_get_element_font(KHM_FONT_SELECT);
 
     ReleaseDC(hwnd, hdc);
 
@@ -725,11 +515,7 @@ _skip_col:
                                     LR_DEFAULTCOLOR));
 
     {
-
 #define SEL_ALPHA 50
-
-        khm_handle hc_themes = NULL;
-        khm_handle hc_theme = NULL;
 
         COLORREF bg_s          = 0;
         COLORREF bg_normal     = 0;
@@ -746,43 +532,27 @@ _skip_col:
         COLORREF bg_hdr_crit_s = 0;
         COLORREF bg_hdr_exp_s  = 0;
 
-        cbsize = sizeof(buf);
-        if (KHM_SUCCEEDED(khc_read_string(hc_cw, L"DefaultTheme", buf, &cbsize)) &&
-            KHM_SUCCEEDED(khc_open_space(hc_cw, L"Themes", KHM_PERM_READ, &hc_themes)) &&
-            KHM_SUCCEEDED(khc_open_space(hc_themes, buf, KHM_PERM_READ, &hc_theme))) {
-
-            bg_s           = cw_get_theme_color(hc_theme, L"ClrSelection", 0);
-            bg_normal      = cw_get_theme_color(hc_theme, L"ClrBackground", 0);
-            bg_gray        = cw_get_theme_color(hc_theme, L"ClrGray", 0);
-            bg_hdr         = cw_get_theme_color(hc_theme, L"ClrHeader", 0);
-            bg_hdr_cred    = cw_get_theme_color(hc_theme, L"ClrHeaderCred", 0);
-            bg_hdr_warn    = cw_get_theme_color(hc_theme, L"ClrHeaderWarn", 0);
-            bg_hdr_crit    = cw_get_theme_color(hc_theme, L"ClrHeaderCrit", 0);
-            bg_hdr_exp     = cw_get_theme_color(hc_theme, L"ClrHeaderExp", 0);
-            bg_hdr_s       = cw_get_theme_color(hc_theme, L"ClrHeaderSel", bg_s);
-            bg_hdr_cred_s  = cw_get_theme_color(hc_theme, L"ClrHeaderCredSel", bg_s);
-            bg_hdr_warn_s  = cw_get_theme_color(hc_theme, L"ClrHeaderWarnSel", bg_s);
-            bg_hdr_crit_s  = cw_get_theme_color(hc_theme, L"ClrHeaderCritSel", bg_s);
-            bg_hdr_exp_s   = cw_get_theme_color(hc_theme, L"ClrHeaderExpSel", bg_s);
-
-            tbl->cr_normal      = cw_get_theme_color(hc_theme, L"ClrText", 0);
-            tbl->cr_s           = cw_get_theme_color(hc_theme, L"ClrTextSel", bg_s);
-            tbl->cr_hdr_outline = cw_get_theme_color(hc_theme, L"ClrHeaderOutline", 0);
-            tbl->cr_hdr_normal  = cw_get_theme_color(hc_theme, L"ClrTextHeader", 0);
-            tbl->cr_hdr_s       = cw_get_theme_color(hc_theme, L"ClrTextHeaderSel", bg_s);
-            tbl->cr_hdr_gray    = cw_get_theme_color(hc_theme, L"ClrTextHeaderGray", 0);
-            tbl->cr_hdr_gray_s  = cw_get_theme_color(hc_theme, L"ClrTextHeaderGraySel", bg_s);
-        } else {
-#ifdef DEBUG
-            assert(FALSE);
-#endif            
-        }
-
-        if (hc_theme)
-            khc_close_space(hc_theme);
-        if (hc_themes)
-            khc_close_space(hc_themes);
-        hc_theme = hc_themes = NULL;
+        bg_s           = khm_get_element_color(KHM_CLR_SELECTION);
+        bg_normal      = khm_get_element_color(KHM_CLR_BACKGROUND);
+        bg_gray        = khm_get_element_color(KHM_CLR_ACCENT);
+        bg_hdr         = khm_get_element_color(KHM_CLR_HEADER);
+        bg_hdr_cred    = khm_get_element_color(KHM_CLR_HEADER_CRED);
+        bg_hdr_warn    = khm_get_element_color(KHM_CLR_HEADER_WARN);
+        bg_hdr_crit    = khm_get_element_color(KHM_CLR_HEADER_CRIT);
+        bg_hdr_exp     = khm_get_element_color(KHM_CLR_HEADER_EXP);
+        bg_hdr_s       = khm_get_element_color(KHM_CLR_HEADER_SEL);
+        bg_hdr_cred_s  = khm_get_element_color(KHM_CLR_HEADER_CRED_SEL);
+        bg_hdr_warn_s  = khm_get_element_color(KHM_CLR_HEADER_WARN_SEL);
+        bg_hdr_crit_s  = khm_get_element_color(KHM_CLR_HEADER_CRIT_SEL);
+        bg_hdr_exp_s   = khm_get_element_color(KHM_CLR_HEADER_EXP_SEL);
+        
+        tbl->cr_normal      = khm_get_element_color(KHM_CLR_TEXT);
+        tbl->cr_s           = khm_get_element_color(KHM_CLR_TEXT_SEL);
+        tbl->cr_hdr_outline = khm_get_element_color(KHM_CLR_HEADER_ACCENT);
+        tbl->cr_hdr_normal  = khm_get_element_color(KHM_CLR_TEXT_HEADER);
+        tbl->cr_hdr_s       = khm_get_element_color(KHM_CLR_TEXT_HEADER_SEL);
+        tbl->cr_hdr_gray    = khm_get_element_color(KHM_CLR_TEXT_HEADER_DIS);
+        tbl->cr_hdr_gray_s  = khm_get_element_color(KHM_CLR_TEXT_HEADER_DIS_SEL);
 
         if (khm_main_wnd_mode == KHM_MAIN_WND_MINI) {
             bg_hdr = bg_normal;
@@ -791,7 +561,7 @@ _skip_col:
 
         tbl->hb_normal =      CreateSolidBrush(bg_normal);
         tbl->hb_grey =        CreateSolidBrush(bg_gray);
-        tbl->hb_s =           CreateSolidBrush(cw_mix_colors(bg_s, bg_normal, SEL_ALPHA));
+        tbl->hb_s =           CreateSolidBrush(khm_mix_colors(bg_s, bg_normal, SEL_ALPHA));
 
         tbl->hb_hdr_bg =      CreateSolidBrush(bg_hdr);
         tbl->hb_hdr_bg_cred = CreateSolidBrush(bg_hdr_cred);
@@ -2023,11 +1793,6 @@ cw_unload_view(khui_credwnd_tbl * tbl)
             o = NULL; \
         } \
     } while(0)
-
-    SafeDeleteObject(tbl->hf_header);
-    SafeDeleteObject(tbl->hf_normal);
-    SafeDeleteObject(tbl->hf_bold);
-    SafeDeleteObject(tbl->hf_bold_header);
 
     SafeDeleteObject(tbl->hb_grey);
     SafeDeleteObject(tbl->hb_normal);

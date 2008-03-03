@@ -448,10 +448,10 @@ tmr_next_halflife_timeout(int idx, FILETIME * issue, FILETIME * expire) {
     khm_int64 iexpire;
 
     khm_int64 iret;
+    BOOL      set_timer = FALSE;
 
     GetSystemTimeAsFileTime(&current);
 
-    /* wha?? */
     if (CompareFileTime(issue, expire) >= 0)
         return current;
 
@@ -479,10 +479,14 @@ tmr_next_halflife_timeout(int idx, FILETIME * issue, FILETIME * expire) {
                 continue;
 
             } else {
+                set_timer = TRUE;
                 break;
             }
         }
     }
+
+    if (!set_timer)
+        return IntToFt(0);
 
     iret = iexpire - ilife;
 
