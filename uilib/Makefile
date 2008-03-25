@@ -54,13 +54,17 @@ INCFILES=			\
 	$(INCDIR)\khremote.h	\
 	$(INCDIR)\intaction.h	\
 	$(INCDIR)\intalert.h	\
-	$(INCDIR)\intnewcred.h
+	$(INCDIR)\intnewcred.h	\
+	$(OBJ)\resource.h
 
 $(OBJ)\actiondef.c: actions.csv actiondef.cfg
 	$(CCSV) $** $@
 
 $(OBJ)\acceldef.c: accel.csv acceldef.cfg
 	$(CCSV) $** $@
+
+$(OBJ)\resource.h: ..\ui\resource.h
+	$(CP) $** $@
 
 all: mkdirs $(INCFILES) $(UIDLLOBJFILES)
 

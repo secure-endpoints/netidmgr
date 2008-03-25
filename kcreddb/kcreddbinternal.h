@@ -40,7 +40,7 @@
 #include<kconfig.h>
 #include<strsafe.h>
 
-#include<langres.h>
+#include "langres.h"
 
 #include "buf.h"
 #include "identpro.h"

@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #ifdef DEBUG
 #include<assert.h>
 #endif

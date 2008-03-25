@@ -27,8 +27,8 @@
 #ifndef __KHIMAIRA_KPLUGIN_H
 #define __KHIMAIRA_KPLUGIN_H
 
-#include<kmm.h>
-#include<kherror.h>
+#include "kmm.h"
+#include "kherror.h"
 
 /*! \addtogroup kmm
 @{*/

@@ -46,7 +46,7 @@
 #define PDUMP(f)   ((void) 0)
 #define PWCSDUP(s) _wcsdup(s)
 #define PSTRDUP(s) strdup(s)
-#define PDESCTHREAD(n,c)
+#define PDESCTHREAD(n,c) ((void) 0)
 #endif
 
 KHMEXP void *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2008 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,5 +24,25 @@
 
 /* $Id$ */
 
-#include<kconfiginternal.h>
+#define NIMPRIVATE
+#include "tests.h"
 
+DECLARE_ONCE(o1);
+DECLARE_ONCE(o2);
+
+int once_test(void)
+{
+    CHECK(InitializeOnce(&o1));
+    InitializeOnceDone(&o1);
+    CHECK(!InitializeOnce(&o1));
+
+    return 0;
+}
+
+static nim_test tests[] = {
+    {"ONCE", "InitalizeOnce() test", once_test},
+};
+
+nim_test_suite util_sync_suite = {
+    "UtilSync", "[util] Synchronization tests", NULL, NULL, ARRAYLENGTH(tests), tests
+};

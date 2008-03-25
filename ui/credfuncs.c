@@ -25,20 +25,21 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<assert.h>
 
 static BOOL in_dialog = FALSE;
 static CRITICAL_SECTION cs_dialog;
 static HANDLE in_dialog_evt = NULL;
-static LONG init_dialog = 0;
 static khm_int32 dialog_result = 0;
 static wchar_t dialog_identity[KCDB_IDENT_MAXCCH_NAME];
 static khui_new_creds * dialog_nc = NULL;
 
+DECLARE_ONCE(dialog_init_once);
+
 static void
 dialog_sync_init(void) {
-    if (InterlockedIncrement(&init_dialog) == 1) {
+    if (InitializeOnce(&dialog_init_once)) {
 #ifdef DEBUG
         assert(in_dialog_evt == NULL);
         assert(in_dialog == FALSE);
@@ -50,11 +51,8 @@ dialog_sync_init(void) {
                                     TRUE,
                                     TRUE,
                                     L"DialogCompletionEvent");
-    } else {
-        InterlockedDecrement(&init_dialog);
-        if (in_dialog_evt == NULL) {
-            Sleep(100);
-        }
+
+        InitializeOnceDone(&dialog_init_once);
     }
 }
 

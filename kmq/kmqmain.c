@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kmqinternal.h>
+#include "kmqinternal.h"
 
 void
 kmq_process_attach(void) {

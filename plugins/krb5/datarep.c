@@ -27,9 +27,8 @@
 /* Data representation and related functions */
 
 #include<winsock2.h>
-#include<krbcred.h>
+#include "krbcred.h"
 #include<krb5.h>
-#include<kherror.h>
 #include<strsafe.h>
 #include<assert.h>
 

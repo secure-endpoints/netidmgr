@@ -28,8 +28,8 @@
 
 #include<khuidefs.h>
 #include<kmm.h>
-#include<configui.h>
 #include<utils.h>
+#include "configui.h"
 #include<assert.h>
 
 #include<strsafe.h>

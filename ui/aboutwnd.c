@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<netidmgr_intver.h>
 #include<tlhelp32.h>
 

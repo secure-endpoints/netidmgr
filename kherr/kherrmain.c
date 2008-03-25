@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kherrinternal.h>
+#include "kherrinternal.h"
 
 void
 kherr_process_attach(void) {

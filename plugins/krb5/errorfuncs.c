@@ -24,8 +24,7 @@
 
 /* $Id$ */
 
-#include<krbcred.h>
-#include<kherror.h>
+#include "krbcred.h"
 
 extern void (__cdecl *pinitialize_krb_error_func)();
 extern void (__cdecl *pinitialize_kadm_error_table)();
@@ -244,12 +243,13 @@ void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
                       NULL);
     }
 
-    if (sugg_id != 0) {
+    if (sugg_id != 0 && suggestion != NULL) {
         *suggestion = sugg_id;
     }
 
-    if (sugg_code != KHERR_SUGGEST_NONE)
+    if (sugg_code != KHERR_SUGGEST_NONE && suggest_code != NULL) {
         *suggest_code = sugg_code;
+    }
 }
 
 #ifdef DEPRECATED_REMOVABLE

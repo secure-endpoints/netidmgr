@@ -54,6 +54,7 @@ OBJFILES= \
 	$(UTILDIR)\sync.obj		\
 	$(UTILDIR)\mstring.obj		\
 	$(UTILDIR)\perfstat.obj		\
+	$(UTILDIR)\task.obj      	\
 	$(KHERRDIR)\kherrmain.obj	\
 	$(KHERRDIR)\kherr.obj		\
 	$(KCONFIGDIR)\kconfigmain.obj	\
@@ -145,6 +146,8 @@ TESTOBJS= \
 	$(OBJ)\main.obj			\
 	$(OBJ)\tests.obj		\
 	$(OBJ)\util_ms_test.obj		\
+	$(OBJ)\util_sync_test.obj	\
+	$(OBJ)\util_task_test.obj	\
 	$(OBJ)\uilib_res_test.obj	\
 	$(OBJ)\uilib_cfg_test.obj
 

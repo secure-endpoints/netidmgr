@@ -25,7 +25,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 
 KHMEXP int KHMAPI AnsiStrToUnicode( wchar_t * wstr, size_t cbwstr, const char * astr)
 {

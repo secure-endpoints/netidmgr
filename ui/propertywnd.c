@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<assert.h>
 
 typedef struct tag_pw_data {

@@ -35,13 +35,13 @@
 
 #include<netidmgr.h>
 
-#include<krb4funcs.h>
+#include "krb4funcs.h"
 #include<krb5common.h>
-#include<errorfuncs.h>
+#include "errorfuncs.h"
 #include<dynimport.h>
 
-#include<langres.h>
-#include<krb4_msgs.h>
+#include "langres.h"
+#include "krb4_msgs.h"
 
 #define TYPENAME_ENCTYPE        L"EncType"
 #define TYPENAME_ADDR_LIST      L"AddrList"

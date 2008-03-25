@@ -77,8 +77,6 @@ static thread_info * threads = NULL;
 static hashtable fn_hash;
 
 static CRITICAL_SECTION cs_alloc;
-static LONG ctr = 0;
-static int  perf_ready = 0;
 
 static DWORD init_thread = 0;
 
@@ -110,13 +108,15 @@ static khm_int32 hash_string_compA(const void * vs1,
     return strcmp((const char *) vs1, (const char *) vs2);
 }
 
+DECLARE_ONCE(p_once);
+
 static void perf_once(void) {
-    if (InterlockedIncrement(&ctr) == 1) {
+    if (InitializeOnce(&p_once)) {
         InitializeCriticalSection(&cs_alloc);
         ZeroMemory(ht, sizeof(ht));
 
         next_alloc = _malloc_dbg(sizeof(allocation) * ALLOCBLOCK, _PERF_BLOCK,
-                                __FILE__, __LINE__);
+                                 __FILE__, __LINE__);
         assert(next_alloc);
         idx_next_alloc = 0;
         free_alloc = NULL;
@@ -128,16 +128,7 @@ static void perf_once(void) {
         fn_hash.bins = _calloc_dbg(fn_hash.n, sizeof(hash_bin *),
                                    _PERF_BLOCK, __FILE__, __LINE__);
 
-        perf_ready = 1;
-    } else {
-        DWORD this_thread = GetCurrentThreadId();
-
-        while(!perf_ready &&
-              init_thread != this_thread) {
-            Sleep(0);           /* relinquish control to the thread
-                                   that is initializing the alloc
-                                   data. */
-        }
+        InitializeOnceDone(&p_once);
     }
 }
 

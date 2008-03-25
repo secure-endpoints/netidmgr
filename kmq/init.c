@@ -24,8 +24,9 @@
 
 /* $Id$ */
 
-#include<kmqinternal.h>
+#include "kmqinternal.h"
 #include<kconfig.h>
+#include<process.h>
 #include<assert.h>
 
 CRITICAL_SECTION cs_kmq_global;
@@ -34,7 +35,7 @@ kmq_timer kmq_call_dead_timeout;
 
 kmq_queue * queues;
 
-LONG kmq_init_once = 0;
+DECLARE_ONCE(kmq_init_once);
 
 void kmqint_init(void) {
     khm_handle hconfig = NULL;
@@ -182,7 +183,7 @@ HANDLE compl_wx;
 BOOL compl_continue;
 CRITICAL_SECTION cs_compl;
 
-DWORD WINAPI kmqint_completion_thread_proc(LPVOID p) {
+unsigned __stdcall kmqint_completion_thread_proc(void * p) {
     kmq_message * m;
     kherr_context * ctx;
 
@@ -219,11 +220,11 @@ DWORD WINAPI kmqint_completion_thread_proc(LPVOID p) {
 
     LeaveCriticalSection(&cs_compl);
 
-    ExitThread(0);
+    return 0;
 }
 
 int kmqint_call_completion_handler(kmq_msg_completion_handler h,
-                                    kmq_message * m) {
+                                   kmq_message * m) {
     if (h == NULL)
         return 0;
 
@@ -251,7 +252,7 @@ int kmqint_call_completion_handler(kmq_msg_completion_handler h,
 }
 
 KHMEXP khm_int32 KHMAPI kmq_init(void) {
-    if (InterlockedIncrement(&kmq_init_once) == 1) {
+    if (InitializeOnce(&kmq_init_once)) {
         EnterCriticalSection(&cs_kmq_global);
 
         InitializeCriticalSection(&cs_compl);
@@ -259,39 +260,36 @@ KHMEXP khm_int32 KHMAPI kmq_init(void) {
         compl_continue = TRUE;
         QINIT(&kmq_completion_xfer);
 
-        kmq_h_compl = CreateThread(NULL,
-                                   0,
-                                   kmqint_completion_thread_proc,
-                                   NULL,
-                                   0,
-                                   &kmq_tid_compl);
+        kmq_h_compl = (HANDLE) _beginthreadex(NULL, 4 * 4096,
+                                              kmqint_completion_thread_proc,
+                                              NULL, 0, &kmq_tid_compl);
 
         assert(kmq_h_compl != NULL);
 
         LeaveCriticalSection(&cs_kmq_global);
+
+        InitializeOnceDone(&kmq_init_once);
     }
 
     return KHM_ERROR_SUCCESS;
 }
 
 KHMEXP khm_int32 KHMAPI kmq_exit(void) {
-    if (InterlockedDecrement(&kmq_init_once) == 0) {
 
-        EnterCriticalSection(&cs_compl);
-        compl_continue = FALSE;
-        SetEvent(compl_wx);
-        LeaveCriticalSection(&cs_compl);
+    EnterCriticalSection(&cs_compl);
+    compl_continue = FALSE;
+    SetEvent(compl_wx);
+    LeaveCriticalSection(&cs_compl);
 
-        WaitForSingleObject(kmq_h_compl, INFINITE);
+    WaitForSingleObject(kmq_h_compl, INFINITE);
 
-        EnterCriticalSection(&cs_kmq_global);
-        CloseHandle(kmq_h_compl);
-        kmq_h_compl = NULL;
-        kmq_tid_compl = 0;
-        CloseHandle(compl_wx);
-        DeleteCriticalSection(&cs_compl);
-        LeaveCriticalSection(&cs_kmq_global);
-    }
+    EnterCriticalSection(&cs_kmq_global);
+    CloseHandle(kmq_h_compl);
+    kmq_h_compl = NULL;
+    kmq_tid_compl = 0;
+    CloseHandle(compl_wx);
+    DeleteCriticalSection(&cs_compl);
+    LeaveCriticalSection(&cs_kmq_global);
 
     return KHM_ERROR_SUCCESS;
 }

@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<assert.h>
 
 #define MAX_PLUGINS 256

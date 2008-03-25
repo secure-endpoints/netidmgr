@@ -29,7 +29,7 @@
 #define _WIN32_WINNT 0x501
 #endif
 
-#include<krbcred.h>
+#include "krbcred.h"
 #include<krb5.h>
 #include<assert.h>
 #include<lm.h>

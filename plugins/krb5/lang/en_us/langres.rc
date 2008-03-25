@@ -53,23 +53,20 @@ END
 //
 
 IDD_NC_KRB5 DIALOGEX 0, 0, 300, 166
-STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "Kerberos v5 Credential Options",IDC_STATIC,"Static",SS_LEFTNOWORDWRAP | SS_SUNKEN | WS_GROUP,7,7,286,11
-    LTEXT           "Realm",IDC_STATIC,7,25,52,13
-    COMBOBOX        IDC_NCK5_REALM,60,25,233,51,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Specify &additional realms ...",IDC_NCK5_ADD_REALMS,181,43,112,16,BS_NOTIFY | NOT WS_VISIBLE | WS_DISABLED
-    LTEXT           "&Lifetime",IDC_STATIC,7,67,61,12
-    EDITTEXT        IDC_NCK5_LIFETIME_EDIT,85,67,107,12,ES_AUTOHSCROLL
-    CONTROL         "&Renewable for",IDC_NCK5_RENEWABLE,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,7,87,64,12
-    EDITTEXT        IDC_NCK5_RENEW_EDIT,85,87,108,12,ES_AUTOHSCROLL
+    CONTROL         "Kerberos v5 Credential Options",IDC_STATIC,"Static",SS_LEFTNOWORDWRAP | SS_SUNKEN | WS_GROUP,7,7,285,11
+    LTEXT           "&Lifetime",IDC_STATIC,7,26,61,12
+    EDITTEXT        IDC_NCK5_LIFETIME_EDIT,85,26,107,12,ES_AUTOHSCROLL
+    CONTROL         "&Renewable for",IDC_NCK5_RENEWABLE,"Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,7,46,64,12
+    EDITTEXT        IDC_NCK5_RENEW_EDIT,85,46,108,12,ES_AUTOHSCROLL
     CONTROL         "Can be &forwarded to other machines",IDC_NCK5_FORWARDABLE,
-                    "Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,7,107,132,12
-    CONTROL         "Addressless",IDC_NCK5_ADDRESS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,128,54,10
-    LTEXT           "Additional IP address",IDC_STATIC,118,129,68,8,NOT WS_VISIBLE
-    CONTROL         "",IDC_NCK5_PUBLICIP,"SysIPAddress32",NOT WS_VISIBLE | WS_TABSTOP,193,125,100,15
+                    "Button",BS_AUTOCHECKBOX | BS_NOTIFY | WS_TABSTOP,7,66,132,12
+    CONTROL         "Addressless",IDC_NCK5_ADDRESS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,87,54,10
+    LTEXT           "Additional IP address",IDC_STATIC,118,88,68,8,NOT WS_VISIBLE
+    CONTROL         "",IDC_NCK5_PUBLICIP,"SysIPAddress32",NOT WS_VISIBLE | WS_TABSTOP,192,84,100,15
 END
 
 IDD_PP_KRB5C DIALOGEX 0, 0, 235, 156
@@ -199,9 +196,6 @@ EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "Kerberos v5 Change Password Options",IDC_STATIC,"Static",SS_LEFTNOWORDWRAP | SS_SUNKEN | WS_GROUP,7,7,286,11
-    LTEXT           "Realm",IDC_STATIC,7,25,52,13
-    COMBOBOX        IDC_NCK5_REALM,60,25,233,51,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Specify &additional realms ...",IDC_NCK5_ADD_REALMS,181,43,112,16,BS_NOTIFY | WS_DISABLED
 END
 
 IDD_CFG_CACHES DIALOGEX 0, 0, 255, 182
@@ -246,7 +240,7 @@ BEGIN
     IDD_NC_KRB5, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 293
+        RIGHTMARGIN, 292
         TOPMARGIN, 7
         BOTTOMMARGIN, 159
     END
@@ -405,10 +399,9 @@ BEGIN
     IDS_RENEW_FOR_LONG_DESC "Renewable for"
     IDS_KRB5_CCNAME_LONG_DESC "Kerberos v5 Primary Credentials Cache"
     IDS_KRB5_WARNING        "Kerberos v5 Warning"
-    IDS_K5ERR_NAME_EXPIRED  "<p><a id=""SwitchPanel"" param=""Krb5Cred""><b>Krb5</b></a><tab>: The selected principal name has expired.</p><p><tab>  Please contact your system administrator.</p>"
-    IDS_K5ERR_KEY_EXPIRED   "<p><a id=""SwitchPanel"" param=""Krb5Cred""><b>Krb5</b></a><tab>: The password for the selected identity has expired.</p><p><tab>  Click <a id=""Krb5Cred:!Passwd"">here</a> to change the password</p>"
+    IDS_K5ERR_NAME_EXPIRED  "The principal has expired.  Please contact your system administrator."
+    IDS_K5ERR_KEY_EXPIRED   "The password has expired."
     IDS_KRB5_WARN_FMT       "Kerberos v5: %s\n\n%s"
-    IDS_K5ERR_FMT           "<p><a id=""SwitchPanel"" param=""Krb5Cred""><b>Krb5</b></a><tag>: %s</p>"
     IDS_K5CFG_SHORT_DESC    "Kerberos v5"
 END
 

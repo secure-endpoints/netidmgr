@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 #include<assert.h>
 
 CRITICAL_SECTION cs_credset;

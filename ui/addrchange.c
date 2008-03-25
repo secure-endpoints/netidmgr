@@ -24,14 +24,15 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<iphlpapi.h>
+#include<process.h>
 
 static HANDLE evt_terminate = NULL;
 static HANDLE h_thread = NULL;
 
-DWORD WINAPI
-addr_change_thread(LPVOID dummy) {
+unsigned __stdcall
+addr_change_thread(void * dummy) {
 
     HANDLE h_waits[2];
     HANDLE h_notify;
@@ -67,18 +68,15 @@ addr_change_thread(LPVOID dummy) {
     } while(TRUE);
     
  _end_thread:
-    ExitThread(0);
+    return 0;
 }
 
 void
 khm_addr_change_notifier_init(void) {
     evt_terminate = CreateEvent(NULL, FALSE, FALSE, NULL);
-    h_thread = CreateThread(NULL,
-                            64 * 4096,
-                            addr_change_thread,
-                            NULL,
-                            0,
-                            NULL);
+    h_thread = (HANDLE) _beginthreadex(NULL, 4 * 4096,
+                                       addr_change_thread,
+                                       NULL, 0, NULL);
 }
 
 void

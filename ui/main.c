@@ -27,7 +27,7 @@
 /* $Id$ */
 
 #include<shlwapi.h>
-#include<khmapp.h>
+#include "khmapp.h"
 #include<netidmgr_intver.h>
 
 /* used for the command-line help dialog */

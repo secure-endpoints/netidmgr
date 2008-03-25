@@ -25,7 +25,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 #include<khrescache.h>
 #include<assert.h>
 

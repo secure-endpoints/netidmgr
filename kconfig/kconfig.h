@@ -27,8 +27,8 @@
 #ifndef __KHIMAIRA_KCONFIG_H
 #define __KHIMAIRA_KCONFIG_H
 
-#include<khdefs.h>
-#include<mstring.h>
+#include "khdefs.h"
+#include "mstring.h"
 
 /*! \defgroup kconf NetIDMgr Configuration Provider */
 /*@{*/

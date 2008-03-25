@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 #include<assert.h>
 
 CRITICAL_SECTION cs_attrib;
@@ -447,6 +447,22 @@ kcdb_attrib_init(void)
     attrib.compute_max_cbsize = sizeof(khm_int32);
 
     kcdb_attrib_register(&attrib, NULL);
+
+    /* Extended parameter */
+    attrib.id = KCDB_ATTR_PARAM;
+    attrib.name = KCDB_ATTRNAME_PARAM;
+    attrib.type = KCDB_TYPE_DATA;
+    LoadString(hinst_kcreddb, IDS_PARAM, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY |
+        KCDB_ATTR_FLAG_HIDDEN;
+    attrib.compute_cb = NULL;
+    attrib.compute_min_cbsize = 0;
+    attrib.compute_max_cbsize = 0;
+
+    kcdb_attrib_register(&attrib, NULL);
+
 }
 
 void 

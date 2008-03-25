@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<assert.h>
 
 /* we support up to 16 simutaneous dialogs.  In reality, more than two

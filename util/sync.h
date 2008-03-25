@@ -43,8 +43,8 @@
     any pending readers to release the lock.
 */
 typedef struct tag_rwlock {
-    int locks;
-    int status;
+    khm_int32 locks;
+    khm_int32 status;
     CRITICAL_SECTION cs;
     HANDLE readwx;
     HANDLE writewx;
@@ -121,6 +121,20 @@ KHMEXP void KHMAPI LockObtainWrite(PRWLOCK pLock);
     \see LockObtainWrite()
 */
 KHMEXP void KHMAPI LockReleaseWrite(PRWLOCK pLock);
+
+typedef struct tag_i_once {
+    LONG volatile i_initializing;
+    LONG volatile i_done;
+    LONG volatile i_thrd;
+} i_once_t;
+
+typedef i_once_t IONCE, *PIONCE;
+
+#define DECLARE_ONCE(name) i_once_t __declspec(align(8)) name
+
+KHMEXP khm_boolean KHMAPI InitializeOnce(PIONCE pOnce);
+
+KHMEXP void KHMAPI InitializeOnceDone(PIONCE pOnce);
 
 /*@}*/
 /*@}*/

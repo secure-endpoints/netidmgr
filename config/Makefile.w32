@@ -169,8 +169,8 @@ afsincflags=-I$(AFSINCDIR)
 #EXTLIBDIR=$(SRC)\ext-lib\$(CPU)
 #EXTINCDIR=-I$(SRC)\ext-inc
 
-incflags= -I$(INCDIR) -I$(SRC)\include -I. -I$(OBJ) $(kfwincflags) $(afsincflags)
-rincflags= /i $(INCDIR) /i $(SRC)\include /i .
+incflags= -I$(INCDIR) -I$(OBJ) $(kfwincflags) $(afsincflags)
+rincflags= /i $(INCDIR)
 khdefines=-DUNICODE -D_UNICODE
 khcwarn=/Wp64
 !ifndef KH_NO_WX

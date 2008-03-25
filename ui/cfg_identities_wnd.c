@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<assert.h>
 #if _WIN32_WINNT >= 0x0501
 #include<uxtheme.h>

@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 #include<assert.h>
 
 /* cs_creds protects the *collection* of credentials, while l_creds

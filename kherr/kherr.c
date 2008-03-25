@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kherrinternal.h>
+#include "kherrinternal.h"
 #include<assert.h>
 #include<stdarg.h>
 
@@ -810,9 +810,6 @@ kherr_reportf(const wchar_t * long_desc_fmt, ...)
 
     va_start(vl, long_desc_fmt);
     StringCbVPrintf(buf, sizeof(buf), long_desc_fmt, vl);
-#ifdef DEBUG
-    OutputDebugString(buf);
-#endif
     va_end(vl);
 
     e = kherr_report(KHERR_DEBUG_1,

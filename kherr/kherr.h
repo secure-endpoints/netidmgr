@@ -38,8 +38,8 @@
     occurs.
 
  @{*/
-#include<khdefs.h>
-#include<khlist.h>
+#include "khdefs.h"
+#include "khlist.h"
 
 /*! \name Customizable macros
 @{ */

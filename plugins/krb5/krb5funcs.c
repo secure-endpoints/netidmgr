@@ -28,8 +28,7 @@
 /* Originally this was krb5routines.c in Leash sources.  Subsequently
  * modified and adapted for NetIDMgr */
 
-#include<krbcred.h>
-#include<kherror.h>
+#include "krbcred.h"
 
 #define SECURITY_WIN32
 #include <security.h>
@@ -478,7 +477,6 @@ static long get_tickets_from_cache(krb5_context ctx,
                 StringCbPrintf(wcc_name, sizeof(wcc_name), L"%S:%S", cc_type, cc_name);
             } else {
                 AnsiStrToUnicode(wcc_name, sizeof(wcc_name), cc_name);
-                khm_krb5_canon_cc_name(wcc_name, sizeof(wcc_name));
             }
         } else {
             cc_type = (*pkrb5_cc_get_type)(ctx, cache);
@@ -491,6 +489,7 @@ static long get_tickets_from_cache(krb5_context ctx,
                 StringCbCopy(wcc_name, sizeof(wcc_name), L"");
             }
         }
+        khm_krb5_canon_cc_name(wcc_name, sizeof(wcc_name));
     }
 
     _reportf(L"Getting tickets from cache [%s]", wcc_name);
@@ -1605,7 +1604,7 @@ khm_krb5_canon_cc_name(wchar_t * wcc_name,
                 return KHM_ERROR_TOO_LONG;
 
             memmove(&wcc_name[5], &wcc_name[0], cb_len);
-            memmove(&wcc_name[0], L"FILE:", sizeof(wchar_t) * 5);
+            memcpy(&wcc_name[0], L"FILE:", sizeof(wchar_t) * 5);
         }
 
         return 0;
@@ -3239,13 +3238,14 @@ khm_krb5_get_identity_params(khm_handle ident, k5_params * p) {
         goto done_reg;
 
 
-#define GETVAL(vname, vfield, flag) \
-    do {                            \
-    e = khc_value_exists(csp_id, vname);                               \
-    rv = khc_read_int32(csp_id, vname, &v);                            \
-    if (KHM_FAILED(rv)) goto done_reg;                                 \
-    p->vfield = v;                                                     \
-    if ((e & ~KCONF_FLAG_SCHEMA) != 0) regf |= flag;                   \
+#define GETVAL(vname, vfield, flag)                                    \
+    do {                                                               \
+        rv = khc_read_int32(csp_id, vname, &v);                        \
+        if (KHM_SUCCEEDED(rv)) {                                       \
+            p->vfield = v;                                             \
+            e = khc_value_exists(csp_id, vname);                       \
+            if ((e & ~KCONF_FLAG_SCHEMA) != 0) regf |= flag;           \
+        }                                                              \
     } while(FALSE)
 
     /* Flags */
@@ -3615,7 +3615,9 @@ static const wchar_t * _exp_env_vars[] = {
     L"USERPROFILE",
     L"ALLUSERSPROFILE",
     L"SystemRoot",
+#if 0
     L"SystemDrive"
+#endif
 };
 
 const int _n_exp_env_vars = ARRAYLENGTH(_exp_env_vars);

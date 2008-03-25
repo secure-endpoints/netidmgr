@@ -87,10 +87,9 @@ extern kconf_conf_space * conf_root;
 extern kconf_handle * conf_handles;
 extern kconf_handle * conf_free_handles;
 extern CRITICAL_SECTION cs_conf_global;
-extern LONG conf_init;
-extern LONG conf_status;
+extern LONG volatile conf_status;
 
-#define khc_is_config_running() (conf_init && conf_status)
+#define khc_is_config_running() (conf_status != 0)
 
 #define CONFIG_REGPATHW L"Software\\MIT\\NetIDMgr"
 

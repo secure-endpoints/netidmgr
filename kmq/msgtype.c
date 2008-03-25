@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kmqinternal.h>
+#include "kmqinternal.h"
 
 CRITICAL_SECTION cs_kmq_types;
 
@@ -62,18 +62,15 @@ void kmqint_exit_msg_types(void) {
     */
 int kmqint_notify_msg_completion(kmq_message * m) {
     kmq_msg_type * mt;
-    kmq_msg_completion_handler h;
+    kmq_msg_completion_handler h = NULL;
 
-    /* doing it this way to elude race conditions without
-       obtaining a lock */
-
+    EnterCriticalSection(&cs_kmq_types);
     mt = msg_types[m->type];
-    if(mt == NULL)
-        return 0;
-    h = mt->completion_handler;
+    if(mt != NULL)
+        h = mt->completion_handler;
+    LeaveCriticalSection(&cs_kmq_types);
 
-    /* handler is set to NULL before freeing type */
-    if(h == NULL || msg_types[m->type] == NULL)
+    if(h == NULL)
         return 0;
 
     return kmqint_call_completion_handler(h,m);

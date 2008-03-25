@@ -16,7 +16,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
   PaddingHeader,KC_INT32,16,"[PRIVATE]"
   Monitor,KC_INT32,1,"Boolean. Monitor credentials for expiration and renewal."
   DefaultMonitor,KC_INT32,1,"Boolean. This is the default Monitor value that is assigned for new identities."
-  RefreshTimeout,KC_INT32,60,"Number of seconds between credentials window refreshes.  The credentials window automatically triggers a refresh operation.  This value specifies the number of seconds that must elapse between two refreshes.  During the refresh, all the credentials provider plug-ins will need to re-enumerate their respective credentials."
+  RefreshTimeout,KC_INT32,600,"Number of seconds between credentials window refreshes.  The credentials window automatically triggers a refresh operation.  This value specifies the number of seconds that must elapse between two refreshes.  During the refresh, all the credentials provider plug-ins will need to re-enumerate their respective credentials."
   WarnThreshold,KC_INT32,900,In seconds
   AllowWarn,KC_INT32,1,"Boolean. Enables warning."
   CriticalThreshold,KC_INT32,300,In seconds
@@ -241,6 +241,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
       ClrHeaderOutline,KC_INT32,0,"Header (Outline color)"
       ClrText,KC_INT32,0,"Text (Normal)"
       ClrTextSel,KC_INT32,0,"Text (Selected)"
+      ClrTextErr,KC_INT32,0,"Text (Error)"
       ClrTextHeader,KC_INT32,0,"Text (Header)"
       ClrTextHeaderSel,KC_INT32,0,"Text (Header, Selected)"
       ClrTextHeaderGray,KC_INT32,0,"Text (Header, Gray)"
@@ -264,6 +265,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
       ClrHeaderOutline,KC_INT32,"RGB(15,15,15)",
       ClrText,KC_INT32,"RGB(15,15,15)",
       ClrTextSel,KC_INT32,"RGB(0,0,0)",
+      ClrTextErr,KC_INT32,"RGB(255,0,0)",
       ClrTextHeader,KC_INT32,"RGB(15,15,15)",
       ClrTextHeaderSel,KC_INT32,"RGB(0,0,0)",
       ClrTextHeaderGray,KC_INT32,"RGB(192,192,192)",

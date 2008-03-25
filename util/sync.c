@@ -101,13 +101,12 @@ KHMEXP void KHMAPI LockObtainWrite(PRWLOCK pLock)
         LeaveCriticalSection(&(pLock->cs));
         return;
     }
-    LeaveCriticalSection(&(pLock->cs));
     while(1) {
-        WaitForSingleObject(pLock->writewx, INFINITE);
-        EnterCriticalSection(&(pLock->cs));
         if(pLock->status == LOCK_OPEN)
             break;
         LeaveCriticalSection(&(pLock->cs));
+        WaitForSingleObject(pLock->writewx, INFINITE);
+        EnterCriticalSection(&(pLock->cs));
     }
     pLock->status = LOCK_WRITING;
     pLock->locks++;
@@ -120,7 +119,7 @@ KHMEXP void KHMAPI LockObtainWrite(PRWLOCK pLock)
 KHMEXP void KHMAPI LockReleaseWrite(PRWLOCK pLock)
 {
     EnterCriticalSection(&(pLock->cs));
-    assert(pLock->status == LOCK_WRITING);
+    assert(pLock->status == LOCK_WRITING && pLock->writer == GetCurrentThreadId());
     pLock->locks--;
     if(!pLock->locks) {
         pLock->status = LOCK_OPEN;
@@ -129,4 +128,27 @@ KHMEXP void KHMAPI LockReleaseWrite(PRWLOCK pLock)
         SetEvent(pLock->writewx);
     }
     LeaveCriticalSection(&(pLock->cs));
+}
+
+KHMEXP khm_boolean KHMAPI InitializeOnce(PIONCE pOnce)
+{
+    if (InterlockedCompareExchangeAcquire(&pOnce->i_initializing, 1, 0) == 0) {
+        InterlockedExchange(&pOnce->i_thrd, GetCurrentThreadId());
+        return TRUE;
+    } else {
+        DWORD this_thrd;
+        unsigned spin_count = 0;
+#define MAX_SPIN_COUNT 100
+#define FAILOVER_MS    100
+
+        this_thrd = GetCurrentThreadId();
+        while (pOnce->i_done == 0 && pOnce->i_thrd != this_thrd)
+            { Sleep((spin_count / MAX_SPIN_COUNT) * FAILOVER_MS); spin_count++; }
+        return FALSE;
+    }
+}
+
+KHMEXP void KHMAPI InitializeOnceDone(PIONCE pOnce)
+{
+    InterlockedIncrementRelease(&pOnce->i_done);
 }

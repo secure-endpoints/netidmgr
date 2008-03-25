@@ -25,7 +25,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<prsht.h>
 #include<assert.h>
 

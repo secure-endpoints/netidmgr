@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<krbcred.h>
+#include "krbcred.h"
 #include<krb5.h>
 #include<assert.h>
 #include<lm.h>

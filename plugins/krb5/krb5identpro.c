@@ -24,9 +24,7 @@
 
 /* $Id$ */
 
-#include<krbcred.h>
-#include<kherror.h>
-#include<khmsgtypes.h>
+#include "krbcred.h"
 #include<commctrl.h>
 #include<strsafe.h>
 #include<krb5.h>
@@ -169,7 +167,7 @@ set_identity_from_ui(HWND hwnd) {
  _create_ident:
     if (KHM_FAILED(rv = kcdb_identity_create_ex(k5_identpro, un,
                                                 KCDB_IDENT_FLAG_CREATE,
-                                                &ident))) {
+                                                NULL, &ident))) {
         ident = NULL;
     }
 
@@ -1174,7 +1172,7 @@ k5_refresh_default_identity(krb5_context ctx) {
             AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), namepart);
             if (KHM_SUCCEEDED(k5_validate_name(princ_nameW))) {
                 kcdb_identity_create_ex(k5_identpro, princ_nameW,
-                                        KCDB_IDENT_FLAG_CREATE, &ident);
+                                        KCDB_IDENT_FLAG_CREATE, NULL, &ident);
                 if (ident) {
                     _reportf(L"Setting [%S] as the default identity", namepart);
                     kcdb_identity_set_default_int(ident);
@@ -1197,7 +1195,7 @@ k5_refresh_default_identity(krb5_context ctx) {
     _reportf(L"Found principal [%s]", princ_nameW);
 
     if (KHM_FAILED(kcdb_identity_create_ex(k5_identpro, princ_nameW,
-                                           KCDB_IDENT_FLAG_CREATE, &ident))) {
+                                           KCDB_IDENT_FLAG_CREATE, NULL, &ident))) {
         _reportf(L"Failed to create identity");
         goto _nc_cleanup;
     }
@@ -1241,6 +1239,9 @@ k5_ident_init(khm_int32 msg_type,
         return KHM_ERROR_UNKNOWN;
     }
 
+    /* And set the primary credentials type. */
+    kcdb_identity_set_type(credtype_id_krb5);
+
     found_default = k5_refresh_default_identity(k5_identpro_ctx);
 
     if (!found_default) {
@@ -1255,7 +1256,7 @@ k5_ident_init(khm_int32 msg_type,
                                           widname, &cb))) {
             ident = NULL;
             kcdb_identity_create_ex(k5_identpro, widname,
-                                    KCDB_IDENT_FLAG_CREATE, &ident);
+                                    KCDB_IDENT_FLAG_CREATE, NULL, &ident);
             if (ident) {
                 kcdb_identity_set_default_int(ident);
                 kcdb_identity_release(ident);
@@ -1580,10 +1581,10 @@ k5_ident_name_comp_func(const void * dl, khm_size cb_dl,
 
 /* Identity change notification thread */
 
-HANDLE h_ccname_exit_event;
-HANDLE h_ccname_thread;
+static HANDLE h_ccname_exit_event;
+static HANDLE h_ccname_thread;
 
-DWORD WINAPI k5_ccname_monitor_thread(LPVOID lpParameter) {
+unsigned __stdcall k5_ccname_monitor_thread(void * lpParameter) {
 
     HKEY hk_ccname;
     HANDLE h_notify;
@@ -1709,7 +1710,7 @@ DWORD WINAPI k5_ccname_monitor_thread(LPVOID lpParameter) {
     RegCloseKey(hk_ccname);
 
  _exit:
-    ExitThread(rv);
+    return (unsigned) rv;
 }
 
 khm_int32
@@ -1721,51 +1722,12 @@ k5_msg_system_idpro(khm_int32 msg_type, khm_int32 msg_subtype,
         {
 
             pkrb5_init_context(&k5_identpro_ctx);
-            kcdb_identity_set_type(credtype_id_krb5);
-
-            if (KHM_FAILED(kcdb_type_get_id(TYPENAME_KRB5_PRINC, 
-                                            &type_id_krb5_princ))) {
-                kcdb_type dt;
-                kcdb_type * pstr;
-
-                kcdb_type_get_info(KCDB_TYPE_STRING, &pstr);
-
-                ZeroMemory(&dt, sizeof(dt));
-                dt.name = TYPENAME_KRB5_PRINC;
-                dt.id = KCDB_TYPE_INVALID;
-                dt.flags = KCDB_TYPE_FLAG_CB_AUTO;
-                dt.cb_min = pstr->cb_min;
-                dt.cb_max = pstr->cb_max;
-                dt.toString = pstr->toString;
-                dt.isValid = pstr->isValid;
-                dt.comp = k5_ident_name_comp_func;
-                dt.dup = pstr->dup;
-
-                kcdb_type_register(&dt, &type_id_krb5_princ);
-
-                type_regd_krb5_princ = TRUE;
-
-                kcdb_type_release_info(pstr);
-            }
-
-            if (type_id_krb5_princ != -1) {
-                kcdb_attrib * attr;
-
-                kcdb_attrib_get_info(KCDB_ATTR_ID_NAME, &attr);
-
-                attr->type = type_id_krb5_princ;
-
-                kcdb_attrib_release_info(attr);
-            }
 
             h_ccname_exit_event = CreateEvent(NULL, FALSE, FALSE, NULL);
             if (h_ccname_exit_event) {
-                h_ccname_thread = CreateThread(NULL,
-                                               200 * 1024,
-                                               k5_ccname_monitor_thread,
-                                               NULL,
-                                               0,
-                                               NULL);
+                h_ccname_thread = (HANDLE) _beginthreadex(NULL, 8 * 4096,
+                                                          k5_ccname_monitor_thread,
+                                                          NULL, 0, NULL);
             } else {
                 h_ccname_thread = NULL;
             }
@@ -1788,23 +1750,6 @@ k5_msg_system_idpro(khm_int32 msg_type, khm_int32 msg_subtype,
             if (k5_identpro_ctx) {
                 pkrb5_free_context(k5_identpro_ctx);
                 k5_identpro_ctx = NULL;
-            }
-
-            if (type_id_krb5_princ != -1) {
-                kcdb_attrib * attr;
-
-                kcdb_attrib_get_info(KCDB_ATTR_ID_NAME, &attr);
-
-                attr->type = KCDB_TYPE_STRING;
-
-                kcdb_attrib_release_info(attr);
-            }
-
-            /* allow a brief moment for any stale references to die */
-            Sleep(100);
-
-            if (type_regd_krb5_princ) {
-                kcdb_type_unregister(type_id_krb5_princ);
             }
         }
         break;

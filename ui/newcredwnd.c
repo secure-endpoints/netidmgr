@@ -31,7 +31,7 @@
 
 
 
-#include<khmapp.h>
+#include "khmapp.h"
 #if _WIN32_WINNT >= 0x0501
 #include<uxtheme.h>
 #endif
@@ -220,9 +220,20 @@ nc_idsel_draw_identity_item(khui_new_creds * nc, HDC hdc,
         if (state & ODS_DISABLED) {
             cr_type = cr_idname = cr_status = GetSysColor(COLOR_GRAYTEXT);
         } else {
+            khm_int32 idflags;
+
+            kcdb_identity_get_flags(d->hident, &idflags);
+
+            if ((idflags & KCDB_IDENT_FLAG_INVALID) ||
+                (idflags & KCDB_IDENT_FLAG_UNKNOWN)) {
+
+                cr_idname = nc->idsel.cr_idname_dis;
+                cr_status = nc->idsel.cr_status_err;
+            } else {
+                cr_idname = nc->idsel.cr_idname;
+                cr_status = nc->idsel.cr_status;
+            }
             cr_type = nc->idsel.cr_type;
-            cr_idname = nc->idsel.cr_idname;
-            cr_status = nc->idsel.cr_status;
         }
     }
 
@@ -502,7 +513,7 @@ nc_show_identity_selector(HWND hwnd)
     else if (i >= 2 && i <= n_ids + 1) {
         i--;
         khui_cw_set_primary_id(nc, ids[i].hident);
-        nc_notify_new_identity(nc, TRUE);
+        //nc_notify_new_identity(nc, TRUE);
     } else if (i == 1) {
         /* Navigate to the identity specification window if the user
            wants to specify a new identity. */
@@ -594,8 +605,10 @@ nc_idsel_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         nc->idsel.hf_idname = khm_get_element_font(KHM_FONT_TITLE);
         nc->idsel.hf_status = khm_get_element_font(KHM_FONT_NORMAL);
         nc->idsel.cr_idname = khm_get_element_color(KHM_CLR_TEXT_HEADER);
-        nc->idsel.cr_type = khm_get_element_color(KHM_CLR_TEXT_HEADER_DIS);
+        nc->idsel.cr_idname_dis = khm_get_element_color(KHM_CLR_TEXT_HEADER_DIS);
+        nc->idsel.cr_type = khm_get_element_color(KHM_CLR_ACCENT);
         nc->idsel.cr_status = khm_get_element_color(KHM_CLR_TEXT);
+        nc->idsel.cr_status_err = khm_get_element_color(KHM_CLR_TEXT_ERR);
         return TRUE;
 
     case WM_NOTIFY:
@@ -1187,7 +1200,7 @@ nc_privint_advanced_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     }
 }
 
-#define MARQUEE_TIMEOUT 200
+#define MARQUEE_TIMEOUT 100
 
 static void
 nc_privint_set_progress(khui_new_creds * nc, int progress, BOOL show)
@@ -1198,11 +1211,14 @@ nc_privint_set_progress(khui_new_creds * nc, int progress, BOOL show)
        on Windows XP or later.  If you are running an older OS, you
        get to stare at a progress bar that isn't moving.  */
 
-    if (show && progress == -1) {
+    if (show && progress == KHUI_CWNIS_MARQUEE) {
         /* enabling marquee */
         if (!(nc->privint.noprompt_flags & NC_NPF_MARQUEE)) {
-            SendDlgItemMessage(nc->privint.hwnd_noprompts, IDC_PROGRESS,
-                               PBM_SETMARQUEE, TRUE, MARQUEE_TIMEOUT);
+            HWND hw;
+
+            hw = GetDlgItem(nc->privint.hwnd_noprompts, IDC_PROGRESS);
+            SetWindowLong(hw, GWL_STYLE, WS_CHILD|PBS_MARQUEE);
+            SendMessage(hw, PBM_SETMARQUEE, TRUE, MARQUEE_TIMEOUT);
             nc->privint.noprompt_flags |= NC_NPF_MARQUEE;
         }
     } else {
@@ -1241,6 +1257,7 @@ nc_privint_update_identity_state(khui_new_creds * nc,
 #endif
         LoadString(khm_hInstance, IDS_NC_NPR_CHOOSE, buf, ARRAYLENGTH(buf));
         SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, buf);
+        SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
 
         nflags &= ~KHUI_CWNIS_READY;
 
@@ -1254,25 +1271,41 @@ nc_privint_update_identity_state(khui_new_creds * nc,
 
             LoadString(khm_hInstance, IDS_NC_NPR_CLICKFINISH, buf, ARRAYLENGTH(buf));
             SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, buf);
+            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
+            if (notif->state_string)
+                nc_idsel_set_status_string(nc, notif->state_string);
+            else
+                nc_idsel_set_status_string(nc, L"");
 
         } else {
-            if (!(nflags & KCDB_IDENT_FLAG_INVALID)) {
-#ifdef DEBUG
-                assert(FALSE);
-#endif
-            }
+            /* The identity may have KCDB_IDENT_FLAG_INVALID or
+               KCDB_IDENT_FLAG_UNKNOWN set. */
 
-            LoadString(khm_hInstance, IDS_NC_NPR_CHOOSEDIF, buf, ARRAYLENGTH(buf));
-            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, buf);
+            if ((idflags & KCDB_IDENT_FLAG_INVALID) == KCDB_IDENT_FLAG_INVALID) {
+                LoadString(khm_hInstance, IDS_NC_INVALIDID, buf, ARRAYLENGTH(buf));
+            } else {
+                LoadString(khm_hInstance, IDS_NC_UNKNOWNID, buf, ARRAYLENGTH(buf));
+            }
+            nc_idsel_set_status_string(nc, buf);
+
+            if (notif->state_string)
+                SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, notif->state_string);
+            else
+                SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, L"");
+            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
 
             nflags &= ~KHUI_CWNIS_VALIDATED;
         }
 
         nc_privint_set_progress(nc, 0, FALSE);
-
     } else {
+        LoadString(khm_hInstance, IDS_NC_NPR_VALIDATING, buf, ARRAYLENGTH(buf));
+        SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, buf);
+
         if (notif->state_string)
-            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, notif->state_string);
+            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, notif->state_string);
+        else
+            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
 
         if (nflags & KHUI_CWNIS_NOPROGRESS) {
             nc_privint_set_progress(nc, 0, FALSE);
@@ -1815,6 +1848,7 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         nc->result = KHUI_NC_RESULT_PROCESS;
         nc_notify_types(nc, WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
         khm_cred_dispatch_process_message(nc);
+        nc->nav.transitions = NC_TRANS_ABORT;
         nc->page = NC_PAGE_PROGRESS;
         break;
 
@@ -1822,6 +1856,7 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         nc->result = KHUI_NC_RESULT_CANCEL;
         nc_notify_types(nc, WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
         khm_cred_dispatch_process_message(nc);
+        nc->nav.transitions = 0;
         nc->page = NC_PAGE_PROGRESS;
         break;
 
@@ -2096,7 +2131,8 @@ nc_layout_custom_prompter(HWND hwnd, khui_new_creds_privint_panel * p, BOOL crea
 
             pr->hwnd_edit = CreateWindow(L"EDIT", ((pr->def)?pr->def:L""),
                                          ((pr->flags & KHUI_NCPROMPT_FLAG_HIDDEN)?
-                                          ES_PASSWORD: 0) | WS_CHILD | WS_TABSTOP,
+                                          ES_PASSWORD: 0) | WS_CHILD | WS_TABSTOP |
+                                         WS_BORDER,
                                          rinp.left, rinp.top,
                                          rinp.right - rinp.left, rinp.bottom - rinp.top,
                                          hwnd, (HMENU) (IDC_NCC_CTL + 1 + i*2),
@@ -2161,7 +2197,7 @@ nc_prompter_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
     case WM_CLOSE:
         {
-            int x= 3;
+            DestroyWindow(hwnd);
         }
         return TRUE;
 

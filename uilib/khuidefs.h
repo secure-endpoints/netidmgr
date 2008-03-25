@@ -29,26 +29,26 @@
 #define __KHIMAIRA_KHUIDEFS_H
 
 #include<windows.h>
-#include<kmq.h>
-#include<kcreddb.h>
-#include<kherror.h>
-#include<kherr.h>
-#include<khmsgtypes.h>
+#include "kmq.h"
+#include "kcreddb.h"
+#include "kherror.h"
+#include "kherr.h"
+#include "khmsgtypes.h"
 
-#include<khaction.h>
-#include<khactiondef.h>
-#include<khhtlink.h>
-#include<khnewcred.h>
-#include<khprops.h>
-#include<khalerts.h>
-#include<khconfigui.h>
-#include<khtracker.h>
+#include "khaction.h"
+#include "khactiondef.h"
+#include "khhtlink.h"
+#include "khnewcred.h"
+#include "khprops.h"
+#include "khalerts.h"
+#include "khconfigui.h"
+#include "khtracker.h"
 
 #ifdef NIMPRIVATE
-#include<khrescache.h>
+#include "khrescache.h"
 #endif
 
-#include<khremote.h>
+#include "khremote.h"
 
 /*! \brief Maximum length of a name in characters
 

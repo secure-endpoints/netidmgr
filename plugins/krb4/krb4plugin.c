@@ -24,11 +24,7 @@
 
 /* $Id$ */
 
-#include<krbcred.h>
-#include<kherror.h>
-#include<khmsgtypes.h>
-#include<khuidefs.h>
-#include<utils.h>
+#include "krbcred.h"
 #include<commctrl.h>
 #include<strsafe.h>
 #include<krb5.h>

@@ -27,7 +27,7 @@
 #include<tchar.h>
 
 #include<shlwapi.h>
-#include<khmapp.h>
+#include "khmapp.h"
 
 #include<stdio.h>
 

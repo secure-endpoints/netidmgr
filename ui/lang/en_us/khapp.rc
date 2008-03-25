@@ -461,8 +461,9 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Click 'Finish' to obtain credentials ...",IDC_TEXT,7,7,336,18
-    CONTROL         "",IDC_PROGRESS,"msctls_progress32",NOT WS_VISIBLE,7,25,336,10
+    LTEXT           "Click 'Finish' to obtain credentials ...",IDC_TEXT,7,7,336,11
+    LTEXT           "  ",IDC_TEXT2,7,18,336,13
+    CONTROL         "",IDC_PROGRESS,"msctls_progress32",NOT WS_VISIBLE,7,34,336,10
 END
 
 IDD_NC_PROGRESS DIALOGEX 0, 0, 370, 120
@@ -683,7 +684,8 @@ BEGIN
         RIGHTMARGIN, 343
         TOPMARGIN, 7
         BOTTOMMARGIN, 77
-        HORZGUIDE, 25
+        HORZGUIDE, 18
+        HORZGUIDE, 31
     END
 
     IDD_NC_PROGRESS, DIALOG
@@ -775,6 +777,7 @@ BEGIN
     IDS_ACTION_RENEW_CRED   "R&enew credentials"
     IDS_ACTION_DESTROY_CRED "De&stroy credentials"
     IDS_DEFAULT_FONT        "MS Shell Dlg"
+    IDS_NC_NPR_VALIDATING   "Validating identity ..."
     IDS_NOTIFY_PREFIX       "Network Identity Manager - "
     IDS_NOTIFY_READY        "Ready"
     IDS_NOTIFY_ATTENTION    "Attention"
@@ -788,6 +791,8 @@ BEGIN
     IDS_PACTION_CLOSE       "&Close"
     IDS_ALERT_NOSEL_TITLE   "No credentials selected"
     IDS_ALERT_NOSEL         "Please select a credential, a credential type or an identity."
+    IDS_NC_INVALIDID        "Invalid identity."
+    IDS_NC_UNKNOWNID        "Validity of identity could not be determined."
     IDS_PROP_COL_PROPERTY   "Property"
     IDS_PROP_COL_VALUE      "Value"
     IDS_NC_NEW_IDENT        "( New identity ... )"

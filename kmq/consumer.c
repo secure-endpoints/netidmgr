@@ -26,7 +26,7 @@
 
 /* $Id$ */
 
-#include<kmqinternal.h>
+#include "kmqinternal.h"
 #include<assert.h>
 
 DWORD kmq_tls_queue;

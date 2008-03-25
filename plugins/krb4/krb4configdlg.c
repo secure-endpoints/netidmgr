@@ -24,9 +24,7 @@
 
 /* $Id$ */
 
-#include<krbcred.h>
-#include<kherror.h>
-#include<khuidefs.h>
+#include "krbcred.h"
 #include<strsafe.h>
 #include<assert.h>
 

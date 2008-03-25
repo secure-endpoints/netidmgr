@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 
 /* set to TRUE when the configuration is loaded */
 static int kcdb_config_loaded = 0;

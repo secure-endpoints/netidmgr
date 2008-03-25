@@ -27,7 +27,7 @@
 #ifndef __KHIMAIRA_RESCACHE_H
 #define __KHIMAIRA_RESCACHE_H
 
-#include<khdefs.h>
+#include "khdefs.h"
 
 #ifdef NIMPRIVATE
 

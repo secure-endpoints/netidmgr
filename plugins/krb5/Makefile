@@ -39,6 +39,7 @@ OBJFILES= \
 	$(OBJ)\krb5plugin.obj 		\
 	$(OBJ)\krb5props.obj 		\
 	$(OBJ)\krb5newcreds.obj 	\
+	$(OBJ)\krb5nc_kinit.obj		\
 	$(OBJ)\krb5funcs.obj 		\
 	$(OBJ)\krb5config.obj		\
 	$(OBJ)\krb5identpro.obj		\

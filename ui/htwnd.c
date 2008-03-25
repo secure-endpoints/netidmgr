@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<crtdbg.h>
 
 ATOM khui_htwnd_cls;

@@ -24,8 +24,7 @@
 
 /* $Id$ */
 
-#include<krbcred.h>
-#include<kherror.h>
+#include "krbcred.h"
 
 kmm_module h_khModule; /* KMM's handle to this module */
 HINSTANCE hInstance;

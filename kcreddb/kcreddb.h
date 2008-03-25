@@ -27,7 +27,7 @@
 #ifndef __KHIMAIRA_KCREDDB_H__
 #define __KHIMAIRA_KCREDDB_H__
 
-#include<khdefs.h>
+#include "khdefs.h"
 #include<time.h>
 
 
@@ -283,16 +283,33 @@ Functions, macros etc. for manipulating identities.
 */
 /*@{*/
 
+/*! \brief Test whether a given handle is for a credential
+
+    The function returns \a TRUE iff \a h is a valid credential handle.
+    If \a h is \a NULL the return value is \a FALSE.
+ */
 KHMEXP khm_boolean KHMAPI
 kcdb_handle_is_cred(khm_handle h);
 
+/*! \brief Test whether a given handle is for an identity
+
+    The function returns \a TRUE iff \a h is a valid identity handle.
+    If \a h is \a NULL the return value is \a FALSE.
+ */
 KHMEXP khm_boolean KHMAPI
 kcdb_handle_is_identity(khm_handle h);
 
+/*! \brief Test whether a given handle is for an identity provider
+
+    The function returns \a TRUE iff \a h is a valid identity provider
+    handle.  If \a h is \a NULL the return value is \a FALSE.
+ */
 KHMEXP khm_boolean KHMAPI
 kcdb_handle_is_identpro(khm_handle h);
 
-/*! \brief Get an attribute from a record by attribute id.
+/*! \brief Get an attribute from a KCDB object by attribute id.
+
+    \param[in] hobj Handle to the KCDB object.
 
     \param[in] buffer The buffer that is to receive the attribute
         value.  Set this to NULL if only the required buffer size is
@@ -311,7 +328,7 @@ kcdb_handle_is_identpro(khm_handle h);
         KHM_ERROR_SUCCESS, otherwise it returns KHM_ERROR_NOT_FOUND.
 */
 KHMEXP khm_int32 KHMAPI 
-kcdb_buf_get_attr(khm_handle  record, 
+kcdb_buf_get_attr(khm_handle  hobj,
                   khm_int32   attr_id, 
                   khm_int32 * attr_type, 
                   void *      buffer, 
@@ -428,9 +445,17 @@ kcdb_buf_set_attrib(khm_handle  record,
                     void *      buffer,
                     khm_size    cbbuf);
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_buf_hold(khm_handle  record);
+/*! \brief Acquire a hold on a KCDB object
 
+    Returns \a KHM_ERROR_SUCCESS if the call is successful.
+ */
+KHMEXP khm_int32 KHMAPI 
+kcdb_buf_hold(khm_handle hobj);
+
+/*! \brief Release a hold on a KCDB object
+
+    Returns \a KHM_ERROR_SUCCESS if the call is successful.
+ */
 KHMEXP khm_int32 KHMAPI 
 kcdb_buf_release(khm_handle record);
 
@@ -1034,6 +1059,15 @@ kcdb_identity_create(const wchar_t *name,
         identity if it is created.  Additional flags have no effect if
         an existing identity is opened.
 
+    \param[in] vparam Additional parameter for identity creation.  If
+        the name of the identity is not sufficient to uniquely
+        identify the identity or if additional information is required
+        for the identity provider to create the identity, then this
+        parameter can be used to provide that information.  The
+        supplied parameter is assigned to the ::KCDB_ATTR_PARAM
+        attribute of the identity before the <::KMSG_IDENT,
+        ::KMSG_IDENT_NOTIFY_CREATE> notification is sent out.
+
     \param[out] result If the call is successful, this receives a held
         reference to the identity.  The caller should call
         kcdb_identity_release() to release the identity once it is no
@@ -1046,6 +1080,7 @@ KHMEXP khm_int32 KHMAPI
 kcdb_identity_create_ex(khm_handle vidpro,
                         const wchar_t * name,
                         khm_int32 flags,
+                        void * vparam,
                         khm_handle * result);
 
 /*! \brief Mark an identity for deletion.
@@ -3710,6 +3745,17 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 */
 #define KCDB_ATTR_N_INITCREDS   (KCDB_ATTR_MIN_PROP_ID + 2)
 
+/*! \brief Extended parameter
+
+  When kcdb_identity_create_ex() is called to create a new identity,
+  the caller can specify a parameter that the identity provider may
+  use.  This parameter is stored in ths attribute.
+
+    - \b Type: DATA
+    - \b Flags: SYSTEM, PROPERTY, HIDDEN
+ */
+#define KCDB_ATTR_PARAM         (KCDB_ATTR_MIN_PROP_ID + 3)
+
 /*@}*/
 
 /*!\name Attribute names */
@@ -3736,6 +3782,7 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 #define KCDB_ATTRNAME_N_CREDS       L"NCredentials"
 #define KCDB_ATTRNAME_N_IDCREDS     L"NIDCredentials"
 #define KCDB_ATTRNAME_N_INITCREDS   L"NInitCredentials"
+#define KCDB_ATTRNAME_PARAM         L"ExtendedParameter"
 
 /*@}*/
 

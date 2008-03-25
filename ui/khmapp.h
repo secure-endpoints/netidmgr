@@ -45,29 +45,29 @@
 #include<intaction.h>
 #include<intalert.h>
 
-#include<resource.h>
-#include<appearance.h>
-#include<credfuncs.h>
-#include<appglobal.h>
-#include<mainwnd.h>
-#include<mainmenu.h>
-#include<toolbar.h>
-#include<statusbar.h>
-#include<credwnd.h>
-#include<htwnd.h>
-#include<passwnd.h>
-#include<newcredwnd.h>
-#include<propertywnd.h>
-#include<configwnd.h>
-#include<aboutwnd.h>
-#include<iconselectwnd.h>
-#include<debugfuncs.h>
-#include<taskbar.h>
-#include<windowctl.h>
+#include "resource.h"
+#include "appearance.h"
+#include "credfuncs.h"
+#include "appglobal.h"
+#include "mainwnd.h"
+#include "mainmenu.h"
+#include "toolbar.h"
+#include "statusbar.h"
+#include "credwnd.h"
+#include "htwnd.h"
+#include "passwnd.h"
+#include "newcredwnd.h"
+#include "propertywnd.h"
+#include "configwnd.h"
+#include "aboutwnd.h"
+#include "iconselectwnd.h"
+#include "debugfuncs.h"
+#include "taskbar.h"
+#include "windowctl.h"
 
-#include<reqdaemon.h>
-#include<notifier.h>
-#include<timer.h>
-#include<addrchange.h>
+#include "reqdaemon.h"
+#include "notifier.h"
+#include "timer.h"
+#include "addrchange.h"
 
 #endif

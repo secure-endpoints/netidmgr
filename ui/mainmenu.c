@@ -25,7 +25,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<assert.h>
 
 HWND khui_main_menu_toolbar;

@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kmminternal.h>
+#include "kmminternal.h"
 
 /* Called with no locks held to get a kmm_plugin_i structure
    that matches the name.  First we look in the hash table, and

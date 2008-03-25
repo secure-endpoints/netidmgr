@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kmminternal.h>
+#include "kmminternal.h"
 #include<netidmgr_version.h>
 #include<assert.h>
 

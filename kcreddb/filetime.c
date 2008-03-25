@@ -25,7 +25,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 
 KHMEXP void KHMAPI TimetToFileTime( time_t t, LPFILETIME pft )
 {

@@ -25,7 +25,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 #include<assert.h>
 
 CRITICAL_SECTION cs_ident;
@@ -150,6 +150,7 @@ KHMEXP khm_int32 KHMAPI
 kcdb_identity_create_ex(khm_handle vidpro,
                         const wchar_t * name,
                         khm_int32 flags,
+                        void * vparam,
                         khm_handle * result) {
     kcdb_identity * id = NULL;
     kcdb_identity * id_tmp = NULL;
@@ -263,6 +264,10 @@ kcdb_identity_create_ex(khm_handle vidpro,
             khc_write_int64(h_kcdb, L"IdentSerial", kcdb_ident_serial);
         }
 
+        if (vparam)
+            kcdb_identity_set_attr((khm_handle) id, KCDB_ATTR_PARAM,
+                                   &vparam, sizeof(vparam));
+
         LeaveCriticalSection(&cs_ident);
 
         *result = (khm_handle) id;
@@ -337,7 +342,7 @@ kcdb_identity_create(const wchar_t *name,
             return KHM_ERROR_NO_PROVIDER;
     }
 
-    rv = kcdb_identity_create_ex(vidpro, id_name, flags, result);
+    rv = kcdb_identity_create_ex(vidpro, id_name, flags, NULL, result);
 
     kcdb_identpro_release(vidpro);
 
@@ -1645,7 +1650,7 @@ check_config_for_identities(void)
 
                 if (KHM_SUCCEEDED(kcdb_identity_create_ex(idpro, wname,
                                                           KCDB_IDENT_FLAG_CREATE,
-                                                          &t_id)))
+                                                          NULL, &t_id)))
                     kcdb_identity_release(t_id);
 
                 kcdb_identpro_release(idpro);

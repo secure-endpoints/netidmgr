@@ -680,6 +680,16 @@ khui_cw_get_next_privint(khui_new_creds * c,
     }
 
     if (pp) {
+#ifdef DEBUG
+        /* Make sure that pp isn't on the shown stack already. */
+        khui_new_creds_privint_panel * q;
+
+        for (q = QTOP(&c->privint.shown); q; q = QNEXT(q)) {
+            if (pp == q)
+                break;
+        }
+        assert(q == NULL);
+#endif
         QPUT(&c->privint.shown, pp);
         c->privint.shown.show_blank = FALSE;
     } else {
@@ -798,6 +808,7 @@ cw_free_prompts(khui_new_creds_privint_panel * p)
 
     p->nc_prompts = 0;
     p->n_prompts = 0;
+    p->use_custom = FALSE;
 
 #ifdef DEBUG
     assert(p->hwnd == NULL);
@@ -816,12 +827,13 @@ khui_cw_clear_prompts(khui_new_creds * c)
     p = c->privint.legacy_panel;
     if (p) {
 
+        /* Is this the current privileged interaction panel? */
         if (p == QBOTTOM(&c->privint.shown) &&
             !c->privint.shown.show_blank) {
 #ifdef DEBUG
             assert(p->use_custom);
 #endif
-            c->privint.shown.show_blank = TRUE;
+            p->use_custom = FALSE;
 
             LeaveCriticalSection(&c->cs);
             SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
@@ -845,7 +857,12 @@ khui_cw_clear_prompts(khui_new_creds * c)
         if (p->hwnd) {
             khm_size i;
 
-            DestroyWindow(p->hwnd);
+            SendMessage(p->hwnd, WM_CLOSE, 0, 0);
+#ifdef DEBUG
+            /* If the window is successfully destroyed, the dialog
+               procedure will set p->hwnd to NULL. */
+            assert(p->hwnd == NULL);
+#endif
 
             /* The controls have been destroyed.  We just
                dis-associate the controls from the data structure */
@@ -950,6 +967,9 @@ khui_cw_add_prompt(khui_new_creds * c,
 
     if (p == NULL || p->n_prompts >= p->nc_prompts || p->hwnd || p->use_custom) {
         LeaveCriticalSection(&c->cs);
+#ifdef DEBUG
+        assert(FALSE);
+#endif
 
         return KHM_ERROR_INVALID_OPERATION;
     }

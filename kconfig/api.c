@@ -25,7 +25,7 @@
 /* $Id$ */
 
 #include<shlwapi.h>
-#include<kconfiginternal.h>
+#include "kconfiginternal.h"
 #include<netidmgr_intver.h>
 #include<assert.h>
 
@@ -35,13 +35,16 @@ kconf_handle * conf_free_handles = NULL;
 
 CRITICAL_SECTION cs_conf_global;
 CRITICAL_SECTION cs_conf_handle;
-LONG conf_init = 0;
-LONG conf_status = 0;
+
+DECLARE_ONCE(conf_once);
+LONG volatile conf_status = 0;
+
 
 void init_kconf(void) {
-    if(InterlockedIncrement(&conf_init) == 1L) {
+    if(InitializeOnce(&conf_once)) {
         /* we are the first */
         InitializeCriticalSection(&cs_conf_global);
+
         EnterCriticalSection(&cs_conf_global);
         conf_root = khcint_create_empty_space();
         conf_root->name = PWCSDUP(L"Root");
@@ -50,8 +53,9 @@ void init_kconf(void) {
         conf_status = 1;
         InitializeCriticalSection(&cs_conf_handle);
         LeaveCriticalSection(&cs_conf_global);
+
+        InitializeOnceDone(&conf_once);
     }
-    /* else assume we are already initialized */
 }
 
 void exit_kconf(void) {
@@ -60,7 +64,6 @@ void exit_kconf(void) {
 
         EnterCriticalSection(&cs_conf_global);
 
-        conf_init = 0;
         conf_status = 0;
 
         khcint_free_space(conf_root);

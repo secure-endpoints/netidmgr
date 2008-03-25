@@ -50,17 +50,6 @@
 
 #include <krb5common.h>
 
-#define LEASH_DEBUG_CLASS_GENERIC   0
-#define LEASH_DEBUG_CLASS_KRB4      1
-#define LEASH_DEBUG_CLASS_KRB4_APP  2
-
-#define LEASH_PRIORITY_LOW  0
-#define LEASH_PRIORITY_HIGH 1
-
-#define KRB5_DEFAULT_LIFE            60*60*10 /* 10 hours */
-
-#define KRB5_MAXCCH_CCNAME           1024
-
 #define KRB5_CONF_YES                "yes"
 #define KRB5_CONF_NO                 "no"
 

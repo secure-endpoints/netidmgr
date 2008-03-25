@@ -199,9 +199,9 @@ kmmint_reg_cb(khm_int32 msg_type,
               khm_ui_4 uparam,
               void *vparam);
 
-DWORD WINAPI kmmint_registrar(LPVOID lpParameter);
+unsigned __stdcall kmmint_registrar(void * lpParameter);
 
-DWORD WINAPI kmmint_plugin_broker(LPVOID lpParameter);
+unsigned __stdcall kmmint_plugin_broker(void * lpParameter);
 
 void kmmint_init_plugin(kmm_plugin_i * p);
 void kmmint_exit_plugin(kmm_plugin_i * p);

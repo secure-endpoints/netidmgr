@@ -25,7 +25,8 @@
 
 /* $Id$ */
 
-#include<kmminternal.h>
+#include "kmminternal.h"
+#include<process.h>
 #ifdef DEBUG
 #include<assert.h>
 #endif
@@ -130,7 +131,7 @@ khm_boolean KHMAPI kmmint_reg_cb(khm_int32 msg_type,
 
   The only thing this function does is to dispatch messages to the
   callback routine ( kmmint_reg_cb() ) */
-DWORD WINAPI kmmint_registrar(LPVOID lpParameter)
+unsigned __stdcall kmmint_registrar(void * lpParameter)
 {
 
     PDESCTHREAD(L"KMM Registrar", L"KMM");
@@ -147,7 +148,7 @@ DWORD WINAPI kmmint_registrar(LPVOID lpParameter)
     kmq_unsubscribe(KMSG_KMM, kmmint_reg_cb);
     kmq_unsubscribe(KMSG_SYSTEM, kmmint_reg_cb);
 
-    ExitThread(0);
+    return 0;
 }
 
 /*! \internal
@@ -156,7 +157,7 @@ DWORD WINAPI kmmint_registrar(LPVOID lpParameter)
   Each plugin gets its own plugin thread which is used to dispatch
   messages to the plugin.  This acts as the thread function for the
   plugin thread.*/
-DWORD WINAPI kmmint_plugin_broker(LPVOID lpParameter)
+unsigned __stdcall kmmint_plugin_broker(void * lpParameter)
 {
     DWORD rv = 0;
     kmm_plugin_i * p = (kmm_plugin_i *) lpParameter;
@@ -287,7 +288,7 @@ DWORD WINAPI kmmint_plugin_broker(LPVOID lpParameter)
 
     TlsSetValue(tls_kmm, (LPVOID) 0);
 
-    ExitThread(rv);
+    return (unsigned) rv;
 }
 
 /*! \internal
@@ -455,12 +456,8 @@ void kmmint_init_plugin(kmm_plugin_i * p) {
 
     kmmint_add_to_plugin_queue(p);
 
-    p->ht_thread = CreateThread(NULL,
-                                0,
-                                kmmint_plugin_broker,
-                                (LPVOID) p,
-                                CREATE_SUSPENDED,
-                                &dummy);
+    p->ht_thread = (HANDLE) _beginthreadex(NULL, 0, kmmint_plugin_broker,
+                                           (LPVOID) p, CREATE_SUSPENDED, &dummy);
 
     p->state = KMM_PLUGIN_STATE_INIT;
 

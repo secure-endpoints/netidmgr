@@ -95,6 +95,7 @@
 #define IDB_ID_SM                       154
 #define IDS_DEFAULT_FONT                154
 #define IDB_WDG_EXPAND_HI               155
+#define IDS_NC_NPR_VALIDATING           155
 #define IDB_WDG_COLLAPSE_HI             156
 #define IDS_NOTIFY_PREFIX               156
 #define IDB_WDG_CREDTYPE                157
@@ -112,7 +113,9 @@
 #define IDS_ALERT_NOSEL_TITLE           163
 #define IDS_ALERT_NOSEL                 164
 #define IDI_ENABLED                     165
+#define IDS_NC_INVALIDID                165
 #define IDI_DISABLED                    166
+#define IDS_NC_UNKNOWNID                166
 #define IDS_PROP_COL_PROPERTY           167
 #define IDS_PROP_COL_VALUE              168
 #define IDI_NOTIFY_NONE                 169
@@ -383,6 +386,7 @@
 #define IDC_CFG_LOGPATH                 1111
 #define IDC_NOTIF_HALFLIFE              1112
 #define IDC_CFG_DESTROYALL              1113
+#define IDC_OFN_POS                     0x045f
 #define IDC_CFG_SAMPLE_NORMAL           1123
 #define IDC_CFG_REVERT                  1127
 #define IDC_CFG_FONTS                   1128
@@ -422,7 +426,7 @@
 #define IDC_CFG_RESETICON               1179
 #define IDC_LIST1                       1180
 #define IDC_LIST                        1180
-#define IDC_OFN_POS                     0x045f
+#define IDC_TEXT2                       1181
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -435,9 +439,10 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
+#define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        223
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1181
+#define _APS_NEXT_CONTROL_VALUE         1183
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -39,9 +39,9 @@
 */
 /*@{*/
 
-#include<khdefs.h>
-#include<khlist.h>
-#include<kherr.h>
+#include "khdefs.h"
+#include "khlist.h"
+#include "kherr.h"
 
 /* general */
 #ifdef _WIN32

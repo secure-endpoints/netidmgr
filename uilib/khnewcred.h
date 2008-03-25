@@ -211,6 +211,7 @@ enum khui_wm_nc_notifications {
       the application will send the ::WMNC_UPDATE_CREDTEXT message to
       all the credential type panels and update the credential text
       window. */
+#pragma deprecated("WMNC_UPDATE_CREDTEXT")
 
     WMNC_CREDTEXT_LINK,
     /*!< A hyperlink was activated.
@@ -255,7 +256,7 @@ enum khui_wm_nc_notifications {
 
       \deprecated This message is deprecated.
      */
-#pragma deprecated(WMNC_CLEAR_PROMPTS)
+#pragma deprecated("WMNC_CLEAR_PROMPTS")
 
     WMNC_SET_PROMPTS,
     /*!< Sent to the new creds window to set custom prompts.
@@ -275,7 +276,7 @@ enum khui_wm_nc_notifications {
 
     WMNC_DIALOG_PROCESS,
     /*!< This notification is no longer used. */
-#pragma deprecated(WMNC_DIALOG_PROCESS)
+#pragma deprecated("WMNC_DIALOG_PROCESS")
 
     WMNC_DIALOG_PROCESS_COMPLETE,
     /*!< Sent to the new creds window to indicate that the all the
@@ -335,23 +336,23 @@ enum khui_wm_nc_ident_notify {
     /*!< Initialize an identity selector for a new credentials
          dialog. The \a vparam parameter contains a pointer to
          a ::wmnc_ident_init_data structure. */
-#pragma deprecated(WMNC_IDENT_INIT)
+#pragma deprecated("WMNC_IDENT_INIT")
 
     WMNC_IDENT_WMSG,
     /*!< Windows message.
 
       \deprecated This notification is deprecated. */
-#pragma deprecated(WMNC_IDENT_WMSG)
+#pragma deprecated("WMNC_IDENT_WMSG")
 
     WMNC_IDENT_EXIT,
     /*!< Sent when the callback is no longer required. */
-#pragma deprecated(WMNC_IDENT_EXIT)
+#pragma deprecated("WMNC_IDENT_EXIT")
 
     WMNC_IDENT_PREPROCESS,
     /*!< Sent before the dialog is to be processed.
 
       \deprecated This notification is deprecated.*/
-#pragma deprecated(WMNC_IDENT_PREPROCESS)
+#pragma deprecated("WMNC_IDENT_PREPROCESS")
 };
 
 /*! \name Standard credtext link IDs
@@ -463,7 +464,7 @@ typedef LRESULT
 #define KHUI_NC_RESPONSE_PROCESSING 0x00010000
 
 #define KHUI_NCMASK_RESPONSE (KHUI_NC_RESPONSE_EXIT|KHUI_NC_RESPONSE_NOEXIT)
-#define KHUI_NCMASK_RESULT  (KHUI_NC_RESPONSE_SUCCESS|KHUI_NC_RESPONSE_FAILED|KHUI_NC_RESPONSE_PENDING)
+#define KHUI_NCMASK_RESULT   (KHUI_NC_RESPONSE_SUCCESS|KHUI_NC_RESPONSE_FAILED|KHUI_NC_RESPONSE_PENDING)
 /*@}*/
 
 /*!\brief Maximum number of dependencies for a credentials type */
@@ -966,6 +967,9 @@ khui_cw_get_use_as_default(khui_new_creds * c);
  */
 #define KHUI_CWNIS_READY      0x00000004
 
+/*! \brief Use a marquee instead of a progress value */
+#define KHUI_CWNIS_MARQUEE    (-1)
+
 /*! \brief Notify identity state changes
 
   During the new credentials operation, if an identity needs to be
@@ -1003,10 +1007,10 @@ khui_cw_get_use_as_default(khui_new_creds * c);
       between 0 and 100 inclusive.  If the progress is not applicable,
       the \a flags parameter must specify ::KHUI_CWNIS_NOPROGRESS, in
       which case no progress information will be shown to the user.
-      Alternatively, you can pass in -1 for this parameter to indicate
-      that progress is being made, but the extent is not known.  On
-      systems that support it, this will be represented by a
-      continously scrolling marquee.
+      Alternatively, you can pass in ::KHUI_CWNIS_MARQUEE for this
+      parameter to indicate that progress is being made, but the
+      extent is not known.  On systems that support it, this will be
+      represented by a continously scrolling marquee.
  */
 KHMEXP khm_int32 KHMAPI
 khui_cw_notify_identity_state(khui_new_creds * c,

@@ -27,8 +27,8 @@
 #ifndef __KHIMAIRA_KMM_H
 #define __KHIMAIRA_KMM_H
 
-#include<khdefs.h>
-#include<kmq.h>
+#include "khdefs.h"
+#include "kmq.h"
 
 /*! \defgroup kmm NetIDMgr Module Manager
 @{*/

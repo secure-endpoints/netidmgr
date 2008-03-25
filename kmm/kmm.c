@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kmminternal.h>
+#include "kmminternal.h"
 #include<assert.h>
 
 khm_boolean kmmint_load_locale_lib(kmm_module_i * m, kmm_module_locale * l)

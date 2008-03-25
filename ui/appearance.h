@@ -64,6 +64,7 @@ enum tag_khm_ui_element {
 
     KHM_CLR_TEXT,
     KHM_CLR_TEXT_SEL,
+    KHM_CLR_TEXT_ERR,
 
     KHM_CLR_TEXT_HEADER,
     KHM_CLR_TEXT_HEADER_SEL,

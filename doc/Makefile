@@ -54,9 +54,9 @@ INPUT += "$(SRC)\kmm"
 INPUT += "$(SRC)\kherr"
 !ifdef BUILD_AFS
 INPUT += "$(SRC)\plugins\afs"
+!endif
 
 ALIASES =  "apiversion=$(NETIDMGR_VERSION_API)"
-!endif
 
 IMAGE_PATH = "$(SRC)\doc\images"
 

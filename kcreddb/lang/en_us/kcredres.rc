@@ -129,6 +129,7 @@ BEGIN
     IDS_FTS_REL_NEG         "%s ago"
     IDS_FTS_REL_TOM         "tomorrow at %s"
     IDS_FTS_REL_YEST        "yesterday at %s"
+    IDS_PARAM               "Extended Parameter"
 END
 
 STRINGTABLE 

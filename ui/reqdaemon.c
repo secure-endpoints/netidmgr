@@ -25,7 +25,8 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
+#include<process.h>
 #include<assert.h>
 
 ATOM reqdaemon_atom = 0;
@@ -342,8 +343,8 @@ reqdaemonwnd_proc(HWND hwnd,
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-DWORD WINAPI
-khm_reqdaemon_thread_proc(LPVOID vparam) {
+unsigned __stdcall
+khm_reqdaemon_thread_proc(void * vparam) {
     BOOL rv;
     MSG msg;
 #ifdef DEBUG
@@ -432,12 +433,9 @@ khm_init_request_daemon(void) {
     assert(reqdaemon_thread == NULL);
 #endif
 
-    reqdaemon_thread = CreateThread(NULL,
-                                    0,
-                                    khm_reqdaemon_thread_proc,
-                                    NULL,
-                                    0,
-                                    NULL);
+    reqdaemon_thread = (HANDLE) _beginthreadex(NULL, 16 * 4096,
+                                               khm_reqdaemon_thread_proc,
+                                               NULL, 0, NULL);
 
 #ifdef DEBUG
     assert(reqdaemon_thread != NULL);

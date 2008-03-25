@@ -25,7 +25,8 @@
 
 /* $Id$ */
 
-#include<kmminternal.h>
+#include "kmminternal.h"
+#include<process.h>
 
 kmm_module_i * kmm_all_modules = NULL;
 kmm_plugin_i * kmm_listed_plugins = NULL;
@@ -70,13 +71,8 @@ KHMEXP void KHMAPI kmm_init(void)
         NULL,
         NULL);
 
-    ht_registrar = CreateThread(
-        NULL,
-        0,
-        kmmint_registrar,
-        NULL,
-        0,
-        &dummy);
+    ht_registrar = (HANDLE) _beginthreadex(NULL, 16 * 4096, kmmint_registrar,
+                                           NULL, 0, &dummy);
 
     _WAIT_FOR_START;
 

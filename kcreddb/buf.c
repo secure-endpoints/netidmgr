@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kcreddbinternal.h>
+#include "kcreddbinternal.h"
 #include<assert.h>
 
 void kcdb_buf_new(kcdb_buf * buf, khm_size n_fields)

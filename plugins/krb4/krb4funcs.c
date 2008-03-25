@@ -27,8 +27,7 @@
 /* Originally this was krb5routines.c in Leash sources.  Subsequently
 modified and adapted for NetIDMgr */
 
-#include<krbcred.h>
-#include<kherror.h>
+#include "krbcred.h"
 
 #define SECURITY_WIN32
 #include <security.h>

@@ -150,8 +150,10 @@ typedef struct tag_nc_idsel {
     HFONT       hf_type;
     HFONT       hf_status;
     COLORREF    cr_idname;
+    COLORREF    cr_idname_dis;
     COLORREF    cr_type;
     COLORREF    cr_status;
+    COLORREF    cr_status_err;
 
     nc_ident_display id;
 } nc_idsel;

@@ -26,7 +26,7 @@
 
 #define OEMRESOURCE
 
-#include<khmapp.h>
+#include "khmapp.h"
 #include<assert.h>
 
 #define KHUI_NOTIFIER_CLASS         L"KhuiNotifierMsgWindowClass"

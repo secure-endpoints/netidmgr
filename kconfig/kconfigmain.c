@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<kconfiginternal.h>
+#include "kconfiginternal.h"
 
 void
 kconfig_process_attach(void) {

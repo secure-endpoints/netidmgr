@@ -26,7 +26,7 @@
 
 /* $Id$ */
 
-#include<kmqinternal.h>
+#include "kmqinternal.h"
 
 CRITICAL_SECTION cs_kmq_msg;
 kmq_message * msg_free = NULL;
@@ -88,6 +88,105 @@ kmqint_dump_publisher(FILE * f) {
 
     LeaveCriticalSection(&cs_kmq_msg);
 
+}
+
+const wchar_t *
+kmqint_msgtype_to_str(khm_int32 msg_type)
+{
+    static const wchar_t *mt[] = {
+        L"SYSTEM",
+        L"ADHOC",
+        L"KCDB",
+        L"KMM",
+        L"CRED",
+        L"ACT",
+        L"ALERT",
+        L"IDENT",
+        L"TASKOBJ",
+    };
+
+    if (msg_type >= 0 && msg_type < ARRAYLENGTH(mt)) {
+        return mt[msg_type];
+    } else {
+        return L"(Custom)";
+    }
+}
+
+const wchar_t *
+kmqint_msgsubtype_to_str(khm_int32 t, khm_int32 st)
+{
+    static const wchar_t *_sys[] = {
+        L"(*)", L"INIT", L"EXIT", L"Completion"
+    };
+
+    static const wchar_t *_adhoc[] = {
+        L"(*)"
+    };
+
+    static const wchar_t *_kcdb[] = {
+        L"(*)", L"IDENT", L"CREDTYPE", L"ATTRIB", L"TYPE", L"IDENTPRO"
+    };
+
+    static const wchar_t *_kmm[] = {
+        L"(*)", L"I_REG", L"I_DONE"
+    };
+
+    static const wchar_t *_cred[] = {
+        L"(*)", L"ROOTDELTA", L"REFRESH", L"RESOURCE_REQ", NULL, NULL, NULL, NULL,
+        NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+        L"PASSWORD", L"NEW_CREDS", L"RENEW_CREDS", L"DIALOG_SETUP", L"DIALOG_PRESTART",
+        L"DIALOG_START", L"DIALOG_NEW_IDENTITY", L"DIALOG_NEW_OPTIONS", L"PROCESS",
+        L"END", L"IMPORT", NULL, NULL, NULL, NULL, NULL,
+        L"DESTROY_CREDS"
+    };
+
+    static const wchar_t *_act[] = {
+        L"(*)", L"ENABLE", L"CHECK", L"REFRESH", L"NEW", L"DELETE", L"ACTIVATE"
+    };
+
+    static const wchar_t *_alert[] = {
+        L"(*)", L"SHOW", L"QUEUE", L"SHOW_QUEUED", L"CHECK_QUEUE", L"SHOW_MODAL"
+    };
+
+    static const wchar_t *_ident[] = {
+        L"(*)", L"INIT", L"EXIT", L"VALIDATE_NAME",
+        L"VALIDATE_IDENTITY", L"CANON_NAME", L"COMPARE_NAME", L"SET_DEFAULT",
+        L"SET_SEARCHABLE", L"GET_INFO", L"ENUM_KNOWN", L"UPDATE",
+        L"GET_UI_CALLBACK", L"NOTIFY_CREATE", L"RESOURCE_REQ", L"GET_IDSEL_FACTORY"
+        
+    };
+
+    static const wchar_t *_taskobj[] = {
+        L"(*)", L"CALLBACK"
+    };
+
+#define MT(s) {ARRAYLENGTH(s),s}
+
+    static const struct {
+        int max;
+        const wchar_t **s;
+    } mst[] = {
+        MT(_sys),
+        MT(_adhoc),
+        MT(_kcdb),
+        MT(_kmm),
+        MT(_cred),
+        MT(_act),
+        MT(_alert),
+        MT(_ident),
+        MT(_taskobj)
+    };
+#undef MT
+
+    if (t >= 0 && t < ARRAYLENGTH(mst)) {
+        if (st >= 0 && st < mst[t].max) {
+            return mst[t].s[st];
+        } else {
+            return L"(Custom)";
+        }
+    } else {
+        return L"(Custom Type)";
+    }
 }
 
 #endif
@@ -202,6 +301,13 @@ kmqint_post_message_ex(khm_int32 type, khm_int32 subtype, khm_ui_4 uparam,
     kmq_message * m;
     kherr_context * ctx;
 
+#ifdef DEBUG
+    _reportf(L"Posting message (%s,%s)<%d,%d> with parameters <%x, %p>",
+             kmqint_msgtype_to_str(type),
+             kmqint_msgsubtype_to_str(type, subtype),
+             type, subtype, uparam, blob);
+#endif
+
     EnterCriticalSection(&cs_kmq_msg);
     m = kmqint_get_message();
     LeaveCriticalSection(&cs_kmq_msg);
@@ -269,6 +375,13 @@ kmqint_post_sub_msg_ex(khm_handle sub, khm_int32 type, khm_int32 subtype,
     kmq_message * m;
     kherr_context * ctx;
 
+#ifdef DEBUG
+    _reportf(L"Posting message (%s,%s)<%d,%d> with parameters <%x, %p> (Subscription)",
+             kmqint_msgtype_to_str(type),
+             kmqint_msgsubtype_to_str(type, subtype),
+             type, subtype, uparam, vparam);
+#endif
+
     EnterCriticalSection(&cs_kmq_msg);
     m = kmqint_get_message();
     LeaveCriticalSection(&cs_kmq_msg);
@@ -329,6 +442,13 @@ kmqint_post_subs_msg_ex(khm_handle * subs, khm_size   n_subs, khm_int32 type,
     kmq_message * m;
     kherr_context * ctx;
     khm_size i;
+
+#ifdef DEBUG
+    _reportf(L"Posting message (%s,%s)<%d,%d> with parameters <%x, %p> (Subscriptions)",
+             kmqint_msgtype_to_str(type),
+             kmqint_msgsubtype_to_str(type, subtype),
+             type, subtype, uparam, vparam);
+#endif
 
     if(n_subs == 0)
         return KHM_ERROR_SUCCESS;

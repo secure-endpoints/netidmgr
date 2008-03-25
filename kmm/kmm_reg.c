@@ -25,7 +25,7 @@
 
 /* $Id$ */
 
-#include<kmminternal.h>
+#include "kmminternal.h"
 
 KHMEXP khm_int32   KHMAPI 
 kmm_get_module_info(wchar_t * module_name, khm_int32 flags, 

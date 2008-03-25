@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include<khmapp.h>
+#include "khmapp.h"
 
 #ifdef DEBUG
 #include<assert.h>
@@ -65,6 +65,7 @@ clr_element_names[] = {
     L"ClrHeaderExpSel",
     L"ClrText",
     L"ClrTextSel",
+    L"ClrTextErr",
     L"ClrTextHeader",
     L"ClrTextHeaderSel",
     L"ClrTextHeaderGray",
@@ -227,7 +228,7 @@ khm_get_element_lfont(HDC hdc, khm_ui_element element, khm_boolean use_default,
             break;
 
         case KHM_FONT_TITLE:
-            lf.lfHeight = 12;
+            lf.lfHeight = 10;
             adjust_size = TRUE;
             break;
         }
@@ -270,7 +271,7 @@ khm_get_element_lfont(HDC hdc, khm_ui_element element, khm_boolean use_default,
               FF_SWISS, L""},
 
             /* Title */
-            { 12, 0, 0, 0, FW_BOLD,
+            { 10, 0, 0, 0, FW_BOLD,
               FALSE, FALSE, FALSE, DEFAULT_CHARSET,
               OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
               FF_SWISS, L""},
@@ -356,7 +357,7 @@ static const int reference_color[] = {
     KHM_CLR_SELECTION,
     KHM_CLR_SELECTION,
 
-    0, KHM_CLR_SELECTION,
+    0, KHM_CLR_SELECTION, 0,
 
     0, KHM_CLR_SELECTION, 0, KHM_CLR_SELECTION
 };

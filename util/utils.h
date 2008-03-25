@@ -29,9 +29,11 @@
 
 /*! \defgroup util Utilities
  */
-#include<hashtable.h>
-#include<sync.h>
-#include<mstring.h>
-#include<perfstat.h>
+
+#include "hashtable.h"
+#include "sync.h"
+#include "mstring.h"
+#include "perfstat.h"
+#include "task.h"
 
 #endif

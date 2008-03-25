@@ -116,6 +116,12 @@
  */
 #define KMSG_IDENT      7
 
+/*! \brief Task Object messages
+
+    Messages sent from and to task objects.
+ */
+#define KMSG_TASKOBJ    8
+
 /*! \brief Base message type ID for customized message types
  */
 #define KMSGBASE_USER   16
@@ -844,6 +850,31 @@
 #define KMSG_IDENT_GET_IDSEL_FACTORY   15
 
 /*@}*/ /* /KMSG_IDENT subtypes */
+
+/*! \defgroup kmq_msg_taskobj KMSG_TASKOBJ Subtypes
+  @{*/
+
+/*! \brief A callback from the task object
+
+  If the caller supplied a parent subscription as the \a parent_sub
+  parameter to task_create(), then the task running inside the task
+  object can send messages to the parent via task_call_parent().
+
+  When that function is called, the parent message subscription
+  receives this message.
+
+  Message parameters:
+
+  - \a uparam : The \a uparam value that the child task specified when
+    it called task_call_parent().
+
+  - \a vparam : A pointer to a ::khm_task_callback_params structure.
+
+  \see ::khm_task_callback_params, task_call_parent()
+ */
+#define KMSG_TASKOBJ_CALLBACK           1
+
+/*@}*/ /* /KMSG_TASKOBJ subtypes*/
 
 /*@}*/ /* / message types */
 /*@}*/ /* / kmq */

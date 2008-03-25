@@ -31,13 +31,15 @@ INCFILES= \
 	$(INCDIR)\hashtable.h 	\
 	$(INCDIR)\mstring.h 	\
 	$(INCDIR)\sync.h	\
+	$(INCDIR)\task.h	\
 	$(INCDIR)\perfstat.h
 
 OBJFILES= \
 	$(OBJ)\hashtable.obj 	\
 	$(OBJ)\mstring.obj 	\
 	$(OBJ)\sync.obj		\
-	$(OBJ)\perfstat.obj
+	$(OBJ)\perfstat.obj	\
+	$(OBJ)\task.obj
 
 LIBFILES=
 
