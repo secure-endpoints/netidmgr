@@ -126,6 +126,10 @@ typedef struct tag_nc_idspec {
 
     khm_boolean initialized;    /* Has the identity provider list been
                                    initialized? */
+    khm_boolean in_layout;      /* Are we in nc_layout_idspec()?  This
+                                   field is used to suppress event
+                                   handling when we are modifying some
+                                   of the controls. */
     khm_ssize   idx_current;    /* Index of last provider */
 
     nc_page     prev_page;      /* Previous page, if we allow back
@@ -237,28 +241,32 @@ typedef struct tag_khui_new_creds {
     /* --- Fields below this should be kept as is for backwards
            compatibility --- */
 
-    khm_int32   magic;          /*!< Magic number.  Always KHUI_NC_MAGIC */
+    khm_int32           magic;
+                                /*!< Magic number.  Always KHUI_NC_MAGIC */
 
-    khm_int32   subtype;        /*!< Subtype of the request that is
+    khui_nc_subtype     subtype;
+                                /*!< Subtype of the request that is
                                   being handled through this object.
-                                  One of ::KMSG_CRED_NEW_CREDS,
-                                  ::KMSG_CRED_RENEW_CREDS or
-                                  ::KMSG_CRED_PASSWORD */
+                                  One of ::khui_nc_subtypes */
 
-    CRITICAL_SECTION cs;        /*!< Synchronization */
+    CRITICAL_SECTION    cs;     /*!< Synchronization */
 
-    khm_boolean set_default;    /*!< After a successfull credentials
+    khm_boolean         set_default;
+                                /*!< After a successfull credentials
                                   acquisition, set the primary
                                   identity as the default. */
 
-    khm_handle  *identities;    /*!< The list of identities associated
+    khm_handle         *identities;
+                                /*!< The list of identities associated
                                   with this request.  The first
                                   identity in this list (\a
                                   identities[0]) is the primary
                                   identity. */
-    khm_size    n_identities;   /*!< Number of identities in the list
+    khm_size            n_identities;
+                                /*!< Number of identities in the list
                                   \a identities */
-    khm_size    nc_identities;  /*!< Number of handles allocated in \a
+    khm_size            nc_identities;
+                                /*!< Number of handles allocated in \a
                                    identities */
 
     khui_action_context ctx;    /*!< An action context specifying the
@@ -266,27 +274,32 @@ typedef struct tag_khui_new_creds {
                                   acquisition operation was
                                   launced. */
 
-    khm_int32   mode;           /*!< The mode of the user interface.
+    khm_int32           mode;   /*!< The mode of the user interface.
                                   One of ::KHUI_NC_MODE_MINI or
                                   ::KHUI_NC_MODE_EXPANDED. */
 
-    HWND        hwnd;           /*!< Handle to the new credentials
+    HWND                hwnd;   /*!< Handle to the new credentials
                                   window. */
 
     khui_new_creds_type_int *types;
                                 /*!< Credential types */
-    khm_handle *type_subs;      /*!< Type subscriptions.  We keep this
+    khm_handle         *type_subs;
+                                /*!< Type subscriptions.  We keep this
                                    list separate so we can use it with
                                    kmq_{send,post}_subs_msg(). */
-    khm_size    n_types;        /*!< Number of types */
-    khm_size    nc_types;       /*!< Number allocated */
+    khm_size            n_types;
+                                /*!< Number of types */
+    khm_size            nc_types;
+                                /*!< Number allocated */
 
-    khm_int32   result;         /*!< One of ::KHUI_NC_RESULT_CANCEL or
+    khm_int32           result;
+                                /*!< One of ::KHUI_NC_RESULT_CANCEL or
                                   ::KHUI_NC_RESULT_PROCESS indicating
                                   the result of the dialog with the
                                   user */
 
-    khm_int32   response;       /*!< Response.  See individual message
+    khm_int32           response;
+                                /*!< Response.  See individual message
                                   documentation for info on what to do
                                   with this field when handling
                                   different subtypes. */
@@ -300,9 +313,10 @@ typedef struct tag_khui_new_creds {
 
     khui_ident_new_creds_cb reserved7; /*!< Not used */
 
-    wchar_t     *window_title;  /*!< Internal use */
+    wchar_t            *window_title;  /*!< Internal use */
 
-    void        *res_ident_aux; /*!< Auxilliary field which is
+    void               *res_ident_aux;
+                                /*!< Auxilliary field which is
                                   reserved for use by the identity
                                   provider during the course of
                                   conducting this dialog. */
@@ -310,25 +324,30 @@ typedef struct tag_khui_new_creds {
     /* --- Fields above this should be kept as is for backwards
            compatibility --- */
 
-    khui_new_creds_idpro * providers; /*!< Identity providers */
-    khm_size    n_providers;          /*!< Number of identity providers */
-    khm_size    nc_providers;         /*!< Internal */
+    khui_new_creds_idpro *providers;
+                                /*!< Identity providers */
+    khm_size            n_providers;
+                                /*!< Number of identity providers */
+    khm_size            nc_providers;
+                                /*!< Internal */
 
     /* New Identity Wizard components*/
-    nc_idspec   idspec;         /*!< Identity specifier */
-    nc_idsel    idsel;          /*!< Identity selector */
-    nc_privint  privint;        /*!< Privileged interaction */
-    nc_nav      nav;            /*!< Navigation */
-    nc_progress progress;       /*!< Progress window */
+    nc_idspec           idspec; /*!< Identity specifier */
+    nc_idsel            idsel;  /*!< Identity selector */
+    nc_privint          privint; /*!< Privileged interaction */
+    nc_nav              nav;     /*!< Navigation */
+    nc_progress         progress; /*!< Progress window */
 
     /* Mode and sequence */
-    nc_page     page;           /*!< Current wizard page */
+    nc_page             page;   /*!< Current wizard page */
 
     /* Behavior */
-    khm_boolean flashing_enabled; /*!< The window maybe still flashing
+    khm_boolean         flashing_enabled;
+                                /*!< The window maybe still flashing
                                     from the last call to
                                     FlashWindowEx(). */
-    khm_boolean force_topmost;  /*!< Force New Credentials window to
+    khm_boolean         force_topmost;
+                                /*!< Force New Credentials window to
                                   the top */
 } khui_new_creds;
 

@@ -362,21 +362,6 @@ BEGIN
     PUSHBUTTON      "&Revert to default",IDC_CFG_REVERT,168,122,72,14
 END
 
-IDD_CFG_ADDIDENT DIALOGEX 0, 0, 279, 95
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Add new identity"
-FONT 8, "MS Shell Dlg", 400, 0, 0x1
-BEGIN
-    LTEXT           "&Identity name",IDC_SM_LBL,7,10,46,8,NOT WS_VISIBLE
-    EDITTEXT        IDC_SM_CTL,67,7,205,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
-    DEFPUSHBUTTON   "OK",IDOK,145,74,71,14
-    PUSHBUTTON      "Cancel",IDCANCEL,222,74,50,14
-    LTEXT           "&Identity name",IDC_MED_LBL,7,27,130,8,NOT WS_VISIBLE
-    EDITTEXT        IDC_MED_CTL,141,24,131,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
-    LTEXT           "&Identity name",IDC_LG_LBL,7,41,265,8,NOT WS_VISIBLE
-    EDITTEXT        IDC_LG_CTL,141,50,131,14,ES_AUTOHSCROLL | NOT WS_VISIBLE
-END
-
 IDD_CMDLINE DIALOGEX 0, 0, 309, 286
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_CENTER | WS_CAPTION | WS_SYSMENU
 CAPTION "Commandline options for Network Identity Manager"
@@ -616,14 +601,6 @@ BEGIN
         BOTTOMMARGIN, 175
     END
 
-    IDD_CFG_ADDIDENT, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 272
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 88
-    END
-
     IDD_CMDLINE, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -796,6 +773,7 @@ BEGIN
     IDS_PROP_COL_PROPERTY   "Property"
     IDS_PROP_COL_VALUE      "Value"
     IDS_NC_NEW_IDENT        "( New identity ... )"
+    IDS_WT_IDSPEC           "Create new identity"
     IDS_ACTION_OPEN_APP     "Show Network Identity Manager window"
     IDS_CTX_NEW_IDENT       "Obaining new identity"
     IDS_CTX_NEW_CREDS       "Obtaining new credentials"
@@ -912,10 +890,10 @@ BEGIN
     IDS_ACTION_OPT_APPEAR   "Appearance"
     IDS_APR_SAMPLE_TEXT_SEL "Sample text (selected). 01234567890"
     IDS_CFG_IDNAME_INV      "The identity name %s is invalid."
-    IDS_CFG_IDNAME_PRB      "Can't add new identity %s"
+    IDS_CFG_IDNAME_PRB      "Can't add new identity"
     IDS_CFG_IDNAME_EXT      "The identity name %s already exists."
     IDS_CFG_IDNAME_CCR      "Can't create new identity.  This may be caused by lack of resources or an unknown failure.  The code returned was %d."
-    IDS_CFG_IDNAME_CCC      "Can't create identity configuration.  This may be caused by lack or resources or not having the correct permissions to create the configuration space.  The code returned was %d."
+    IDS_CFG_IDNAME_CCC      "Can't create identity configuration.  This may be caused by lack or resources or not having the correct permissions to create the configuration space."
     IDS_CFG_LOGF_CS         "Can't show log file"
     IDS_CFG_LOGF_CSR        "The log file %s does not exist."
     IDS_ACTIONT_PROPERTIES  "Show properties for the current selection"

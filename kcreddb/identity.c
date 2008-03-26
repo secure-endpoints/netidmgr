@@ -297,7 +297,7 @@ kcdb_identity_create(const wchar_t *name,
     pc = wcschr(name, L':');
 
     if (pc == NULL) {
-        if (KHM_FAILED(kcdb_identpro_get_default(&vidpro)))
+        if (KHM_FAILED(kcdb_identpro_find(L"Krb5Ident", &vidpro)))
             return KHM_ERROR_NO_PROVIDER;
 
         StringCbCopy(id_name, sizeof(id_name), name);
@@ -431,6 +431,18 @@ escape_short_name_chars(wchar_t * name, khm_size cb_max)
    - The escaped name should be usable as a configuration space name.
 
    - The unescaped name should be usable as a configuration node name.
+
+   \param[in] vid Handle to the identity
+
+   \param[in] escape_chars Set to \a TRUE if special characters in the
+       generated name should be escaped.  The special characters that
+       are currently recognized are '#' and '\'.
+
+   \param[out] buf Receives the generated short name.
+
+   \param[in,out] pcb_buf On entry, specifies the size of \a buf in
+       bytes. On exit, specifies how many bytes were used (including
+       the trailing NULL).
 
  */
 KHMEXP khm_int32 KHMAPI

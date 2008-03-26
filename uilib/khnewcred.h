@@ -355,6 +355,14 @@ enum khui_wm_nc_ident_notify {
 #pragma deprecated("WMNC_IDENT_PREPROCESS")
 };
 
+typedef enum khui_nc_subtypes {
+    KHUI_NC_SUBTYPE_NEW_CREDS = KMSG_CRED_NEW_CREDS,
+    KHUI_NC_SUBTYPE_RENEW_CREDS = KMSG_CRED_RENEW_CREDS,
+    KHUI_NC_SUBTYPE_PASSWORD = KMSG_CRED_PASSWORD,
+    KHUI_NC_SUBTYPE_IDSPEC = 256,
+    KHUI_NC_SUBTYPE_DERIVED_ID
+} khui_nc_subtype;
+
 /*! \name Standard credtext link IDs
 @{*/
 
@@ -926,7 +934,7 @@ khui_cw_set_response(khui_new_creds * c,
 KHMEXP khui_action_context * KHMAPI
 khui_cw_get_ctx(khui_new_creds * c);
 
-KHMEXP khm_int32 KHMAPI
+KHMEXP khui_nc_subtype KHMAPI
 khui_cw_get_subtype(khui_new_creds * c);
 
 KHMEXP khm_int32 KHMAPI

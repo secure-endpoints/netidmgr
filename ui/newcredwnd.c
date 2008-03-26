@@ -658,6 +658,8 @@ nc_layout_idspec(khui_new_creds * nc)
 
     hw_list = GetDlgItem(nc->idspec.hwnd, IDC_IDPROVLIST);
 
+    nc->idspec.in_layout = TRUE;
+
     if (nc->n_providers == 0) {
         kcdb_enumeration e = NULL;
         khm_handle idpro = NULL;
@@ -822,6 +824,8 @@ nc_layout_idspec(khui_new_creds * nc)
 
         nc->idspec.idx_current = idx;
     }
+
+    nc->idspec.in_layout = FALSE;
 }
 
 static khm_boolean
@@ -864,6 +868,23 @@ nc_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         nc = (khui_new_creds *) lParam;
         nc_set_dlg_data(hwnd, nc);
         return TRUE;
+
+    case WM_NOTIFY:
+        {
+            NMHDR * nmh;
+
+            nc = nc_get_dlg_data(hwnd);
+            nmh = (NMHDR *) lParam;
+
+            if (nmh->code == LVN_ITEMCHANGED && !nc->idspec.in_layout) {
+                NMLISTVIEW * nmlv = (NMLISTVIEW *) nmh;
+
+                if ((nmlv->uNewState ^ nmlv->uOldState) & LVIS_SELECTED)
+                    nc_layout_idspec(nc);
+                return TRUE;
+            }
+        }
+        return FALSE;
 
     default:
         return FALSE;
@@ -1738,7 +1759,7 @@ nc_notify_new_identity(khui_new_creds * nc, BOOL notify_ui)
        to be reset.  However, we let nc_layout_privint() handle that
        since it may need to hide the window. */
 
-    if (nc->subtype == KMSG_CRED_NEW_CREDS &&
+    if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS &&
         nc->n_identities > 0 &&
         nc->identities[0]) {
         khm_int32 f = 0;
@@ -1783,7 +1804,11 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
     case NC_PAGE_IDSPEC:
         nc->idspec.prev_page = nc->page;
         nc->page = NC_PAGE_IDSPEC;
-        nc->nav.transitions = NC_TRANS_NEXT;
+        if (nc->subtype == KHUI_NC_SUBTYPE_IDSPEC) {
+            nc->nav.transitions = NC_TRANS_FINISH;
+        } else {
+            nc->nav.transitions = NC_TRANS_NEXT;
+        }
         if (nc->idspec.prev_page != NC_PAGE_NONE)
             nc->nav.transitions |= NC_TRANS_PREV;
         break;
@@ -1812,13 +1837,19 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         switch (nc->page) {
         case NC_PAGE_IDSPEC:
             if (nc_idspec_process(nc)) {
-                if (nc->subtype == KMSG_CRED_NEW_CREDS)
+
+                switch (nc->subtype) {
+                case KHUI_NC_SUBTYPE_NEW_CREDS:
                     nc->page = NC_PAGE_CREDOPT_ADV;
-                else if (nc->subtype == KMSG_CRED_PASSWORD)
+                    break;
+
+                case KHUI_NC_SUBTYPE_PASSWORD:
                     nc->page = NC_PAGE_PASSWORD;
-                else {
+                    break;
+
+                default:
                     assert(FALSE);
-                    return;
+                    break;
                 }
 
                 break;
@@ -1845,11 +1876,27 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         break;
 
     case NC_PAGET_FINISH:
-        nc->result = KHUI_NC_RESULT_PROCESS;
-        nc_notify_types(nc, WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
-        khm_cred_dispatch_process_message(nc);
-        nc->nav.transitions = NC_TRANS_ABORT;
-        nc->page = NC_PAGE_PROGRESS;
+        switch (nc->subtype) {
+        case KHUI_NC_SUBTYPE_IDSPEC:
+            assert(nc->page == NC_PAGE_IDSPEC);
+            if (nc_idspec_process(nc)) {
+                nc->result = KHUI_NC_RESULT_PROCESS;
+                khm_cred_dispatch_process_message(nc);
+            }
+            break;
+
+        case KHUI_NC_SUBTYPE_NEW_CREDS:
+        case KHUI_NC_SUBTYPE_PASSWORD:
+            nc->result = KHUI_NC_RESULT_PROCESS;
+            nc_notify_types(nc, WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
+            khm_cred_dispatch_process_message(nc);
+            nc->nav.transitions = NC_TRANS_ABORT;
+            nc->page = NC_PAGE_PROGRESS;
+            break;
+
+        default:
+            assert(FALSE);
+        }
         break;
 
     case NC_PAGET_CANCEL:
@@ -1861,9 +1908,7 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         break;
 
     default:
-#ifdef DEBUG
         assert(FALSE);
-#endif
     }
 
     nc_layout_container(nc);
@@ -2264,8 +2309,9 @@ nc_handle_wm_initdialog(HWND hwnd,
 
 #ifdef DEBUG
     assert(nc != NULL);
-    assert(nc->subtype == KMSG_CRED_NEW_CREDS ||
-           nc->subtype == KMSG_CRED_PASSWORD);
+    assert(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+           nc->subtype == KHUI_NC_SUBTYPE_PASSWORD ||
+           nc->subtype == KHUI_NC_SUBTYPE_IDSPEC);
 #endif
     nc_set_dlg_data(hwnd, nc);
 
@@ -2476,7 +2522,8 @@ nc_handle_wm_nc_notify(HWND hwnd,
 
             /* About to activate the new credentials dialog.  We need
                to set up the wizard. */
-            if (nc->subtype == KMSG_CRED_NEW_CREDS) {
+            switch (nc->subtype) {
+            case KHUI_NC_SUBTYPE_NEW_CREDS:
 
                 if (nc->n_identities > 0) {
                     /* If there is a primary identity, then we can
@@ -2509,14 +2556,22 @@ nc_handle_wm_nc_notify(HWND hwnd,
                     nc_navigate(nc, NC_PAGE_IDSPEC);
                 }
 
-            } else if (nc->subtype == KMSG_CRED_PASSWORD) {
+                break;
+
+            case KHUI_NC_SUBTYPE_PASSWORD:
                 if (nc->n_identities > 0) {
                     nc_notify_new_identity(nc, FALSE);
                     nc_navigate(nc, NC_PAGE_PASSWORD);
                 } else {
                     nc_navigate(nc, NC_PAGE_IDSPEC);
                 }
-            } else {
+                break;
+
+            case KHUI_NC_SUBTYPE_IDSPEC:
+                nc_navigate(nc, NC_PAGE_IDSPEC);
+                break;
+
+            default:
 #ifdef DEBUG
                 assert(FALSE);
 #endif
@@ -2636,9 +2691,9 @@ nc_handle_wm_nc_notify(HWND hwnd,
 
                 nc_notify_types(nc, WMNC_DIALOG_PROCESS_COMPLETE, 0, TRUE);
 
-                if (nc->subtype == KMSG_CRED_NEW_CREDS)
+                if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)
                     nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
-                else if (nc->subtype == KMSG_CRED_PASSWORD)
+                else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD)
                     nc_navigate(nc, NC_PAGE_PASSWORD);
                 else {
                     assert(FALSE);
@@ -2695,8 +2750,8 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
 
     hlp = (HELPINFO *) lParam;
 
-    if (nc->subtype != KMSG_CRED_NEW_CREDS &&
-        nc->subtype != KMSG_CRED_PASSWORD)
+    if (nc->subtype != KHUI_NC_SUBTYPE_NEW_CREDS &&
+        nc->subtype != KHUI_NC_SUBTYPE_PASSWORD)
         return TRUE;
 
     if (hlp->iContextType != HELPINFO_WINDOW)
@@ -2716,7 +2771,7 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
 
         if (ctxids[i] != 0)
             hw = khm_html_help(hw_ctrl,
-                               ((nc->subtype == KMSG_CRED_NEW_CREDS)?
+                               ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)?
                                 L"::popups_newcreds.txt":
                                 L"::popups_password.txt"),
                                HH_TP_HELP_WM_HELP,
@@ -2725,7 +2780,7 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
 
     if (hw == NULL) {
         khm_html_help(hwnd, NULL, HH_HELP_CONTEXT,
-                      ((nc->subtype == KMSG_CRED_NEW_CREDS)?
+                      ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)?
                        IDH_ACTION_NEW_ID: IDH_ACTION_PASSWD_ID));
     }
 
@@ -2833,16 +2888,33 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
 
         wtitle[0] = L'\0';
 
-        if (c->subtype == KMSG_CRED_PASSWORD)
+        switch (c->subtype) {
+        case KHUI_NC_SUBTYPE_PASSWORD:
             LoadString(khm_hInstance, 
                        IDS_WT_PASSWORD,
                        wtitle,
                        ARRAYLENGTH(wtitle));
-        else
+            break;
+
+        case KHUI_NC_SUBTYPE_NEW_CREDS:
             LoadString(khm_hInstance, 
                        IDS_WT_NEW_CREDS,
                        wtitle,
                        ARRAYLENGTH(wtitle));
+            break;
+
+        case KHUI_NC_SUBTYPE_IDSPEC:
+            LoadString(khm_hInstance,
+                       IDS_WT_IDSPEC,
+                       wtitle,
+                       ARRAYLENGTH(wtitle));
+            break;
+
+        default:
+#ifdef DEBUG
+            assert(FALSE);
+#endif
+        }
 
         StringCchLength(wtitle, ARRAYLENGTH(wtitle), &t);
         if (t > 0) {

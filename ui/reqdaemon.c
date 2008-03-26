@@ -301,7 +301,7 @@ reqdaemonwnd_proc(HWND hwnd,
 
             do {
                 if (khm_cred_is_in_dialog()) {
-                    khm_cred_wait_for_dialog(INFINITE);
+                    khm_cred_wait_for_dialog(INFINITE, NULL, NULL, 0);
                 }
 
                 khui_context_set_ex(KHUI_SCOPE_IDENT,
@@ -323,7 +323,7 @@ reqdaemonwnd_proc(HWND hwnd,
                     khm_cred_obtain_new_creds(NULL);
                 }
 
-                if (KHM_FAILED(khm_cred_wait_for_dialog(INFINITE)))
+                if (KHM_FAILED(khm_cred_wait_for_dialog(INFINITE, NULL, NULL, 0)))
                     continue;
                 else
                     break;

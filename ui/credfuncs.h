@@ -50,6 +50,10 @@ khm_cred_renew_cred(khm_handle cred);
 void 
 khm_cred_renew_creds(void);
 
+void
+khm_cred_prompt_for_identity_modal(const wchar_t * w_title,
+                                   khm_handle *pidentity);
+
 void 
 khm_cred_obtain_new_creds(wchar_t * window_title);
 

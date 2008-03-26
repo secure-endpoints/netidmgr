@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2006 Secure Endpoints Inc.
+# Copyright (c) 2008 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -33,14 +33,17 @@
 
 # Declare a few things about our plug-in.
 
-# TODO: Change the plug-in name
-PLUGINNAME=MyPlugin
+# TODO: Change the credentials provider name
+CREDPROVNAME=MyCredsProv
+
+# TODO: Change the identity provider name
+IDPROVNAME=MyIdProv
 
 # TODO: Change the module name
 MODULENAME=MyModule
 
 # TODO: Change the credtype name
-CREDTYPENAME=MyCred
+CREDTYPENAME=MyCredType
 
 # TODO: Change this as appropriate
 DLLBASENAME=myplugin
@@ -78,7 +81,7 @@ BUILDTYPE=debug
 !endif
 
 !ifndef CPU
-!error Environment variable 'CPU' is not defined.
+! error Environment variable 'CPU' is not defined.
 !endif
 
 DEST=$(BUILDROOT)\dest\$(CPU)_$(BUILDTYPE)
@@ -195,7 +198,9 @@ OBJFILES= \
 	$(OBJ)\credacq.obj	\
 	$(OBJ)\credtype.obj	\
 	$(OBJ)\main.obj		\
-	$(OBJ)\plugin.obj	\
+	$(OBJ)\credprov.obj	\
+	$(OBJ)\idprov.obj	\
+	$(OBJ)\idselect.obj	\
 	$(OBJ)\proppage.obj	\
 	$(OBJ)\config_main.obj	\
 	$(OBJ)\config_id.obj	\
@@ -213,13 +218,15 @@ $(CONFIGHEADER): Makefile
 
 #pragma once
 
-#define MYPLUGIN_DLLBASE "$(DLLBASENAME)"
+#define PLUGIN_DLLBASE "$(DLLBASENAME)"
 
-#define MYPLUGIN_NAME "$(PLUGINNAME)"
+#define CREDPROV_NAME  "$(CREDPROVNAME)"
 
-#define MYMODULE_NAME "$(MODULENAME)"
+#define IDPROV_NAME    "$(IDPROVNAME)"
 
-#define MYCREDTYPE_NAME "$(CREDTYPENAME)"
+#define MODULE_NAME    "$(MODULENAME)"
+
+#define CREDTYPE_NAME  "$(CREDTYPENAME)"
 
 #define VERSION_MAJOR $(VERMAJOR)
 #define VERSION_MINOR $(VERMINOR)

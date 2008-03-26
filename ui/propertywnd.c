@@ -102,6 +102,7 @@ void pw_update_property_data(HWND hw, pw_data * d)
             lvi.iSubItem = 1;
             lvi.pszText = buffer;
 
+            buffer[0] = L'\0';
             t = cb_buf;
             kcdb_buf_get_attr_string(d->record, attrs[i], buffer, &t, 0);
 

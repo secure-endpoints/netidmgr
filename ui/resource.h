@@ -121,6 +121,7 @@
 #define IDI_NOTIFY_NONE                 169
 #define IDS_NC_NEW_IDENT                169
 #define IDI_NOTIFY_INFO                 170
+#define IDS_WT_IDSPEC                   170
 #define IDI_NOTIFY_WARN                 171
 #define IDS_ACTION_OPEN_APP             171
 #define IDI_NOTIFY_ERROR                172
@@ -201,7 +202,6 @@
 #define IDS_PISTATE_PLACEHOLD           210
 #define IDD_CFG_APPEAR                  210
 #define IDS_PISTATE_REG                 211
-#define IDD_CFG_ADDIDENT                211
 #define IDS_PISTATE_HOLD                212
 #define IDD_CMDLINE                     212
 #define IDS_PISTATE_INIT                213
@@ -395,13 +395,7 @@
 #define IDC_CFG_BOLD                    1131
 #define IDC_CFG_ITALICS                 1132
 #define IDC_CFG_ADDIDENT                1133
-#define IDC_SM_CTL                      1134
 #define IDC_CFG_SHOWLOG                 1135
-#define IDC_MED_CTL                     1135
-#define IDC_LG_CTL                      1136
-#define IDC_SM_LBL                      1137
-#define IDC_MED_LBL                     1138
-#define IDC_LG_LBL                      1139
 #define IDC_CFG_NOTACTION               1141
 #define IDC_CFG_NOTACT_STATIC           1142
 #define IDC_CONTENT                     1144

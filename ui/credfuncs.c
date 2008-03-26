@@ -28,7 +28,7 @@
 #include "khmapp.h"
 #include<assert.h>
 
-static BOOL in_dialog = FALSE;
+static khm_boolean in_dialog = FALSE;
 static CRITICAL_SECTION cs_dialog;
 static HANDLE in_dialog_evt = NULL;
 static khm_int32 dialog_result = 0;
@@ -40,16 +40,8 @@ DECLARE_ONCE(dialog_init_once);
 static void
 dialog_sync_init(void) {
     if (InitializeOnce(&dialog_init_once)) {
-#ifdef DEBUG
-        assert(in_dialog_evt == NULL);
-        assert(in_dialog == FALSE);
-#endif
-
         InitializeCriticalSection(&cs_dialog);
-
-        in_dialog_evt = CreateEvent(NULL,
-                                    TRUE,
-                                    TRUE,
+        in_dialog_evt = CreateEvent(NULL, TRUE, TRUE,
                                     L"DialogCompletionEvent");
 
         InitializeOnceDone(&dialog_init_once);
@@ -109,15 +101,16 @@ khm_cred_end_dialog(khui_new_creds * nc) {
     assert(dialog_nc == nc);
 #endif
     dialog_nc = NULL;
-    if (nc->subtype == KMSG_CRED_NEW_CREDS &&
+    if ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+         nc->subtype == KHUI_NC_SUBTYPE_IDSPEC) &&
         nc->n_identities > 0 &&
         nc->identities[0]) {
         khm_size cb;
 
         cb = sizeof(dialog_identity);
-        if (KHM_FAILED(kcdb_identity_get_name(nc->identities[0],
-                                              dialog_identity,
-                                              &cb)))
+        if (KHM_FAILED(kcdb_identity_get_short_name(nc->identities[0],
+                                                    FALSE,
+                                                    dialog_identity, &cb)))
             dialog_identity[0] = 0;
     } else {
         dialog_identity[0] = 0;
@@ -426,12 +419,24 @@ kmsg_cred_completion(kmq_message *m)
 
             nc = (khui_new_creds *) m->vparam;
 
-            if (nc->subtype == KMSG_CRED_NEW_CREDS ||
-                nc->subtype == KMSG_CRED_PASSWORD) {
+            switch (nc->subtype) {
+            case KHUI_NC_SUBTYPE_NEW_CREDS:
+            case KHUI_NC_SUBTYPE_PASSWORD:
 
                 khm_cred_end_dialog(nc);
 
-            } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+                break;
+
+            case KHUI_NC_SUBTYPE_IDSPEC:
+
+                /* IDSPEC subtypes are only spawned by
+                   khm_cred_prompt_for_identity_modal() and requires
+                   that nc be kept alive after the dialog dies. */
+
+                khm_cred_end_dialog(nc);
+                return;
+
+            case KHUI_NC_SUBTYPE_RENEW_CREDS:
 
                 /* if this is a renewal that was triggered while we
                    were processing the commandline, then we need to
@@ -445,6 +450,7 @@ kmsg_cred_completion(kmq_message *m)
                         continue_cmdline = FALSE;
                     }
                 }
+                break;
             }
 
             khui_cw_destroy_cred_blob(nc);
@@ -550,6 +556,49 @@ void khm_cred_set_default_identity(khm_handle identity)
     kcdb_identity_set_default(identity);
 }
 
+void khm_cred_prompt_for_identity_modal(const wchar_t * w_title,
+                                        khm_handle *pidentity)
+{
+    khui_new_creds * nc;
+
+    if (!khm_cred_begin_dialog())
+        return;
+
+    khui_cw_create_cred_blob(&nc);
+    nc->subtype = KHUI_NC_SUBTYPE_IDSPEC;
+    dialog_nc = nc;
+
+    if (w_title)
+        nc->window_title = PWCSDUP(w_title);
+
+    if (*pidentity)
+        khui_cw_set_primary_id(nc, *pidentity);
+
+    khm_create_newcredwnd(khm_hwnd_main, nc);
+
+#ifdef DEBUG
+    assert(in_dialog);
+#endif
+
+    khm_show_newcredwnd(nc->hwnd);
+
+    khm_message_loop_int(&in_dialog);
+
+    if (nc->n_identities > 0) {
+        if (!kcdb_identity_is_equal(nc->identities[0], *pidentity)) {
+            if (*pidentity)
+                kcdb_identity_release(*pidentity);
+            *pidentity = nc->identities[0];
+            kcdb_identity_hold(*pidentity);
+        }
+    } else {
+        if (*pidentity)
+            kcdb_identity_release(*pidentity);
+    }
+
+    khui_cw_destroy_cred_blob(nc);
+}
+
 void khm_cred_destroy_creds(khm_boolean sync, khm_boolean quiet)
 {
     khui_action_context * pctx;
@@ -644,7 +693,7 @@ void khm_cred_renew_all_identities(void)
 {
     kcdb_enumeration e;
     khm_size n_idents = 0;
-    khm_handle h_ident;
+    khm_handle h_ident = NULL;
 
     if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_EMPTY, 0,
                                             &e, &n_idents)))
@@ -1084,6 +1133,76 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
 }
 
 void
+khm_cred_refresh(void) {
+    kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, NULL);
+}
+
+void
+khm_cred_addr_change(void) {
+    khm_handle csp_cw = NULL;
+    khm_int32 check_net = 0;
+    kcdb_enumeration e = NULL;
+    khm_handle ident;
+    khm_size cb;
+    khm_size n_idents;
+    FILETIME ft_now;
+    FILETIME ft_exp;
+    FILETIME ft_issue;
+
+    if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow",
+                                     0, &csp_cw))) {
+        khc_read_int32(csp_cw, L"AutoDetectNet", &check_net);
+
+        khc_close_space(csp_cw);
+    }
+
+    if (!check_net)
+        return;
+
+    if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_VALID |
+                                            KCDB_IDENT_FLAG_RENEWABLE,
+                                            KCDB_IDENT_FLAG_VALID |
+                                            KCDB_IDENT_FLAG_RENEWABLE,
+                                            &e, &n_idents)))
+        return;
+
+    GetSystemTimeAsFileTime(&ft_now);
+
+    while (KHM_SUCCEEDED(kcdb_enum_next(e, &ident))) {
+
+        cb = sizeof(ft_issue);
+
+        if (KHM_SUCCEEDED
+            (kcdb_identity_get_attr(ident, KCDB_ATTR_ISSUE, NULL,
+                                    &ft_issue, &cb)) &&
+
+            (cb = sizeof(ft_exp)) &&
+            KHM_SUCCEEDED
+            (kcdb_identity_get_attr(ident, KCDB_ATTR_EXPIRE, NULL,
+                                    &ft_exp, &cb)) &&
+
+            CompareFileTime(&ft_now, &ft_exp) < 0) {
+
+            khm_int64 i_issue;
+            khm_int64 i_exp;
+            khm_int64 i_now;
+
+            i_issue = FtToInt(&ft_issue);
+            i_exp = FtToInt(&ft_exp);
+            i_now = FtToInt(&ft_now);
+
+            if (i_now > (i_issue + i_exp) / 2) {
+
+                khm_cred_renew_identity(ident);
+
+            }
+        }
+    }
+
+    kcdb_enum_end(e);
+}
+
+void
 khm_cred_process_startup_actions(void) {
     khm_handle defident = NULL;
 
@@ -1264,72 +1383,3 @@ khm_cred_begin_startup_actions(void) {
     khm_cred_process_startup_actions();
 }
 
-void
-khm_cred_refresh(void) {
-    kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, NULL);
-}
-
-void
-khm_cred_addr_change(void) {
-    khm_handle csp_cw = NULL;
-    khm_int32 check_net = 0;
-    kcdb_enumeration e = NULL;
-    khm_handle ident;
-    khm_size cb;
-    khm_size n_idents;
-    FILETIME ft_now;
-    FILETIME ft_exp;
-    FILETIME ft_issue;
-
-    if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow",
-                                     0, &csp_cw))) {
-        khc_read_int32(csp_cw, L"AutoDetectNet", &check_net);
-
-        khc_close_space(csp_cw);
-    }
-
-    if (!check_net)
-        return;
-
-    if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_VALID |
-                                            KCDB_IDENT_FLAG_RENEWABLE,
-                                            KCDB_IDENT_FLAG_VALID |
-                                            KCDB_IDENT_FLAG_RENEWABLE,
-                                            &e, &n_idents)))
-        return;
-
-    GetSystemTimeAsFileTime(&ft_now);
-
-    while (KHM_SUCCEEDED(kcdb_enum_next(e, &ident))) {
-
-        cb = sizeof(ft_issue);
-
-        if (KHM_SUCCEEDED
-            (kcdb_identity_get_attr(ident, KCDB_ATTR_ISSUE, NULL,
-                                    &ft_issue, &cb)) &&
-
-            (cb = sizeof(ft_exp)) &&
-            KHM_SUCCEEDED
-            (kcdb_identity_get_attr(ident, KCDB_ATTR_EXPIRE, NULL,
-                                    &ft_exp, &cb)) &&
-
-            CompareFileTime(&ft_now, &ft_exp) < 0) {
-
-            khm_int64 i_issue;
-            khm_int64 i_exp;
-            khm_int64 i_now;
-
-            i_issue = FtToInt(&ft_issue);
-            i_exp = FtToInt(&ft_exp);
-            i_now = FtToInt(&ft_now);
-
-            if (i_now > (i_issue + i_exp) / 2) {
-
-                khm_cred_renew_identity(ident);
-
-            }
-        }
-    }
-
-    kcdb_enum_end(e);
-}

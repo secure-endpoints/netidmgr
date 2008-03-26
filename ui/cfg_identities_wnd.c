@@ -693,357 +693,6 @@ refresh_view_idents_state(HWND hwnd) {
                             KHUI_CNFLAG_APPLIED | KHUI_CNFLAG_MODIFIED);
 }
 
-struct ctrl_row_dimensions {
-    RECT enclosure;
-    RECT label;
-    RECT control;
-};
-
-typedef struct tag_add_ident_data {
-    khui_new_creds * nc;
-
-    struct ctrl_row_dimensions dim_small;
-    struct ctrl_row_dimensions dim_medium;
-    struct ctrl_row_dimensions dim_large;
-    int row_gap;
-
-    int current_y;
-    int current_x;
-
-    HWND hwnd_last_ctrl;
-} add_ident_data;
-
-void
-get_ctrl_row_metrics(struct ctrl_row_dimensions * dim, HWND hw_lbl, HWND hw_ctl) {
-
-    assert(hw_lbl);
-    assert(hw_ctl);
-
-    GetWindowRect(hw_lbl, &dim->label);
-    GetWindowRect(hw_ctl, &dim->control);
-
-    UnionRect(&dim->enclosure, &dim->label, &dim->control);
-    OffsetRect(&dim->label,
-               -dim->enclosure.left,
-               -dim->enclosure.top);
-    OffsetRect(&dim->control,
-               -dim->enclosure.left,
-               -dim->enclosure.top);
-    OffsetRect(&dim->enclosure,
-               -dim->enclosure.left,
-               -dim->enclosure.top);
-}
-
-/* dialog box procedure for the "Add new identity" dialog */
-INT_PTR CALLBACK
-khm_cfg_add_ident_proc(HWND hwnd,
-                       UINT umsg,
-                       WPARAM wParam,
-                       LPARAM lParam) {
-    add_ident_data * d;
-
-    switch(umsg) {
-    case WM_INITDIALOG:
-        /* we create a new credentials blob and pull in the identity
-           selectors from the identity provider. */
-        d = PMALLOC(sizeof(*d));
-        ZeroMemory(d, sizeof(*d));
-
-        khui_cw_create_cred_blob(&d->nc);
-#ifdef DEBUG
-        assert(d->nc != NULL);
-#endif
-        if (d->nc == NULL) {
-            PFREE(d);
-            break;
-        }
-
-#if 0
-        /* TODO: We need to introduce a way to select the identity
-           provider as well as the identity and then using the
-           identity selector. */
-        if (KHM_FAILED(kcdb_identpro_get_ui_cb(&d->nc->ident_cb))) {
-            /* this should have worked.  The only reason it would fail
-               is if there is no identity provider or if the identity
-               provider does not support providing idnetity
-               selectors. */
-            khui_cw_destroy_cred_blob(d->nc);
-            PFREE(d);
-            break;
-        }
-#endif
-
-#pragma warning(push)
-#pragma warning(disable: 4244)
-        SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR) d);
-#pragma warning(pop)
-
-        /* get metrics for dynamic controls */
-        get_ctrl_row_metrics(&d->dim_small,
-                             GetDlgItem(hwnd, IDC_SM_LBL),
-                             GetDlgItem(hwnd, IDC_SM_CTL));
-        get_ctrl_row_metrics(&d->dim_medium,
-                             GetDlgItem(hwnd, IDC_MED_LBL),
-                             GetDlgItem(hwnd, IDC_MED_CTL));
-        get_ctrl_row_metrics(&d->dim_large,
-                             GetDlgItem(hwnd, IDC_LG_LBL),
-                             GetDlgItem(hwnd, IDC_LG_CTL));
-
-        {
-            RECT rlbl;
-            RECT rctl;
-            RECT rwnd;
-
-            GetWindowRect(GetDlgItem(hwnd, IDC_SM_LBL),
-                          &rlbl);
-            GetWindowRect(GetDlgItem(hwnd, IDC_SM_CTL),
-                          &rctl);
-            GetWindowRect(hwnd, &rwnd);
-
-            OffsetRect(&rlbl, -rwnd.left, -rwnd.top);
-            OffsetRect(&rctl, -rwnd.left, -rwnd.top);
-
-            d->current_x = rlbl.left;
-            d->current_y = rctl.top - GetSystemMetrics(SM_CYCAPTION);
-
-            GetWindowRect(GetDlgItem(hwnd, IDC_MED_CTL),
-                          &rlbl);
-            OffsetRect(&rlbl, -rwnd.left, -rwnd.top);
-
-            d->row_gap = rlbl.top - rctl.bottom;
-        }
-
-        d->nc->hwnd = hwnd;
-
-#if 0
-        /* now call the UI callback and make it create the
-           controls. */
-        d->nc->ident_cb(d->nc, WMNC_IDENT_INIT, NULL, 0, 0,
-                        (LPARAM) hwnd);
-#endif
-        break;
-
-    case WM_DESTROY:
-        d = (add_ident_data *)(LONG_PTR)
-            GetWindowLongPtr(hwnd, DWLP_USER);
-        if (d == NULL)
-            break;
-
-#if 0
-        d->nc->ident_cb(d->nc, WMNC_IDENT_EXIT, NULL, 0, 0, 0);
-#endif
-
-        khui_cw_destroy_cred_blob(d->nc);
-        PFREE(d);
-        SetWindowLongPtr(hwnd, DWLP_USER, 0);
-        break;
-
-    case KHUI_WM_NC_NOTIFY:
-        d = (add_ident_data *)(LONG_PTR)
-            GetWindowLongPtr(hwnd, DWLP_USER);
-        if (d == NULL)
-            break;
-
-        switch(HIWORD(wParam)) {
-        case WMNC_ADD_CONTROL_ROW:
-            {
-                khui_control_row * row;
-                RECT r_lbl, r_inp, r_enc;
-                struct ctrl_row_dimensions * dim;
-                HFONT hf;
-
-                row = (khui_control_row *) lParam;
-
-#ifdef DEBUG
-                assert(row->label);
-                assert(row->input);
-                assert(d);
-#endif
-
-                if (row->size == KHUI_CTRLSIZE_SMALL) {
-                    dim = &d->dim_small;
-                } else if (row->size == KHUI_CTRLSIZE_HALF) {
-                    dim = &d->dim_medium;
-                } else {
-                    dim = &d->dim_large;
-#ifdef DEBUG
-                    assert(row->size == KHUI_CTRLSIZE_FULL);
-#endif
-                }
-
-                CopyRect(&r_enc, &dim->enclosure);
-                CopyRect(&r_lbl, &dim->label);
-                CopyRect(&r_inp, &dim->control);
-
-                OffsetRect(&r_enc, d->current_x, d->current_y);
-                OffsetRect(&r_lbl, r_enc.left, r_enc.top);
-                OffsetRect(&r_inp, r_enc.left, r_enc.top);
-
-                d->current_y += r_enc.bottom - r_enc.top;
-
-                hf = (HFONT) SendDlgItemMessage(hwnd, IDOK, WM_GETFONT, 0, 0);
-
-                if (row->label) {
-                    SetWindowPos(row->label,
-                                 ((d->hwnd_last_ctrl != NULL)?
-                                  d->hwnd_last_ctrl :
-                                  HWND_TOP),
-                                 r_lbl.left, r_lbl.top,
-                                 r_lbl.right - r_lbl.left,
-                                 r_lbl.bottom - r_lbl.top,
-                                 SWP_DEFERERASE | SWP_NOACTIVATE |
-                                 SWP_NOOWNERZORDER);
-                    if (hf)
-                        SendMessage(row->label, WM_SETFONT,
-                                    (WPARAM) hf,
-                                    TRUE);
-                    d->hwnd_last_ctrl = row->label;
-                }
-
-                if (row->input) {
-                    SetWindowPos(row->input,
-                                 ((d->hwnd_last_ctrl != NULL)?
-                                  d->hwnd_last_ctrl :
-                                  HWND_TOP),
-                                 r_inp.left, r_inp.top,
-                                 r_inp.right - r_inp.left,
-                                 r_inp.bottom - r_inp.top,
-                                 SWP_DEFERERASE | SWP_NOACTIVATE |
-                                 SWP_NOOWNERZORDER);
-                    if (hf)
-                        SendMessage(row->input, WM_SETFONT,
-                                    (WPARAM) hf,
-                                    TRUE);
-                    d->hwnd_last_ctrl = row->input;
-                }
-            }
-            break;
-
-        case WMNC_IDENTITY_CHANGE:
-            break;
-        }
-        return TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK) {
-            wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-            wchar_t err_msg[1024];
-            khm_handle ident = NULL;
-            khm_handle csp_ident = NULL;
-            khm_size cb;
-            khm_int32 rv = KHM_ERROR_SUCCESS;
-            khm_int32 flags = 0;
-
-            d = (add_ident_data *)(LONG_PTR)
-                GetWindowLongPtr(hwnd, DWLP_USER);
-
-            if (!d || !d->nc)
-                break;
-#if 0
-            if (d->nc->ident_cb)
-                d->nc->ident_cb(d->nc, WMNC_IDENT_PREPROCESS, NULL, 0, 0, 0);
-#endif
-            /* check if there was an identity selected */
-            if (d->nc->n_identities == 0 ||
-                d->nc->identities[0] == NULL) {
-
-                StringCbCopy(idname, sizeof(idname), L"");
-
-                LoadString(khm_hInstance, IDS_CFG_IDNAME_NON,
-                           err_msg, ARRAYLENGTH(err_msg));
-
-                goto show_failure;
-            }
-
-            ident = d->nc->identities[0];
-            kcdb_identity_hold(ident);
-
-            cb = sizeof(idname);
-            kcdb_identity_get_name(ident, idname, &cb);
-
-            /* check if the identity is already in the
-               configuration */
-            if (KHM_SUCCEEDED(kcdb_identity_get_flags(ident, &flags)) &&
-                (flags & KCDB_IDENT_FLAG_CONFIG)) {
-
-                wchar_t fmt[256];
-
-                LoadString(khm_hInstance, IDS_CFG_IDNAME_EXT,
-                           fmt, ARRAYLENGTH(fmt));
-                StringCbPrintf(err_msg, sizeof(err_msg), fmt, idname);
-
-                kcdb_identity_release(ident);
-                ident = NULL;
-
-                goto show_failure;
-            }
-
-            /* now we have to create the identity configuration. */
-            if (KHM_FAILED(rv = kcdb_identity_get_config(ident,
-                                                         KHM_FLAG_CREATE,
-                                                         &csp_ident))) {
-                wchar_t fmt[256];
-
-                LoadString(khm_hInstance, IDS_CFG_IDNAME_CCC,
-                           fmt, ARRAYLENGTH(fmt));
-                StringCbPrintf(err_msg, sizeof(err_msg), fmt, rv);
-
-                kcdb_identity_release(ident);
-                ident = NULL;
-
-                goto show_failure;
-            }
-
-            /* create a value so that the configuration space will
-               actually be created in the registry.  We don't want
-               this new identity to be sticky. */
-            khc_write_int32(csp_ident, L"Sticky", 0);
-
-            khm_refresh_config();
-
-            kcdb_identity_release(ident);
-            khc_close_space(csp_ident);
-
-            EndDialog(hwnd, 0);
-            break;
-
-        show_failure:
-            {
-                wchar_t title[512];
-                wchar_t fmt[256];
-
-                if (!err_msg[0])
-                    break;
-
-                LoadString(khm_hInstance, IDS_CFG_IDNAME_PRB,
-                           fmt, ARRAYLENGTH(fmt));
-                StringCbPrintf(title, sizeof(title), fmt, idname);
-
-                MessageBox(hwnd, err_msg, title, MB_OK | MB_ICONSTOP);
-
-                /* don't end the dialog yet */
-                break;
-            }
-            break;
-            
-        } else if (LOWORD(wParam) == IDCANCEL) {
-            EndDialog(hwnd, 1);
-        } else {
-            d = (add_ident_data *)(LONG_PTR)
-                GetWindowLongPtr(hwnd, DWLP_USER);
-#if 0
-            if (d && d->nc && d->nc->ident_cb) {
-                return d->nc->ident_cb(d->nc, WMNC_IDENT_WMSG,
-                                       hwnd, umsg, wParam, lParam);
-            }
-#endif
-        }
-        break;
-    }
-
-    return FALSE;
-}
-
 /* dialog procedure for the "general" pane of the "identities"
    configuration node. */
 INT_PTR CALLBACK
@@ -1144,11 +793,35 @@ khm_cfg_ids_tab_proc(HWND hwnd,
                 break;
 
             case IDC_CFG_ADDIDENT:
-                DialogBoxParam(khm_hInstance,
-                               MAKEINTRESOURCE(IDD_CFG_ADDIDENT),
-                               hwnd,
-                               khm_cfg_add_ident_proc,
-                               (LPARAM) hwnd);
+                {
+                    khm_handle identity = NULL;
+                    khm_handle csp_id = NULL;
+
+                    khm_cred_prompt_for_identity_modal(NULL, &identity);
+
+                    if (identity == NULL)
+                        break;
+
+                    if (KHM_SUCCEEDED(kcdb_identity_get_config(identity,
+                                                               KHM_FLAG_CREATE,
+                                                               &csp_id))) {
+                        khc_close_space(csp_id);
+
+                        khm_refresh_config();
+                    } else {
+                        wchar_t err_title[64];
+                        wchar_t err_msg[256];
+
+                        LoadString(khm_hInstance, IDS_CFG_IDNAME_PRB,
+                                   err_title, ARRAYLENGTH(err_title));
+                        LoadString(khm_hInstance, IDS_CFG_IDNAME_CCC,
+                                   err_msg, ARRAYLENGTH(err_msg));
+
+                        MessageBox(hwnd, err_msg, err_title, MB_OK | MB_ICONSTOP);
+                    }
+
+                    kcdb_identity_release(identity);
+                }
                 break;
             }
 
@@ -1228,6 +901,9 @@ find_ident_by_node(khui_config_node node) {
     khm_handle ident = NULL;
 
     ident = khui_cfg_get_data(node);
+    if (ident == NULL)
+        return NULL;
+
     kcdb_identity_hold(ident);
 
     for (i=0; i < (int)cfg_idents.n_idents; i++) {

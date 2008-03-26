@@ -221,12 +221,39 @@ k5_kinit_task_abort_and_release(k5_kinit_task * kt)
 void
 k5_kinit_task_confirm_and_wait(k5_kinit_task * kt)
 {
+ retry:
     EnterCriticalSection(&kt->cs);
-    if (kt->state == K5_KINIT_STATE_WAIT) {
+    switch (kt->state) {
+    case K5_KINIT_STATE_ABORTED:
+    case K5_KINIT_STATE_DONE:
+        /* The task is not running. */
+        LeaveCriticalSection(&kt->cs);
+        return;
+
+    case K5_KINIT_STATE_PREP:
+    case K5_KINIT_STATE_INCALL:
+    case K5_KINIT_STATE_RETRY:
+        /* The task hasn't reached a wait state yet.  We should wait
+           for one and retry. */
+        ResetEvent(kt->h_parent_wait);
+        LeaveCriticalSection(&kt->cs);
+        WaitForSingleObject(kt->h_parent_wait, INFINITE);
+        goto retry;
+
+    case K5_KINIT_STATE_WAIT:
         _reportf(L"Confirming k5_kinit_task [%p] for principal [%S]", kt, kt->principal);
         kt->state = K5_KINIT_STATE_CONFIRM;
+        ResetEvent(kt->h_parent_wait);
         SetEvent(kt->h_task_wait);
-    } else {
+        break;
+
+    case K5_KINIT_STATE_CONFIRM:
+#ifdef DEBUG
+        assert(FALSE);
+#endif
+        break;
+
+    default:
 #ifdef DEBUG
         assert(FALSE);
 #endif

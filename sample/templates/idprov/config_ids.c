@@ -25,79 +25,75 @@
 /* $Id$ */
 
 #include "credprov.h"
-#include <assert.h>
+#include<assert.h>
 
 /* Dialog procedures and support functions for handling configuration
-   dialogs for general plug-in configuration. */
+   dialogs for all identities. */
 
-/* Structure for holding dialog data for the configuration window. */
-typedef struct tag_config_main_dlg_data {
-    khui_config_node cnode;
+/* The structure that we use to hold state information for the
+   dialog. */
+typedef struct tag_config_ids_dlg_data {
+    khui_config_init_data cfg;  /* instance information for this
+                                   dialog */
 
-    /* TODO: add fields as needed */
-} config_main_dlg_data;
+    /* TODO: Add any fields for holding state here */
+} config_ids_dlg_data;
 
 INT_PTR CALLBACK
-config_dlgproc(HWND hwnd,
-               UINT uMsg,
-               WPARAM wParam,
-               LPARAM lParam) {
+config_ids_dlgproc(HWND hwnd,
+                   UINT uMsg,
+                   WPARAM wParam,
+                   LPARAM lParam) {
 
-    config_main_dlg_data * d;
+    config_ids_dlg_data * d;
 
     switch (uMsg) {
     case WM_INITDIALOG:
-        d = malloc(sizeof(*d));
-        assert(d);
-        ZeroMemory(d, sizeof(*d));
+        {
+            d = malloc(sizeof(*d));
+            assert(d);
+            ZeroMemory(d, sizeof(*d));
 
-        /* for configuration panels that are not subpanels, lParam is
-           a held handle to the configuration node.  The handle will
-           be held for the lifetime of the window. */
+            /* for subpanels, lParam is a pointer to a
+               khui_config_init_data strucutre that provides the
+               instance and context information.  It's not a
+               persistent strucutre, so we have to make a copy. */
+            d->cfg = *((khui_config_init_data *) lParam);
 
-        d->cnode = (khui_config_node) lParam;
-
-        /* TODO: perform any other required initialization stuff
-           here */
+            /* TODO: perform any additional initialization */
 
 #pragma warning(push)
 #pragma warning(disable: 4244)
-        SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR) d);
+            SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR) d);
 #pragma warning(pop)
-
+        }
         break;
 
     case KHUI_WM_CFG_NOTIFY:
-        {
-            d = (config_main_dlg_data *)
-                GetWindowLongPtr(hwnd, DWLP_USER);
-            if (d == NULL)
-                break;
+        d = (config_ids_dlg_data *)
+            GetWindowLongPtr(hwnd, DWLP_USER);
+        if (d == NULL)
+            break;
 
-            /* WMCFG_APPLY is the only notification we care about */
+        if (HIWORD(wParam) == WMCFG_APPLY) {
+            /* TODO: apply changes */
 
-            if (HIWORD(wParam) == WMCFG_APPLY) {
-                /* TODO: Apply changes and update the state */
-
-                return TRUE;
-            }
+            return TRUE;
         }
         break;
 
     case WM_DESTROY:
-        d = (config_main_dlg_data *)
+        d = (config_ids_dlg_data *)
             GetWindowLongPtr(hwnd, DWLP_USER);
 
-        /* TODO: perform any other required uninitialization here */
-
         if (d) {
-            free(d);
+            /* TODO: Perform any additional uninitialization */
+
+            free (d);
             SetWindowLongPtr(hwnd, DWLP_USER, 0);
         }
-
         break;
     }
 
     return FALSE;
-
 }
