@@ -219,6 +219,11 @@
 
     <Property Id="INSTALLLEVEL">3</Property>
 
+    <!-- Kerberos for Windows is not required for installing or
+         removing this module. Having that requirement prevents users
+         from installing packages in an order that's convenient for
+         them. -->
+
     <Condition Message="$(loc.AdminRequired)">Privileged</Condition>
     <Condition Message="$(loc.OsVersionRequired)">VersionNT &gt;=501</Condition>
     <?if $(var.Platform) = "x64" ?>

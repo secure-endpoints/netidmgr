@@ -1,7 +1,7 @@
 
   Network Identity Manager
 
-        Credentials Provider Plug-in Template
+        Identity Provider Plug-in Template
 
 ------------------------------------------------------------------
 
@@ -11,41 +11,44 @@
         2.  COPYRIGHT AND LICENSE
         3.  ROADMAP OF THE TEMPLATE
         4.  BUILD REQUIREMENTS
-        5.  BUILDING
-        6.  RUNNING THE PLUG-IN
-        7.  KNOWN ISSUES
-        8.  SUPPORT / BUG REPORTS
+        5.  BUILDING BINARIES
+        6.  BUILDING INSTALLER
+        7.  RUNNING THE PLUG-IN
+        8.  KNOWN ISSUES
+        9.  SUPPORT / BUG REPORTS
 
 ------------------------------------------------------------------
 
 1.      INTRODUCTION
 
     This directory and subdirectories contain a plug-in template for
-    creating a credentials provider plug-in for Network Identity
-    Manager.  A credentials manager plug-in provides knowledge of a
-    specifc credentials type to the NetIDMgr application and manages
-    those credentials on behalf of NetIDMgr.
+    creating an identity provider plug-in and an accompanying
+    credentials provider plug-in for Network Identity Manager.
+
+    A credentials provider plug-in provides knowledge of a specifc
+    credentials type to the NetIDMgr application and manages those
+    credentials on behalf of NetIDMgr.
+
+    An identity providers encapsulate knowledge about a particular
+    type of identity for Network Identity Manager.
 
     This version of the template adheres to the following version
     constraints:
 
-        Network Identity Manager API version : 5
-
-    (This API version corresponds to the MIT Kerberos for Windows
-    version 3.1).
+        Network Identity Manager API version : 12
 
     The source files in this template can be used to build the plug-in
-    DLL and the US English resource DLL for the plug-in.  In its
-    current form, the plug-in doesn't do any credentials management.
-    However, it implements a number of stub functions that can be
-    filled in to perform the necessary credentials management
-    operations.
+    DLL, the US English resource DLL for the plug-in and an MSI
+    installer.  In its current form, the plug-ins don't do any
+    credentials management or identity management.  However, it
+    implements a number of stub functions that can be filled in to
+    perform the necessary management operations.
 
 ------------------------------------------------------------------
 
 2.      COPYRIGHT AND LICENSE
 
-    Copyright (c) 2006 Secure Endpoints Inc.
+    Copyright (c) 2006-2008 Secure Endpoints Inc.
 
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation

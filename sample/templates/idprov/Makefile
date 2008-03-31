@@ -135,11 +135,11 @@ cdebug = $(cdebug) -Os -Zi
 
 cdefines = $(cdefines) -DUNICODE -D_UNICODE
 
-C2OBJ=$(CC) $(cdebug) $(cflags) $(incflags) $(cdefines) /Fo$@ /c $**
+C2OBJ=$(CC) $(cdebug) $(cflags) $(incflags) $(cdefines) /Fo"$@" /c $**
 
-DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:$@ /IMPLIB:"$(DEST)\$(@B).lib" $**
+DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:"$@" /IMPLIB:"$(DEST)\$(@B).lib" $**
 
-DLLRESLINK=$(LINK) /NOLOGO /DLL /NOENTRY /MACHINE:$(PROCESSOR_ARCHITECTURE) /OUT:$@ $**
+DLLRESLINK=$(LINK) /NOLOGO /DLL /NOENTRY /MACHINE:$(PROCESSOR_ARCHITECTURE) /OUT:"$@" $**
 
 RC2RES=$(RC) $(RFLAGS) $(rincflags) /fo "$@" $**
 
@@ -201,26 +201,26 @@ if exist "$@.manifest" $(RM) "$@.manifest"
 
 # Now for the actual build stuff
 
-DLL="$(DEST)\$(DLLBASENAME).dll"
+DLL=$(DEST)\$(DLLBASENAME).dll
 
 LIBFILES= \
-	"$(NIDMLIBDIR)\nidmgr32.lib"
+	$(NIDMLIBDIR)\nidmgr32.lib
 
 OBJFILES= \
-	"$(OBJ)\credacq.obj"		\
-	"$(OBJ)\credtype.obj"		\
-	"$(OBJ)\main.obj"		\
-	"$(OBJ)\credprov.obj"		\
-	"$(OBJ)\idprov.obj"		\
-	"$(OBJ)\idselect.obj"		\
-	"$(OBJ)\proppage.obj"		\
-	"$(OBJ)\config_main.obj"	\
-	"$(OBJ)\config_id.obj"		\
-	"$(OBJ)\config_ids.obj"
+	$(OBJ)\credacq.obj		\
+	$(OBJ)\credtype.obj		\
+	$(OBJ)\main.obj			\
+	$(OBJ)\credprov.obj		\
+	$(OBJ)\idprov.obj		\
+	$(OBJ)\idselect.obj		\
+	$(OBJ)\proppage.obj		\
+	$(OBJ)\config_main.obj	\
+	$(OBJ)\config_id.obj		\
+	$(OBJ)\config_ids.obj
 
-DLLRESFILE="$(OBJ)\version.res"
+DLLRESFILE=$(OBJ)\version.res
 
-CONFIGHEADER="$(OBJ)\credacq_config.h"
+CONFIGHEADER=$(OBJ)\credacq_config.h
 
 all: mkdirs $(CONFIGHEADER) $(DLL) lang
 
@@ -274,7 +274,7 @@ LANGDLL="$(DEST)\$(DLLBASENAME)_$(LANG).dll"
 
 lang:: $(LANGDLL)
 
-$(LANGDLL): "$(OBJ)\langres_$(LANG).res" "$(OBJ)\version_$(LANG).res"
+$(LANGDLL): $(OBJ)\langres_$(LANG).res $(OBJ)\version_$(LANG).res
 	$(DLLRESLINK)
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)
@@ -282,13 +282,13 @@ $(LANGDLL): "$(OBJ)\langres_$(LANG).res" "$(OBJ)\version_$(LANG).res"
 clean::
 	$(RM) $(LANGDLL)
 
-"$(OBJ)\version_$(LANG).res": version.rc
+$(OBJ)\version_$(LANG).res: version.rc
 	$(RC) $(RFLAGS) $(rincflags) /d LANGRES /d LANG_$(LANG) /fo $@ $**
 
 clean::
 	$(RM) $(OBJ)\version_$(LANG).res
 
-"$(OBJ)\langres_$(LANG).res": lang\$(LANG)\langres.rc
+$(OBJ)\langres_$(LANG).res: lang\$(LANG)\langres.rc
 	$(RC2RES)
 
 clean::
@@ -329,22 +329,22 @@ clean-local:
 
 !if exist("$(WIXDIR)\candle.exe")
 
-MSI="$(DEST)\$(DLLBASENAME).msi"
+MSI=$(DEST)\$(DLLBASENAME).msi
 
-install: all $(MSI)
+install: all "$(MSI)"
 
 $(MSI): "$(OBJ)\installer.wixobj"
-	"$(WIXDIR)\light.exe" -nologo -out $@ 	\
-		"$(WIXDIR)\WixUI.wixlib" 		\
-		-loc lang\en_us\installer.wxl 	\
-		-loc "$(WIXDIR)\WixUI_en-us.wxl" 	\
+	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
+		"$(WIXDIR)\WixUI.wixlib"		\
+		-loc lang\en_us\installer.wxl 		\
+		-loc "$(WIXDIR)\WixUI_en-us.wxl"	\
 		$**
 
 clean::
 	$(RM) $(MSI)
 
-"$(OBJ)\installer.wixobj": installer.wxs
-	"$(WIXDIR)\candle.exe" -nologo -out $@ $** \
+$(OBJ)\installer.wixobj: installer.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** \
 		-dProductVersion=$(VERLIST)	\
 		-dDllBaseName=$(DLLBASENAME)	\
 		"-dDestDir=$(DEST)"		\
