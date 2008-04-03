@@ -220,7 +220,7 @@ OBJFILES= \
 
 DLLRESFILE=$(OBJ)\version.res
 
-CONFIGHEADER=$(OBJ)\credacq_config.h
+CONFIGHEADER=$(OBJ)\module_config.h
 
 all: mkdirs $(CONFIGHEADER) $(DLL) lang
 

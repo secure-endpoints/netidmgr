@@ -91,10 +91,10 @@
         for the macros.  If you are basing a plug-in on this template,
         you will want to change these macros.  These macros will be
         used to generate 'credacq_config.h', a header file included by
-        'credprov.h' so that the values of the macros can be used in C
+        'module.h' so that the values of the macros can be used in C
         code.
 
-    .\credprov.h
+    .\module.h
 
         The main header file for all the C source files in the
         plug-in.

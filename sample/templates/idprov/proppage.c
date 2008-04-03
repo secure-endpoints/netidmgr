@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include "credprov.h"
+#include "module.h"
 
 /* Dialog procedure and support code for displaying property sheets
    for credentials of type MyCred. */

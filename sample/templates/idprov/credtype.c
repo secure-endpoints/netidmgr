@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include "credprov.h"
+#include "module.h"
 
 /* Functions for handling our credentials type.
 */

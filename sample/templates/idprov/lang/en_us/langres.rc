@@ -55,7 +55,7 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_PLUGIN              ICON                    "..\\..\\images\\plugin.ico"
-IDI_IDENTITY            ICON                    "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\sample\\templates\\idprov\\images\\id.ico"
+IDI_IDENTITY            ICON                    "..\\..\\images\\id.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

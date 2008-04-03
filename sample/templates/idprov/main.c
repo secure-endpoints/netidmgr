@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include "credprov.h"
+#include "module.h"
 
 /* This file provides the entry points for the module.  The purpose of
    each entry point is explained below.

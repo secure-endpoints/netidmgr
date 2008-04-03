@@ -36,7 +36,7 @@
 #endif
 
 /* Pull in configuration macros from the Makefile */
-#include "credacq_config.h"
+#include "module_config.h"
 
 /* declare a few macros about our plugin */
 

@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include "credprov.h"
+#include "module.h"
 #include<assert.h>
 
 /*  */

@@ -24,7 +24,7 @@
 
 /* $Id$ */
 
-#include "credprov.h"
+#include "module.h"
 #include<netidmgr_version.h>
 
 /* We use the same version.rc file for the main plugin DLL as well as
