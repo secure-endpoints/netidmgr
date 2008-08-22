@@ -78,8 +78,7 @@
     <?error Unknown value for CPU environment variable. ?>
   <?endif?>
 
-  <!-- TODO: Create new UUID  -->
-  <?define UpgradeCode="F673AA04-C41D-4AEF-A5C8-8ED2051EFEF4" ?>
+  <?define UpgradeCode="4B316822-F6A0-4B69-A5AF-DC3BA4D15838" ?>
 
   <!-- Platform dependencies -->
 
@@ -88,18 +87,16 @@
     <?define ProgramFilesFolder="ProgramFilesFolder" ?>
     <?define Win64="no" ?>
 
-    <!-- TODO: Create new UUIDs -->
-    <?define DllGuid="C78D5DDC-46F5-4FBA-B8BC-8E1E279C522E" ?>
-    <?define EN_US_DLLGuid="3477B27A-9E29-48FE-9DC3-368C63B588DE" ?>
+    <?define DllGuid="99ADD93D-DA26-4220-8BD4-E90350A1F4EC" ?>
+    <?define EN_US_DLLGuid="8AC01EFD-45C8-4D35-BD81-CC9390DCB72E" ?>
 
   <?elseif $(var.Platform)="x64" ?>
 
     <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
     <?define Win64="yes" ?>
 
-    <!-- TODO: Create new UUIDs -->
-    <?define DllGuid="BDBB5F99-F997-4CA9-BF01-3C5FF0870C9A" ?>
-    <?define EN_US_DLLGuid="9F2A1368-A8FC-4AAF-A8F4-9AD880480CC0" ?>
+    <?define DllGuid="B315857C-CA82-43D6-AE03-C8CFE178469C" ?>
+    <?define EN_US_DLLGuid="DD7A9BDC-1E53-4782-88F0-29CD67D355E3" ?>
 
   <?else?>
     <?error Unknown value for Platform variable ?>

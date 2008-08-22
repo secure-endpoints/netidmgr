@@ -29,81 +29,43 @@
 
     -->
 
-  <!-- 
-
-      This file defines the localized strings for US English.  Please
-      make sure you replace the strings marked with "TODO:" below:
-
-    -->
-
   <String Id="LanguageId">1033</String>
   <String Id="CodePage">1252</String>
 
 
-  <!-- TODO: Your company name -->
-  <String Id="ProductManufacturer">My Company</String>
+  <String Id="ProductManufacturer">Secure-Endpoints Inc.</String>
 
+  <String Id="ProductName">Keystore Provider for Network Identity Manager</String>
 
-  <!-- TODO: Name of the product -->
-  <String Id="ProductName">My Credentials Module for Network Identity Manager</String>
+  <String Id="ProductDescription">Provides a Keystore for storing private keys for consolidating new credentials acquisition in Network Identity Manager.</String>
 
+  <String Id="FeatureMainTitle">Keystore</String>
 
-  <!-- TODO: Description of the product -->
-  <String Id="ProductDescription">Sample module that includes a credentials provider and an identity provider for Network Identity Manager</String>
-
-
-  <!-- TODO: Title of the main feature -->
-  <String Id="FeatureMainTitle">My Module</String>
-
-
-  <!-- TODO: Description of the main feature -->
-  <String Id="FeatureMainDesc">Installs My Module which provides credential and identity support for My Credentials to Network Identity Manager.  MIT Kerberos for Windows must be installed for this module to function properly.</String>
+  <String Id="FeatureMainDesc">Installs the Keystore Module which provides credential and identity support for Keystores to Network Identity Manager.  MIT Kerberos for Windows must be installed for this module to function properly.</String>
 
 
 
   <!-- These 4 strings populate the Add/Remove Programs item that will
        be created when the module is installed. -->
 
+  <String Id="ARPComments">Provides credential and identity support for Keystores to Network Identity Manager.</String>
 
-  <!-- TODO: Additional comments about the product -->
-  <String Id="ARPComments">Provides credential and identity support for My Credentials to Network Identity Manager.</String>
+  <String Id="ARPContact">keystore@secure-endpoints.com</String>
 
+  <String Id="ARPURLInfo">http://www.secure-endpoints.com</String>
 
-  <!-- TODO: Contact information regarding the product -->
-  <String Id="ARPContact">contactperson@example.com</String>
+  <String Id="ARPURLHelp">http://www.secure-endpoints.com</String>
 
+  <String Id="CompanyDirName">Secure Endpoints</String>
 
-  <!-- TODO: URL for obtaining more information about the product -->
-  <String Id="ARPURLInfo">http://example.com/mymodule</String>
+  <String Id="CompanyDirShortName">secendpt</String>
 
+  <String Id="ModuleDirName">Keystore</String>
 
-  <!-- TODO: URL for obtaining support for the product -->
-  <String Id="ARPURLHelp">http://example.com/mymodule/support</String>
-
-
-  <!-- TODO: Directory name for the company.  Usually applications are
-       installed into %PROGRAMFILES%\[CompanyDir]\[ProductDir].  This
-       string provides the [CompanyDir] name. -->
-  <String Id="CompanyDirName">Sample Company</String>
-
-
-  <!-- TODO: Short 8.3 version of above.  Windows Installer requires
-       that short filenames also be specified. -->
-  <String Id="CompanyDirShortName">Sample</String>
-
-
-  <!-- TODO: Directory name for the product.  Usually applications are
-       installed into %PROGRAMFILES%\[CompanyDir]\[ProductDir].  This
-       string provides the [ProductDir] name.  -->
-  <String Id="ModuleDirName">MyPlugin</String>
-
-
-  <!-- TODO: Short version of above. -->
-  <String Id="ModuleDirShortName">MyPlugin</String>
+  <String Id="ModuleDirShortName">keystore</String>
 
 
 
-  <!-- These are generic error strings and can be left as-is. -->
   <String Id="AdminRequired">This package requires administrator privileges to install</String>
   <String Id="OsVersionRequired">This package requires Windows XP or later</String>
   <String Id="Platform64Required">This package requires a 64-bit operating system</String>

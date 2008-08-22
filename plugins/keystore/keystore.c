@@ -171,6 +171,7 @@ ks_keystore_create_new(void)
     ks->magic = KEYSTORE_MAGIC;
     ks->display_name = NULL;
     ks->description = NULL;
+    ks->location = NULL;
     ks->keys = NULL;
     ks->DBenc_key.pbData = NULL;
 
@@ -198,6 +199,9 @@ ks_keystore_free(keystore_t * ks)
 
     if (ks->description)
         free(ks->description);
+
+    if (ks->location)
+        free(ks->location);
 
     if (ks->DBenc_key.pbData) {
         SecureZeroMemory(ks->DBenc_key.pbData, ks->DBenc_key.cbData);
@@ -240,18 +244,46 @@ ks_keystore_release(keystore_t * ks)
 khm_int32
 ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
 {
+    khm_size i;
+
     assert(is_keystore_t(ks));
     assert(is_identkey_t(idk));
 
+    if (idk->provider_name == NULL ||
+        idk->identity_name == NULL ||
+        idk->display_name == NULL) {
+        assert(FALSE);
+        return KHM_ERROR_INVALID_PARAM;
+    }
+
     KSLOCK(ks);
 
-    if (ks->n_keys == ks->nc_keys) {
+    if (idk->version == 0)
+        idk->version = 1;
+
+    for (i=0; i < ks->n_keys; i++) {
+        if (!wcscmp(idk->provider_name, ks->keys[i]->provider_name) &&
+            !wcscmp(idk->identity_name, ks->keys[i]->identity_name)) {
+            idk->version = ks->keys[i]->version + 1;
+            ks_identkey_free(ks->keys[i]);
+            ks->keys[i] = NULL;
+            break;
+        }
+    }
+
+    if (i == ks->nc_keys) {
         /* need to allocate more */
-        ks->nc_keys = UBOUNDSS(ks->n_keys + 1, KS_KEY_ALLOC_INCR, KS_KEY_ALLOC_INCR);
+        ks->nc_keys = UBOUNDSS(ks->n_keys + 1, KS_KEY_ALLOC_INCR,
+                               KS_KEY_ALLOC_INCR);
         ks->keys = realloc(ks->keys, sizeof(ks->keys[0]) * ks->nc_keys);
     }
 
-    ks->keys[ks->n_keys++] = idk;
+    ks->keys[i] = idk;
+    idk->flags = 0;
+    ks->flags |= KS_FLAG_MODIFIED;
+
+    if (i == ks->n_keys)
+        ks->n_keys++;
 
     KSUNLOCK(ks);
 
@@ -277,6 +309,7 @@ ks_keystore_remove_identkey(keystore_t * ks, khm_size idx)
     } else {
         rv = KHM_ERROR_NOT_FOUND;
     }
+    ks->flags |= KS_FLAG_MODIFIED;
 
     KSUNLOCK(ks);
 
@@ -312,6 +345,11 @@ ks_keystore_get_flags(keystore_t * ks)
 khm_int32
 ks_keystore_set_string(keystore_t * ks, kcdb_resource_id r_id, const wchar_t * buffer)
 {
+    khm_size cch = 0;
+    wchar_t ** dest = NULL;
+    khm_size maxcch = 0;
+    khm_boolean set_modified = FALSE;
+
     assert(is_keystore_t(ks));
     if (!is_keystore_t(ks))
         return KHM_ERROR_INVALID_PARAM;
@@ -319,23 +357,46 @@ ks_keystore_set_string(keystore_t * ks, kcdb_resource_id r_id, const wchar_t * b
     KSLOCK(ks);
     switch(r_id) {
     case KCDB_RES_DISPLAYNAME:
-        if (ks->display_name)
-            free(ks->display_name);
-        ks->display_name = _wcsdup(buffer);
+        dest = &ks->display_name;
+        maxcch = KCDB_MAXCCH_NAME;
+        set_modified = TRUE;
         break;
 
     case KCDB_RES_DESCRIPTION:
-        if (ks->description)
-            free(ks->description);
-        ks->description = _wcsdup(buffer);
+        dest = &ks->description;
+        maxcch = KCDB_MAXCCH_SHORT_DESC;
+        set_modified = TRUE;
+        break;
+
+    case KCDB_ATTR_LOCATION:
+        dest = &ks->location;
+        maxcch = MAX_PATH;
+        set_modified = FALSE;
         break;
 
     default:
         KSUNLOCK(ks);
         return KHM_ERROR_INVALID_PARAM;
     }
-    KSUNLOCK(ks);
 
+    if ((*dest == NULL && buffer == NULL || buffer[0] == L'\0') ||
+        (*dest != NULL && buffer != NULL && !wcscmp(*dest, buffer)) ||
+        FAILED(StringCchLength(buffer, maxcch, &cch))) {
+        goto done;
+    }
+
+    if (*dest) {
+        free(*dest);
+        *dest = NULL;
+    }
+    if (buffer && buffer[0])
+        *dest = _wcsdup(buffer);
+    if (set_modified)
+        ks->flags |= KS_FLAG_MODIFIED;
+
+ done:
+
+    KSUNLOCK(ks);
     return KHM_ERROR_SUCCESS;
 }
 
@@ -343,7 +404,7 @@ khm_int32
 ks_keystore_get_string(keystore_t * ks, kcdb_resource_id r_id,
               wchar_t * buffer, khm_size *pcb_buffer)
 {
-    const wchar_t * src;
+    const wchar_t * src = NULL;
     size_t maxlen;
 
     assert(is_keystore_t(ks));
@@ -363,7 +424,14 @@ ks_keystore_get_string(keystore_t * ks, kcdb_resource_id r_id,
         maxlen = KCDB_MAXCCH_LONG_DESC;
         break;
 
-    default:
+    case KCDB_ATTR_LOCATION:
+        src = ks->location;
+        maxlen = MAX_PATH;
+        break;
+
+    }
+
+    if (src == NULL) {
         KSUNLOCK(ks);
         return KHM_ERROR_NOT_FOUND;
     }
@@ -605,17 +673,37 @@ verify_key_on_keystore(keystore_t * ks, const void * key, khm_size cb_key)
 khm_int32
 ks_keystore_set_key_password(keystore_t * ks, const void * key, khm_size cb_key)
 {
+    khm_int32 rv = KHM_ERROR_GENERAL;
+
     assert(is_keystore_t(ks));
 
     KSLOCK(ks);
     if (verify_key_on_keystore(ks, key, cb_key)) {
         lock_encryption_key(ks, key, cb_key);
         ks->flags |= KS_FLAG_HASPKEY;
-        KSUNLOCK(ks);
-        return KHM_ERROR_SUCCESS;
+        rv = KHM_ERROR_SUCCESS;
     }
     KSUNLOCK(ks);
-    return KHM_ERROR_GENERAL;
+    return rv;
+}
+
+khm_int32
+ks_keystore_change_key_password(keystore_t * ks, const void * key, khm_size cb_key)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    assert(is_keystore_t(ks));
+
+    KSLOCK(ks);
+    rv = ks_keystore_unlock(ks);
+    if (KHM_FAILED(rv)) goto done;
+
+    lock_encryption_key(ks, key, cb_key);
+    ks->flags |= KS_FLAG_HASPKEY;
+
+ done:
+    KSUNLOCK(ks);
+    return rv;
 }
 
 khm_int32
@@ -642,6 +730,18 @@ ks_keystore_unlock(keystore_t * ks)
     assert(is_keystore_t(ks));
 
     KSLOCK(ks);
+
+    /* This operation vacously suceeds if there are no locked private
+       keys */
+    for (i=0; i < ks->n_keys; i++) {
+        if ((ks->keys[i]->flags & IDENTKEY_FLAG_LOCKED) == IDENTKEY_FLAG_LOCKED)
+            break;
+    }
+
+    if (i >= ks->n_keys) {
+        rv = KHM_ERROR_SUCCESS;
+        goto done2;
+    }
 
     if (ks->DBenc_key.cbData == 0 || ks->DBenc_key.pbData == NULL) {
         rv = KHM_ERROR_NOT_READY;
@@ -725,6 +825,7 @@ ks_keystore_lock(keystore_t * ks)
                            &ks->keys[i]->key_hash));
         ks_datablob_free(&ks->keys[i]->plain_key);
         ks->keys[i]->flags |= IDENTKEY_FLAG_LOCKED;
+        ks->flags |= KS_FLAG_MODIFIED;
     }
 
     rv = KHM_ERROR_SUCCESS;

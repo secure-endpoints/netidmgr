@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\pismere\athena\auth\krb5\src\windows\identity\sample\templates\keystore\lang\en_us\langres.rc
+// Used by C:\work\keystore\lang\en_us\langres.rc
 //
 #define IDD_PP_CRED                     106
 #define IDD_PP_IDENT                    107
@@ -38,6 +38,16 @@
 #define IDS_NCPRIV_CAPTION              126
 #define IDS_NCLC_ID                     127
 #define IDS_NCLC_TYPE                   128
+#define IDS_TNOPASS                     129
+#define IDS_NOPASS                      130
+#define IDS_TBADPASS                    131
+#define IDS_BADPASS                     132
+#define IDS_TMISMPASS                   133
+#define IDS_MISMPASS                    134
+#define IDS_TUNSPASS                    135
+#define IDS_UNSPASS                     136
+#define IDS_IDK_CT_SHORT_DESC           137
+#define IDS_IDK_CT_LONG_DESC            138
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041
@@ -55,6 +65,7 @@
 #define IDC_ADDNEW                      1053
 #define IDC_REMOVE                      1054
 #define IDC_CONFIGURE                   1055
+#define IDC_LIST2                       1059
 
 // Next default values for new objects
 // 
@@ -62,7 +73,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1056
+#define _APS_NEXT_CONTROL_VALUE         1060
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

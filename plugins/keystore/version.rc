@@ -32,7 +32,7 @@
 
 #ifndef LANGVER
 
-#define STR_FILEDESC "Key Store Module for NetIDMgr"
+#define STR_FILEDESC "KeyStore Module for NetIDMgr"
 
 #define STR_INTNAME  MODULE_NAME
 #define STR_ORIGNAME PLUGIN_DLLBASE ".dll"
@@ -41,7 +41,7 @@
 
 #ifdef LANG_en_us
 
-#define STR_FILEDESC "English(US) language resources for Key Store Module"
+#define STR_FILEDESC "English(US) language resources for KeyStore Module"
 
 #define STR_INTNAME  PLUGIN_DLLBASE "_en_us"
 #define STR_ORIGNAME PLUGIN_DLLBASE "_en_us.dll"

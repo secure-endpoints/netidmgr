@@ -62,17 +62,22 @@ IDI_IDENTITY            ICON                    "..\\..\\images\\id.ico"
 // Dialog
 //
 
-IDD_PP_CRED DIALOGEX 0, 0, 235, 156
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Property Page"
+IDD_PP_CRED DIALOGEX 0, 0, 236, 158
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Keystore"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
-    LTEXT           "TODO: layout property page",IDC_STATIC,60,73,110,8
+    LTEXT           "Name",IDC_STATIC,7,10,19,8
+    EDITTEXT        IDC_NAME,48,7,181,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Description",IDC_STATIC,7,28,36,8
+    EDITTEXT        IDC_DESCRIPTION,48,25,181,14,ES_AUTOHSCROLL
+    LTEXT           "Private keys :",IDC_STATIC,7,46,45,8
+    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,58,222,93
 END
 
 IDD_PP_IDENT DIALOGEX 0, 0, 235, 156
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Property Page"
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Keystore Identity"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     LTEXT           "TODO: layout property page",IDC_STATIC,60,73,106,8
@@ -151,9 +156,9 @@ BEGIN
     IDD_PP_CRED, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 228
+        RIGHTMARGIN, 229
         TOPMARGIN, 7
-        BOTTOMMARGIN, 149
+        BOTTOMMARGIN, 151
     END
 
     IDD_PP_IDENT, DIALOG
@@ -218,7 +223,7 @@ END
 // Bitmap
 //
 
-IDB_NC_STATE            BITMAP                  "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\sample\\templates\\keystore\\images\\nc_item_state.bmp"
+IDB_NC_STATE            BITMAP                  "..\\..\\images\\nc_item_state.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -255,6 +260,16 @@ END
 STRINGTABLE 
 BEGIN
     IDS_NCLC_TYPE           "Type"
+    IDS_TNOPASS             "No password entered"
+    IDS_NOPASS              "Please enter the password for this keystore."
+    IDS_TBADPASS            "Incorrect password"
+    IDS_BADPASS             "The password you entered does not match the password that was set for this keystore."
+    IDS_TMISMPASS           "Password mismatch"
+    IDS_MISMPASS            "Both the new password and the confirmation must match.  You entered two different passwords."
+    IDS_TUNSPASS            "Couldn't set new password"
+    IDS_UNSPASS             "The new password could not be set."
+    IDS_IDK_CT_SHORT_DESC   "Private key"
+    IDS_IDK_CT_LONG_DESC    "Private key"
 END
 
 #endif    // English (U.S.) resources

@@ -35,13 +35,24 @@ typedef struct Codec {
     khm_int32 last_error;
 } Codec;
 
+typedef struct OptRecord {
+    khm_int32 signature;
+    khm_int32 cb_optional;
+} OptRecord;
+
+typedef struct OptArg {
+    OptRecord *optRecord;
+    khm_size   cb_used;
+} OptArg;
+
 #define ENCOK(e) ((e) && KHM_SUCCEEDED((e)->last_error))
 
-#define KSFF_VERSION 1
+#define KSFF_VERSION 2
 #define KSFF_DATA_MAGIC          0x7118b33b
 #define KSFF_COUNTEDSTRING_MAGIC 0xa4d16aef
 #define KSFF_IDENTKEY_MAGIC      0x981cb3ef
 #define KSFF_HEADER_MAGIC        0x33f0a303
+#define KSFF_OPTSIG_MAGIC        0xfefd0000
 
 #define KSFF_ALIGNMENT 4
 
@@ -73,6 +84,60 @@ declare_serial_buffer(Codec * e, khm_size allocsize, khm_boolean init_to_zero)
             memset(rbuf, 0, allocsize);
 
         return rbuf;
+    }
+}
+
+void
+begin_encode_optional(khm_ui_2 ordinal, OptArg * opt, Codec * e)
+{
+    opt->optRecord = declare_serial_buffer(e, sizeof(OptRecord), TRUE);
+    if (opt->optRecord)
+        opt->optRecord->signature = (KSFF_OPTSIG_MAGIC | ordinal);
+    opt->cb_used = e->cb_used;
+}
+
+void
+end_encode_optional(OptArg * opt, Codec * e)
+{
+    if (opt->optRecord) {
+        opt->optRecord->cb_optional = (khm_int32) (e->cb_used - opt->cb_used);
+    }
+}
+
+khm_boolean
+begin_decode_optional(khm_ui_2 ordinal, OptArg * opt, Codec * e)
+{
+    opt->optRecord = e->current;
+    if (e->cb_free >= sizeof(OptRecord) &&
+        opt->optRecord->signature == (KSFF_OPTSIG_MAGIC | ordinal)) {
+        declare_serial_buffer(e, sizeof(OptRecord), FALSE);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+void
+end_decode_optional(OptArg * opt, Codec * e)
+{
+    /* nothing to do */
+}
+
+#define E_OPT(o) { OptArg oa; begin_encode_optional(o, &oa, e);
+#define E_ENDOPT() end_encode_optional(&oa, e); }
+
+#define D_OPT(o) { OptArg oa; if (begin_decode_optional(o, &oa, e)) {
+#define D_ENDOPT() end_decode_optional(&oa, e); } }
+
+void
+skip_optional(Codec * e)
+{
+    OptRecord * optr;
+
+    while ((optr = e->current) != NULL &&
+           e->cb_free >= sizeof(OptRecord) &&
+           (optr->signature & 0xffff0000) == KSFF_OPTSIG_MAGIC) {
+        declare_serial_buffer(e, sizeof(OptRecord), FALSE);
+        declare_serial_buffer(e, optr->cb_optional, FALSE);
     }
 }
 
@@ -261,6 +326,9 @@ encode_KS_IdentKey(const identkey_t * idk, Codec * e)
     encode_KS_CountedString(idk->key_description, KCDB_MAXCCH_LONG_DESC, e);
     encode_KS_Data(&idk->key_hash, e);
     encode_KS_Data(&idk->key, e);
+    E_OPT(7); encode_KS_Int(idk->version, e); E_ENDOPT();
+    E_OPT(8); encode_KS_Time(idk->ft_ctime, e); E_ENDOPT();
+    E_OPT(9); encode_KS_Time(idk->ft_expire, e); E_ENDOPT();
 }
 
 identkey_t *
@@ -285,6 +353,10 @@ decode_KS_IdentKey(Codec * e)
     idk->key_description = decode_KS_CountedString(e, KCDB_MAXCCH_LONG_DESC);
     idk->key_hash = decode_KS_Data(e);
     idk->key = decode_KS_Data(e);
+    D_OPT(7); idk->version = decode_KS_Int(e); D_ENDOPT();
+    D_OPT(8); idk->ft_ctime = decode_KS_Time(e); D_ENDOPT();
+    D_OPT(9); idk->ft_expire = decode_KS_Time(e); D_ENDOPT();
+    skip_optional(e);
     idk->flags = IDENTKEY_FLAG_LOCKED;
 
     if (ENCOK(e))
@@ -317,6 +389,7 @@ keystore_t *
 decode_KS_Header(Codec * e)
 {
     keystore_t * ks;
+    khm_size n_keys;
 
     if (!ENCOK(e) ||
         decode_KS_Int(e) != KSFF_HEADER_MAGIC ||
@@ -335,25 +408,24 @@ decode_KS_Header(Codec * e)
     ks->ft_expire = decode_KS_Time(e);
     ks->ft_ctime = decode_KS_Time(e);
     ks->ft_mtime = decode_KS_Time(e);
-    ks->n_keys = decode_KS_Size(e);
+    n_keys = decode_KS_Size(e);
 
-    if (ks->n_keys > KS_MAX_KEYS) {
+    if (n_keys > KS_MAX_KEYS) {
         e->last_error = KHM_ERROR_INVALID_PARAM;
         goto done;
     }
 
-    if (ks->n_keys > 0) {
+    if (n_keys > 0) {
         khm_size i;
 
-        ks->nc_keys = UBOUNDSS(ks->n_keys, KS_KEY_ALLOC_INCR, KS_KEY_ALLOC_INCR);
-        ks->keys = calloc(ks->nc_keys, sizeof(ks->keys[0]));
-        if (ks->keys == NULL) {
-            e->last_error = KHM_ERROR_NO_RESOURCES;
-            goto done;
-        }
+        for (i=0; i < n_keys; i++) {
+            identkey_t * idkey;
 
-        for (i=0; i < ks->n_keys; i++) {
-            ks->keys[i] = decode_KS_IdentKey(e);
+            idkey = decode_KS_IdentKey(e);
+            if (idkey) {
+                if (KHM_FAILED(ks_keystore_add_identkey(ks, idkey)))
+                    ks_identkey_free(idkey);
+            }
         }
     }
 

@@ -34,6 +34,7 @@
 */
 
 khm_int32 credtype_id = KCDB_CREDTYPE_INVALID;
+khm_int32 idk_credtype_id = KCDB_CREDTYPE_INVALID;
 khm_handle g_credset = NULL;
 CRITICAL_SECTION cs_ks;
 
@@ -53,6 +54,8 @@ handle_kmsg_system_init(void)
     ZeroMemory(&ct, sizeof(ct));
     ct.id = KCDB_CREDTYPE_AUTO;
     ct.name = CREDTYPE_NAMEW;
+    ct.short_desc = short_desc;
+    ct.long_desc = long_desc;
 
     short_desc[0] = L'\0';
     LoadString(hResModule, IDS_CT_SHORT_DESC,
@@ -75,9 +78,35 @@ handle_kmsg_system_init(void)
     if (KHM_FAILED(rv))
         return rv;
 
-    assert(idprov_sub != NULL);
+    /* We need an auxiliary credentials type for representing
+       identity private keys */
 
-    kmq_send_sub_msg(idprov_sub, KMSG_MYMSG, KMSG_MYMSG_SET_CTYPE, 0, 0);
+    ZeroMemory(&ct, sizeof(ct));
+    ct.id = KCDB_CREDTYPE_AUTO;
+    ct.name = IDK_CREDTYPE_NAMEW;
+    ct.short_desc = short_desc;
+    ct.long_desc = long_desc;
+
+    short_desc[0] = L'\0';
+    LoadString(hResModule, IDS_IDK_CT_SHORT_DESC,
+               short_desc, ARRAYLENGTH(short_desc));
+
+    long_desc[0] = L'\0';
+    LoadString(hResModule, IDS_IDK_CT_LONG_DESC,
+               long_desc, ARRAYLENGTH(long_desc));
+
+    ct.icon = NULL;     /* We skip the icon for now, but you can
+                           assign a handle to an icon here.  The icon
+                           will be used to represent the credentials
+                           type.*/
+
+    kmq_create_subscription(idk_credprov_msg_proc, &ct.sub);
+
+    ct.is_equal = idk_cred_is_equal;
+
+    rv = kcdb_credtype_register(&ct, &idk_credtype_id);
+    if (KHM_FAILED(rv))
+        return rv;
 
     /* We create a global credential set that we use in the plug-in
        thread.  This alleviates the need to create one everytime we
@@ -171,10 +200,6 @@ handle_kmsg_system_init(void)
 
     init_credtype();
 
-    /* TODO: Perform additional initialization operations. */
-
-    list_credentials();
-
     return KHM_ERROR_SUCCESS;
 }
 
@@ -267,15 +292,29 @@ list_credentials(void)
     EnterCriticalSection(&cs_ks);
     for (i=0; i < n_keystores; i++) {
         khm_handle credential;
+        khm_size j;
 
         credential = get_keystore_credential(keystores[i]);
-        if (credential) {
+        if (credential == NULL)
+            continue;
+
+        kcdb_credset_add_cred(g_credset, credential, -1);
+        kcdb_cred_release(credential);
+
+        KSLOCK(keystores[i]);
+        for (j=0; j < keystores[i]->n_keys; j++) {
+            credential = get_identkey_credential(keystores[i], keystores[i]->keys[j]);
+            if (credential == NULL)
+                continue;
+
             kcdb_credset_add_cred(g_credset, credential, -1);
             kcdb_cred_release(credential);
         }
+        KSUNLOCK(keystores[i]);
     }
     LeaveCriticalSection(&cs_ks);
     kcdb_credset_collect(NULL, g_credset, NULL, credtype_id, NULL);
+    kcdb_credset_collect(NULL, g_credset, NULL, idk_credtype_id, NULL);
 }
 
 /* Handler for credentials the refresh message. */
@@ -346,6 +385,66 @@ handle_kmsg_cred_pp_end(khui_property_sheet * ps)
     return KHM_ERROR_SUCCESS;
 }
 
+/* Handler for destroying credentials */
+khm_int32
+handle_idk_kmsg_cred_destroy_creds(khui_action_context * ctx)
+{
+    /* TODO: Destroy credentials of our type as specified by the
+       action context passed in through vparam. */
+
+    /* The credential set in ctx->credset contains the credentials
+       that are to be destroyed. */
+
+    return KHM_ERROR_SUCCESS;
+}
+
+/* Begin a property sheet */
+khm_int32
+handle_idk_kmsg_cred_pp_begin(khui_property_sheet * ps)
+{
+
+    /* TODO: Provide the information necessary to show a property
+       page for a credentials belonging to our credential type. */
+
+    PROPSHEETPAGE *p;
+
+    if (ps->credtype == credtype_id &&
+        ps->cred) {
+        /* We have been requested to show a property sheet for one of
+           our credentials. */
+        p = malloc(sizeof(*p));
+        ZeroMemory(p, sizeof(*p));
+
+        p->dwSize = sizeof(*p);
+        p->dwFlags = 0;
+        p->hInstance = hResModule;
+        p->pszTemplate = MAKEINTRESOURCE(IDD_PP_CRED);
+        p->pfnDlgProc = pp_cred_dlg_proc;
+        p->lParam = (LPARAM) ps;
+        khui_ps_add_page(ps, credtype_id, 0, p, NULL);
+    }
+
+    return KHM_ERROR_SUCCESS;
+}
+
+/* End a property sheet */
+khm_int32
+handle_idk_kmsg_cred_pp_end(khui_property_sheet * ps)
+{
+    /* TODO: Handle the end of a property sheet. */
+
+    khui_property_page * p = NULL;
+
+    khui_ps_find_page(ps, credtype_id, &p);
+    if (p) {
+        if (p->p_page)
+            free(p->p_page);
+        p->p_page = NULL;
+    }
+
+    return KHM_ERROR_SUCCESS;
+}
+
 /* IP address change notification */
 khm_int32
 handle_kmsg_cred_addr_change(void)
@@ -391,6 +490,41 @@ handle_kmsg_cred (khm_int32 msg_type,
     return rv;
 }
 
+
+khm_int32 KHMAPI
+handle_idk_kmsg_cred (khm_int32 msg_type,
+                      khm_int32 msg_subtype,
+                      khm_ui_4  uparam,
+                      void *    vparam)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    switch(msg_subtype) {
+    case KMSG_CRED_DESTROY_CREDS:
+        return handle_idk_kmsg_cred_destroy_creds((khui_action_context *) vparam);
+
+    case KMSG_CRED_PP_BEGIN:
+        return handle_idk_kmsg_cred_pp_begin((khui_property_sheet *) vparam);
+
+    case KMSG_CRED_PP_END:
+        return handle_idk_kmsg_cred_pp_end((khui_property_sheet *) vparam);
+    }
+
+    return rv;
+}
+
+khm_int32 KHMAPI
+idk_credprov_msg_proc (khm_int32 msg_type, khm_int32 msg_subtype,
+                   khm_ui_4  uparam, void *vparam)
+{
+
+    switch(msg_type) {
+    case KMSG_CRED:
+        return handle_idk_kmsg_cred(msg_type, msg_subtype, uparam, vparam);
+    }
+
+    return KHM_ERROR_SUCCESS;
+}
 
 /* This is the main message handler for our plugin.  All the plugin
    messages end up here where we either handle it directly or dispatch

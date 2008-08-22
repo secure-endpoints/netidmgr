@@ -39,19 +39,14 @@
 
 # Declare a few things about our plug-in.
 
-# TODO: Change the credentials provider name
 CREDPROVNAME=KeyStoreCred
 
-# TODO: Change the identity provider name
 IDPROVNAME=KeyStoreIdentity
 
-# TODO: Change the module name
 MODULENAME=KeyStore
 
-# TODO: Change the credtype name
 CREDTYPENAME=KeyStoreCredType
 
-# TODO: Change this as appropriate
 DLLBASENAME=keystore
 
 
@@ -62,7 +57,7 @@ DLLBASENAME=keystore
 # TODO: Change the version numbers
 VERMAJOR=0
 VERMINOR=1
-VERAUX  =0
+VERAUX  =1
 VERPATCH=0
 
 # Leave these as-is

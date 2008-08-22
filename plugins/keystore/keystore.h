@@ -47,9 +47,12 @@ typedef struct tag_identkey {
 
     datablob_t   plain_key;
 
-    khm_int32    flags;
-#define IDENTKEY_FLAG_LOCKED 0x00000001
+    khm_int32    version;
+    FILETIME     ft_ctime;
+    FILETIME     ft_expire;
 
+    khm_int32    flags;
+#define IDENTKEY_FLAG_LOCKED   0x00000001
 
 } identkey_t;
 
@@ -62,6 +65,7 @@ typedef struct tag_keystore {
 
     wchar_t     *display_name;
     wchar_t     *description;
+    wchar_t     *location;
 
     khm_handle   identity;      /*!< Identity handle.  If known */
 
@@ -158,6 +162,9 @@ ks_keystore_get_flags(keystore_t * ks);
 
 extern khm_int32
 ks_keystore_set_key_password(keystore_t * ks, const void * key, khm_size cb_key);
+
+extern khm_int32
+ks_keystore_change_key_password(keystore_t * ks, const void * newkey, khm_size cb_newkey);
 
 extern khm_int32
 ks_keystore_reset_key(keystore_t * ks);

@@ -71,12 +71,16 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
         EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), TRUE);
         ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_HIDE);
         ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_HIDE);
+        ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), SW_HIDE);
+        ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_HIDE);
         Button_SetCheck(GetDlgItem(hwnd, IDC_CHPW), BST_UNCHECKED);
         EnableWindow(GetDlgItem(hwnd, IDC_CHPW), TRUE);
     } else {
         EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), FALSE);
         ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_SHOW);
         ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_SHOW);
+        ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), SW_SHOW);
+        ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_SHOW);
         Button_SetCheck(GetDlgItem(hwnd, IDC_CHPW), BST_CHECKED);
         EnableWindow(GetDlgItem(hwnd, IDC_CHPW), FALSE);
     }
@@ -87,7 +91,18 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 INT_PTR
 privint_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
 {
-    switch(code) {
+    if (id == IDC_CHPW && code == BN_CLICKED) {
+        if (IsDlgButtonChecked(hwnd, IDC_CHPW) == BST_CHECKED) {
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_SHOW);
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_SHOW);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), SW_SHOW);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_SHOW);
+        } else {
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_HIDE);
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_HIDE);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), SW_HIDE);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_HIDE);
+        }
     }
     return FALSE;
 }
@@ -118,6 +133,68 @@ nc_privint_dlg_proc(HWND hwnd,
     return FALSE;
 }
 
+void
+creddlg_setup_idlist(HWND hwlist)
+{
+    LVCOLUMN columns[] = {
+        { LVCF_TEXT | LVCF_WIDTH, 0, 192, MAKEINTRESOURCE(IDS_NCLC_ID), 0, 0, 0, 0 },
+        { LVCF_TEXT | LVCF_WIDTH, 0, 64, MAKEINTRESOURCE(IDS_NCLC_TYPE), 0, 0, 0, 0}
+    };
+    int i;
+    RECT r;
+    wchar_t buf[128];
+    HIMAGELIST hi;
+
+    GetClientRect(hwlist, &r);
+    for (i=0; i < ARRAYLENGTH(columns); i++) {
+        columns[i].cx = columns[i].cx * (r.right - r.left) / 256;
+        LoadString(hResModule, (UINT) columns[i].pszText, buf, ARRAYLENGTH(buf));
+        columns[i].pszText = buf;
+        ListView_InsertColumn(hwlist, i, &columns[i]);
+    }
+    hi = ImageList_LoadBitmap(hResModule, MAKEINTRESOURCE(IDB_NC_STATE),
+                              16, 4, RGB(255,0,255));
+    ImageList_SetOverlayImage(hi, 1, 1);
+    ImageList_SetOverlayImage(hi, 2, 2);
+    ListView_SetImageList(hwlist, hi, LVSIL_SMALL);
+}
+
+void
+creddlg_refresh_idlist(HWND hwlist, keystore_t * ks)
+{
+    khm_size i;
+
+    ListView_DeleteAllItems(hwlist);
+    KSLOCK(ks);
+    for (i=0; i < ks->n_keys; i++) {
+        LVITEM lvi_id = {
+            LVIF_PARAM | LVIF_STATE | LVIF_TEXT | LVIF_IMAGE,
+            i, 0,
+            INDEXTOOVERLAYMASK((ks->keys[i]->flags & IDENTKEY_FLAG_LOCKED)?2:1),
+            LVIS_OVERLAYMASK,
+            ks->keys[i]->display_name, 0,
+            0, i, 0, 0, 0, 0};
+        wchar_t idtype[KCDB_MAXCCH_NAME] = L"";
+        LVITEM lvi_type = {
+            LVIF_TEXT,
+            i, 1, 0, 0,
+            idtype, 0,
+            0, 0, 0, 0, 0, 0};
+        khm_size cb;
+        khm_handle idpro;
+
+        if (KHM_SUCCEEDED(kcdb_identpro_find(ks->keys[i]->provider_name, &idpro))) {
+            cb = sizeof(idtype);
+            kcdb_get_resource(idpro, KCDB_RES_INSTANCE, 0, NULL, NULL, idtype, &cb);
+            kcdb_identpro_release(idpro);
+        }
+
+        ListView_InsertItem(hwlist, &lvi_id);
+        ListView_SetItem(hwlist, &lvi_type);
+    }
+    KSUNLOCK(ks);
+}
+
 /* Note: This callback runs under the UI thread */
 INT_PTR
 creddlg_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
@@ -135,74 +212,9 @@ creddlg_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     SetWindowLongPtr(hwnd, DWLP_USER, (LPARAM) d);
 #pragma warning(pop)
 
-    {
-        LVCOLUMN columns[] = {
-            { LVCF_TEXT | LVCF_WIDTH, 0, 192, MAKEINTRESOURCE(IDS_NCLC_ID), 0, 0, 0, 0 },
-            { LVCF_TEXT | LVCF_WIDTH, 0, 64, MAKEINTRESOURCE(IDS_NCLC_TYPE), 0, 0, 0, 0}
-        };
-        int i;
-        RECT r;
-        wchar_t buf[128];
-        HWND hwlist;
-        HIMAGELIST hi;
-
-        hwlist = GetDlgItem(hwnd, IDC_IDLIST);
-
-        GetClientRect(hwlist, &r);
-        for (i=0; i < ARRAYLENGTH(columns); i++) {
-            columns[i].cx = columns[i].cx * (r.right - r.left) / 256;
-            LoadString(hResModule, (UINT) columns[i].pszText, buf, ARRAYLENGTH(buf));
-            columns[i].pszText = buf;
-            ListView_InsertColumn(hwlist, i, &columns[i]);
-        }
-        hi = ImageList_LoadBitmap(hResModule, MAKEINTRESOURCE(IDB_NC_STATE),
-                                  16, 4, RGB(255,0,255));
-        ImageList_SetOverlayImage(hi, 1, 1);
-        ImageList_SetOverlayImage(hi, 2, 2);
-        ListView_SetImageList(hwlist, hi, LVSIL_SMALL);
-    }
+    creddlg_setup_idlist(GetDlgItem(hwnd, IDC_IDLIST));
 
     return FALSE;
-}
-
-void
-creddlg_refresh_idlist(HWND hwnd, struct nc_dialog_data * d)
-{
-    HWND hwlist = GetDlgItem(hwnd, IDC_IDLIST);
-    khm_size i;
-
-    assert(d);
-    assert(d->ks);
-
-    ListView_DeleteAllItems(hwlist);
-    KSLOCK(d->ks);
-    for (i=0; i < d->ks->n_keys; i++) {
-        LVITEM lvi_id = {
-            LVIF_PARAM | LVIF_STATE | LVIF_TEXT | LVIF_IMAGE,
-            i, 0,
-            INDEXTOOVERLAYMASK((d->ks->keys[i]->flags & IDENTKEY_FLAG_LOCKED)?2:1),
-            LVIS_OVERLAYMASK,
-            d->ks->keys[i]->display_name, 0,
-            0, i, 0, 0, 0, 0};
-        wchar_t idtype[KCDB_MAXCCH_NAME] = L"";
-        LVITEM lvi_type = {
-            LVIF_TEXT,
-            i, 1, 0, 0,
-            idtype, 0,
-            0, 0, 0, 0, 0, 0};
-        khm_size cb;
-        khm_handle idpro;
-
-        if (KHM_SUCCEEDED(kcdb_identpro_find(d->ks->keys[i]->provider_name, &idpro))) {
-            cb = sizeof(idtype);
-            kcdb_get_resource(idpro, KCDB_RES_INSTANCE, 0, NULL, NULL, idtype, &cb);
-            kcdb_identpro_release(idpro);
-        }
-
-        ListView_InsertItem(hwlist, &lvi_id);
-        ListView_SetItem(hwlist, &lvi_type);
-    }
-    KSUNLOCK(d->ks);
 }
 
 /* Note: This callback runs under the UI thread */
@@ -249,10 +261,8 @@ creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, int notification, khui_new_creds * nc_in) {
             ks = find_keystore_for_identity(identity);
             assert(ks);
 
-            if (d->ks) {
+            if (d->ks)
                 ks_keystore_release(d->ks);
-                d->ks = NULL;
-            }
             d->ks = ks;
             /* leave ks held */
 
@@ -276,16 +286,10 @@ creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, int notification, khui_new_creds * nc_in) {
 
             kcdb_identity_release(identity);
 
-            creddlg_refresh_idlist(hwnd, d);
+            creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
             return TRUE;
         }
 
-        break;
-
-    case WMNC_DIALOG_PREPROCESS:
-        /* Sent before KMSG_CRED_PROCESS messages are dispatched. */
-
-        /* TODO: Handle this message */
         break;
     }
 
@@ -297,14 +301,6 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
 {
     khm_handle credset = NULL;
     khm_int32 rv;
-#if 0
-    idk = ks_identkey_create_new();
-    idk->provider_name = _wcsdup(L"Krb5Ident");
-    idk->display_name = _wcsdup(L"Some Identity");
-    if ((d->ks->n_keys & 1) != 0)
-        idk->flags |= IDENTKEY_FLAG_LOCKED;
-    ks_keystore_add_identkey(d->ks, idk);
-#endif
 
     assert(is_keystore_t(d->ks));
 
@@ -354,6 +350,12 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
                 goto done;
             idk->provider_name = _wcsdup(buf);
 
+            cb = sizeof(idk->ft_ctime);
+            kcdb_cred_get_attr(cred, KCDB_ATTR_ISSUE, NULL, &idk->ft_ctime, &cb);
+
+            cb = sizeof(idk->ft_expire);
+            kcdb_cred_get_attr(cred, KCDB_ATTR_EXPIRE, NULL, &idk->ft_expire, &cb);
+
             ks_serialize_credential(cred, NULL, &cb);
             if (cb == 0)
                 goto done;
@@ -386,6 +388,29 @@ creddlg_prompt_for_configure(HWND hwnd, struct nc_dialog_data * d)
 {
 }
 
+void
+creddlg_remove_selected_identkeys(HWND hwnd, struct nc_dialog_data *d)
+{
+    int idx = -1;
+    HWND hwlist = GetDlgItem(hwnd, IDC_IDLIST);
+
+    if (ListView_GetSelectedCount(hwlist) == 0)
+        return;
+
+    /* TODO: show what's going to be removed */
+
+    assert(d->ks);
+    KSLOCK(d->ks);
+    while ((idx = ListView_GetNextItem(hwlist, idx, LVNI_SELECTED)) != -1) {
+        LVITEM lvi = { LVIF_PARAM, idx, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, 0 };
+        ListView_GetItem(hwlist, &lvi);
+
+        ks_keystore_remove_identkey(d->ks, lvi.lParam);
+    }
+    KSUNLOCK(d->ks);
+    creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+}
+
 /* Note: This callback runs under the UI thread */
 INT_PTR
 creddlg_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
@@ -398,7 +423,7 @@ creddlg_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
 
     if (id == IDC_ADDNEW && code == BN_CLICKED) {
         creddlg_prompt_for_new_identity(hwnd, d);
-        creddlg_refresh_idlist(hwnd, d);
+        creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
         return TRUE;
     }
 
@@ -408,19 +433,7 @@ creddlg_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
     }
 
     if (id == IDC_REMOVE && code == BN_CLICKED) {
-        int idx = -1;
-        HWND hwlist = GetDlgItem(hwnd, IDC_IDLIST);
-
-        assert(d->ks);
-        KSLOCK(d->ks);
-        while ((idx = ListView_GetNextItem(hwlist, idx, LVNI_SELECTED)) != -1) {
-            LVITEM lvi = { LVIF_PARAM, idx, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, 0 };
-            ListView_GetItem(hwlist, &lvi);
-
-            ks_keystore_remove_identkey(d->ks, lvi.lParam);
-        }
-        KSUNLOCK(d->ks);
-        creddlg_refresh_idlist(hwnd, d);
+        creddlg_remove_selected_identkeys(hwnd, d);
         return TRUE;
     }
 
@@ -589,6 +602,24 @@ handle_kmsg_cred_dialog_new_options(khm_ui_4 uparam,
     return KHM_ERROR_SUCCESS;
 }
 
+void
+show_message_for_edit_control(HWND dlg, UINT id_edit,
+                              UINT id_caption, UINT id_message, UINT icon)
+{
+    EDITBALLOONTIP bt;
+    wchar_t caption[KHUI_MAXCCH_TITLE];
+    wchar_t message[KHUI_MAXCCH_MESSAGE];
+
+    bt.cbStruct = sizeof(bt);
+    LoadString(hResModule, id_caption, caption, ARRAYLENGTH(caption));
+    LoadString(hResModule, id_message, message, ARRAYLENGTH(message));
+    bt.pszTitle = caption;
+    bt.pszText = message;
+    bt.ttiIcon = icon;
+
+    SendDlgItemMessage(dlg, id_edit, EM_SHOWBALLOONTIP, 0, (LPARAM) &bt);
+}
+
 /* Handler for KMSG_CRED_PROCESS */
 khm_int32
 handle_kmsg_cred_process(khui_new_creds * nc) {
@@ -606,43 +637,52 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
 
     khui_cw_find_type(nc, credtype_id, (khui_new_creds_by_type **) &d);
 
-    assert(d);
-    if (d->ks == NULL) {
+    if (d == NULL || d->ks == NULL) {
         return KHM_ERROR_SUCCESS;
     }
-    assert(d->ks);
     assert(is_keystore_t(d->ks));
 
     if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
         khm_size i;
+        khm_boolean ks_was_locked;
 
         assert(d->hw_privint);
 
-        if (ks_is_keystore_locked(d->ks)) {
+        ks_was_locked = ks_is_keystore_locked(d->ks);
+
+        if (ks_was_locked) {
             wchar_t pw[KHUI_MAXCCH_PASSWORD] = L"";
             khm_size cb = 0;
 
             GetDlgItemText(d->hw_privint, IDC_PASSWORD, pw, ARRAYLENGTH(pw));
             StringCbLength(pw, sizeof(pw), &cb);
 
-            if (KHM_FAILED(ks_keystore_set_key_password(d->ks, pw, cb))) {
-                EDITBALLOONTIP bt;
-
+            if (cb == 0) {
                 khui_cw_set_response(nc, credtype_id,
                                      KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                bt.cbStruct = sizeof(bt);
-                bt.pszTitle = L"Incorrect Password";
-                bt.pszText = L"Please enter correct password";
-                bt.ttiIcon = TTI_ERROR;
-                SendDlgItemMessage(d->hw_privint, IDC_PASSWORD, EM_SHOWBALLOONTIP, 0, &bt);
+                show_message_for_edit_control(d->hw_privint, IDC_PASSWORD,
+                                              IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
+                return KHM_ERROR_SUCCESS;
+            } if (KHM_FAILED(ks_keystore_set_key_password(d->ks, pw, cb))) {
+                khui_cw_set_response(nc, credtype_id,
+                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+                show_message_for_edit_control(d->hw_privint, IDC_PASSWORD,
+                                              IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
+                SecureZeroMemory(pw, sizeof(pw));
                 return KHM_ERROR_SUCCESS;
             } else {
                 ks_keystore_lock(d->ks);
-                save_keystore_with_identity(d->ks);
+                if (ks_keystore_get_flags(d->ks) & KS_FLAG_MODIFIED)
+                    save_keystore_with_identity(d->ks);
                 khui_cw_set_response(nc, credtype_id,
                                      KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
+                SecureZeroMemory(pw, sizeof(pw));
             }
-        } else {
+        }
+
+        if (IsDlgButtonChecked(d->hw_privint, IDC_CHPW) == BST_CHECKED) {
+
+            /* Setting a new password */
             wchar_t pw1[KHUI_MAXCCH_PASSWORD] = L"";
             wchar_t pw2[KHUI_MAXCCH_PASSWORD] = L"";
             khm_size cb = 0;
@@ -653,43 +693,54 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
             StringCbLength(pw1, sizeof(pw1), &cb);
 
             if (cb == 0) {
-                EDITBALLOONTIP bt;
-
                 khui_cw_set_response(nc, credtype_id,
                                      KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                bt.cbStruct = sizeof(bt);
-                bt.pszTitle = L"No password entered";
-                bt.pszText = L"Please enter a password";
-                bt.ttiIcon = TTI_ERROR;
-                SendDlgItemMessage(d->hw_privint, IDC_PASSWORD, EM_SHOWBALLOONTIP, 0, &bt);
+                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
+                                              IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
+                ks_keystore_reset_key(d->ks);
                 return KHM_ERROR_SUCCESS;
             } else if (wcscmp(pw1, pw2)) {
-                EDITBALLOONTIP bt;
+                khui_cw_set_response(nc, credtype_id,
+                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
+                                              IDS_TMISMPASS, IDS_MISMPASS, TTI_ERROR);
+                SecureZeroMemory(pw1, sizeof(pw1));
+                SecureZeroMemory(pw2, sizeof(pw2));
+                ks_keystore_reset_key(d->ks);
+                return KHM_ERROR_SUCCESS;
+            }
+
+            if (!ks_was_locked &&
+                KHM_FAILED(ks_keystore_set_key_password(d->ks, pw1, cb))) {
 
                 khui_cw_set_response(nc, credtype_id,
                                      KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                bt.cbStruct = sizeof(bt);
-                bt.pszTitle = L"Password mismatch";
-                bt.pszText = L"Both passwords must match";
-                bt.ttiIcon = TTI_ERROR;
-                SendDlgItemMessage(d->hw_privint, IDC_PASSWORD, EM_SHOWBALLOONTIP, 0, &bt);
+                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
+                                              IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
+                SecureZeroMemory(pw1, sizeof(pw1));
+                SecureZeroMemory(pw2, sizeof(pw2));
+                ks_keystore_reset_key(d->ks);
                 return KHM_ERROR_SUCCESS;
-            } else if (KHM_FAILED(ks_keystore_set_key_password(d->ks, pw1, cb))) {
-                EDITBALLOONTIP bt;
+            } else if (ks_was_locked &&
+                       KHM_FAILED(ks_keystore_change_key_password(d->ks, pw1, cb))) {
 
                 khui_cw_set_response(nc, credtype_id,
                                      KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                bt.cbStruct = sizeof(bt);
-                bt.pszTitle = L"Incorrect Password";
-                bt.pszText = L"Please enter correct password";
-                bt.ttiIcon = TTI_ERROR;
-                SendDlgItemMessage(d->hw_privint, IDC_PASSWORD, EM_SHOWBALLOONTIP, 0, &bt);
+                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
+                                              IDS_TUNSPASS, IDS_UNSPASS, TTI_ERROR);
+                SecureZeroMemory(pw1, sizeof(pw1));
+                SecureZeroMemory(pw2, sizeof(pw2));
+                ks_keystore_reset_key(d->ks);
                 return KHM_ERROR_SUCCESS;
+
             } else {
                 ks_keystore_lock(d->ks);
-                save_keystore_with_identity(d->ks);
+                if (ks_keystore_get_flags(d->ks) & KS_FLAG_MODIFIED)
+                    save_keystore_with_identity(d->ks);
                 khui_cw_set_response(nc, credtype_id,
                                      KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
+                SecureZeroMemory(pw1, sizeof(pw1));
+                SecureZeroMemory(pw2, sizeof(pw2));
             }
         }
 

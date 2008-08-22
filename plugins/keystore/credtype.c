@@ -61,6 +61,19 @@ cred_is_equal(khm_handle cred1,
     return result;
 }
 
+khm_int32 KHMAPI
+idk_cred_is_equal(khm_handle cred1,
+                  khm_handle cred2,
+                  void * rock) {
+
+    khm_int32 result;
+
+    result = 0;
+
+    return result;
+}
+
+
 static khm_int32 hash_ptr(const void * key)
 {
     return (khm_int32) key;
@@ -81,19 +94,25 @@ static void del_ref_ks(const void *k, void * d)
     ks_keystore_release((keystore_t *) d);
 }
 
+DECLARE_ONCE(ctype_init);
+
 void
 init_credtype(void)
 {
-    assert(ht_identity_to_keystore == NULL);
-    ht_identity_to_keystore = hash_new_hashtable(HT_IDENTITY_TO_KEYSTORE_SIZE,
-                                                 hash_ptr, comp_ptr,
-                                                 add_ref_ks, del_ref_ks);
+    if (InitializeOnce(&ctype_init)) {
+        ht_identity_to_keystore = hash_new_hashtable(HT_IDENTITY_TO_KEYSTORE_SIZE,
+                                                     hash_ptr, comp_ptr,
+                                                     add_ref_ks, del_ref_ks);
+        InitializeOnceDone(&ctype_init);
+    }
 }
 
 keystore_t *
 find_keystore_for_identity(khm_handle identity)
 {
     keystore_t *ks = NULL;
+
+    init_credtype();
 
     EnterCriticalSection(&cs_ks);
     ks = (keystore_t *) hash_lookup(ht_identity_to_keystore, identity);
@@ -109,6 +128,8 @@ void
 associate_keystore_and_identity(keystore_t * ks, khm_handle identity)
 {
     assert(is_keystore_t(ks));
+
+    init_credtype();
 
     EnterCriticalSection(&cs_ks);
     KSLOCK(ks);
@@ -220,9 +241,10 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
         assert(FALSE);
     }
 
+    ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, path);
+
     if (buffer)
         free(buffer);
-
 }
 
 keystore_t *
@@ -293,6 +315,10 @@ create_keystore_from_location(const wchar_t * path, khm_handle csp)
         assert(FALSE);
     }
 
+    if (ks) {
+        ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, path);
+    }
+
     if (buffer)
         free(buffer);
 
@@ -308,12 +334,6 @@ create_keystore_for_identity(khm_handle identity)
     khm_handle csp_id = NULL;
     khm_handle csp_ks = NULL;
     keystore_t * ks = NULL;
-
-    cb = sizeof(ctype);
-    if (KHM_FAILED(kcdb_identity_get_attr(identity, KCDB_ATTR_TYPE,
-                                          NULL, &ctype, &cb)) ||
-        ctype != credtype_id)
-        return NULL;
 
     if (KHM_FAILED(kcdb_identity_get_config(identity, 0, &csp_id)) ||
         KHM_FAILED(khc_open_space(csp_id, CREDPROV_NAMEW, 0, &csp_ks)))
@@ -349,6 +369,8 @@ update_keystore_list(void)
     kcdb_enumeration e;
     khm_size i;
     khm_int32 rv_enum;
+
+    init_credtype();
 
     rv_enum = kcdb_identity_begin_enum(KCDB_IDENT_FLAG_CONFIG,
                                        KCDB_IDENT_FLAG_CONFIG,
@@ -425,6 +447,39 @@ update_keystore_list(void)
 }
 
 khm_handle
+get_identkey_credential(keystore_t * ks, identkey_t * idk)
+{
+    khm_handle credential = NULL;
+
+    assert(is_identkey_t(idk));
+    assert(is_keystore_t(ks));
+
+    KSLOCK(ks);
+    if (ks->identity == NULL)
+        goto done;
+
+    assert(idk->display_name);
+    assert(idk->provider_name);
+    assert(idk->identity_name);
+
+    if (KHM_FAILED(kcdb_cred_create(idk->identity_name, ks->identity, idk_credtype_id,
+                                    &credential)))
+        goto done;
+
+    if (ks->location)
+        kcdb_cred_set_attr(credential, KCDB_ATTR_LOCATION, ks->location, KCDB_CBSIZE_AUTO);
+    kcdb_cred_set_attr(credential, KCDB_ATTR_DISPLAY_NAME, idk->display_name, KCDB_CBSIZE_AUTO);
+    kcdb_cred_set_attr(credential, KCDB_ATTR_ISSUE, &idk->ft_ctime, KCDB_CBSIZE_AUTO);
+    if (FtToInt(&idk->ft_expire) != 0)
+        kcdb_cred_set_attr(credential, KCDB_ATTR_EXPIRE, &idk->ft_expire, KCDB_CBSIZE_AUTO);
+
+ done:
+    KSUNLOCK(ks);
+
+    return credential;    
+}
+
+khm_handle
 get_keystore_credential(keystore_t * ks)
 {
     khm_handle credential = NULL;
@@ -466,7 +521,10 @@ get_keystore_credential(keystore_t * ks)
 
     KSLOCK(ks);
     kcdb_cred_set_attr(credential, KCDB_ATTR_ISSUE, &ks->ft_ctime, KCDB_CBSIZE_AUTO);
-    kcdb_cred_set_attr(credential, KCDB_ATTR_EXPIRE, &ks->ft_expire, KCDB_CBSIZE_AUTO);
+    if (FtToInt(&ks->ft_expire) != 0)
+        kcdb_cred_set_attr(credential, KCDB_ATTR_EXPIRE, &ks->ft_expire, KCDB_CBSIZE_AUTO);
+    if (ks->location)
+        kcdb_cred_set_attr(credential, KCDB_ATTR_LOCATION, ks->location, KCDB_CBSIZE_AUTO);
     KSUNLOCK(ks);
 
  done:
@@ -500,7 +558,6 @@ save_keystore_with_identity(keystore_t * ks)
 {
     khm_handle identity;
     khm_size cb;
-    khm_int32 ctype;
     khm_handle csp_id = NULL;
     khm_handle csp_ks = NULL;
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -546,28 +603,3 @@ save_keystore_with_identity(keystore_t * ks)
     return rv;
 }
 
-/* 
-
-   When initially creating the identity for a keystore, we are going
-   to use a UUID to identify the identity.  (as-in, the identity name
-   would be a string representation of a UUID.
-
-   Once we have a display name and a description for the keystore, we
-   can update the identity information.  Until then, it would be
-   "Unnamed Keystore #hhhhhhhh", where "#hhhhhhhh" are the last
-   characters of the UUID.
-
-   The keystore_t object should have a back pointer that identifies
-   the identity that is associated with it.  This way, we can remove
-   the objects from the hash table when they are being deallocated.
-
-   Need to implement:
-
-   create_identity_from_keystore() that will create the identity
-   object which corresponds to the keystore.
-
-   save_keystore() that will save the keystore to the registry
-   associated with the identity or the file if the identity specifies
-   a keystore location.
-
- */

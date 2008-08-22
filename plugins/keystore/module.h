@@ -113,6 +113,13 @@
 #define CONFIGNODE_ALL_ID CREDTYPE_NAMEW L"AllIdents"
 #define CONFIGNODE_PER_ID CREDTYPE_NAMEW L"PerIdent"
 
+/* For the keystore provider, we use an auxilliary credentials type to
+   designate private keys, since those are distinct from the keystore
+   credentials which represent keystores. */
+
+#define IDK_CREDTYPE_NAME "KeystoreIdentityPrivateKeyInstance"
+#define IDK_CREDTYPE_NAMEW _T(IDK_CREDTYPE_NAME)
+
 #include<windows.h>
 /* include the standard NetIDMgr header files */
 #include<netidmgr.h>
@@ -141,6 +148,7 @@ extern HMODULE    hResModule;
 extern const wchar_t * my_facility;
 
 extern khm_int32  credtype_id;
+extern khm_int32  idk_credtype_id;
 extern khm_handle h_idprov;
 extern khm_handle idprov_sub;
 
@@ -154,6 +162,10 @@ credprov_msg_proc(khm_int32 msg_type,
                   khm_int32 msg_subtype,
                   khm_ui_4  uparam,
                   void * vparam);
+
+khm_int32 KHMAPI
+idk_credprov_msg_proc (khm_int32 msg_type, khm_int32 msg_subtype,
+                       khm_ui_4  uparam, void *vparam);
 
 void
 list_credentials(void);
@@ -170,6 +182,11 @@ khm_int32 KHMAPI
 cred_is_equal(khm_handle cred1,
               khm_handle cred2,
               void * rock);
+
+khm_int32 KHMAPI
+idk_cred_is_equal(khm_handle cred1,
+                  khm_handle cred2,
+                  void * rock);
 
 /* in credacq.c */
 khm_int32 KHMAPI
@@ -240,6 +257,10 @@ update_keystore_list(void);
 
 khm_handle
 get_keystore_credential(keystore_t * ks);
+
+khm_handle
+get_identkey_credential(keystore_t * ks, identkey_t * idk);
+
 
 khm_handle
 get_keystore_credential_for_identity(khm_handle identity);

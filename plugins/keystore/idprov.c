@@ -42,6 +42,9 @@ handle_kmsg_ident_init(void) {
     }
 
     /* TODO: Additional initialization code goes here */
+    assert(credtype_id > 0);
+
+    kcdb_identity_set_type(credtype_id);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -90,16 +93,28 @@ handle_kmsg_ident_notify_create(khm_handle ident)
     keystore_t * ks = NULL;
     khm_size cb;
 
+    assert(credtype_id > 0);
+
     /* when we get a notification, if there is a parameter specified,
        then it is assumed to be a keystore. */
     cb = sizeof(ks);
     kcdb_identity_get_attr(ident, KCDB_ATTR_PARAM, NULL, &ks, &cb);
+
+    if (!ks) {
+        /* if we didn't get a parameter, then we try to create the
+           keystore based on the identity. */
+        ks = create_keystore_for_identity(ident);
+    } else {
+        ks_keystore_hold(ks);
+    }
 
     if (ks) {
         assert(is_keystore_t(ks));
 
         if (!is_keystore_t(ks))
             ks = NULL;
+    } else {
+        assert(FALSE);
     }
 
     if (ks) {
@@ -110,6 +125,7 @@ handle_kmsg_ident_notify_create(khm_handle ident)
         }
         KSUNLOCK(ks);
         associate_keystore_and_identity(ks, ident);
+        ks_keystore_release(ks);
     } else {
         //update_keystore_list();
     }
@@ -156,6 +172,8 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
         keystore_t * ks;
 
         ks = find_keystore_for_identity(preq->h_obj);
+        if (ks == NULL)
+            return KHM_ERROR_SUCCESS;
 
         /* This is a resource request for a specific identity
            specified by h_obj */
