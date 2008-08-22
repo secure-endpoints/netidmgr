@@ -28,6 +28,13 @@
 #ifndef __KHIMAIRA_CREDFUNCS_H
 #define __KHIMAIRA_CREDFUNCS_H
 
+void
+khm_cred_begin_new_cred_op(void);
+
+void
+khm_cred_end_new_cred_op(void);
+
+
 void KHMAPI 
 kmsg_cred_completion(kmq_message *m);
 

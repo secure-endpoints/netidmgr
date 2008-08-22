@@ -115,7 +115,6 @@ typedef struct tag_khm_startup_options_int {
     khm_boolean no_main_window;
     khm_int32 display;          /* SOPTS_DISPLAY_* */
 
-    LONG pending_renewals;
 } khm_startup_options;
 
 extern khm_startup_options khm_startup;

@@ -171,6 +171,25 @@ khm_cred_wait_for_dialog(DWORD timeout, khm_int32 * result,
     return rv;
 }
 
+LONG pending_new_cred_ops = 0;
+
+void
+khm_cred_begin_new_cred_op(void)
+{
+    InterlockedIncrement(&pending_new_cred_ops);
+}
+
+void
+khm_cred_end_new_cred_op(void)
+{
+    LONG pending;
+
+    pending = InterlockedDecrement(&pending_new_cred_ops);
+    if (pending == 0 && khm_startup.processing) {
+        kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
+    }
+}
+
 /* Completion handler for KMSG_CRED messages.  We control the overall
    logic of credentials acquisition and other operations here.  Once a
    credentials operation is triggered, each successive message
@@ -435,7 +454,6 @@ kmsg_cred_completion(kmq_message *m)
         /* all is done. */
         {
             khui_new_creds * nc;
-            khm_boolean continue_cmdline = TRUE;
 
             nc = (khui_new_creds *) m->vparam;
 
@@ -444,6 +462,12 @@ kmsg_cred_completion(kmq_message *m)
             case KHUI_NC_SUBTYPE_PASSWORD:
 
                 khm_cred_end_dialog(nc);
+
+                /* fallthrough */
+
+            case KHUI_NC_SUBTYPE_ACQPRIV_ID:
+
+                khm_cred_end_new_cred_op();
 
                 break;
 
@@ -462,23 +486,14 @@ kmsg_cred_completion(kmq_message *m)
                    were processing the commandline, then we need to
                    update the pending renewal count. */
 
-                if (khm_startup.processing) {
-                    LONG renewals;
-                    renewals = InterlockedDecrement(&khm_startup.pending_renewals);
+                khm_cred_end_new_cred_op();
 
-                    if (renewals != 0) {
-                        continue_cmdline = FALSE;
-                    }
-                }
                 break;
             }
 
             khui_cw_destroy_cred_blob(nc);
 
             kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, 0);
-
-            if (continue_cmdline)
-                kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
         }
         break;
 
@@ -510,9 +525,6 @@ kmsg_cred_completion(kmq_message *m)
 
     case KMSG_CRED_IMPORT:
         {
-            khm_boolean continue_cmdline = FALSE;
-            LONG pending_renewals;
-
             /* once an import operation ends, we have to trigger a
                renewal so that other plug-ins that didn't participate
                in the import operation can have a chance at getting
@@ -529,14 +541,9 @@ kmsg_cred_completion(kmq_message *m)
                message ourselves.
             */
 
-            InterlockedIncrement(&khm_startup.pending_renewals);
-
             khm_cred_renew_all_identities();
 
-            pending_renewals = InterlockedDecrement(&khm_startup.pending_renewals);
-
-            if (pending_renewals == 0 && khm_startup.processing)
-                kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
+            khm_cred_end_new_cred_op();
         }
         break;
 
@@ -551,6 +558,8 @@ void khm_cred_import(void)
     _begin_task(KHERR_CF_TRANSITIVE);
     _report_sr0(KHERR_NONE, IDS_CTX_IMPORT);
     _describe();
+
+    khm_cred_begin_new_cred_op();
 
     kmq_post_message(KMSG_CRED, KMSG_CRED_IMPORT, 0, 0);
 
@@ -744,11 +753,7 @@ void khm_cred_renew_identity(khm_handle identity)
     _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
     _describe();
 
-    /* if we are calling this while processing startup actions, we
-       need to keep track of how many we have issued. */
-    if (khm_startup.processing) {
-        InterlockedIncrement(&khm_startup.pending_renewals);
-    }
+    khm_cred_begin_new_cred_op();
 
     kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
@@ -773,11 +778,7 @@ void khm_cred_renew_cred(khm_handle cred)
     _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
     _describe();
 
-    /* if we are calling this while processing startup actions, we
-       need to keep track of how many we have issued. */
-    if (khm_startup.processing) {
-        InterlockedIncrement(&khm_startup.pending_renewals);
-    }
+    khm_cred_begin_new_cred_op();
 
     kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
@@ -797,11 +798,7 @@ void khm_cred_renew_creds(void)
     _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
     _describe();
 
-    /* if we are calling this while processing startup actions, we
-       need to keep track of how many we have issued. */
-    if (khm_startup.processing) {
-        InterlockedIncrement(&khm_startup.pending_renewals);
-    }
+    khm_cred_begin_new_cred_op();
 
     kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
@@ -984,6 +981,8 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         _begin_task(KHERR_CF_TRANSITIVE);
         _report_sr0(KHERR_NONE, IDS_CTX_NEW_CREDS);
         _describe();
+
+        khm_cred_begin_new_cred_op();
 
         kmq_post_message(KMSG_CRED, KMSG_CRED_NEW_CREDS, 0, 
                          (void *) nc);
@@ -1270,28 +1269,19 @@ khm_cred_process_startup_actions(void) {
         }
 
         if (khm_startup.renew) {
-            LONG pending_renewals;
 
             /* if there are no credentials, we just skip over the
                renew action. */
 
             khm_startup.renew = FALSE;
 
-            InterlockedIncrement(&khm_startup.pending_renewals);
+            khm_cred_begin_new_cred_op();
 
             khm_cred_renew_all_identities();
 
-            pending_renewals = InterlockedDecrement(&khm_startup.pending_renewals);
+            khm_cred_end_new_cred_op();
 
-            if (pending_renewals != 0)
-                break;
-
-            /* if there were no pending renewals, then we just fall
-               through. This means that either there were no
-               identities to renew, or all the renewals completed.  If
-               all the renewals completed, then the commandline
-               contiuation message wasn't triggered.  Either way, we
-               must fall through if the count is zero. */
+            break;
         }
 
         if (khm_startup.destroy) {
