@@ -475,8 +475,8 @@ KHMEXP khm_int32   KHMAPI kmm_load_module(wchar_t * modname,
     if(mi != NULL) {
         kmm_hold_module(kmm_handle_from_module(mi));
         /* check if the module has either failed to load or if it has
-        been terminated.  If so, we try once again to load the
-        module. */
+           been terminated.  If so, we try once again to load the
+           module. */
         if(!(flags & KMM_LM_FLAG_NOLOAD) && 
             (mi->state < 0 || mi->state == KMM_MODULE_STATE_EXITED)) 
         {

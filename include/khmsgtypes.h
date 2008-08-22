@@ -457,6 +457,11 @@
 */
 #define KMSG_CRED_IMPORT              26
 
+/*! \brief Acquire privileged credentials */
+#define KMSG_CRED_ACQPRIV_ID          27
+
+#define KMSG_CRED_PREPROCESS_ID       28
+
 /*! \brief Destroy credentials
 
     Notification that the specified credentials should be destroyed.
@@ -612,6 +617,16 @@
         messages are displayed.
  */
 #define KMSG_ALERT_SHOW_MODAL 5
+
+/*! \brief Begin monitoring progress of an alert
+
+    Message parameters:
+    - \b vparam : Held pointer to a ::khui_alert object.
+
+    \note the ::khui_alert object will be released after the message
+        is handled.
+ */
+#define KMSG_ALERT_MONITOR_PROGRESS 6
 
 /*@}*/
 
@@ -848,6 +863,20 @@
        receive the callback.
  */
 #define KMSG_IDENT_GET_IDSEL_FACTORY   15
+
+/*! \brief Notification of configuration space creation
+
+  Sent once when a new configuration space is created for an identity.
+  The provider is expected to initialize the configuration space with
+  any required settings for identifying the identity at a later
+  session.
+
+  The identity provider should be able to reconstruct an identity
+  based only on the information in the identity configuration space.
+ */
+#define KMSG_IDENT_NOTIFY_CONFIG       16
+
+//TODO: Implement this notification in the identity provider support code.
 
 /*@}*/ /* /KMSG_IDENT subtypes */
 

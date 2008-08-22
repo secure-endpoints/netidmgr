@@ -19,6 +19,8 @@
 #define IDS_METHOD_PWD                  112
 #define IDS_METHOD_K524                 113
 #define IDS_CFG_IDS_KRB4_SHORT          114
+#define IDS_MSG_K4NEW                   115
+#define IDS_MSG_K4RENEW                 116
 #define IDS_KRB4_SHORT_DESC             128
 #define IDS_KRB4_LONG_DESC              129
 #define IDS_CFG_KRB4_LONG               135

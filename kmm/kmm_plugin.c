@@ -82,7 +82,7 @@ kmmint_list_plugin(kmm_plugin_i * p)
 {
     EnterCriticalSection(&cs_kmm);
     if((p->flags & KMM_PLUGIN_FLAG_IN_MODLIST) ||
-        (p->flags & KMM_PLUGIN_FLAG_IN_LIST)) 
+       (p->flags & KMM_PLUGIN_FLAG_IN_LIST)) 
     {
         RaiseException(2, EXCEPTION_NONCONTINUABLE, 0, NULL);
     }

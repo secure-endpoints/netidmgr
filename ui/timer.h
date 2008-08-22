@@ -46,22 +46,27 @@ typedef enum tag_khui_timer_type {
     KHUI_TTYPE_ID_RENEW,        /* Identity auto renewal */
     KHUI_TTYPE_CRED_RENEW,      /* Credential renewal */
 
-#if 0
-    KHUI_TTYPE_BMSG,            /* Custom. Sends broadcast message
-                                   when triggered.*/
-    KHUI_TTYPE_SMSG,            /* Custom. Sends subscription message
-                                   when triggered. */
-#endif
 } khui_timer_type;
 
-typedef struct tag_khui_timer_event {
-    khm_handle       key;
-    khui_timer_type  type;
+typedef struct khui_timer_info {
+    khm_int64      expire;
+    khm_int64      issue;
+    khm_int64      warning;
+    khm_int64      critical;
+    khm_int64      renewal;
+    khm_boolean    use_halflife;
+} khui_timer_info;
 
-    khm_int64 expire;    /* time at which the timer expires */
-    khm_int64 offset;    /* time offset at which the event that the
-                            timer warns of happens */
-    void *           data;
+typedef struct tag_khui_timer_event {
+    khm_handle       key;       /* either an identity or a credential */
+    khui_timer_type  type;
+    union {
+        khui_timer_info  marker; /* only used for KHUI_TTYPE_ID_MARK events */
+        struct {
+            khm_int64    key_expire; /* time at which the key expires */
+            khm_int64    event;  /* time at which this timer event should fire */
+        };
+    };
     khm_int32        flags;
 } khui_timer_event;
 
@@ -77,14 +82,6 @@ typedef struct tag_khui_timer_event {
 #define KHUI_DEF_TIMEOUT_CRIT 300
 #define KHUI_DEF_TIMEOUT_RENEW 60
 
-/* the max absolute difference between two timers (in seconds) that
-   can exist where we consider both timers to be in the same
-   timeslot. */
-#define KHUI_TIMEEQ_ERROR 20
-
-/* the small error. */
-#define KHUI_TIMEEQ_ERROR_SMALL 1
-
 void
 khm_timer_refresh(HWND hwnd);
 
@@ -96,5 +93,8 @@ khm_timer_init(void);
 
 void
 khm_timer_exit(void);
+
+khm_int32
+khm_get_identity_timer_info(khm_handle identity, khui_timer_info * pinfo, khm_int64 last_halftime);
 
 #endif

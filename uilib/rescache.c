@@ -102,9 +102,7 @@ del_ref_resource(const void * k, void * d)
         break;
 
     default:
-#ifdef DEBUG
         assert(FALSE);
-#endif
     }
 }
 
@@ -123,9 +121,7 @@ khui_exit_rescache(void) {
 
     hash_del_hashtable(ht_resources);
 
-#ifdef DEBUG
     assert(cached_resources == NULL);
-#endif
 
     while (discarded_resources) {
         cached_resource *r;
@@ -143,9 +139,7 @@ khui_exit_rescache(void) {
             break;
 
         default:
-#ifdef DEBUG
             assert(FALSE);
-#endif
         }
 
         PFREE(r);
@@ -171,7 +165,13 @@ khui_cache_add_resource(khm_handle owner, khm_int32 id,
     cached_resource * r;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
+#ifdef DEBUG
+    kherr_debug_printf(L"Adding resource <0x%p , %d , %d>\n",
+                       owner, id, type);
+#endif
+
     EnterCriticalSection(&cs_res);
+
     switch (type) {
     case KHM_RESTYPE_STRING:
         {
@@ -238,9 +238,7 @@ khui_cache_add_resource(khm_handle owner, khm_int32 id,
         break;
 
     default:
-#ifdef DEBUG
         assert(FALSE);
-#endif
         rv = KHM_ERROR_INVALID_PARAM;
     }
     LeaveCriticalSection(&cs_res);
@@ -266,6 +264,10 @@ khui_cache_get_resource(khm_handle owner, khm_int32 id, khm_restype type,
     r = (cached_resource *) hash_lookup(ht_resources, &k);
 
     if (r == NULL) {
+#ifdef DEBUG
+        kherr_debug_printf(L"Lookup resource <0x%p , %d , %d>\n",
+                           owner, id, type);
+#endif
         rv = KHM_ERROR_NOT_FOUND;
         goto _exit;
     }
@@ -297,9 +299,7 @@ khui_cache_get_resource(khm_handle owner, khm_int32 id, khm_restype type,
 
     default:
         rv = KHM_ERROR_UNKNOWN;
-#ifdef DEBUG
         assert(FALSE);
-#endif
     }
 
  _exit:
@@ -615,9 +615,8 @@ HICON_from_HBITMAP(HBITMAP hbm, SIZE * ps)
     cb = n_per_line * ps->cy * sizeof(WORD);
 
     pdata = (WORD *) PMALLOC(cb);
-#ifdef DEBUG
     assert(pdata);
-#endif
+
     if (pdata == NULL)
         goto _img_cleanup;
 

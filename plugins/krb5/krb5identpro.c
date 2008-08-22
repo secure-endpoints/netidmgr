@@ -855,20 +855,34 @@ k5_ident_notify_create(khm_int32 msg_type,
     khm_size cb;
     khm_handle ident;
 
-    /* if there is a default identity already, we assume we don't need
-       to check this one. */
-
-    khm_handle def_ident;
-
-    if (KHM_SUCCEEDED(kcdb_identity_get_default_ex(k5_identpro, &def_ident))) {
-        kcdb_identity_release(def_ident);
-
-        return KHM_ERROR_SUCCESS;
-    }
+    assert(k5_identpro_ctx != NULL);
 
     ident = (khm_handle) vparam;
 
-    assert(k5_identpro_ctx != NULL);
+    /* As a convention, we use the principal name as the identity name
+       and the display name */
+    cb = sizeof(id_nameW);
+
+    if (KHM_FAILED(kcdb_identity_get_name(ident,
+                                          id_nameW,
+                                          &cb))) {
+        return KHM_ERROR_INVALID_PARAM;
+    }
+
+    kcdb_identity_set_attr(ident, KCDB_ATTR_DISPLAY_NAME,
+                           id_nameW, KCDB_CBSIZE_AUTO);
+
+    /* if there is a default identity already, we assume we don't need
+       to check this one. */
+    {
+        khm_handle def_ident;
+
+        if (KHM_SUCCEEDED(kcdb_identity_get_default_ex(k5_identpro, &def_ident))) {
+            kcdb_identity_release(def_ident);
+
+            return KHM_ERROR_SUCCESS;
+        }
+    }
 
     code = pkrb5_cc_default(k5_identpro_ctx, &cc);
     if (code)
@@ -889,13 +903,6 @@ k5_ident_notify_create(khm_int32 msg_type,
     AnsiStrToUnicode(princ_nameW,
                      sizeof(princ_nameW),
                      princ_nameA);
-
-    cb = sizeof(id_nameW);
-
-    if (KHM_FAILED(kcdb_identity_get_name(ident,
-                                          id_nameW,
-                                          &cb)))
-        goto _nc_cleanup;
 
     if (!wcscmp(id_nameW, princ_nameW)) {
         kcdb_identity_set_default_int(ident);

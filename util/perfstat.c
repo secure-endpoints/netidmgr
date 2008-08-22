@@ -391,6 +391,47 @@ perf_dump(FILE * f) {
     LeaveCriticalSection(&cs_alloc);
 }
 
+#define MS_VC_EXCEPTION 0x406D1388
+
+#pragma pack(push,8)
+typedef struct tagTHREADNAME_INFO
+{
+   DWORD  dwType;
+   LPCSTR szName;
+   DWORD  dwThreadID;
+   DWORD  dwFlags;
+} THREADNAME_INFO;
+#pragma pack(pop)
+
+void
+set_thread_name(DWORD tid, const wchar_t * name)
+{
+    THREADNAME_INFO info;
+    char cname[128];
+
+    if (WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, 
+                            name, -1, 
+                            cname, sizeof(cname), 
+                            NULL, 
+                            NULL) == 0)
+        return;
+
+   Sleep(10);
+   info.dwType = 0x1000;
+   info.szName = cname;
+   info.dwThreadID = tid;
+   info.dwFlags = 0;
+
+   __try
+   {
+       RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), (ULONG_PTR*)&info );
+   }
+   __except(EXCEPTION_EXECUTE_HANDLER)
+   {
+   }
+}
+
+
 KHMEXP void
 perf_set_thread_desc(const char * file, int line,
                      const wchar_t * name, const wchar_t * creator) {
@@ -447,4 +488,7 @@ perf_set_thread_desc(const char * file, int line,
 
     LPUSH(&threads, t);
     LeaveCriticalSection(&cs_alloc);
+
+    set_thread_name(-1, name);
 }
+

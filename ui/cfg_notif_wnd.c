@@ -294,9 +294,7 @@ khm_cfg_notifications_proc(HWND hwnd,
             SetTimer(hwnd, 1, 500, NULL);
         }
 
-        khm_set_dialog_result(hwnd, 0);
-
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_COMMAND, 0);
     }
 
     case WM_TIMER: {
@@ -307,9 +305,7 @@ khm_cfg_notifications_proc(HWND hwnd,
         KillTimer(hwnd, 1);
         check_for_modification(d);
 
-        khm_set_dialog_result(hwnd, 0);
-
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_TIMER, 0);
     }
 
     case WM_DESTROY: {
@@ -325,9 +321,7 @@ khm_cfg_notifications_proc(HWND hwnd,
 
         SetWindowLongPtr(hwnd, DWLP_USER, 0);
 
-        khm_set_dialog_result(hwnd, 0);
-
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_DESTROY, 0);
     }
 
     case KHUI_WM_CFG_NOTIFY: {
@@ -339,9 +333,7 @@ khm_cfg_notifications_proc(HWND hwnd,
             write_params(d);
         }
 
-        khm_set_dialog_result(hwnd, 0);
-
-        return TRUE;
+        return SetDlgMsgResult(hwnd, KHUI_WM_CFG_NOTIFY, 0);
     }
 
     }

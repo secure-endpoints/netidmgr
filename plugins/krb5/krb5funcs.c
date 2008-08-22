@@ -608,6 +608,8 @@ static long get_tickets_from_cache(krb5_context ctx,
             continue;
         }
 
+        kcdb_cred_set_attr(cred, KCDB_ATTR_DISPLAY_NAME, wbuf, KCDB_CBSIZE_AUTO);
+
         if (!KRBv5Credentials.times.starttime)
             KRBv5Credentials.times.starttime = KRBv5Credentials.times.authtime;
 

@@ -32,6 +32,7 @@
 #include<windows.h>
 #include<kherr.h>
 #include<utils.h>
+#include<kherror.h>
 #include<strsafe.h>
 
 #define IS_KHERR_CTX(c) ((c) && (c)->magic == KHERR_CONTEXT_MAGIC)
@@ -47,16 +48,21 @@ typedef struct tag_kherr_thread {
 
 typedef struct tag_kherr_handler_node {
     khm_int32         filter;
-    kherr_ctx_handler h;
+    union {
+        kherr_ctx_handler p_handler;
+        kherr_ctx_handler_param p_handler_param;
+    } h;
     kherr_serial      serial;
+    khm_boolean       use_param;
+    void             *vparam;
 } kherr_handler_node;
 
 #define CTX_ALLOC_INCR 4
 
 #define EVENT_MASK_UNRESOLVED \
     (KHERR_RF_RES_SHORT_DESC|KHERR_RF_MSG_SHORT_DESC| \
-    KHERR_RF_RES_LONG_DESC|KHERR_RF_MSG_LONG_DESC| \
-    KHERR_RF_RES_SUGGEST|KHERR_RF_MSG_SUGGEST)
+     KHERR_RF_RES_LONG_DESC|KHERR_RF_MSG_LONG_DESC|   \
+     KHERR_RF_RES_SUGGEST|KHERR_RF_MSG_SUGGEST)
 
 extern CRITICAL_SECTION cs_error;
 extern DWORD tls_error;

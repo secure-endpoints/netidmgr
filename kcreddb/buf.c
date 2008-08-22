@@ -38,7 +38,7 @@ void kcdb_buf_new(kcdb_buf * buf, khm_size n_fields)
 
     assert(n_fields < KCDB_BUF_MAX_SLOTS);
 
-    buf->n_fields = n_fields;
+    buf->n_fields = 0;
     buf->nc_fields = UBOUNDSS(n_fields, KCDB_BUF_FIELDS_INITIAL, KCDB_BUF_FIELDS_GROWTH);
     buf->fields = PMALLOC(sizeof(buf->fields[0]) * buf->nc_fields);
     ZeroMemory(buf->fields, sizeof(buf->fields[0]) * buf->nc_fields);
@@ -46,10 +46,12 @@ void kcdb_buf_new(kcdb_buf * buf, khm_size n_fields)
 
 void kcdb_buf_delete(kcdb_buf * buf)
 {
+    if(buf->buffer) {
+        SecureZeroMemory(buf->buffer, buf->cb_buffer);
+        PFREE(buf->buffer);
+    }
     buf->cb_buffer = 0;
     buf->cb_used = 0;
-    if(buf->buffer)
-        PFREE(buf->buffer);
     buf->buffer = NULL;
 
     buf->n_fields = 0;
@@ -62,6 +64,7 @@ void kcdb_buf_delete(kcdb_buf * buf)
 static void kcdb_buf_assert_size(kcdb_buf * buf, khm_size cbsize)
 {
     khm_size new_size;
+    void * new_buffer;
 
     /* should be less than or equal to the max signed 32 bit int */
     assert(cbsize <= KHM_INT32_MAX);
@@ -72,7 +75,14 @@ static void kcdb_buf_assert_size(kcdb_buf * buf, khm_size cbsize)
 
     assert(new_size > buf->cb_buffer && new_size > 0);
 
-    buf->buffer = PREALLOC(buf->buffer, new_size);
+    new_buffer = PMALLOC(new_size);
+    if (new_buffer != NULL) {
+        ZeroMemory(new_buffer, new_size);
+        memcpy(new_buffer, buf->buffer, buf->cb_buffer);
+    }
+    SecureZeroMemory(buf->buffer, buf->cb_buffer);
+    PFREE(buf->buffer);
+    buf->buffer = new_buffer;
     assert(buf->buffer != NULL);
     if (buf->buffer == NULL) {
         buf->cb_buffer = 0;
@@ -189,7 +199,7 @@ void kcdb_buf_dup(kcdb_buf * dest, const kcdb_buf * src)
     dest->fields = PMALLOC(nc_fields * sizeof(dest->fields[0]));
     memcpy(dest->fields, src->fields, src->n_fields * sizeof(dest->fields[0]));
     if(dest->n_fields < dest->nc_fields)
-        memset(&(dest->fields[dest->n_fields]), 0, (src->nc_fields - src->n_fields) * sizeof(dest->fields[0]));
+        memset(&(dest->fields[dest->n_fields]), 0, (dest->nc_fields - dest->n_fields) * sizeof(dest->fields[0]));
 }
 
 void kcdb_buf_set_value(kcdb_buf * buf, khm_size slot, khm_ui_2 id, void * src, khm_size cb_src)

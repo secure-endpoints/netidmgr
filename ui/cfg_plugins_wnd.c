@@ -646,9 +646,8 @@ khm_cfg_plugins_proc(HWND hwnd,
             PFREE(d);
             SetWindowLongPtr(hwnd, DWLP_USER, 0);
 
-            khm_set_dialog_result(hwnd, 0);
+            return SetDlgMsgResult(hwnd, WM_DESTROY, 0);
         }
-        return TRUE;
     }
     return FALSE;
 }

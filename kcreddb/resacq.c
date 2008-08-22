@@ -69,9 +69,7 @@ get_resource_from_cred_type(kcdb_resource_request * preq)
             break;
         }
 
-#ifdef DEBUG
         assert(rv != KHM_ERROR_NOT_FOUND);
-#endif
     }
 
     return rv;
@@ -85,23 +83,25 @@ get_resource_from_identity(kcdb_resource_request * preq)
     khm_size cb;
     khm_handle csp_id;
 
-#ifdef DEBUG
     assert(kcdb_is_identity(id));
-#endif
 
     /* There are some resources that we don't call the identity
        provider for */
     switch (preq->res_id) {
     case KCDB_RES_DISPLAYNAME:
         cb = preq->cb_buf;
-        if (KHM_FAILED(kcdb_identity_get_attr(preq->h_obj,
-                                              KCDB_ATTR_DISPLAY_NAME, NULL,
-                                              preq->buf, &cb)))
-            return kcdb_identity_get_name(preq->h_obj, preq->buf, &preq->cb_buf);
+        rv = kcdb_identity_get_attr(preq->h_obj,
+                                    KCDB_ATTR_DISPLAY_NAME, NULL,
+                                    preq->buf, &cb);
+
+        if (rv == KHM_ERROR_NOT_FOUND) {
+            assert(FALSE);
+            cb = preq->cb_buf;
+            rv = kcdb_identity_get_name(preq->h_obj, preq->buf, &cb);
+        }
 
         preq->cb_buf = cb;
-        return KHM_ERROR_SUCCESS;
-
+        return rv;
     }
 
     if (!kcdb_is_identity(id) || !kcdb_is_identpro(id->id_pro) ||
@@ -152,9 +152,7 @@ get_resource_from_identity(kcdb_resource_request * preq)
                     cx = GetSystemMetrics(SM_CXSMICON);
                     cy = GetSystemMetrics(SM_CYSMICON);
                 } else if (preq->flags & KCDB_RFI_TOOLBAR) {
-#ifdef DEBUG
                     assert(FALSE);
-#endif
                     cx = cy = 24;   /* Placeholder */
                 } else {
                     cx = GetSystemMetrics(SM_CXICON);
@@ -181,9 +179,7 @@ get_resource_from_identity(kcdb_resource_request * preq)
             break;
         }
 
-#ifdef DEBUG
         assert(rv != KHM_ERROR_NOT_FOUND);
-#endif
     }
 
     return rv;
@@ -194,18 +190,20 @@ get_resource_from_identpro(kcdb_resource_request * preq)
 {
     kcdb_identpro_i * idp = kcdb_identpro_from_handle(preq->h_obj);
     khm_int32 rv;
+    khm_handle old_obj;
 
-#ifdef DEBUG
     assert(kcdb_is_identpro(idp));
-#endif
 
     if (!kcdb_is_identpro(idp) || idp->sub == NULL)
         return KHM_ERROR_INVALID_PARAM;
 
+    old_obj = preq->h_obj;
     preq->h_obj = NULL;
 
     rv = kmq_send_sub_msg(idp->sub, KMSG_IDENT, KMSG_IDENT_RESOURCE_REQ,
                           0, preq);
+
+    preq->h_obj = old_obj;
 
     if (KHM_FAILED(rv))
         return rv;
@@ -218,9 +216,7 @@ get_resource_from_identpro(kcdb_resource_request * preq)
         switch (preq->res_id) {
         }
 
-#ifdef DEBUG
         assert(rv != KHM_ERROR_NOT_FOUND);
-#endif
     }
 
     return rv;
@@ -232,10 +228,9 @@ get_resource_from_credential(kcdb_resource_request * preq)
     kcdb_cred * c = (kcdb_cred *) preq->h_obj;
     khm_handle sub;
     khm_int32 rv;
+    khm_size cb;
 
-#ifdef DEBUG
     assert(kcdb_cred_is_cred(c));
-#endif
 
     if (!kcdb_cred_is_cred(c) ||
         (sub = kcdb_credtype_get_sub(c->type)) == NULL)
@@ -251,11 +246,20 @@ get_resource_from_credential(kcdb_resource_request * preq)
         rv = KHM_ERROR_NOT_FOUND;
 
         switch (preq->res_id) {
+        case KCDB_RES_DISPLAYNAME:
+            cb = preq->cb_buf;
+            rv = kcdb_cred_get_attr(preq->h_obj, KCDB_ATTR_DISPLAY_NAME, NULL,
+                                    preq->buf, &cb);
+            if (rv == KHM_ERROR_NOT_FOUND) {
+                cb = preq->cb_buf;
+                rv = kcdb_cred_get_name(preq->h_obj, preq->buf, &cb);
+            }
+
+            preq->cb_buf = cb;
+            break;
         }
 
-#ifdef DEBUG
         assert(rv != KHM_ERROR_NOT_FOUND);
-#endif
     }
 
     return rv;
@@ -282,9 +286,7 @@ get_resource_from_owner(kcdb_resource_request * preq)
             return get_resource_from_credential(preq);
 
         default:
-#ifdef DEBUG
             assert(FALSE);
-#endif
         }
     }
 
@@ -349,9 +351,7 @@ get_resource_with_cache(kcdb_resource_request * preq)
 
             HANDLE h = NULL;
 
-#ifdef DEBUG
-        assert(FALSE);
-#endif
+            assert(FALSE);
 
             switch (preq->res_type) {
             case KHM_RESTYPE_STRING:
@@ -368,9 +368,7 @@ get_resource_with_cache(kcdb_resource_request * preq)
                 break;
 
             default:
-#ifdef DEBUG
                 assert(FALSE);
-#endif
             }
         }
     } else {

@@ -115,7 +115,7 @@ khui_ps_find_page(khui_property_sheet * sheet,
 }
 
 int __cdecl 
-ps_order_func(const void *l, const void * r) {
+page_order_func(const void *l, const void * r) {
     khui_property_page * lp;
     khui_property_page * rp;
 
@@ -158,7 +158,7 @@ khui_ps_show_sheet(HWND parent, khui_property_sheet * s)
     assert(i == s->n_pages);
 #endif
 
-    qsort(ppgs, s->n_pages, sizeof(ppgs[0]), ps_order_func);
+    qsort(ppgs, s->n_pages, sizeof(ppgs[0]), page_order_func);
 
     for (i=0; i < s->n_pages; i++) {
         phpsp[i] = ppgs[i]->h_page;
@@ -218,6 +218,12 @@ khui_ps_destroy_sheet(khui_property_sheet * sheet)
 
     DestroyWindow(sheet->hwnd);
     sheet->hwnd = NULL;
+
+    if (sheet->identity)
+        kcdb_identity_release(sheet->identity);
+
+    if (sheet->cred)
+        kcdb_cred_release(sheet->cred);
 
     QGET(sheet, &p);
     while(p) {

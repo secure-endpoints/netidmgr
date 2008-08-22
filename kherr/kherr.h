@@ -279,6 +279,16 @@ enum kherr_event_flags {
 /*! \brief Serial number for error contexts */
 typedef khm_ui_4 kherr_serial;
 
+/*! \brief Serial number reference for current error context
+
+    This value should only be used with the following functions:
+
+    - kherr_add_ctx_handler()
+    - kherr_add_ctx_handler_param()
+
+ */
+#define KHERR_SERIAL_CURRENT KHM_UINT32_MAX
+
 /*! \brief An error context
 */
 typedef struct tag_kherr_context {
@@ -376,7 +386,7 @@ enum kherr_context_flags {
 
 /*! \brief Context event
 
-    \see kherr_add_ctx_handler()
+    \see kherr_add_ctx_handler(), kherr_add_ctx_handler_param()
 */
 enum kherr_ctx_event {
     KHERR_CTX_BEGIN     = 0x00000001, /*!< A new context was created */
@@ -409,6 +419,18 @@ enum kherr_ctx_event {
 typedef void (KHMAPI * kherr_ctx_handler)(enum kherr_ctx_event, 
                                          kherr_context *);
 
+/*! \brief Context even handler with parameter
+
+    Similar to ::kherr_ctx_handler but also includes an additional
+    parameter.  This parameter is specified when
+    kherr_add_ctx_handler_param() is called.
+
+    \see kherr_add_ctx_handler_param()
+ */
+typedef void (KHMAPI * kherr_ctx_handler_param)(enum kherr_ctx_event,
+                                                kherr_context *,
+                                                void * vparam);
+
 /*! \brief Add a context event handler
 
     An application can register an event handler that gets notified of
@@ -420,6 +442,10 @@ typedef void (KHMAPI * kherr_ctx_handler)(enum kherr_ctx_event,
     threads.  The handler will be called from within the thread that
     caused the event.  Therefore it is important that the handler is
     both reentrant and returns quickly.
+
+    The handler should be removed using kherr_remove_ctx_handler()
+    unless the \a serial parameter corresponds to an active context,
+    in which case the handler will be removed when the context closes.
 
     The events that the handler will be notified of are explained
     below:
@@ -460,17 +486,53 @@ typedef void (KHMAPI * kherr_ctx_handler)(enum kherr_ctx_event,
     \param[in] h Context event handler, of type ::kherr_ctx_handler
 
     \param[in] filter A combination of ::kherr_ctx_event values
-        indication which notifications should be sent to the handler.
+        indicating which notifications should be sent to the handler.
         If a \a filter value of zero is provided, all of the events
         will be sent to the handler.
 
     \param[in] serial The serial number of the error context that
         should be tracked.  If this is zero, all error contexts can
-        trigger the handler.
+        trigger the handler.  This could additionally be the special
+        value ::KHERR_SERIAL_CURRENT, in which case the serial number
+        of the current error context will be used.
  */
 KHMEXP void KHMAPI kherr_add_ctx_handler(kherr_ctx_handler h, 
                                          khm_int32 filter,
                                          kherr_serial serial);
+
+/*! \brief Add a context event handler with a parameter
+
+    Similar to kherr_add_ctx_handler(), but supports
+    ::kherr_ctx_handler_param typed parameter handlers which take an
+    optional parameter value.
+
+    The handler should be removed using
+    kherr_remove_ctx_handler_param().  If the \a serial parameter is
+    non-zero and corresponds to an active context, the event handler
+    will be removed when the context closes.
+
+    \param[in] h An event handler of type ::kherr_ctx_handler_param
+
+    \param[in] filter A combination of ::kherr_ctx_events values
+        indicating which notifications should be sent to the handler.
+        If a \a fileter value of zero is provided, all of the events
+        will be sent to the handler.
+
+    \param[in] serial The serial number of the error context that
+        should be tracke.d If this is zero, all error contexts can
+        trigger the handler.  This could additionally be the special
+        value ::KHERR_SERIAL_CURRENT, in which case the serial number
+        of the current error context will be used.
+
+    \param[in] vparam An arbitrary parameter that will be passed as-is
+        as the \a vparam parameter when \a h is called.
+
+    \see kherr_add_ctx_handler
+ */
+KHMEXP void KHMAPI kherr_add_ctx_handler_param(kherr_ctx_handler_param h, 
+                                               khm_int32 filter,
+                                               kherr_serial serial,
+                                               void * vparam);
 
 /*! \brief Remove a context event handler
 
@@ -480,6 +542,17 @@ KHMEXP void KHMAPI kherr_add_ctx_handler(kherr_ctx_handler h,
  */
 KHMEXP void KHMAPI kherr_remove_ctx_handler(kherr_ctx_handler h,
                                             kherr_serial serial);
+
+/*! \brief Remove a context event handler
+
+    Undoes what was done with kherr_add_ctx_handler_param()
+
+    \see kherr_add_ctx_handler_param()
+ */
+KHMEXP void KHMAPI
+kherr_remove_ctx_handler_param(kherr_ctx_handler_param h,
+                               kherr_serial serial,
+                               void * vparam);
 
 
 /*! \brief Report an error

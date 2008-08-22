@@ -828,8 +828,7 @@ khm_cfg_ids_tab_proc(HWND hwnd,
             refresh_view_idents_state(hwnd);
         }
 
-        khm_set_dialog_result(hwnd, 0);
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_COMMAND, 0);
 
     case KHUI_WM_CFG_NOTIFY:
         {
@@ -854,9 +853,7 @@ khm_cfg_ids_tab_proc(HWND hwnd,
         }
         release_idents_data();
 
-        khm_set_dialog_result(hwnd, 0);
-
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_DESTROY, 0);
     }
 
     return FALSE;
@@ -1243,8 +1240,7 @@ khm_cfg_id_tab_proc(HWND hwnd,
             }
         }
 
-        khm_set_dialog_result(hwnd, 0);
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_COMMAND, 0);
 
     case WM_DESTROY:
         {
@@ -1258,9 +1254,8 @@ khm_cfg_id_tab_proc(HWND hwnd,
 
             release_idents_data();
             khui_cfg_free_dialog_data(hwnd);
-            khm_set_dialog_result(hwnd, 0);
         }
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_DESTROY, 0);
 
     case KHUI_WM_CFG_NOTIFY:
         {

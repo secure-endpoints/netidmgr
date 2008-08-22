@@ -29,12 +29,12 @@
 #include<intaction.h>
 #include<assert.h>
 
-ATOM khm_main_window_class;
-ATOM khm_null_window_class;
-HWND khm_hwnd_null;
-HWND khm_hwnd_main;
-HWND khm_hwnd_rebar;
-HWND khm_hwnd_main_cred;
+ATOM khm_main_window_class = 0;
+ATOM khm_null_window_class = 0;
+HWND khm_hwnd_null         = NULL;
+HWND khm_hwnd_main         = NULL;
+HWND khm_hwnd_rebar        = NULL;
+HWND khm_hwnd_main_cred    = NULL;
 
 int  khm_main_wnd_mode = KHM_MAIN_WND_NORMAL;
 
@@ -43,95 +43,51 @@ int  khm_main_wnd_mode = KHM_MAIN_WND_NORMAL;
 #define MW_REFRESH_TIMER 2
 #define MW_REFRESH_TIMEOUT 600
 
-void
-khm_set_dialog_result(HWND hwnd, LRESULT lr) {
-#pragma warning(push)
-#pragma warning(disable: 4244)
-    SetWindowLongPtr(hwnd, DWLP_MSGRESULT, lr);
-#pragma warning(pop)
-}
-
 static void
 mw_restart_refresh_timer(HWND hwnd) {
-    khm_handle csp_cw;
-    khm_int32 timeout;
+    khm_int32 timeout = MW_REFRESH_TIMEOUT;
 
     KillTimer(hwnd, MW_REFRESH_TIMER);
-    if (KHM_SUCCEEDED(khc_open_space(NULL,
-                                     L"CredWindow",
-                                     KHM_PERM_READ,
-                                     &csp_cw))) {
-        if (KHM_FAILED(khc_read_int32(csp_cw,
-                                      L"RefreshTimeout",
-                                      &timeout)))
-            timeout = MW_REFRESH_TIMEOUT;
-        khc_close_space(csp_cw);
-    } else {
-        timeout = MW_REFRESH_TIMEOUT;
-    }
-
+    khc_read_int32(NULL, L"CredWindow\\RefreshTimeout", &timeout);
     timeout *= 1000;            /* convert to milliseconds */
-
     SetTimer(hwnd, MW_REFRESH_TIMER, timeout, NULL);
 }
 
-khm_int32 KHMAPI
+static khm_int32 KHMAPI
 mw_select_cred(khm_handle cred, void * rock) {
-    if (cred)
-        kcdb_cred_set_flags(cred,
-                            KCDB_CRED_FLAG_SELECTED,
-                            KCDB_CRED_FLAG_SELECTED);
-
+    kcdb_cred_set_flags(cred, KCDB_CRED_FLAG_SELECTED,
+                        KCDB_CRED_FLAG_SELECTED);
     return KHM_ERROR_SUCCESS;
 }
 
 /* perform shutdown operations */
 static void
 khm_pre_shutdown(void) {
-    khm_handle csp_cw = NULL;
     khm_handle credset = NULL;
-    khm_int32 t;
     khm_size s;
+    khm_int32 destroy_creds_on_exit = 0;
 
-    /* Check if we should destroy all credentials on exit... */
-
-    if (KHM_FAILED(khc_open_space(NULL, L"CredWindow", 0, &csp_cw)))
-        return;
-
-    if (KHM_FAILED(khc_read_int32(csp_cw, L"DestroyCredsOnExit", &t)) ||
-        !t)
+#define CCall(f) if (KHM_FAILED(f)) goto _cleanup
+    CCall(khc_read_int32(NULL, L"CredWindow\\DestroyCredsOnExit",
+                         &destroy_creds_on_exit));
+    if (0 == destroy_creds_on_exit)
         goto _cleanup;
-
-    if (KHM_FAILED(kcdb_credset_create(&credset)))
+    CCall(kcdb_credset_create(&credset));
+    CCall(kcdb_credset_extract(credset, NULL, NULL,
+                               KCDB_TYPE_INVALID));
+    CCall(kcdb_credset_get_size(credset, &s));
+    if (s == 0)
         goto _cleanup;
-
-    if (KHM_FAILED(kcdb_credset_extract(credset, NULL, NULL,
-                                        KCDB_TYPE_INVALID)))
-        goto _cleanup;
-
-    if (KHM_FAILED(kcdb_credset_get_size(credset, &s)) ||
-        s == 0)
-        goto _cleanup;
-
     kcdb_credset_apply(credset, mw_select_cred, NULL);
-
-    khui_context_set(KHUI_SCOPE_GROUP,
-                     NULL,
+    khui_context_set(KHUI_SCOPE_GROUP, NULL,
                      KCDB_CREDTYPE_INVALID,
-                     NULL,
-                     NULL,
-                     0,
-                     credset);
-
+                     NULL, NULL, 0, credset);
     khm_cred_destroy_creds(TRUE, TRUE);
 
  _cleanup:
-
     if (credset)
         kcdb_credset_delete(credset);
-
-    if (csp_cw)
-        khc_close_space(csp_cw);
+#undef CCall
 }
 
 void
@@ -172,15 +128,11 @@ khm_ui_cb(LPARAM lParam) {
     pcbdata = (khui_ui_callback_data *) lParam;
 
     if (pcbdata == NULL || pcbdata->magic != KHUI_UICBDATA_MAGIC) {
-#ifdef DEBUG
         assert(FALSE);
-#endif
         return;
     }
 
-#ifdef DEBUG
     assert(pcbdata->cb);
-#endif
 
     /* make the call */
     pcbdata->rv = (*pcbdata->cb)(khm_hwnd_main, pcbdata->rock);
@@ -190,43 +142,34 @@ khm_ui_cb(LPARAM lParam) {
 static void 
 main_wnd_save_sizepos() {
     RECT r;
-    khm_handle csp_cw;
     khm_handle csp_mw;
     const wchar_t * wconfig;
 
     KillTimer(khm_hwnd_main, MW_RESIZE_TIMER);
 
     if (khm_main_wnd_mode == KHM_MAIN_WND_MINI)
-        wconfig = L"Windows\\MainMini";
+        wconfig = L"CredWindow\\Windows\\MainMini";
     else
-        wconfig = L"Windows\\Main";
+        wconfig = L"CredWindow\\Windows\\Main";
 
     GetWindowRect(khm_hwnd_main, &r);
 
-    if (KHM_SUCCEEDED(khc_open_space(NULL,
-                                     L"CredWindow",
+    if (KHM_SUCCEEDED(khc_open_space(NULL, wconfig,
                                      KHM_PERM_WRITE,
-                                     &csp_cw))) {
-        if (KHM_SUCCEEDED(khc_open_space(csp_cw,
-                                        wconfig,
-                                        KHM_PERM_WRITE,
-                                        &csp_mw))) {
-            khm_int32 t;
+                                     &csp_mw))) {
+        khm_int32 t;
 
-            khc_write_int32(csp_mw, L"XPos", r.left);
-            khc_write_int32(csp_mw, L"YPos", r.top);
-            khc_write_int32(csp_mw, L"Width", r.right - r.left);
-            khc_write_int32(csp_mw, L"Height", r.bottom - r.top);
+        khc_write_int32(csp_mw, L"XPos", r.left);
+        khc_write_int32(csp_mw, L"YPos", r.top);
+        khc_write_int32(csp_mw, L"Width", r.right - r.left);
+        khc_write_int32(csp_mw, L"Height", r.bottom - r.top);
 
-            if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"Dock", &t)) && 
-                t != KHM_DOCK_NONE) {
-                khc_write_int32(csp_mw, L"Dock", KHM_DOCK_AUTO);
-            }
-
-            khc_close_space(csp_mw);
+        if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"Dock", &t)) && 
+            t != KHM_DOCK_NONE) {
+            khc_write_int32(csp_mw, L"Dock", KHM_DOCK_AUTO);
         }
 
-        khc_close_space(csp_cw);
+        khc_close_space(csp_mw);
     }
 }
 
@@ -462,34 +405,8 @@ khm_main_wnd_proc(HWND hwnd,
         case KHUI_PACTION_LEFT:
         case KHUI_PACTION_RIGHT:
         case KHUI_PACTION_ENTER:
-            /* menu tracking */
-            if(mm_last_hot_item != -1) {
-                switch(LOWORD(wParam)) {
-                case KHUI_PACTION_LEFT:
-                    khm_menu_activate(MENU_ACTIVATE_LEFT);
-                    break;
-
-                case KHUI_PACTION_RIGHT:
-                    khm_menu_activate(MENU_ACTIVATE_RIGHT);
-                    break;
-
-                case KHUI_PACTION_ESC:
-                case KHUI_PACTION_ENTER:
-                    khm_menu_activate(MENU_ACTIVATE_NONE);
-                    break;
-
-                case KHUI_PACTION_DOWN:
-                    khm_menu_track_current();
-                    break;
-                }
-                return 0;
-            }
-
-            /*FALLTHROUGH*/
         case KHUI_PACTION_DELETE:
-
         case KHUI_PACTION_SELALL:
-            /* otherwise fallthrough and bounce to the creds window */
             return SendMessage(khm_hwnd_main_cred, uMsg, 
                                wParam, lParam);
 
@@ -591,8 +508,8 @@ khm_main_wnd_proc(HWND hwnd,
             RECT * r;
 
             r = (RECT *) lParam;
-            khm_adjust_window_dimensions_for_display(r,
-                                                     KHM_DOCK_AUTO | KHM_DOCKF_XBORDER);
+            khm_adjust_window_dimensions_for_display
+                (r, KHM_DOCK_AUTO | KHM_DOCKF_XBORDER);
         }
         return TRUE;
 
@@ -606,7 +523,6 @@ khm_main_wnd_proc(HWND hwnd,
             kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, 0);
 
             return 0;
-
         }
         break;
 
@@ -619,26 +535,32 @@ khm_main_wnd_proc(HWND hwnd,
             khm_int32 rv = KHM_ERROR_SUCCESS;
 
             kmq_wm_begin(lParam, &m);
-            if (m->type == KMSG_ACT &&
-                m->subtype == KMSG_ACT_REFRESH) {
+
+#define MsgIs(t,st) m->type == t && m->subtype == st
+
+            if (MsgIs (KMSG_ACT, KMSG_ACT_REFRESH)) {
+
                 khm_menu_refresh_items();
                 khm_update_standard_toolbar();
-            } else if (m->type == KMSG_ACT &&
-                       m->subtype == KMSG_ACT_BEGIN_CMDLINE) {
-                khm_cred_begin_startup_actions();
-            } else if (m->type == KMSG_ACT &&
-                       m->subtype == KMSG_ACT_CONTINUE_CMDLINE) {
-                khm_cred_process_startup_actions();
-            } else if (m->type == KMSG_ACT &&
-                       m->subtype == KMSG_ACT_END_CMDLINE) {
-                /* nothing yet */
-            } else if (m->type == KMSG_ACT &&
-                       m->subtype == KMSG_ACT_SYNC_CFG) {
-                khm_refresh_config();
-            } else if (m->type == KMSG_ACT &&
-                       m->subtype == KMSG_ACT_ACTIVATE) {
-                /* some custom action fired */
 
+            } else if (MsgIs(KMSG_ACT, KMSG_ACT_BEGIN_CMDLINE)) {
+
+                khm_cred_begin_startup_actions();
+
+            } else if (MsgIs(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE)) {
+
+                khm_cred_process_startup_actions();
+
+            } else if (MsgIs(KMSG_ACT, KMSG_ACT_END_CMDLINE)) {
+
+                kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, NULL);
+
+            } else if (MsgIs(KMSG_ACT, KMSG_ACT_SYNC_CFG)) {
+
+                if (!kmm_load_pending())
+                    khm_refresh_config();
+
+            } else if (MsgIs(KMSG_ACT, KMSG_ACT_ACTIVATE)) {
                 khm_int32 action;
                 khui_action * paction;
 
@@ -653,19 +575,29 @@ khm_main_wnd_proc(HWND hwnd,
                         khui_cfg_release(node);
                     }
                 }
-            } else if (m->type == KMSG_CRED &&
-                  m->subtype == KMSG_CRED_REFRESH) {
+            } else if (MsgIs(KMSG_CRED, KMSG_CRED_REFRESH)) {
+
                 mw_restart_refresh_timer(hwnd);
-            } else if (m->type == KMSG_CRED &&
-                       m->subtype == KMSG_CRED_ADDR_CHANGE) {
+
+            } else if (MsgIs(KMSG_CRED, KMSG_CRED_ADDR_CHANGE)) {
+
                 khm_cred_addr_change();
-            } else if (m->type == KMSG_CRED &&
-                       m->subtype == KMSG_CRED_ROOTDELTA) {
+
+            } else if (MsgIs(KMSG_CRED, KMSG_CRED_ROOTDELTA)) {
+
                 khm_refresh_identity_menus();
-            } else if (m->type == KMSG_KMM &&
-                       m->subtype == KMSG_KMM_I_DONE) {
+
+            } else if (MsgIs(KMSG_KMM, KMSG_KMM_I_DONE)) {
+
+                khm_menu_refresh_items();
+                khm_update_standard_toolbar();
+                khm_refresh_config();
+
                 kmq_post_message(KMSG_ACT, KMSG_ACT_BEGIN_CMDLINE, 0, 0);
+
             }
+
+#undef MsgIs
 
             return kmq_wm_end(m, rv);
         }
@@ -1030,7 +962,7 @@ khm_adjust_window_dimensions_for_display(RECT * pr, int dock) {
 void
 khm_get_main_window_rect(RECT * pr) {
     khm_handle csp_mw = NULL;
-    int x,y,width,height,dock;
+    khm_int32 x,y,width,height,dock;
     RECT r;
     const wchar_t * wconfig;
 
@@ -1049,18 +981,12 @@ khm_get_main_window_rect(RECT * pr) {
                                      wconfig,
                                      KHM_PERM_READ,
                                      &csp_mw))) {
-        khm_int32 t;
 
-        if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"XPos", &t)))
-            x = t;
-        if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"YPos", &t)))
-            y = t;
-        if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"Width", &t)))
-            width = t;
-        if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"Height", &t)))
-            height = t;
-        if (KHM_SUCCEEDED(khc_read_int32(csp_mw, L"Dock", &t)))
-            dock = t;
+        khc_read_int32(csp_mw, L"XPos", &x);
+        khc_read_int32(csp_mw, L"YPos", &y);
+        khc_read_int32(csp_mw, L"Width", &width);
+        khc_read_int32(csp_mw, L"Height", &height);
+        khc_read_int32(csp_mw, L"Dock", &dock);
 
         khc_close_space(csp_mw);
     }

@@ -1105,6 +1105,28 @@ kcdb_identpro_notify_create(khm_handle identity)
 }
 
 KHMEXP khm_int32 KHMAPI 
+kcdb_identpro_notify_config_create(khm_handle identity)
+{
+    khm_handle sub;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    if(!kcdb_is_active_identity(identity))
+        return KHM_ERROR_INVALID_PARAM;
+
+    sub = identpro_get_sub_for_identity(identity);
+
+    if(sub != NULL) {
+        rv = kmq_send_sub_msg(sub,
+                              KMSG_IDENT, KMSG_IDENT_NOTIFY_CONFIG,
+                              0, (void *) identity);
+    } else {
+        rv = KHM_ERROR_NO_PROVIDER;
+    }
+
+    return rv;
+}
+
+KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_get_idsel_factory(khm_handle vidpro, kcdb_idsel_factory * pf)
 {
     khm_handle sub;

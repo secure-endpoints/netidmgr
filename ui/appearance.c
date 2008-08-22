@@ -291,6 +291,7 @@ khm_get_element_lfont(HDC hdc, khm_ui_element element, khm_boolean use_default,
         LoadString(khm_hInstance, IDS_DEFAULT_FONT,
                    lf.lfFaceName, ARRAYLENGTH(lf.lfFaceName));
         adjust_size = TRUE;
+        rv = KHM_ERROR_SUCCESS;
     }
 
  _prepare_lf:
@@ -349,7 +350,14 @@ khm_set_element_lfont(khm_ui_element element, const LOGFONT * pfont)
 }
 
 
-static const int reference_color[] = {
+/*! \brief Overlay color
+
+  For each color constant value (KHM_CLR_ACCENT - KHM_CLR_BASE)
+  defines the default overlay color for color composition.  For now
+  it's used to combine base colors with the selection color to come up
+  with the selection color for various elements.
+ */
+static const int overlay_color[] = {
     0, 0, 0, 0,  0, 0,  0, 0, 0, 0, KHM_CLR_SELECTION,
 
     KHM_CLR_SELECTION,
@@ -392,10 +400,10 @@ khm_get_element_color(khm_ui_element element)
         return RGB(0, 0, 0);
 
 #ifdef DEBUG
-    assert(ARRAYLENGTH(reference_color) == KHM_CLR_T_MAX - KHM_CLR_BASE);
+    assert(ARRAYLENGTH(overlay_color) == KHM_CLR_T_MAX - KHM_CLR_BASE);
 #endif
 
-    refclr = reference_color[element - KHM_CLR_BASE];
+    refclr = overlay_color[element - KHM_CLR_BASE];
     if (refclr == 0)
         refclr = KHM_CLR_BASE;
 
@@ -456,5 +464,41 @@ khm_exit_themes(void)
     }
 
     khui_cache_del_by_owner(&g_owner);
+}
+
+khm_int32
+khm_draw_text(HDC hdc, const wchar_t * text, khm_ui_element font,
+              unsigned int dt_flags, RECT * r)
+{
+    HFONT hf_old;
+    HFONT hf_new;
+    size_t cch;
+    int right;
+
+    if (FAILED(StringCchLength(text, KHUI_MAXCCH_MESSAGE, &cch)))
+        return KHM_ERROR_TOO_LONG;
+
+    hf_new = khm_get_element_font(font);
+
+    if (hf_new == NULL)
+        return KHM_ERROR_INVALID_PARAM;
+
+    hf_old = SelectFont(hdc, hf_new);
+
+    right = r->right;
+
+    DrawText(hdc, text, (int) cch, r, dt_flags);
+
+    if ((dt_flags & DT_CALCRECT) == DT_CALCRECT &&
+        (dt_flags & DT_SINGLELINE) != DT_SINGLELINE) {
+        /* We preserve the right margin if we are calculating the
+           extents and it's not a single line.  Otherwise DrawText()
+           will adjust the right side to tightly fit the text. */
+        r->right = right;
+    }
+
+    SelectFont(hdc, hf_old);
+
+    return KHM_ERROR_SUCCESS;
 }
 

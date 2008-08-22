@@ -51,9 +51,7 @@ void khm_add_dialog(HWND dlg) {
         khui_dialogs[n_khui_dialogs].active = TRUE;
         n_khui_dialogs++;
     } else {
-#if DEBUG
           assert(FALSE);
-#endif
     }
 }
 
@@ -65,9 +63,7 @@ void khm_enter_modal(HWND hwnd) {
 
         /* we are already in a modal loop. */
 
-#ifdef DEBUG
         assert(hwnd != khui_modal_dialog);
-#endif
 
         for (i=0; i < n_khui_dialogs; i++) {
             if (khui_dialogs[i].hwnd == khui_modal_dialog) {
@@ -77,9 +73,7 @@ void khm_enter_modal(HWND hwnd) {
             }
         }
 
-#ifdef DEBUG
         assert(i < n_khui_dialogs);
-#endif
 
         for (i=0; i < n_khui_dialogs; i++) {
             if (khui_dialogs[i].hwnd == hwnd) {
@@ -88,9 +82,7 @@ void khm_enter_modal(HWND hwnd) {
             }
         }
 
-#ifdef DEBUG
         assert(i < n_khui_dialogs);
-#endif
 
         khui_modal_dialog = hwnd;
 
@@ -125,9 +117,7 @@ void khm_leave_modal(void) {
             break;
     }
 
-#ifdef DEBUG
     assert(i < n_khui_dialogs);
-#endif
 
     if (i < n_khui_dialogs && khui_dialogs[i].hwnd_next) {
 
@@ -219,9 +209,7 @@ void khm_add_property_sheet(khui_property_sheet * s) {
     if(_n_ui_propsheets < MAX_UI_PROPSHEETS)
         _ui_propsheets[_n_ui_propsheets++] = s;
     else {
-#ifdef DEBUG
         assert(FALSE);
-#endif
     }
 }
 
@@ -263,3 +251,22 @@ BOOL khm_check_ps_message(LPMSG pmsg) {
     return FALSE;
 }
 
+BOOL khm_find_and_activate_property_sheet(khui_action_context * pctx)
+{
+    int i;
+
+    for (i=0; i < _n_ui_propsheets; i++) {
+        if (_ui_propsheets[i]->ctx.scope == pctx->scope &&
+            kcdb_identity_is_equal(_ui_propsheets[i]->identity, pctx->identity) &&
+            ((pctx->cred == NULL && _ui_propsheets[i]->cred == NULL) ||
+             kcdb_creds_is_equal(pctx->cred, _ui_propsheets[i]->cred)) &&
+            _ui_propsheets[i]->status != KHUI_PS_STATUS_DONE &&
+            _ui_propsheets[i]->status != KHUI_PS_STATUS_DESTROY) {
+            /* found */
+            SetActiveWindow(_ui_propsheets[i]->hwnd);
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}

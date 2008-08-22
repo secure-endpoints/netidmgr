@@ -59,6 +59,7 @@
 #define ATTRNAME_KRB5_CCNAME    L"Krb5CCName"
 #define ATTRNAME_KVNO           L"Kvno"
 #define ATTRNAME_KRB5_IDFLAGS   L"Krb5IDFlags"
+#define ATTRNAME_KRB5_PKEYV1    L"Krb5PrivateKey1"
 
 /* Flag bits for Krb5IDFlags property */
 
@@ -118,6 +119,7 @@ extern khm_int32  attr_id_krb5_flags;
 extern khm_int32  attr_id_krb5_ccname;
 extern khm_int32  attr_id_kvno;
 extern khm_int32  attr_id_krb5_idflags;
+extern khm_int32  attr_id_krb5_pkeyv1;
 
 extern khm_ui_4   k5_commctl_version;
 #define IS_COMMCTL6() (k5_commctl_version >= 0x60000)
@@ -137,6 +139,8 @@ extern khm_handle krb5_credset;
 extern khm_handle k5_sub;
 
 extern krb5_context k5_identpro_ctx;
+
+extern khm_handle k5_identpro;
 
 /* plugin callbacks */
 khm_int32 KHMAPI
@@ -223,6 +227,10 @@ typedef struct tag_k5_dlg_data {
 
     k5_kinit_task          *kinit_task; /* currently executing kinit task */
 } k5_dlg_data;
+
+void
+k5_reply_to_acqpriv_id_request(khui_new_creds * nc,
+                               krb5_data * privdata);
 
 LRESULT
 k5_force_password_change(k5_dlg_data * d);

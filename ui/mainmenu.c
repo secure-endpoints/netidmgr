@@ -220,6 +220,9 @@ static int refresh_menu_item(HMENU hm, khui_action * act,
         return 0;
     }
 
+    if (act == NULL)
+        return 0;
+
     /* Check if the menu item is there.  Otherwise we need to add
        it. */
     mii.fMask = MIIM_STATE | MIIM_ID | MIIM_FTYPE;
@@ -673,7 +676,8 @@ static struct identity_action_map *
 create_identity_cmd_map(khm_handle ident) {
 
     struct identity_action_map * actmap;
-    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+    wchar_t idshortname[KCDB_IDENT_MAXCCH_NAME];
+    wchar_t displayname[KCDB_IDENT_MAXCCH_NAME];
     wchar_t fmt[128];
     wchar_t caption[KHUI_MAXCCH_SHORT_DESC];
     wchar_t tooltip[KHUI_MAXCCH_SHORT_DESC];
@@ -699,8 +703,11 @@ create_identity_cmd_map(khm_handle ident) {
     actmap = &id_action_map[n_id_action_map];
     n_id_action_map++;
 
-    cb = sizeof(idname);
-    kcdb_identity_get_name(ident, idname, &cb);
+    cb = sizeof(displayname);
+    kcdb_get_resource(ident, KCDB_RES_DISPLAYNAME, 0, NULL, NULL, displayname, &cb);
+
+    cb = sizeof(idshortname);
+    kcdb_identity_get_short_name(ident, FALSE, idshortname, &cb);
 
     actmap->identity = ident;
     kcdb_identity_hold(ident);
@@ -710,12 +717,12 @@ create_identity_cmd_map(khm_handle ident) {
     /* renew */
 
     GETFORMAT(IDS_IDACTIONT_RENEW);
-    EXPFORMAT(tooltip, idname);
+    EXPFORMAT(tooltip, displayname);
 
     GETFORMAT(IDS_IDACTION_RENEW);
-    EXPFORMAT(caption, idname);
+    EXPFORMAT(caption, displayname);
 
-    StringCbPrintf(actionname, sizeof(actionname), L"R:%s", idname);
+    StringCbPrintf(actionname, sizeof(actionname), L"R:%s", idshortname);
 
     actmap->renew_cmd =
         khui_action_create(actionname, caption, tooltip, NULL,
@@ -724,12 +731,12 @@ create_identity_cmd_map(khm_handle ident) {
     /* destroy */
 
     GETFORMAT(IDS_IDACTIONT_DESTROY);
-    EXPFORMAT(tooltip, idname);
+    EXPFORMAT(tooltip, displayname);
 
     GETFORMAT(IDS_IDACTION_DESTROY);
-    EXPFORMAT(caption, idname);
+    EXPFORMAT(caption, displayname);
 
-    StringCbPrintf(actionname, sizeof(actionname), L"D:%s", idname);
+    StringCbPrintf(actionname, sizeof(actionname), L"D:%s", idshortname);
 
     actmap->destroy_cmd =
         khui_action_create(actionname, caption, tooltip, NULL,
@@ -738,12 +745,12 @@ create_identity_cmd_map(khm_handle ident) {
     /* new */
 
     GETFORMAT(IDS_IDACTIONT_NEW);
-    EXPFORMAT(tooltip, idname);
+    EXPFORMAT(tooltip, displayname);
 
     GETFORMAT(IDS_IDACTION_NEW);
-    EXPFORMAT(caption, idname);
+    EXPFORMAT(caption, displayname);
 
-    StringCbPrintf(actionname, sizeof(actionname), L"N:%s", idname);
+    StringCbPrintf(actionname, sizeof(actionname), L"N:%s", idshortname);
 
     actmap->new_cmd =
         khui_action_create(actionname, caption, tooltip, NULL,
@@ -751,12 +758,12 @@ create_identity_cmd_map(khm_handle ident) {
 
     /* set default */
     GETFORMAT(IDS_IDACTIONT_SETDEF);
-    EXPFORMAT(tooltip, idname);
+    EXPFORMAT(tooltip, displayname);
 
     GETFORMAT(IDS_IDACTION_SETDEF);
-    EXPFORMAT(caption, idname);
+    EXPFORMAT(caption, displayname);
 
-    StringCbPrintf(actionname, sizeof(actionname), L"E:%s", idname);
+    StringCbPrintf(actionname, sizeof(actionname), L"E:%s", idshortname);
 
     actmap->setdef_cmd =
         khui_action_create(actionname, caption, tooltip, ident,
@@ -1089,99 +1096,4 @@ void khm_menu_create_main(HWND parent) {
     khui_hmenu_main = hmenu;
 
     return;
-
-#ifdef USE_EXPLORER_STYLE_MENU_BAR
-    HWND hwtb;
-    REBARBANDINFO rbi;
-    SIZE sz;
-    int i;
-    khui_menu_def * mmdef;
-    khui_action_ref * mm;
-    int nmm;
-
-    mmdef = khui_find_menu(KHUI_MENU_MAIN);
-    mm = mmdef->items;
-    nmm = (int) khui_action_list_length(mm);
-
-    hwtb = CreateWindowEx(0
-#if (_WIN32_IE >= 0x0501)
-                          | TBSTYLE_EX_MIXEDBUTTONS
-#endif
-                          ,
-                          TOOLBARCLASSNAME,
-                          (LPWSTR) NULL,
-                          WS_CHILD | 
-                          CCS_ADJUSTABLE | 
-                          TBSTYLE_FLAT |
-                          TBSTYLE_AUTOSIZE |
-                          TBSTYLE_LIST |
-                          CCS_NORESIZE |
-                          CCS_NOPARENTALIGN |
-                          CCS_NODIVIDER,
-                          0, 0, 0, 0, rebar,
-                          (HMENU) NULL, khm_hInstance,
-                          NULL);
-
-    if(!hwtb) {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-        return;
-    }
-
-    khui_main_menu_toolbar = hwtb;
-
-    SendMessage(hwtb,
-                TB_BUTTONSTRUCTSIZE,
-                (WPARAM) sizeof(TBBUTTON),
-                0);
-
-    for(i=0; i<nmm; i++) {
-        khui_add_action_to_toolbar(hwtb, 
-                                   khui_find_action(mm[i].action), 
-                                   KHUI_TOOLBAR_ADD_TEXT | 
-                                   KHUI_TOOLBAR_ADD_DROPDOWN | 
-                                   KHUI_TOOLBAR_VARSIZE, 
-                                   NULL);
-    }
-
-    SendMessage(hwtb,
-                TB_AUTOSIZE,
-                0,0);
-    
-    SendMessage(hwtb,
-                TB_GETMAXSIZE,
-                0,
-                (LPARAM) &sz);
-
-    ZeroMemory(&rbi, sizeof(rbi));
-
-    rbi.cbSize = sizeof(rbi);
-
-    rbi.fMask = 
-        RBBIM_ID |
-        RBBIM_STYLE | 
-        RBBIM_CHILD | 
-        RBBIM_CHILDSIZE | 
-        RBBIM_SIZE | 
-        RBBIM_IDEALSIZE; 
-
-    rbi.fStyle = 
-        RBBS_USECHEVRON;
-
-    rbi.hwndChild = hwtb;
-    rbi.wID = KHUI_MENU_MAIN;
-    rbi.cx = sz.cx;
-    rbi.cxMinChild = rbi.cx;
-    rbi.cxIdeal = rbi.cx;
-    rbi.cyMinChild = sz.cy;
-    rbi.cyChild = rbi.cyMinChild;
-    rbi.cyIntegral = rbi.cyMinChild;
-    rbi.cyMaxChild = rbi.cyMinChild;
-
-    SendMessage(rebar,
-                RB_INSERTBAND,
-                0,
-                (LPARAM) &rbi);
-#endif
 }

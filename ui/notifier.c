@@ -49,7 +49,8 @@ khm_size  n_khm_notifier_actions = ARRAYLENGTH(khm_notifier_actions);
 /* notifier message for notification icon */
 #define KHUI_WM_NOTIFIER            WM_COMMAND
 
-#define DRAWTEXTOPTIONS (DT_CALCRECT | DT_NOPREFIX | DT_WORDBREAK)
+#define DRAWTEXTOPTIONS     (DT_NOPREFIX | DT_WORDBREAK)
+#define MEASURETEXTOPTIONS  (DT_CALCRECT | DRAWTEXTOPTIONS)
 
 /* are we showing an alert? */
 #define ALERT_DISPLAYED() (balloon_alert != NULL || khui_alert_windows != NULL)
@@ -62,10 +63,10 @@ typedef struct tag_alerter_wnd_data alerter_wnd_data;
 struct tag_alert_list;
 typedef struct tag_alert_list alert_list;
 
-static khm_int32 
+static khm_int32
 alert_show(khui_alert * a);
 
-static khm_int32 
+static khm_int32
 alert_show_minimized(khui_alert * a);
 
 static khm_int32
@@ -90,6 +91,9 @@ static khm_int32
 alert_consolidate(alert_list * alist,
                   khui_alert * alert,
                   khm_boolean add_from_queue);
+
+static void
+start_monitoring_alert(khui_alert * alert);
 
 /* Globals */
 
@@ -145,7 +149,7 @@ khm_int32    alert_queue_tail = 0;
 /* NOTE: the alert queue functions are unsafe to call from any thread
    other than the UI thread. */
 
-static void 
+static void
 alert_queue_put_alert(khui_alert * a) {
     if (is_alert_queue_full()) return;
     alert_queue[alert_queue_tail++] = a;
@@ -154,7 +158,7 @@ alert_queue_put_alert(khui_alert * a) {
 }
 
 /* the caller needs to release the alert that's returned  */
-static khui_alert * 
+static khui_alert *
 alert_queue_get_alert(void) {
     khui_alert * a;
 
@@ -228,7 +232,7 @@ alert_queue_delete_alert(khui_alert * a) {
 }
 
 /* the caller needs to release the alert that's returned */
-static khui_alert * 
+static khui_alert *
 alert_queue_peek(void) {
     khui_alert * a;
 
@@ -321,7 +325,7 @@ alert_list_destroy(alert_list * alist) {
 #endif
 
 
-static LRESULT CALLBACK 
+static LRESULT CALLBACK
 notifier_wnd_proc(HWND hwnd,
                   UINT uMsg,
                   WPARAM wParam,
@@ -392,6 +396,19 @@ notifier_wnd_proc(HWND hwnd,
                     khui_alert_release(a);
                 }
                 break;
+
+            case KMSG_ALERT_MONITOR_PROGRESS:
+                {
+                    khui_alert * a;
+
+                    a = (khui_alert *) m->vparam;
+#ifdef DEBUG
+                    assert(a != NULL);
+#endif
+                    start_monitoring_alert(a);
+                }
+                break;
+
             }
         } else if (m->type == KMSG_CRED &&
                    m->subtype == KMSG_CRED_ROOTDELTA) {
@@ -410,7 +427,7 @@ notifier_wnd_proc(HWND hwnd,
         /* wParam is the identifier of the notify icon, but we only
            have one. */
         switch(lParam) {
-        case WM_CONTEXTMENU: 
+        case WM_CONTEXTMENU:
             {
                 POINT pt;
                 int menu_id;
@@ -497,10 +514,10 @@ notifier_wnd_proc(HWND hwnd,
                     !(a->flags & KHUI_ALERT_FLAG_REQUEST_WINDOW) &&
                     a->n_alert_commands > 0) {
                     PostMessage(khm_hwnd_main, WM_COMMAND,
-                                MAKEWPARAM(a->alert_commands[0], 
+                                MAKEWPARAM(a->alert_commands[0],
                                            0),
                                 0);
-                } else if (a->flags & 
+                } else if (a->flags &
                            KHUI_ALERT_FLAG_REQUEST_WINDOW) {
                     khm_show_main_window();
                     alert_show_normal(a);
@@ -545,7 +562,7 @@ notifier_wnd_proc(HWND hwnd,
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-ATOM 
+ATOM
 khm_register_notifier_wnd_class(void)
 {
     WNDCLASSEX wcx;
@@ -574,27 +591,29 @@ khm_register_notifier_wnd_class(void)
   Alerter
 **********************************************************************/
 
+/*! \brief An alert that is being displayed to the user
+*/
 typedef struct tag_alerter_alert_data {
-    khui_alert * alert;
+    khui_alert * alert;         /*!< The alert */
 
-    BOOL         seen;          /* has the user seen this alert? */
+    BOOL         seen;          /*!< has the user seen this alert? */
 
-    BOOL         has_commands;  /* we cache the value here.  otherwise
-                                   we'll have to get a lock on the
-                                   alert each time we have to find out
-                                   whether there are any commands for
-                                   this alert. */
+    BOOL         has_commands;  /*!< we cache the value here.
+                                   otherwise we'll have to get a lock
+                                   on the alert each time we have to
+                                   find out whether there are any
+                                   commands for this alert. */
 
-    RECT         r_alert;    /* the entire alert, relative to self. */
+    RECT         r_alert;    /*!< the entire alert, relative to self. */
 
     /* the following rects are relative to the top left of r_alert. */
 
-    RECT         r_title;       /* the title.  deflate by padding to
+    RECT         r_title;       /*!< the title.  deflate by padding to
                                    get the text rect. */
-    RECT         r_icon;        /* rect for icon */
-    RECT         r_message;     /* rect for the text. no padding
+    RECT         r_icon;        /*!< rect for icon */
+    RECT         r_message;     /*!< rect for the text. no padding
                                    necessary. */
-    RECT         r_suggestion;  /* rect for the suggestion.  deflate
+    RECT         r_suggestion;  /*!< rect for the suggestion.  deflate
                                    by padding to get the suggestion
                                    rect.  The suggestion rect includes
                                    space for the small icon on the
@@ -604,28 +623,45 @@ typedef struct tag_alerter_alert_data {
                                    SM_C{X,Y}SMICON. Padding is
                                    s_pad.cx vertical. */
 
-    int          n_cmd_buttons; /* number of command buttons in this alert. */
+    RECT         r_progress;    /*!< rect for progress control, if
+                                   applicable. */
+
+    int          n_cmd_buttons; /*!< number of command buttons in this
+                                   alert. */
 
     RECT         r_buttons[KHUI_MAX_ALERT_COMMANDS];
-                                /* rects for the command buttons. */
+                                /*!< rects for the command buttons. */
 
     HWND         hwnd_buttons[KHUI_MAX_ALERT_COMMANDS];
-                                /* handles for the command buttons */
+                                /*!< handles for the command buttons */
 
     HWND         hwnd_marker;
-                                /* handle to the marker window used as
+                                /*!< handle to the marker window used as
                                    a tab-stop target when there are
                                    not buttons associated with the
                                    alert. */
 
+    HWND         hwnd_progress;
+                                /*!< Handle to the progress control */
+
+    khm_ui_4     progress_num, progress_denom;
+                                /*!< Progress of the kherr_context
+                                  associated with the alert. */
+    BOOL         alert_ctx_done; /*!< The context associated with the
+                                   alert has completed. */
+
     LDCL(struct tag_alerter_alert_data);
 } alerter_alert_data;
 
+/*! \brief Window data for an alert container */
 typedef struct tag_alerter_wnd_data {
-    HWND            hwnd;
+    khm_int32       magic;
+#define ALERTER_WND_DATA_MAGIC 0x15e5b2bc
+
+    HWND            hwnd;       /*!< Handle of container or parent window */
     HFONT           hfont;
 
-    wchar_t         caption[KHUI_MAXCCH_TITLE]; /* the original
+    wchar_t         caption[KHUI_MAXCCH_TITLE]; /*!< the original
                                                    caption for the
                                                    dialog. */
 
@@ -635,26 +671,26 @@ typedef struct tag_alerter_wnd_data {
 
     int             scroll_top;
 
-    int             n_cmd_buttons; /* total number of command buttons
-                                      in all the alerts being shown in
-                                      this dialog. */
+    int             n_cmd_buttons; /*!< total number of command
+                                      buttons in all the alerts being
+                                      shown in this dialog. */
 
-    int             c_alert;    /* current selected alert. */
+    int             c_alert;    /*!< current selected alert. */
 
     /* various metrics */
     /* calculated during WM_CREATE */
-    SIZE            s_button;   /* minimum dimensions for command button */
     SIZE            s_margin;
-    RECT            r_text;     /* only .left and .right are used. rest are 0 */
-    RECT            r_title;    /* only .left, .right and .bottom are used. .top=0 */
     SIZE            s_icon;
     SIZE            s_pad;
+    SIZE            s_button;
 
     int             cx_wnd;
     int             cy_max_wnd;
 
     /* derived from the alert sizes */
     SIZE            s_alerts;
+    RECT            r_client_area; /*!< Client area. Only used when
+                                     the alert is a child window. */
 
     QDCL(alerter_alert_data);   /* queue of alerts that are being
                                    shown in this window. */
@@ -663,6 +699,7 @@ typedef struct tag_alerter_wnd_data {
                                           khui_alert_windows list. */
 
     int             n_alerts;
+    int             flags;      /*!< Combination of KHM_ALERTF_* values */
 
 } alerter_wnd_data;
 
@@ -674,12 +711,9 @@ typedef struct tag_alerter_wnd_data {
 #define NTF_WIDTH           200
 #define NTF_MAXHEIGHT       150
 
-#define NTF_TITLE_X         NTF_MARGIN
-#define NTF_TITLE_WIDTH     (NTF_WIDTH - NTF_MARGIN*2)
-#define NTF_TITLE_HEIGHT    10
-
 #define NTF_TEXT_PAD        2
 
+#define NTF_BUTTON_WIDTH    50
 #define NTF_BUTTON_HEIGHT   14
 
 #define NTF_TIMEOUT 20000
@@ -692,15 +726,19 @@ typedef struct tag_alerter_wnd_data {
 #define IDC_NTF_CLOSE    999
 
 #define IDC_NTF_CMDBUTTONS 1001
-#define IDC_FROM_IDX(alert, bn) ((alert) * (KHUI_MAX_ALERT_COMMANDS + 1) + (bn) + 1 + IDC_NTF_CMDBUTTONS)
-#define ALERT_FROM_IDC(idc)  (((idc) - IDC_NTF_CMDBUTTONS) / (KHUI_MAX_ALERT_COMMANDS + 1))
-#define BUTTON_FROM_IDC(idc) (((idc) - IDC_NTF_CMDBUTTONS) % (KHUI_MAX_ALERT_COMMANDS + 1) - 1)
+#define IDC_FROM_IDX(alert, bn) ((alert) * (KHUI_MAX_ALERT_COMMANDS + 2) + (bn) + 2 + IDC_NTF_CMDBUTTONS)
+#define ALERT_FROM_IDC(idc)  (((idc) - IDC_NTF_CMDBUTTONS) / (KHUI_MAX_ALERT_COMMANDS + 2))
+#define BUTTON_FROM_IDC(idc) (((idc) - IDC_NTF_CMDBUTTONS) % (KHUI_MAX_ALERT_COMMANDS + 2) - 2)
 
 /* if the only command in an alert is "Close", we assume that the
    alert has no commands. */
 #define ALERT_HAS_CMDS(a) ((a)->n_alert_commands > 1 || ((a)->n_alert_commands == 1 && (a)->alert_commands[0] != KHUI_PACTION_CLOSE))
 
 #define SCROLL_LINE_SIZE(d) ((d)->cy_max_wnd / 12)
+
+#define WMNC_ALERT_RECALC_LAYOUT 1
+#define WMNC_ALERT_REFRESH_VIEW  2
+#define WMNC_ALERT_NEW_CTX       3
 
 static void
 add_alert_to_wnd_data(alerter_wnd_data * d,
@@ -741,15 +779,23 @@ add_alert_to_wnd_data(alerter_wnd_data * d,
         ZeroMemory(adata, sizeof(*adata));
 
         adata->alert = a;
-        khui_alert_hold(a);
-
         QPUT(d, adata);
         d->n_alerts ++;
+
+        khui_alert_hold(a);
+        khui_alert_lock(a);
+
+        a->wnd_data = d;
+        a->adata = adata;
+
+        khui_alert_unlock(a);
     }
 }
 
 static alerter_wnd_data *
-create_alerter_wnd_data(HWND hwnd, alert_list * l) {
+create_alerter_wnd_data(HWND hwnd, alert_list * l,
+                        const RECT * rpos,
+                        khm_int32 flags) {
     alerter_wnd_data * d;
     int i;
     LONG dlgb;
@@ -757,17 +803,24 @@ create_alerter_wnd_data(HWND hwnd, alert_list * l) {
     d = PMALLOC(sizeof(*d));
     ZeroMemory(d, sizeof(*d));
 
+    d->magic = ALERTER_WND_DATA_MAGIC;
     d->hwnd = hwnd;
+    d->flags = flags;
 
-    GetWindowText(hwnd, d->caption, ARRAYLENGTH(d->caption));
+    if (l != NULL) {
+        for (i=0; i < l->n_alerts; i++) {
+            add_alert_to_wnd_data(d, l->alerts[i]);
+        }
 
-    for (i=0; i < l->n_alerts; i++) {
-        add_alert_to_wnd_data(d, l->alerts[i]);
+        d->n_alerts = l->n_alerts;
     }
 
-    d->n_alerts = l->n_alerts;
+    if (!(flags & KHM_ALERTF_CHILD)) {
 
-    LPUSH(&khui_alert_windows, d);
+        GetWindowText(hwnd, d->caption, ARRAYLENGTH(d->caption));
+        LPUSH(&khui_alert_windows, d);
+
+    }
 
     /* Compute a few metrics first */
 
@@ -776,16 +829,21 @@ create_alerter_wnd_data(HWND hwnd, alert_list * l) {
 #define DLG2SCNX(x) MulDiv((x), LOWORD(dlgb), 4)
 #define DLG2SCNY(y) MulDiv((y), HIWORD(dlgb), 8)
 
-    d->cx_wnd = DLG2SCNX(NTF_WIDTH);
-    d->cy_max_wnd = DLG2SCNY(NTF_MAXHEIGHT);
+    if (rpos) {
+
+        d->cx_wnd = rpos->right - rpos->left;
+        d->cy_max_wnd = rpos->bottom - rpos->top;
+        d->r_client_area = *rpos;
+
+    } else {
+
+        d->cx_wnd = DLG2SCNX(NTF_WIDTH);
+        d->cy_max_wnd = DLG2SCNY(NTF_MAXHEIGHT);
+
+    }
 
     d->s_margin.cx = DLG2SCNX(NTF_MARGIN);
     d->s_margin.cy = DLG2SCNY(NTF_MARGIN);
-
-    d->r_title.left = DLG2SCNX(NTF_TITLE_X);
-    d->r_title.right = DLG2SCNX(NTF_TITLE_X + NTF_TITLE_WIDTH);
-    d->r_title.top = 0;
-    d->r_title.bottom = DLG2SCNY(NTF_TITLE_HEIGHT);
 
     d->s_pad.cx = DLG2SCNX(NTF_TEXT_PAD);
     d->s_pad.cy = DLG2SCNY(NTF_TEXT_PAD);
@@ -793,12 +851,7 @@ create_alerter_wnd_data(HWND hwnd, alert_list * l) {
     d->s_icon.cx = GetSystemMetrics(SM_CXICON);
     d->s_icon.cy = GetSystemMetrics(SM_CYICON);
 
-    d->r_text.left = d->s_margin.cx * 2 + d->s_icon.cx;
-    d->r_text.right = d->cx_wnd - d->s_margin.cx;
-    d->r_text.top = 0;
-    d->r_text.bottom = 0;
-
-    d->s_button.cx = ((d->r_text.right - d->r_text.left) - (KHUI_MAX_ALERT_COMMANDS - 1) * d->s_margin.cx) / KHUI_MAX_ALERT_COMMANDS;
+    d->s_button.cx = DLG2SCNX(NTF_BUTTON_WIDTH);
     d->s_button.cy = DLG2SCNY(NTF_BUTTON_HEIGHT);
 
 #undef DLG2SCNX
@@ -813,30 +866,41 @@ static void
 layout_alert(HDC hdc, alerter_wnd_data * d,
              alerter_alert_data * adata) {
     RECT r;
-    size_t len;
+    int x;
     int y;
-    int icon_y;
+    int text_width;
 
-#ifdef DEBUG
     assert(adata->alert);
-#endif
 
     khui_alert_lock(adata->alert);
 
     y = 0;
-
+    x = d->s_margin.cx;
     /* Title */
 
     y += d->s_margin.cy;
 
-    /* If there is a title and it differs from the title of the
-       alerter window, then we have to show the alert title
-       separately. */
-    if (adata->alert->title &&
-        wcscmp(adata->alert->title, d->caption)) {
+    if (d->flags & KHM_ALERTF_COMPACT) {
+        SetRect(&adata->r_icon, x, y,
+                x + d->s_icon.cx,
+                y + d->s_icon.cy);
 
-        CopyRect(&adata->r_title, &d->r_title);
-        OffsetRect(&adata->r_title, 0, y);
+        x = adata->r_icon.right + d->s_margin.cx;
+    }
+
+    /* If there is a title and it differs from the title of the
+       alerter window or the alerter window is a child window, then we
+       have to show the alert title separately. */
+    if (adata->alert->title &&
+        ((d->flags & KHM_ALERTF_CHILD) ||
+         wcscmp(adata->alert->title, d->caption))) {
+
+        SetRect(&adata->r_title, x, y, d->cx_wnd - d->s_margin.cx, y);
+
+        khm_draw_text(hdc, adata->alert->title, KHM_FONT_NORMAL,
+                      MEASURETEXTOPTIONS, &adata->r_title);
+
+        adata->r_title.bottom += d->s_pad.cy * 2;
 
         y = adata->r_title.bottom + d->s_margin.cy;
 
@@ -848,30 +912,25 @@ layout_alert(HDC hdc, alerter_wnd_data * d,
 
     /* Icon */
 
-    SetRect(&adata->r_icon, d->s_margin.cx, y,
-            d->s_margin.cx + d->s_icon.cx,
-            y + d->s_icon.cy);
+    if (!(d->flags & KHM_ALERTF_COMPACT)) {
+        SetRect(&adata->r_icon, x, y,
+                x + d->s_icon.cx,
+                y + d->s_icon.cy);
 
-    icon_y = adata->r_icon.bottom + d->s_margin.cy; /* the bottom of the icon */
+        x = adata->r_icon.right + d->s_margin.cx;
+    }
+
+    text_width = (d->cx_wnd - d->s_margin.cx) - x;
 
     /* Message */
 
-    if (adata->alert->message &&
-        SUCCEEDED(StringCchLength(adata->alert->message,
-                                  KHUI_MAXCCH_MESSAGE,
-                                  &len))) {
+    if (adata->alert->message) {
 
-        CopyRect(&r, &d->r_text);
+        SetRect(&adata->r_message, x, y, text_width + x, y);
+        khm_draw_text(hdc, adata->alert->message, KHM_FONT_NORMAL,
+                      MEASURETEXTOPTIONS, &adata->r_message);
 
-        DrawTextEx(hdc, adata->alert->message, (int) len,
-                   &r,
-                   DRAWTEXTOPTIONS,
-                   NULL);
-
-        OffsetRect(&r, 0, y);
-        CopyRect(&adata->r_message, &r);
-
-        y = r.bottom + d->s_margin.cy;
+        y = adata->r_message.bottom + d->s_margin.cy;
 
     } else {
 
@@ -881,20 +940,14 @@ layout_alert(HDC hdc, alerter_wnd_data * d,
 
     /* Suggestion */
 
-    if (adata->alert->suggestion &&
-        SUCCEEDED(StringCchLength(adata->alert->suggestion,
-                                  KHUI_MAXCCH_SUGGESTION,
-                                  &len))) {
+    if (adata->alert->suggestion) {
+
         int pad = d->s_pad.cx + GetSystemMetrics(SM_CXSMICON);
 
-        CopyRect(&r, &d->r_text);
-        r.left += pad;
+        SetRect(&r, x + pad, y, x + text_width, y);
 
-        DrawTextEx(hdc, adata->alert->suggestion, (int) len,
-                   &r,
-                   DRAWTEXTOPTIONS,
-                   NULL);
-
+        khm_draw_text(hdc, adata->alert->suggestion, KHM_FONT_NORMAL,
+                      MEASURETEXTOPTIONS, &r);
         r.left -= pad;
 
         InflateRect(&r, d->s_pad.cx, d->s_pad.cy);
@@ -909,13 +962,28 @@ layout_alert(HDC hdc, alerter_wnd_data * d,
 
     }
 
-    y = max(y, icon_y);
+    y = max(y, adata->r_icon.bottom + d->s_margin.cy);
+
+    /* Progress bar */
+    if ((adata->alert->alert_type == KHUI_ALERTTYPE_PROGRESSACQ ||
+         adata->alert->alert_type == KHUI_ALERTTYPE_PROGRESS) &&
+        !adata->alert_ctx_done) {
+
+        SetRect(&adata->r_progress, x, y, x + text_width, y + d->s_margin.cy);
+
+        y += d->s_margin.cy * 2;
+
+    } else {
+
+        SetRectEmpty(&adata->r_progress);
+
+    }
 
     /* Buttons */
 
     if (ALERT_HAS_CMDS(adata->alert)) {
         khm_int32 i;
-        int x, width;
+        int bx, width;
         wchar_t caption[KHUI_MAXCCH_SHORT_DESC];
         size_t len;
         SIZE s;
@@ -923,16 +991,17 @@ layout_alert(HDC hdc, alerter_wnd_data * d,
 
         adata->has_commands = TRUE;
 
+        d->s_button.cx = (d->cx_wnd - x) / KHUI_MAX_ALERT_COMMANDS - d->s_margin.cx;
+
         if (d->n_alerts > 1)
             skip_close = TRUE;
         else
             skip_close = FALSE;
 
-        x = d->r_text.left;
-
 #ifdef DEBUG
         assert(adata->alert->n_alert_commands <= KHUI_MAX_ALERT_COMMANDS);
 #endif
+        bx = x;
 
         for (i=0; i < adata->alert->n_alert_commands; i++) {
 
@@ -955,18 +1024,18 @@ layout_alert(HDC hdc, alerter_wnd_data * d,
 
             if (width < d->s_button.cx)
                 width = d->s_button.cx;
-            else if (width > (d->r_text.right - d->r_text.left))
-                width = d->r_text.right - d->r_text.left;
+            else if (width > text_width)
+                width = text_width;
 
-            if (x + width > d->r_text.right) {
+            if (bx + width + d->s_margin.cx > d->cx_wnd) {
                 /* new line */
-                x = d->r_text.left;
+                bx = x;
                 y += d->s_button.cy + d->s_pad.cy;
             }
 
-            SetRect(&adata->r_buttons[i], x, y, x + width, y + d->s_button.cy);
+            SetRect(&adata->r_buttons[i], bx, y, bx + width, y + d->s_button.cy);
 
-            x += width + d->s_margin.cx;
+            bx += width + d->s_margin.cx;
         }
 
         y += d->s_button.cy + d->s_margin.cy;
@@ -1081,7 +1150,8 @@ estimate_alerter_wnd_sizes(alerter_wnd_data * d) {
 
     alerter_alert_data * adata;
 
-    pick_title_for_alerter_window(d);
+    if (!(d->flags & KHM_ALERTF_CHILD))
+        pick_title_for_alerter_window(d);
 
     hdc = GetDC(d->hwnd);
 #ifdef DEBUG
@@ -1120,13 +1190,29 @@ layout_command_buttons(alerter_wnd_data * d) {
     HDWP hdefer;
     int y;
 
-    hdefer = BeginDeferWindowPos(d->n_cmd_buttons);
+    hdefer = BeginDeferWindowPos(d->n_cmd_buttons + d->n_alerts);
 
     y = 0;
     adata = QTOP(d);
     while (adata) {
         RECT r;
         int i;
+
+        if (adata->hwnd_progress) {
+            if (IsRectEmpty(&adata->r_progress)) {
+                DestroyWindow(adata->hwnd_progress);
+                adata->hwnd_progress = NULL;
+            } else {
+                CopyRect(&r, &adata->r_progress);
+                OffsetRect(&r, 0, y-d->scroll_top);
+
+                hdefer = DeferWindowPos(hdefer,
+                                        adata->hwnd_progress, NULL,
+                                        r.left, r.top, 0, 0,
+                                        SWP_NOACTIVATE | SWP_NOOWNERZORDER |
+                                        SWP_NOZORDER | SWP_NOSIZE);
+            }
+        }
 
         if (!adata->has_commands)
             goto done;
@@ -1149,11 +1235,11 @@ layout_command_buttons(alerter_wnd_data * d) {
             CopyRect(&r, &adata->r_buttons[i]);
             OffsetRect(&r, 0, y - d->scroll_top);
 
-            DeferWindowPos(hdefer,
-                           adata->hwnd_buttons[i], NULL,
-                           r.left, r.top, 0, 0,
-                           SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER |
-                           SWP_NOSIZE);
+            hdefer = DeferWindowPos(hdefer,
+                                    adata->hwnd_buttons[i], NULL,
+                                    r.left, r.top, 0, 0,
+                                    SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER |
+                                    SWP_NOSIZE);
         }
 
     done:
@@ -1174,13 +1260,12 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
     HWND hw_parent;
     HWND hw_focus = NULL;
     BOOL close_button = FALSE;
-    BOOL scrollbar = FALSE;
-    BOOL redraw_scollbar = FALSE;
+    const RECT *rpos;
 
     /* estimate_alerter_wnd_sizes() must be called before calling
        this. */
 #ifdef DEBUG
-    assert(d->s_alerts.cy > 0);
+    assert(d->s_alerts.cy >= 0);
 #endif
 
     r_alerts.left = 0;
@@ -1191,7 +1276,10 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
 
         BOOL redraw = FALSE;
 
-        r_alerts.right += GetSystemMetrics(SM_CXVSCROLL);
+        if (d->flags & KHM_ALERTF_CHILD)
+            r_alerts.right -= GetSystemMetrics(SM_CXVSCROLL);
+        else
+            r_alerts.right += GetSystemMetrics(SM_CXVSCROLL);
         r_alerts.bottom = d->cy_max_wnd;
 
         CopyRect(&r_client, &r_alerts);
@@ -1200,8 +1288,6 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
 
         if (d->scroll_top > d->s_alerts.cy - d->cy_max_wnd)
             d->scroll_top = d->s_alerts.cy - d->cy_max_wnd;
-
-        scrollbar = TRUE;
     } else {
         r_alerts.bottom = d->s_alerts.cy;
 
@@ -1223,34 +1309,34 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
         d->scroll_top = 0;
     }
 
+    if (d->flags & KHM_ALERTF_CHILD)
+        rpos = &d->r_client_area;
+    else
+        rpos = &r_alerts;
+
     if (d->hw_bin == NULL) {
         d->hw_bin = CreateWindowEx(WS_EX_CONTROLPARENT,
                                    MAKEINTATOM(atom_alert_bin),
                                    L"Alert Container",
                                    WS_CHILD | WS_CLIPCHILDREN |
-                                   WS_VISIBLE |
-                                   ((scrollbar)? WS_VSCROLL : 0),
-                                   r_alerts.left, r_alerts.top,
-                                   r_alerts.right - r_alerts.left,
-                                   r_alerts.bottom - r_alerts.top,
+                                   WS_VISIBLE | WS_VSCROLL,
+                                   rpos->left, rpos->top,
+                                   rpos->right - rpos->left,
+                                   rpos->bottom - rpos->top,
                                    d->hwnd,
                                    (HMENU) IDC_NTF_ALERTBIN,
                                    khm_hInstance,
                                    (LPVOID) d);
-    } else {
-        redraw_scollbar = TRUE;
-        SetWindowLongPtr(d->hw_bin, GWL_STYLE,
-                         WS_CHILD | WS_CLIPCHILDREN |
-                         WS_VISIBLE |
-                         ((scrollbar)? WS_VSCROLL : 0));
+    } else if (!(d->flags & KHM_ALERTF_CHILD)) {
         SetWindowPos(d->hw_bin, NULL,
-                     r_alerts.left, r_alerts.top,
-                     r_alerts.right - r_alerts.left,
-                     r_alerts.bottom - r_alerts.top,
-                     SWP_NOOWNERZORDER | SWP_NOZORDER | SWP_NOACTIVATE);
+                     rpos->left, rpos->top,
+                     rpos->right - rpos->left,
+                     rpos->bottom - rpos->top,
+                     SWP_NOZORDER | SWP_NOOWNERZORDER);
+
     }
 
-    if (scrollbar) {
+    {
         SCROLLINFO si;
 
         ZeroMemory(&si, sizeof(si));
@@ -1261,7 +1347,7 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
         si.nPage = d->cy_max_wnd;
         si.nPos = d->scroll_top;
 
-        SetScrollInfo(d->hw_bin, SB_VERT, &si, redraw_scollbar);
+        SetScrollInfo(d->hw_bin, SB_VERT, &si, TRUE);
     }
 
     /* create the action buttons */
@@ -1403,13 +1489,51 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
 
                 last_window = adata->hwnd_marker;
 
-                if (scrollbar) {
+                /* We don't bother setting up navigation if there
+                   aren't enough alerts to make it necessary. */
+
+                if (d->s_alerts.cy > d->cy_max_wnd) {
                     EnableWindow(adata->hwnd_marker, TRUE);
                     if (hw_focus == NULL)
                         hw_focus = adata->hwnd_marker;
                 } else {
                     EnableWindow(adata->hwnd_marker, FALSE);
                 }
+            }
+
+            if (IsRectEmpty(&adata->r_progress)) {
+                if (adata->hwnd_progress != NULL) {
+                    DestroyWindow(adata->hwnd_progress);
+                    adata->hwnd_progress = NULL;
+                }
+            } else {
+                if (adata->hwnd_progress == NULL) {
+                    adata->hwnd_progress =
+                        CreateWindowEx(0,
+                                       PROGRESS_CLASS,
+                                       L"Progress meter",
+                                       WS_CHILD | WS_VISIBLE,
+                                       adata->r_progress.left,
+                                       adata->r_progress.top,
+                                       adata->r_progress.right - adata->r_progress.left,
+                                       adata->r_progress.bottom - adata->r_progress.top,
+                                       d->hw_bin,
+                                       (HMENU) (INT_PTR) IDC_FROM_IDX(idx, -2),
+                                       khm_hInstance,
+                                       NULL);
+                }
+
+                SetWindowPos(adata->hwnd_progress, last_window,
+                             0, 0, 0, 0,
+                             SWP_NOACTIVATE | SWP_NOOWNERZORDER |
+                             SWP_NOMOVE | SWP_NOSIZE);
+
+                last_window = adata->hwnd_progress;
+
+                SendMessage(adata->hwnd_progress, PBM_SETPOS,
+                            ((adata->progress_denom == 0)? 0 :
+                             (adata->progress_num * 100) / adata->progress_denom),
+                            0);
             }
 
             y += adata->r_alert.bottom;
@@ -1420,7 +1544,7 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
         d->n_cmd_buttons = n_buttons;
     }
 
-    if (close_button) {
+    if (close_button && !(d->flags & KHM_ALERTF_CHILD)) {
         if (d->hw_close == NULL) {
             wchar_t caption[256];
 
@@ -1447,7 +1571,7 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
         {
             int x,y,width,height;
 
-            x = d->r_text.left;
+            x = d->s_icon.cx + d->s_margin.cx * 2;
             y = r_client.bottom - (d->s_margin.cy + d->s_button.cy);
             width = d->s_button.cx;
             height = d->s_button.cy;
@@ -1468,32 +1592,34 @@ setup_alerter_window_controls(alerter_wnd_data * d) {
         }
     }
 
-    CopyRect(&r_window, &r_client);
-    AdjustWindowRectEx(&r_window, ALERT_WINDOW_STYLES,
-                       FALSE, ALERT_WINDOW_EX_SYLES);
-    OffsetRect(&r_window, -r_window.left, -r_window.top);
+    if (!(d->flags & KHM_ALERTF_CHILD)) {
+        CopyRect(&r_window, &r_client);
+        AdjustWindowRectEx(&r_window, ALERT_WINDOW_STYLES,
+                           FALSE, ALERT_WINDOW_EX_SYLES);
+        OffsetRect(&r_window, -r_window.left, -r_window.top);
 
-    /* center the window above the parent window. */
+        /* center the window above the parent window. */
 
-    hw_parent = GetWindow(d->hwnd, GW_OWNER);
-    GetWindowRect(hw_parent, &r_parent);
+        hw_parent = GetWindow(d->hwnd, GW_OWNER);
+        GetWindowRect(hw_parent, &r_parent);
 
-    {
-        int x,y;
+        {
+            int x,y;
 
-        x = (r_parent.left + r_parent.right - (r_window.right - r_window.left)) / 2;
-        y = (r_parent.top + r_parent.bottom - (r_window.bottom - r_window.top)) / 2;
+            x = (r_parent.left + r_parent.right - (r_window.right - r_window.left)) / 2;
+            y = (r_parent.top + r_parent.bottom - (r_window.bottom - r_window.top)) / 2;
 
-        SetWindowPos(d->hwnd,
-                     HWND_TOP,
-                     x, y,
-                     r_window.right - r_window.left,
-                     r_window.bottom - r_window.top,
-                     SWP_SHOWWINDOW | SWP_NOOWNERZORDER);
+            SetWindowPos(d->hwnd,
+                         HWND_TOP,
+                         x, y,
+                         r_window.right - r_window.left,
+                         r_window.bottom - r_window.top,
+                         SWP_SHOWWINDOW | SWP_NOOWNERZORDER);
+        }
+
+        if (hw_focus != NULL)
+            PostMessage(d->hwnd, WM_NEXTDLGCTL, (WPARAM) hw_focus, MAKELPARAM(TRUE, 0));
     }
-
-    if (hw_focus != NULL)
-        PostMessage(d->hwnd, WM_NEXTDLGCTL, (WPARAM) hw_focus, MAKELPARAM(TRUE, 0));
 }
 
 static void
@@ -1538,8 +1664,7 @@ select_alert(alerter_wnd_data * d, int alert) {
 
     if (d->n_alerts == 1 ||
         alert < 0 ||
-        alert > d->n_alerts ||
-        d->c_alert == alert)
+        alert > d->n_alerts)
         return;
 
     SetRectEmpty(&old_sel);
@@ -1984,7 +2109,7 @@ alert_check_consolidate_window(alerter_wnd_data * d, khui_alert * a) {
     return n_added;
 }
 
-static khm_int32 
+static khm_int32
 alert_show_minimized(khui_alert * a) {
     wchar_t tbuf[64];           /* corresponds to NOTIFYICONDATA::szInfoTitle[] */
     wchar_t mbuf[256];          /* corresponds to NOTIFYICONDATA::szInfo[] */
@@ -2060,7 +2185,7 @@ alert_show_minimized(khui_alert * a) {
     return KHM_ERROR_SUCCESS;
 }
 
-static khm_int32 
+static khm_int32
 alert_show_normal(khui_alert * a) {
     wchar_t buf[256];
     wchar_t * title;
@@ -2069,7 +2194,7 @@ alert_show_normal(khui_alert * a) {
     khui_alert_lock(a);
 
     if(a->title == NULL) {
-        LoadString(khm_hInstance, IDS_ALERT_DEFAULT, 
+        LoadString(khm_hInstance, IDS_ALERT_DEFAULT,
                    buf, ARRAYLENGTH(buf));
         title = buf;
     } else
@@ -2096,7 +2221,7 @@ alert_show_list(alert_list * alist) {
        because the window procedure adds it to the dialog
        list automatically */
 
-    hwa = 
+    hwa =
         CreateWindowEx(ALERT_WINDOW_EX_SYLES,
                        MAKEINTATOM(atom_alerter),
                        alist->title,
@@ -2112,7 +2237,7 @@ alert_show_list(alert_list * alist) {
     return (hwa != NULL);
 }
 
-static khm_int32 
+static khm_int32
 alert_show(khui_alert * a) {
     khm_boolean show_normal = FALSE;
     khm_boolean show_mini = FALSE;
@@ -2164,8 +2289,7 @@ alert_show(khui_alert * a) {
 
     } else {
 
-        if(a->err_context != NULL ||
-           a->err_event != NULL) {
+        if(a->err_context != NULL) {
             a->flags |= KHUI_ALERT_FLAG_VALID_ERROR;
         }
 
@@ -2309,7 +2433,7 @@ alert_enqueue(khui_alert * a) {
 }
 
 /* the alerter window is actually a dialog */
-static LRESULT CALLBACK 
+static LRESULT CALLBACK
 alerter_wnd_proc(HWND hwnd,
                  UINT uMsg,
                  WPARAM wParam,
@@ -2325,7 +2449,7 @@ alerter_wnd_proc(HWND hwnd,
             lpcs = (LPCREATESTRUCT) lParam;
             alist = (alert_list *) lpcs->lpCreateParams;
 
-            d = create_alerter_wnd_data(hwnd, alist);
+            d = create_alerter_wnd_data(hwnd, alist, NULL, 0);
 
 #pragma warning(push)
 #pragma warning(disable: 4244)
@@ -2356,12 +2480,13 @@ alerter_wnd_proc(HWND hwnd,
             //khm_leave_modal();
             khm_del_dialog(hwnd);
 
-            d = (alerter_wnd_data *)(LONG_PTR) 
+            d = (alerter_wnd_data *)(LONG_PTR)
                 GetWindowLongPtr(hwnd, NTF_PARAM);
 
             if (d) {
-                destroy_alerter_wnd_data(d);
                 SetWindowLongPtr(hwnd, NTF_PARAM, 0);
+                SetWindowLongPtr(d->hw_bin, GWLP_USERDATA, 0);
+                destroy_alerter_wnd_data(d);
             }
 
             return TRUE;
@@ -2372,29 +2497,29 @@ alerter_wnd_proc(HWND hwnd,
         {
             alerter_wnd_data * d;
 
-            d = (alerter_wnd_data *)(LONG_PTR) 
+            d = (alerter_wnd_data *)(LONG_PTR)
                 GetWindowLongPtr(hwnd, NTF_PARAM);
 
             if(HIWORD(wParam) == BN_CLICKED) {
                 if (LOWORD(wParam) == IDC_NTF_CLOSE ||
-                    LOWORD(wParam) == KHUI_PACTION_NEXT) {
+                    LOWORD(wParam) == KHUI_PACTION_NEXT ||
+                    LOWORD(wParam) == IDCANCEL ||
+                    LOWORD(wParam) == IDOK) {
 
                     khm_leave_modal();
-
                     DestroyWindow(hwnd);
-
                     return 0;
+                } else {
+                    process_command_button(d, LOWORD(wParam));
                 }
-            }
+            } 
         }
         break;
 
     case WM_CLOSE:
         {
             khm_leave_modal();
-
             DestroyWindow(hwnd);
-
             return 0;
         }
     }
@@ -2404,7 +2529,9 @@ alerter_wnd_proc(HWND hwnd,
     return DefDlgProc(hwnd, uMsg, wParam, lParam);
 }
 
-static LRESULT CALLBACK 
+
+
+static LRESULT CALLBACK
 alert_bin_wnd_proc(HWND hwnd,
                    UINT uMsg,
                    WPARAM wParam,
@@ -2447,6 +2574,7 @@ alert_bin_wnd_proc(HWND hwnd,
             alerter_alert_data * adata;
             size_t len;
             int idx;
+            HWND hwnd_focus;
 
             d = (alerter_wnd_data *) (LONG_PTR) GetWindowLongPtr(hwnd, GWLP_USERDATA);
 #ifdef DEBUG
@@ -2478,6 +2606,8 @@ alert_bin_wnd_proc(HWND hwnd,
             }
 #endif
 
+            hwnd_focus = GetFocus();
+
             SetBkMode(hdc, TRANSPARENT);
 
             hf_old = SelectFont(hdc, d->hfont);
@@ -2488,6 +2618,11 @@ alert_bin_wnd_proc(HWND hwnd,
             adata = QTOP(d);
             while(adata) {
                 khui_alert * a;
+                khm_boolean we_have_focus;
+
+                we_have_focus = (hwnd_focus &&
+                                 (hwnd_focus == adata->hwnd_marker ||
+                                  hwnd_focus == d->hw_bin));
 
 #ifndef ALERT_STATIC_BACKGROUND
 #define MIX_C(v1, v2, p) ((COLOR16)(((int)v1) * p + (((int) v2) * (256 - p))))
@@ -2536,6 +2671,11 @@ alert_bin_wnd_proc(HWND hwnd,
                     gr.UpperLeft = 0;
                     gr.LowerRight = 1;
                     GradientFill(hdc, v, 2, &gr, 1, GRADIENT_FILL_RECT_V);
+
+                    if (we_have_focus) {
+                        InflateRect(&r, -d->s_margin.cx / 2, -d->s_margin.cy / 2);
+                        DrawFocusRect(hdc, &r);
+                    }
                 }
 #undef ALPHA
 #undef MIX_C
@@ -2554,36 +2694,58 @@ alert_bin_wnd_proc(HWND hwnd,
 
                     StringCchLength(a->title, KHUI_MAXCCH_TITLE, &len);
 
-                    DrawEdge(hdc, &r, EDGE_RAISED, BF_RECT | BF_MIDDLE);
+                    DrawEdge(hdc, &r, EDGE_ETCHED, BF_RECT | BF_MIDDLE);
 
                     InflateRect(&r, -d->s_pad.cx, -d->s_pad.cy);
 
-                    DrawText(hdc, a->title, (int) len, &r,
-                             DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+                    khm_draw_text(hdc, a->title, KHM_FONT_NORMAL, DRAWTEXTOPTIONS, &r);
                 }
 
                 {
-                    HICON hicon;
-                    int iid;
+                    HICON hicon = NULL;
+                    int iid = 0;
 
                     CopyRect(&r, &adata->r_icon);
                     OffsetRect(&r, 0, y);
 
-                    if(a->severity == KHERR_ERROR)
-                        iid = OIC_HAND;
-                    else if(a->severity == KHERR_WARNING)
-                        iid = OIC_BANG;
-                    else
-                        iid = OIC_NOTE;
+                    if ((a->alert_type == KHUI_ALERTTYPE_PROGRESSACQ ||
+                         a->alert_type == KHUI_ALERTTYPE_PROGRESS) &&
+                        a->severity >= KHERR_INFO) {
 
-                    hicon = (HICON) LoadImage(NULL, 
-                                              MAKEINTRESOURCE(iid), 
-                                              IMAGE_ICON,
-                                              GetSystemMetrics(SM_CXICON),
-                                              GetSystemMetrics(SM_CYICON),
-                                              LR_SHARED);
+                        if (adata->alert_ctx_done)
+                            iid = IDI_CHECK;
+                        else if (!adata->alert_ctx_done)
+                            iid = IDI_CLOCK;
 
-                    DrawIcon(hdc, r.left, r.top, hicon);
+                        if (iid != 0)
+                            hicon = (HICON) LoadImage(khm_hInstance,
+                                                      MAKEINTRESOURCE(iid),
+                                                      IMAGE_ICON,
+                                                      GetSystemMetrics(SM_CXICON),
+                                                      GetSystemMetrics(SM_CYICON),
+                                                      LR_SHARED);
+
+                    }
+
+                    if (hicon == NULL) {
+
+                        if(a->severity == KHERR_ERROR)
+                            iid = OIC_HAND;
+                        else if(a->severity == KHERR_WARNING)
+                            iid = OIC_BANG;
+                        else
+                            iid = OIC_NOTE;
+
+                        hicon = (HICON) LoadImage(NULL,
+                                                  MAKEINTRESOURCE(iid),
+                                                  IMAGE_ICON,
+                                                  GetSystemMetrics(SM_CXICON),
+                                                  GetSystemMetrics(SM_CYICON),
+                                                  LR_SHARED);
+                    }
+
+                    if (hicon)
+                        DrawIcon(hdc, r.left, r.top, hicon);
                 }
 
                 if (a->message) {
@@ -2591,10 +2753,7 @@ alert_bin_wnd_proc(HWND hwnd,
                     CopyRect(&r, &adata->r_message);
                     OffsetRect(&r, 0, y);
 
-                    StringCchLength(a->message, KHUI_MAXCCH_MESSAGE, &len);
-
-                    DrawText(hdc, a->message, (int) len, &r,
-                             DT_WORDBREAK);
+                    khm_draw_text(hdc, a->message, KHM_FONT_NORMAL, DRAWTEXTOPTIONS, &r);
                 }
 
                 if (a->suggestion) {
@@ -2625,9 +2784,9 @@ alert_bin_wnd_proc(HWND hwnd,
 
                     StringCchLength(a->suggestion, KHUI_MAXCCH_SUGGESTION, &len);
 
-                    DrawText(hdc, a->suggestion, (int) len, &r,
-                             DT_WORDBREAK);
+                    khm_draw_text(hdc, a->suggestion, KHM_FONT_NORMAL, DRAWTEXTOPTIONS, &r);
                 }
+
                 khui_alert_unlock(a);
 
                 y += adata->r_alert.bottom;
@@ -2719,9 +2878,116 @@ alert_bin_wnd_proc(HWND hwnd,
             if (HIWORD(wParam) == BN_CLICKED) {
                 process_command_button(d, LOWORD(wParam));
                 return 0;
-            } else if (HIWORD(wParam) == BN_SETFOCUS) {
+            } else if (HIWORD(wParam) == BN_SETFOCUS ||
+                       HIWORD(wParam) == BN_KILLFOCUS) {
                 ensure_command_is_visible(d, LOWORD(wParam));
                 return 0;
+            } 
+        }
+        break;
+
+    case WM_KILLFOCUS:
+    case WM_SETFOCUS:
+        {
+            alerter_wnd_data * d;
+
+            d = (alerter_wnd_data *) (LONG_PTR) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+#ifdef DEBUG
+            assert(d);
+#endif
+            if (d == NULL)
+                break;
+
+            select_alert(d, d->c_alert);
+        }
+        break;
+
+    case KHUI_WM_NC_NOTIFY:
+        {
+            alerter_wnd_data * d;
+
+            d = (alerter_wnd_data *) (LONG_PTR) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+#ifdef DEBUG
+            assert(d);
+#endif
+            if (d == NULL)
+                break;
+
+            switch (HIWORD(wParam)) {
+            case WMNC_ALERT_REFRESH_VIEW:
+                {
+                    alerter_alert_data * adata;
+                    RECT r;
+
+                    SetRectEmpty(&r);
+
+                    r.top = -d->scroll_top;
+                    for (adata = QTOP(d);
+                         adata;
+                         adata = QNEXT(adata)) {
+                        if (adata == (alerter_alert_data *) lParam) {
+                            r.bottom = r.top + adata->r_alert.bottom;
+                            r.right = adata->r_alert.right;
+                            r.left = adata->r_alert.left;
+                            break;
+                        }
+                        r.top += adata->r_alert.bottom;
+                    }
+
+                    if (adata == NULL) {
+                        /* The target alert was not found. */
+#ifdef DEBUG
+                        assert(FALSE);
+#endif
+                        break;
+                    }
+
+                    if (adata->hwnd_progress != NULL) {
+                        SendMessage(adata->hwnd_progress, PBM_SETPOS,
+                                    ((adata->progress_denom == 0)? 0 :
+                                     (adata->progress_num * 100) / adata->progress_denom),
+                                    0);
+                    }
+
+                    InvalidateRect(hwnd, &r, TRUE);
+                }
+                break;
+
+            case WMNC_ALERT_RECALC_LAYOUT:
+                {
+                    /* Recalculate everything */
+
+                    estimate_alerter_wnd_sizes(d);
+                    setup_alerter_window_controls(d);
+                    layout_command_buttons(d);
+                    InvalidateRect(hwnd, NULL, TRUE);
+                }
+                break;
+
+            case WMNC_ALERT_NEW_CTX:
+                {
+
+                    kherr_context * child;
+                    khui_alert * a = NULL;
+
+                    child = (kherr_context *) lParam;
+
+                    /* Add this context to the monitor list */
+
+                    khui_alert_create_empty(&a);
+                    khui_alert_set_type(a, KHUI_ALERTTYPE_PROGRESSACQ);
+                    khui_alert_monitor_progress(a, child,
+                                                KHUI_AMP_SHOW_EVT_ERR |
+                                                KHUI_AMP_SHOW_EVT_WARN);
+
+                    khui_alert_add_to_container(hwnd, a);
+
+                    khui_alert_release(a);
+                    kherr_release_context(child);
+
+                    InvalidateRect(hwnd, NULL, TRUE);
+                }
+                break;
             }
         }
         break;
@@ -2753,13 +3019,243 @@ alert_bin_wnd_proc(HWND hwnd,
 
     case WM_DESTROY:
         {
-            /* nothing needs to be done here */
+            /* nothing needs to be done here unless this was a child
+               window */
+            alerter_wnd_data * d;
+
+            d = (alerter_wnd_data *) (LONG_PTR) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+
+            if (d != NULL && (d->flags & KHM_ALERTF_CHILD)) {
+                destroy_alerter_wnd_data(d);
+            }
+
             SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
         }
         return 0;
     }
 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+struct alert_monitor_data {
+    khm_int32 magic;
+#define ALERT_MONITOR_DATA_MAGIC 0x2e5a2f12
+    khui_alert * alert;
+};
+
+static void KHMAPI
+alert_ctx_monitor_handler(enum kherr_ctx_event e,
+                          kherr_context * c,
+                          void * vparam)
+{
+    struct alert_monitor_data * d;
+
+    d = vparam;
+
+#ifdef DEBUG
+    assert(d && d->magic == ALERT_MONITOR_DATA_MAGIC);
+#endif
+
+    switch (e) {
+    case KHERR_CTX_DESCRIBE:
+        {
+            kherr_event * ev;
+
+            ev = kherr_get_desc_event(c);
+            if (ev) {
+                if (ev->short_desc && ev->long_desc) {
+                    khui_alert_set_title(d->alert, ev->long_desc);
+                    khui_alert_set_message(d->alert, ev->short_desc);
+                } else if (ev->long_desc) {
+                    khui_alert_set_title(d->alert, ev->long_desc);
+                } else if (ev->short_desc) {
+                    khui_alert_set_title(d->alert, ev->short_desc);
+                }
+
+                if (d->alert->displayed) {
+                    PostMessage(d->alert->wnd_data->hw_bin, KHUI_WM_NC_NOTIFY,
+                                MAKEWPARAM(0, WMNC_ALERT_RECALC_LAYOUT),
+                                (LPARAM) d->alert->adata);
+                }
+            }
+        }
+        break;
+
+    case KHERR_CTX_END:
+        if (d->alert->displayed) {
+            d->alert->adata->alert_ctx_done = TRUE;
+            PostMessage(d->alert->wnd_data->hw_bin, KHUI_WM_NC_NOTIFY,
+                        MAKEWPARAM(0, WMNC_ALERT_RECALC_LAYOUT),
+                        (LPARAM) d->alert->adata);
+
+            kherr_remove_ctx_handler_param(alert_ctx_monitor_handler,
+                                           c->serial, d);
+            khui_alert_release(d->alert);
+            PFREE(d);
+        }
+        break;
+
+    case KHERR_CTX_EVTCOMMIT:
+    case KHERR_CTX_ERROR:
+        if (d->alert->displayed) {
+            kherr_event * ev;
+
+            ev = kherr_get_last_event(c);
+
+            if (((d->alert->monitor_flags & KHUI_AMP_SHOW_EVT_ERR) &&
+                 ev->severity <= KHERR_ERROR) ||
+                ((d->alert->monitor_flags & KHUI_AMP_SHOW_EVT_WARN) &&
+                 ev->severity <= KHERR_WARNING) ||
+                ((d->alert->monitor_flags & KHUI_AMP_SHOW_EVT_INFO) &&
+                 ev->severity <= KHERR_INFO) ||
+                ((d->alert->monitor_flags & KHUI_AMP_SHOW_EVT_DEBUG) &&
+                 ev->severity <= KHERR_DEBUG_3)) {
+
+                khui_alert_set_severity(d->alert, ev->severity);
+
+                if (!(ev->flags & KHERR_RF_STR_RESOLVED))
+                    kherr_evaluate_event(ev);
+
+                if (ev->long_desc) {
+                    khui_alert_set_message(d->alert, ev->long_desc);
+                } else if (ev->short_desc) {
+                    khui_alert_set_message(d->alert, ev->short_desc);
+                }
+
+                PostMessage(d->alert->wnd_data->hw_bin, KHUI_WM_NC_NOTIFY,
+                            MAKEWPARAM(0, WMNC_ALERT_RECALC_LAYOUT),
+                            (LPARAM) d->alert->adata);
+            }
+        }
+        break;
+
+    case KHERR_CTX_NEWCHILD:
+        if (d->alert->displayed) {
+            kherr_context * child;
+
+            child = kherr_get_first_context(c);
+
+            if (child) {
+                PostMessage(d->alert->wnd_data->hw_bin, KHUI_WM_NC_NOTIFY,
+                            MAKEWPARAM(0, WMNC_ALERT_NEW_CTX),
+                            (LPARAM) child);
+            }
+        }
+        break;
+
+    case KHERR_CTX_PROGRESS:
+        if (d->alert->displayed) {
+            kherr_get_progress_i(c,
+                                 &d->alert->adata->progress_num,
+                                 &d->alert->adata->progress_denom);
+
+            PostMessage(d->alert->wnd_data->hw_bin, KHUI_WM_NC_NOTIFY,
+                        MAKEWPARAM(0, WMNC_ALERT_REFRESH_VIEW),
+                        (LPARAM) d->alert->adata);
+        }
+        break;
+
+    }
+}
+
+/*! \brief Starts the process of monitoring a kherr_context via a khui_alert
+ */
+static void
+start_monitoring_alert(khui_alert * alert)
+{
+    struct alert_monitor_data * d;
+    kherr_event * ev;
+    khm_int32 evt_flags;
+
+    d = PMALLOC(sizeof(*d));
+    memset(d, 0, sizeof(*d));
+
+    d->magic = ALERT_MONITOR_DATA_MAGIC;
+    d->alert = alert;
+    khui_alert_hold(d->alert);
+
+    evt_flags =
+        KHERR_CTX_END |
+        KHERR_CTX_DESCRIBE |
+        KHERR_CTX_NEWCHILD |
+        KHERR_CTX_PROGRESS;
+
+    if (alert->monitor_flags & KHUI_AMP_SHOW_EVT_ERR)
+        evt_flags |= KHERR_CTX_ERROR;
+
+    if (alert->monitor_flags & (KHUI_AMP_SHOW_EVT_WARN |
+                                KHUI_AMP_SHOW_EVT_INFO |
+                                KHUI_AMP_SHOW_EVT_DEBUG))
+        evt_flags |= KHERR_CTX_ERROR;
+
+    kherr_add_ctx_handler_param(alert_ctx_monitor_handler,
+                                evt_flags,
+                                d->alert->err_context->serial, d);
+
+    ev = kherr_get_desc_event(d->alert->err_context);
+    if (ev) {
+        if (ev->short_desc && ev->long_desc) {
+            khui_alert_set_title(alert, ev->long_desc);
+            khui_alert_set_message(alert, ev->short_desc);
+        } else if (ev->long_desc) {
+            khui_alert_set_title(alert, ev->long_desc);
+        } else if (ev->short_desc) {
+            khui_alert_set_title(alert, ev->short_desc);
+        }
+    }
+
+    kherr_release_context(d->alert->err_context);
+    d->alert->err_context = NULL;
+}
+
+/*! \brief Creates an alert container
+
+    This is used to house a collection of alerts that should be
+    displayed in a modal manner.  The parent window should be dialog
+    box (i.e. respond to dialog messages for setting active and
+    default controls etc.)
+
+ */
+HWND
+khui_alert_create_container(HWND hwnd,
+                            const RECT * pos,
+                            khm_int32 flags)
+{
+    alerter_wnd_data * d;
+
+    d = create_alerter_wnd_data(hwnd, NULL, pos,
+                                flags | KHM_ALERTF_CHILD | KHM_ALERTF_COMPACT);
+
+    estimate_alerter_wnd_sizes(d);
+    setup_alerter_window_controls(d);
+
+    /* The alerter will be destroyed when the alert bin is
+       destroyed. */
+
+    return d->hw_bin;
+}
+
+/*! \brief Add an alert to an alert container
+
+    The alert container in \a hwnd_container must have been created
+    using khui_alert_create_container().  The UI will be updated to
+    display the new alert.
+ */
+void
+khui_alert_add_to_container(HWND hwnd_container,
+                            khui_alert * a)
+{
+    alerter_wnd_data * d;
+
+    d = (alerter_wnd_data *) (LONG_PTR) GetWindowLongPtr(hwnd_container, GWLP_USERDATA);
+
+#ifdef DEBUG
+    assert(d && d->magic == ALERTER_WND_DATA_MAGIC);
+#endif
+
+    add_alert_to_wnd_data(d, a);
+    estimate_alerter_wnd_sizes(d);
+    setup_alerter_window_controls(d);
 }
 
 ATOM khm_register_alerter_wnd_class(void)
@@ -2850,7 +3346,7 @@ void khm_notify_icon_add(void) {
     Shell_NotifyIcon(NIM_SETVERSION, &ni);
 }
 
-void 
+void
 khm_notify_icon_balloon(khm_int32 severity,
                          wchar_t * title,
                          wchar_t * msg,
@@ -2886,16 +3382,16 @@ khm_notify_icon_balloon(khm_int32 severity,
     if (FAILED(StringCbCopy(ni.szInfo, sizeof(ni.szInfo), msg))) {
         /* too long? */
         StringCchCopyN(ni.szInfo, ARRAYLENGTH(ni.szInfo),
-                       msg, 
+                       msg,
                        ARRAYLENGTH(ni.szInfo) - ARRAYLENGTH(ELLIPSIS));
         StringCchCat(ni.szInfo, ARRAYLENGTH(ni.szInfo),
                      ELLIPSIS);
     }
 
-    if (FAILED(StringCbCopy(ni.szInfoTitle, sizeof(ni.szInfoTitle), 
+    if (FAILED(StringCbCopy(ni.szInfoTitle, sizeof(ni.szInfoTitle),
                             title))) {
         StringCchCopyN(ni.szInfoTitle, ARRAYLENGTH(ni.szInfoTitle),
-                       title, 
+                       title,
                        ARRAYLENGTH(ni.szInfoTitle) - ARRAYLENGTH(ELLIPSIS));
         StringCchCat(ni.szInfoTitle, ARRAYLENGTH(ni.szInfoTitle),
                      ELLIPSIS);
@@ -3051,7 +3547,7 @@ void khm_notify_icon_activate(void) {
             (a->n_alert_commands > 0)) {
 
             PostMessage(khm_hwnd_main, WM_COMMAND,
-                        MAKEWPARAM(a->alert_commands[0], 
+                        MAKEWPARAM(a->alert_commands[0],
                                    0),
                         0);
             alert_done = TRUE;

@@ -185,6 +185,8 @@ BEGIN
     IDS_METHOD_PWD          "Password"
     IDS_METHOD_K524         "Kerberos v5 to v4 translation"
     IDS_CFG_IDS_KRB4_SHORT  "Kerberos v4"
+    IDS_MSG_K4NEW           "Obtaining initial Kerberos v4 credentials"
+    IDS_MSG_K4RENEW         "Renewing Kerberos v4 credentials"
 END
 
 #endif    // English (U.S.) resources
@@ -201,5 +203,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-
 

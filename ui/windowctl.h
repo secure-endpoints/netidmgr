@@ -39,4 +39,6 @@ void khm_del_property_sheet(khui_property_sheet * s);
 
 BOOL khm_check_ps_message(LPMSG pmsg);
 BOOL khm_check_dlg_message(LPMSG pmsg);
+
+BOOL khm_find_and_activate_property_sheet(khui_action_context * pctx);
 #endif

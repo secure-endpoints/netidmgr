@@ -1006,7 +1006,7 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
         if (!(flags & KCONF_FLAG_NOPARSENAME)) {
 
             end = wcschr(str, L'\\'); /* safe because cspace was
-                                     validated above */
+                                         validated above */
         }
 
         if(!end) {
@@ -1027,8 +1027,7 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
             p = c;
             c = NULL;
             str = end+1;
-        }
-        else
+        } else
             break;
     }
 
@@ -1517,7 +1516,7 @@ khc_read_binary(khm_handle pconf, const wchar_t * pvalue,
                 }
                 else {
                     *bufsize = size;
-                    rv =  KHM_ERROR_SUCCESS;
+                    rv =  (buf? KHM_ERROR_SUCCESS : KHM_ERROR_TOO_LONG);
                     goto _exit;
                 }
             } else {
@@ -1539,7 +1538,7 @@ khc_read_binary(khm_handle pconf, const wchar_t * pvalue,
                 }
                 else {
                     *bufsize = size;
-                    rv = KHM_ERROR_SUCCESS;
+                    rv = (buf ? KHM_ERROR_SUCCESS : KHM_ERROR_TOO_LONG);
                     goto _exit;
                 }
             } else {
@@ -1688,14 +1687,13 @@ khc_write_int32(khm_handle pconf,
     int free_space = 0;
     khm_handle conf = NULL;
 
-
-    if(!khc_is_config_running())
+    if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
 
-    if(pconf && !khc_is_machine_handle(pconf) && !khc_is_user_handle(pconf))
+    if (pconf && !khc_is_machine_handle(pconf) && !khc_is_user_handle(pconf))
         return KHM_ERROR_INVALID_OPERATION;
 
-    if (khc_handle_flags(pconf) & KCONF_FLAG_WRITEIFMOD) {
+    if (pconf && khc_handle_flags(pconf) & KCONF_FLAG_WRITEIFMOD) {
         khm_int32 tmpvalue;
 
         if (KHM_SUCCEEDED(khc_read_int32(pconf, pvalue, &tmpvalue)) &&

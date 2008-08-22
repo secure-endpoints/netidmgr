@@ -54,9 +54,6 @@ BOOL khm_is_main_window_active(void);
 void khm_adjust_window_dimensions_for_display(RECT * pr, int dock);
 LRESULT khm_rebar_notify(LPNMHDR lpnm);
 
-void
-khm_set_dialog_result(HWND hwnd, LRESULT lr);
-
 LRESULT CALLBACK 
 khm_main_wnd_proc(HWND hwnd,
                   UINT uMsg,

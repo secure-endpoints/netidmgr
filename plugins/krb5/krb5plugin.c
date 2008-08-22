@@ -52,6 +52,7 @@ khm_int32 attr_id_krb5_flags    = -1;
 khm_int32 attr_id_krb5_ccname   = -1;
 khm_int32 attr_id_kvno          = -1;
 khm_int32 attr_id_krb5_idflags  = -1;
+khm_int32 attr_id_krb5_pkeyv1   = -1;
 
 BOOL attr_regd_key_enctype  = FALSE;
 BOOL attr_regd_tkt_enctype  = FALSE;
@@ -60,6 +61,7 @@ BOOL attr_regd_krb5_flags   = FALSE;
 BOOL attr_regd_krb5_ccname  = FALSE;
 BOOL attr_regd_kvno         = FALSE;
 BOOL attr_regd_krb5_idflags = FALSE;
+BOOL attr_regd_krb5_pkeyv1  = FALSE;
 
 khm_int32 credtype_id_krb5 = KCDB_CREDTYPE_INVALID;
 khm_boolean krb5_initialized = FALSE;
@@ -391,6 +393,29 @@ k5_register_attributes(void)
         attr_regd_krb5_idflags = TRUE;
     }
 
+    if (KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KRB5_PKEYV1, &attr_id_krb5_pkeyv1))) {
+        kcdb_attrib attrib;
+
+        ZeroMemory(&attrib, sizeof(attrib));
+
+        attrib.name = ATTRNAME_KRB5_PKEYV1;
+        attrib.id = KCDB_ATTR_INVALID;
+        attrib.type = KCDB_TYPE_DATA;
+        attrib.flags = KCDB_ATTR_FLAG_HIDDEN;
+        /* we don't bother localizing these strings since the
+           attribute is hidden.  The user will not see these
+           descriptions anyway. */
+        attrib.short_desc = NULL;
+        attrib.long_desc = NULL;
+
+        rv = kcdb_attrib_register(&attrib, &attr_id_krb5_pkeyv1);
+
+        if (KHM_FAILED(rv))
+            goto _exit;
+
+        attr_regd_krb5_pkeyv1 = TRUE;
+    }
+
  _exit:
     return rv;
 }
@@ -463,6 +488,8 @@ k5_unregister_attributes(void)
         kcdb_attrib_unregister(attr_id_kvno);
     if(attr_regd_krb5_idflags)
         kcdb_attrib_unregister(attr_id_krb5_idflags);
+    if(attr_regd_krb5_pkeyv1)
+        kcdb_attrib_unregister(attr_id_krb5_pkeyv1);
 }
 
 /*  The system message handler.

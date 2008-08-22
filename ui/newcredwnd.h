@@ -34,18 +34,10 @@
 
 void khm_register_newcredwnd_class(void);
 void khm_unregister_newcredwnd_class(void);
+INT_PTR khm_do_modal_newcredwnd(HWND parent, khui_new_creds * c);
 HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c);
 void khm_prep_newcredwnd(HWND hwnd);
 void khm_show_newcredwnd(HWND hwnd);
-
-/* the first control ID that may be used by an identity provider */
-#define NC_IS_CTRL_ID_MIN 8016
-
-/* the maximum number of controls that may be created by an identity
-   provider*/
-#define NC_IS_CTRL_MAX_CTRLS 8
-
-/* the maximum control ID that may be used by an identity provider */
-#define NC_IS_CTRL_ID_MAX (NC_IS_CTRL_ID_MIN + NC_IS_MAX_CTRLS - 1)
+void khm_nc_track_progress_of_this_task(khui_new_creds * nc);
 
 #endif

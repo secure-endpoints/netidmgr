@@ -41,7 +41,6 @@
 #include<dynimport.h>
 
 #include "langres.h"
-#include "krb4_msgs.h"
 
 #define TYPENAME_ENCTYPE        L"EncType"
 #define TYPENAME_ADDR_LIST      L"AddrList"

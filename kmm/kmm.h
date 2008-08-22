@@ -131,6 +131,45 @@ typedef struct tag_kmm_plugin_reg {
 #endif
 } kmm_plugin_reg;
 
+/*! \brief Plugin states */
+typedef enum _kmm_plugin_states {
+    KMM_PLUGIN_STATE_FAIL_INIT = -6,    /*!< Failed to initialize */
+    KMM_PLUGIN_STATE_FAIL_UNKNOWN = -5, /*!< Failed due to unknown
+                                          reasons */
+    KMM_PLUGIN_STATE_FAIL_MAX_FAILURE = -4, /*!< The plugin has
+                                          reached the maximum number
+                                          of failures and cannot be
+                                          initialized until the
+                                          failure count is reset */
+    KMM_PLUGIN_STATE_FAIL_NOT_REGISTERED = -3, /*!< Failed because the
+                                          plugin was not registered
+                                          and automatic registration
+                                          failed. */
+    KMM_PLUGIN_STATE_FAIL_DISABLED = -2,/*!< Failed because plugin was
+                                          disabled by the user. */
+    KMM_PLUGIN_STATE_FAIL_LOAD = -1,    /*!< The plugin failed to load
+                                          due to some unknown
+                                          reason. */
+    KMM_PLUGIN_STATE_NONE = 0,          /*!< Unknown state */
+    KMM_PLUGIN_STATE_PLACEHOLDER,       /*!< Placeholder.  The plugin
+                                          hasn't been provided by
+                                          anyone yet, but the plugin
+                                          record has been created to
+                                          keep track of
+                                          dependencies. */
+    KMM_PLUGIN_STATE_REG,               /*!< The plugin is registered
+                                          but not initialized */
+    KMM_PLUGIN_STATE_PREINIT,           /*!< The plugin is in the
+                                          process of being
+                                          initialized */
+    KMM_PLUGIN_STATE_HOLD,              /*!< On hold.  One or more
+                                          dependencies of this plugin
+                                          has not been resolved */
+    KMM_PLUGIN_STATE_INIT,              /*!< The plugin was initialized */
+    KMM_PLUGIN_STATE_RUNNING,           /*!< The plugin is running */
+    KMM_PLUGIN_STATE_EXITED             /*!< The plugin has been stopped. */
+} kmm_plugin_state;
+
 /*! \brief Plugin information
 */
 typedef struct tag_kmm_plugin_info {
@@ -191,45 +230,6 @@ typedef struct tag_kmm_plugin_info {
 
 /*@}*/
 
-/*! \brief Plugin states */
-enum _kmm_plugin_states {
-    KMM_PLUGIN_STATE_FAIL_INIT = -6,    /*!< Failed to initialize */
-    KMM_PLUGIN_STATE_FAIL_UNKNOWN = -5, /*!< Failed due to unknown
-                                          reasons */
-    KMM_PLUGIN_STATE_FAIL_MAX_FAILURE = -4, /*!< The plugin has
-                                          reached the maximum number
-                                          of failures and cannot be
-                                          initialized until the
-                                          failure count is reset */
-    KMM_PLUGIN_STATE_FAIL_NOT_REGISTERED = -3, /*!< Failed because the
-                                          plugin was not registered
-                                          and automatic registration
-                                          failed. */
-    KMM_PLUGIN_STATE_FAIL_DISABLED = -2,/*!< Failed because plugin was
-                                          disabled by the user. */
-    KMM_PLUGIN_STATE_FAIL_LOAD = -1,    /*!< The plugin failed to load
-                                          due to some unknown
-                                          reason. */
-    KMM_PLUGIN_STATE_NONE = 0,          /*!< Unknown state */
-    KMM_PLUGIN_STATE_PLACEHOLDER,       /*!< Placeholder.  The plugin
-                                          hasn't been provided by
-                                          anyone yet, but the plugin
-                                          record has been created to
-                                          keep track of
-                                          dependencies. */
-    KMM_PLUGIN_STATE_REG,               /*!< The plugin is registered
-                                          but not initialized */
-    KMM_PLUGIN_STATE_PREINIT,           /*!< The plugin is in the
-                                          process of being
-                                          initialized */
-    KMM_PLUGIN_STATE_HOLD,              /*!< On hold.  One or more
-                                          dependencies of this plugin
-                                          has not been resolved */
-    KMM_PLUGIN_STATE_INIT,              /*!< The plugin was initialized */
-    KMM_PLUGIN_STATE_RUNNING,           /*!< The plugin is running */
-    KMM_PLUGIN_STATE_EXITED             /*!< The plugin has been stopped. */
-};
-
 /*! \brief Module registration */
 typedef struct tag_kmm_module_reg {
     wchar_t *   name;               /*!< Identifier for the module */
@@ -249,34 +249,9 @@ typedef struct tag_kmm_module_reg {
 				         plugin */
 } kmm_module_reg;
 
-/*! \brief Module information record */
-typedef struct tag_kmm_module_info {
-    kmm_module_reg reg;             /*!< Registration info */
-
-    khm_ui_4    language;           /*!< Currently loaded langugage */
-
-    khm_int32   state;              /*!< Current status of the module.
-				         One of ::KMM_MODULE_STATES*/
-
-    khm_version file_version;       /*!< File version for the
-				         module */
-    khm_version product_version;    /*!< Product version for the
-				         module */
-
-    khm_int32   failure_count;      /*!< Number of times the module
-				         has failed to load */
-    FILETIME    failure_time;       /*!< Time of first recorded
-				         failure */
-    khm_int32   failure_reason;     /*!< Reason for first failure.
-				         One of the module status
-				         values */
-
-    kmm_module  h_module;           /*!< Handle to the module. */
-} kmm_module_info;
-
 /*! \brief Module states
 */
-enum KMM_MODULE_STATES {
+typedef enum _kmm_module_states {
     KMM_MODULE_STATE_FAIL_INCOMPAT=-12, /*!< The library containing
                                           the module was not
                                           compatible with this version
@@ -328,7 +303,32 @@ enum KMM_MODULE_STATES {
     KMM_MODULE_STATE_EXITPLUG,          /*!< Currently exiting plugins */
     KMM_MODULE_STATE_EXIT,              /*!< Currently exiting */
     KMM_MODULE_STATE_EXITED             /*!< Exited */
-};
+} kmm_module_state;
+
+/*! \brief Module information record */
+typedef struct tag_kmm_module_info {
+    kmm_module_reg reg;             /*!< Registration info */
+
+    khm_ui_4    language;           /*!< Currently loaded langugage */
+
+    khm_int32   state;              /*!< Current status of the module.
+				         One of ::KMM_MODULE_STATES*/
+
+    khm_version file_version;       /*!< File version for the
+				         module */
+    khm_version product_version;    /*!< Product version for the
+				         module */
+
+    khm_int32   failure_count;      /*!< Number of times the module
+				         has failed to load */
+    FILETIME    failure_time;       /*!< Time of first recorded
+				         failure */
+    khm_int32   failure_reason;     /*!< Reason for first failure.
+				         One of the module status
+				         values */
+
+    kmm_module  h_module;           /*!< Handle to the module. */
+} kmm_module_info;
 
 /*! \brief Start the Module Manager
 

@@ -491,8 +491,7 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
                     cb = sizeof(idname);
                     kcdb_identity_get_name(ident, idname, &cb);
                     _begin_task(0);
-                    _report_mr2(KHERR_NONE, MSG_K4_NEW_CREDS,
-                                _cstr(ident), _int32(method));
+                    _report_sr0(KHERR_NONE, IDS_MSG_K4NEW);
                     _resolve();
                     _describe();
 
@@ -542,14 +541,15 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
                     _begin_task(0);
                     cb = sizeof(idname);
                     kcdb_identity_get_name(ident, idname, &cb);
-                    _report_mr2(KHERR_NONE, MSG_K4_RENEW_CREDS,
-                                _cstr(ident), _int32(method));
+                    _report_sr0(KHERR_NONE, IDS_MSG_K4RENEW);
                     _resolve();
                     _describe();
                 } else {
                     assert(FALSE);
                     break;
                 }
+
+                _progress(0,1);
 
                 if ((method == K4_METHOD_AUTO ||
                      method == K4_METHOD_K524) &&
@@ -560,9 +560,11 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
                     FILETIME ft_new;
                     khm_size cb;
 
-                    _report_mr0(KHERR_INFO, MSG_K4_TRY_K524);
+                    _report_cs0(KHERR_INFO, L"Trying K524...");
 
                     tgt = khm_krb4_find_tgt(NULL, ident);
+                    _progress(1,3);
+
                     if (tgt) {
                         cb = sizeof(ft_prev);
                         if (KHM_FAILED(kcdb_cred_get_attr(tgt,
@@ -575,6 +577,7 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
                     }
 
                     code = khm_convert524(ident);
+                    _progress(2,3);
 
                     _reportf(L"khm_convert524 returns code %d", code);
 
@@ -629,6 +632,8 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
                             }
                         }
 
+                        _progress(1,1);
+
                         _end_task();
                         if (ident)
                             kcdb_identity_release(ident);
@@ -668,7 +673,9 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
 			    khui_context_release(&ctx);
 			}
 
+                        _progress(1,1);
                         _end_task();
+
                         if (ident)
                             kcdb_identity_release(ident);
                         break;
@@ -694,7 +701,7 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
 
                     assert(subtype == KMSG_CRED_NEW_CREDS);
 
-                    _report_mr0(KHERR_INFO, MSG_K4_TRY_PASSWORD);
+                    _report_cs0(KHERR_INFO, L"Trying password ...");
 
                     code = TRUE; /* just has to be non-zero */
 
@@ -768,6 +775,8 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
                     code = khm_krb4_kinit(aname, inst, realm,
                                           (long) d->lifetime, pwd);
 
+                    _progress(2,3);
+
                     _reportf(L"khm_krb4_kinit returns code %d", code);
 
                 _skip_pwd:
@@ -790,6 +799,8 @@ krb4_msg_newcred(khm_int32 msg_type, khm_int32 msg_subtype,
                         }
                     }
                 }
+
+                _progress(1,1);
 
                 _end_task();
             }

@@ -94,6 +94,15 @@ handle_kmsg_ident_notify_create(khm_handle ident)
 }
 
 khm_int32
+handle_kmsg_ident_notify_config(khm_handle ident)
+{
+
+    /* TODO: Handle this message */
+
+    return KHM_ERROR_SUCCESS;
+}
+
+khm_int32
 handle_kmsg_ident_update(khm_handle ident) {
 
     /* TODO: Handle this message */
@@ -246,6 +255,9 @@ handle_kmsg_ident(khm_int32 msg_type,
 
     case KMSG_IDENT_NOTIFY_CREATE:
         return handle_kmsg_ident_notify_create((khm_handle) vparam);
+
+    case KMSG_IDENT_NOTIFY_CONFIG:
+        return handle_kmsg_ident_notify_config((khm_handle) vparam);
 
     case KMSG_IDENT_RESOURCE_REQ:
         return handle_kmsg_ident_resource_req((kcdb_resource_request *) vparam);

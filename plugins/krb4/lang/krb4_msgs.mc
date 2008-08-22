@@ -34,7 +34,7 @@ Initial placeholder message
 MessageId=
 SymbolicName=MSG_K4_NEW_CREDS
 Language=English
-Getting new Krb4 credentials for [%1!s!] using method [%2!d!]
+Getting new Krb4 credentials for %1!s! using method %2!d!
 .
 
 MessageId=

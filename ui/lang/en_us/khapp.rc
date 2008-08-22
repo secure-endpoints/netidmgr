@@ -70,6 +70,8 @@ IDI_CFG_PLUGIN          ICON                    "..\\..\\images\\cfg_plugin.ico"
 IDI_CFG_PLUGIN_ERR      ICON                    "..\\..\\images\\cfg_plugin_err.ico"
 IDI_CFG_PLUGIN_DIS      ICON                    "..\\..\\images\\cfg_plugin_dis.ico"
 IDI_ID_NEW              ICON                    "..\\..\\images\\id_new.ico"
+IDI_CLOCK               ICON                    "..\\..\\images\\clock.ico"
+IDI_CHECK               ICON                    "..\\..\\images\\check.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -204,7 +206,7 @@ CAPTION "Network Identity Manager Configuration"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "Title",IDC_CFG_TITLE,0,0,357,20,SS_CENTERIMAGE
-    CONTROL         "",IDC_CFG_NODELIST,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_TRACKSELECT | WS_TABSTOP | 0x800,0,20,100,182
+    CONTROL         "",IDC_CFG_NODELIST,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_TRACKSELECT | TVS_INFOTIP | WS_TABSTOP,0,20,100,182
     LTEXT           "Static",IDC_CFG_PANE,102,20,255,182,NOT WS_VISIBLE | WS_BORDER
     PUSHBUTTON      "&Ok",IDOK,162,205,78,16
     PUSHBUTTON      "&Cancel",IDCANCEL,246,205,51,16
@@ -412,12 +414,14 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    CONTROL         "Show &details",IDC_NC_DETAILS,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_TABSTOP,7,9,56,10
     PUSHBUTTON      "< &Back",IDC_BACK,152,5,50,14,NOT WS_VISIBLE
     PUSHBUTTON      "&Next >",IDC_NEXT,202,5,50,14,NOT WS_VISIBLE
     PUSHBUTTON      "&Finish",IDC_FINISH,258,5,50,14,NOT WS_VISIBLE
-    PUSHBUTTON      "&Cancel",IDCANCEL,313,5,50,14
+    PUSHBUTTON      "&Cancel",IDCANCEL,313,5,50,14,NOT WS_VISIBLE
     PUSHBUTTON      "&Abort",IDC_NC_ABORT,313,5,50,14,NOT WS_VISIBLE
+    CONTROL         "&Close this window after operation is complete",IDC_CLOSEIF,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,9,161,10
+    PUSHBUTTON      "Close",IDC_NC_CLOSE,313,5,50,14,NOT WS_VISIBLE
 END
 
 IDD_NC_IDSEL DIALOGEX 0, 0, 370, 30
@@ -456,6 +460,7 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
+    LTEXT           "Progress container rect",IDC_CONTAINER,6,7,357,113,NOT WS_VISIBLE | WS_BORDER
 END
 
 IDD_ICON_OFN DIALOGEX 0, 0, 173, 233
@@ -796,16 +801,12 @@ BEGIN
     IDS_CFG_IDENTITY_SHORT  "%s"
     IDS_CFG_IDENTITY_LONG   "Options for %s"
     IDS_CTX_DESTROY_CREDS   "Destroying credentials"
-    IDS_WARN_EXPIRE         "Some of your credentials will expire in %s"
-    IDS_WARN_TITLE          "Credentials expiration warning"
+    IDS_WARN_TITLE          "Some of your credentials are about to expire"
     IDS_ALERT_MOREINFO      "...\nClick here for more..."
 END
 
 STRINGTABLE 
 BEGIN
-    IDS_WARN_EXPIRED        "Some of your credentials have expired."
-    IDS_WARN_EXPIRE_ID      "Credentials for %.180s will expire in %s"
-    IDS_WARN_EXPIRED_ID     "Credentials for %.220s have expired"
     IDS_WARN_WM_TITLE       "Network Identity Manager is still running"
     IDS_WARN_WM_MSG         "Click the Network Identity Manager icon below to open the application.\n\nOr right click the icon to access the Network Identity Manager menu."
     IDS_CFG_ID_TAB_SHORT    "General"
@@ -850,6 +851,8 @@ BEGIN
     IDS_CW_DEFAULT          "(Default)"
     IDS_ACTION_OPT_PLUGINS  "Plugins"
     IDS_NC_SETDEF           "&Set as default identity"
+    IDS_WT_ACQ_PRIV_ID      "Acquire privileged credentials"
+    IDS_WARN_EXP_CRED       "Credentials for %1!.180s! will expire %2!s!."
     IDS_PACTION_YES         "&Yes"
     IDS_PACTION_NO          "&No"
     IDS_PACTION_YESALL      "Y&es to all"

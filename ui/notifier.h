@@ -36,6 +36,13 @@ enum khm_notif_expstate {
     KHM_NOTIF_EXP
 };
 
+enum khui_alert_window_flags {
+    KHM_ALERTF_CHILD = 1,      /*!< Alert window is being created as a
+                                 child window */
+    KHM_ALERTF_COMPACT = 2,     /*!< The alert window should be drawn
+                                   using the compact layout.*/
+};
+
 extern khm_int32 khm_notifier_actions[];
 extern khm_size  n_khm_notifier_actions;
 
@@ -65,5 +72,15 @@ khm_notify_icon_activate(void);
 
 khm_int32
 khm_get_default_notifier_action(void);
+
+void
+khui_alert_add_to_container(HWND hwnd_container,
+                            khui_alert * a);
+
+HWND
+khui_alert_create_container(HWND hwnd,
+                            const RECT * pos,
+                            khm_int32 flags);
+
 
 #endif

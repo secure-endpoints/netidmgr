@@ -51,6 +51,7 @@ OBJFILES= 			\
 	$(OBJ)\addrchange.obj	\
 	$(OBJ)\debugfuncs.obj	\
 	$(OBJ)\taskbar.obj	\
+	$(OBJ)\propertysheet.obj  	\
 	$(OBJ)\windowctl.obj	\
 	$(OBJ)\iconselectwnd.obj	\
 	$(OBJ)\cfg_general_wnd.obj	\

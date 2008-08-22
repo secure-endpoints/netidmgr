@@ -32,13 +32,14 @@ enum tag_khm_ui_element {
     /* Fonts */
 
     KHM_FONT_BASE = 1,
+
     KHM_FONT_HEADER,
     KHM_FONT_HEADERSEL,
     KHM_FONT_NORMAL,
-
     KHM_FONT_SELECT,
     KHM_FONT_TITLE,
     KHM_FONT_AUX,
+
     KHM_FONT_T_MAX,             /* Marker */
 
     /* Colors */
@@ -97,6 +98,10 @@ khm_set_element_color(khm_ui_element element, COLORREF cr);
 
 khm_int32
 khm_load_theme(const wchar_t * theme);
+
+khm_int32
+khm_draw_text(HDC hdc, const wchar_t * text, khm_ui_element font,
+              unsigned int dt_flags, RECT * r);
 
 void
 khm_init_themes(void);

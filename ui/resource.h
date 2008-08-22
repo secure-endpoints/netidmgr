@@ -3,6 +3,7 @@
 // Used by C:\work\pismere\athena\auth\krb5\src\windows\identity\ui\lang\en_us\khapp.rc
 //
 #define IDC_NC_ABORT                    3
+#define IDC_NC_CLOSE                    4
 #define IDI_MAIN_APP                    104
 #define IDD_PP_CRED                     106
 #define IDD_PP_IDENT                    107
@@ -227,11 +228,15 @@
 #define IDD_ICON_OFN                    222
 #define IDS_ERR_TITLE_NO_IDENTPRO       223
 #define IDS_ERR_MSG_NO_IDENTPRO         224
+#define IDI_CLOCK                       224
 #define IDS_ERR_SUGG_NO_IDENTPRO        225
+#define IDI_CHECK                       225
 #define IDS_NC_REN_FAILED_TITLE         226
 #define IDS_CW_DEFAULT                  227
 #define IDS_ACTION_OPT_PLUGINS          228
 #define IDS_NC_SETDEF                   229
+#define IDS_WT_ACQ_PRIV_ID              230
+#define IDS_WARN_EXP_CRED               231
 #define IDS_PACTION_YES                 233
 #define IDS_PACTION_NO                  234
 #define IDS_PACTION_YESALL              235
@@ -421,6 +426,8 @@
 #define IDC_LIST1                       1180
 #define IDC_LIST                        1180
 #define IDC_TEXT2                       1181
+#define IDC_CONTAINER                   1183
+#define IDC_CLOSEIF                     1184
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -434,9 +441,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        223
+#define _APS_NEXT_RESOURCE_VALUE        226
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1183
+#define _APS_NEXT_CONTROL_VALUE         1185
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

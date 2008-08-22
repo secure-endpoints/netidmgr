@@ -402,9 +402,7 @@ khm_cfg_general_proc(HWND hwnd,
             check_for_modification(d);
         }
 
-        khm_set_dialog_result(hwnd, 0);
-
-        return TRUE;
+        return SetDlgMsgResult(hwnd, WM_COMMAND, 0);
 
     case KHUI_WM_CFG_NOTIFY:
         d = (dlg_data *) (DWORD_PTR) GetWindowLongPtr(hwnd, DWLP_USER);
@@ -415,9 +413,7 @@ khm_cfg_general_proc(HWND hwnd,
             write_params(d);
         }
 
-        khm_set_dialog_result(hwnd, 0);
-
-        return TRUE;
+        return SetDlgMsgResult(hwnd, KHUI_WM_CFG_NOTIFY, 0);
     }
 
     return FALSE;

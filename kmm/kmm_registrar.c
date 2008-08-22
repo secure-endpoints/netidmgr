@@ -1025,7 +1025,8 @@ void kmmint_exit_module(kmm_module_i * m) {
 
     /* Last but not least, now see if there are any modules left that
        are running. If not, we can safely signal an exit. */
-    if (kmm_active_modules == 0) {
+    if (kmm_active_modules == 0 && !kmm_load_pending()) {
         SetEvent(evt_exit);
     }
 }
+

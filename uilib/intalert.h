@@ -34,6 +34,9 @@
 
 @{ */
 
+typedef struct tag_alerter_wnd_data alerter_wnd_data;
+typedef struct tag_alerter_alert_data alerter_alert_data;
+
 /*! \internal
 
     \brief An alert
@@ -63,6 +66,7 @@ typedef struct tag_khui_alert {
                                   The first button will be the
                                   default.  Each command should be a
                                   known action identifier. */
+
     khm_int32           n_alert_commands;
                                 /*!< The number of commands in
                                   alert_commands[]. */
@@ -88,13 +92,16 @@ typedef struct tag_khui_alert {
                                  ::khui_alert_flags.  Do not modify
                                  directly. */
 
+    khm_int32           monitor_flags;
+                                /*!< Combination of ::khui_amp_flags */
+
     kherr_context *     err_context; 
                                 /*!< If non-NULL at the time the alert
                                   window is shown, this indicates that
                                   the alert window should provide an
                                   error viewer for the given error
                                   context. */
-
+#if 0
     kherr_event *       err_event; 
                                 /*!< If non-NULL at the time the alert
                                   window is shown, this indicates that
@@ -103,12 +110,13 @@ typedef struct tag_khui_alert {
                                   event.  If an \a err_context is also
                                   given, the error viewer for the
                                   context will be below this error. */
+#endif
 
     khui_alert_type     alert_type;
                                 /*!< The type of alert. */
 
-    khui_action_context ctx;    /*!< Context to which this alert
-                                  applies to. */
+    khui_action_context ctx;    /*!< Context which this alert applies
+                                  to. */
 
     khm_int32           response; 
                                 /*!< Once the alert is displayed to
@@ -125,11 +133,52 @@ typedef struct tag_khui_alert {
                                   internally to determine when to
                                   terminate the modal loop */
 
+    alerter_wnd_data   *wnd_data;
+                                /*!< Window data if the alert is being
+                                   shown in a window. Only valid if \a
+                                   displayed is TRUE. */
+
+    alerter_alert_data *adata;
+                                /*!< Window data if the alert is being
+                                   shown in a window.  Only valid if
+                                   \a displayed is TRUE. */
+
     LDCL(struct tag_khui_alert);
                                 /*!< internal */
 } khui_alert;
 
 #define KHUI_ALERT_MAGIC 0x48c39ce9
+
+enum khui_amp_flags {
+    KHUI_AMP_ADD_CHILDREN   = 0x00000001,
+    KHUI_AMP_SHOW_ABORT     = 0x00000002,
+    KHUI_AMP_SHOW_EVT_ERR   = 0x00010000,
+    KHUI_AMP_SHOW_EVT_WARN  = 0x00020000,
+    KHUI_AMP_SHOW_EVT_INFO  = 0x00040000,
+    KHUI_AMP_SHOW_EVT_DEBUG = 0x00080000
+};
+
+/*! \internal
+
+    \brief Monitor the progress of an error context
+
+    Error contexts or event contexts can be monitored in real time to
+    show the status of a thread or task as it is being executed.
+    These alerts can't be displayed using khui_alert_show(), and must
+    be added to a alert bin.
+
+    \param[in] alert Alert object to use
+
+    \param[in] ctx Error context to monitor.  If this is NULL, then
+        the current error context will be monitored.
+
+    \param[in] monitor_flags Combination of KHUI_AMP_* above.
+
+ */
+KHMEXP khm_int32 KHMAPI
+khui_alert_monitor_progress(khui_alert * alert,
+                            kherr_context * ctx,
+                            khm_int32    monitor_flags);
 
 /*@}*/
 

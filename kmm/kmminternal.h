@@ -70,7 +70,7 @@ typedef struct kmm_module_i_t {
     WORD    lcid_resource;
 
     khm_int32 flags;
-    khm_int32 state;
+    kmm_module_state state;
     khm_int32 plugin_count; /* number of active plugins */
 
     void * version_info;
@@ -121,7 +121,7 @@ typedef struct kmm_plugin_i_t {
     HANDLE      ht_thread;
     DWORD       tid_thread;
 
-    khm_int32   state;
+    kmm_plugin_state state;
     khm_int32   flags;
     
     int         refcount;

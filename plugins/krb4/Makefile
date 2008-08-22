@@ -59,17 +59,10 @@ LIBFILES= 				\
 
 VERRESFILE=$(OBJ)\version.res
 
-MSGRESFILE=$(OBJ)\krb4_msgs.res
-
-$(MSGRESFILE): $(OBJ)\krb4_msgs.rc
-
-$(OBJ)\krb4_msgs.rc: lang\krb4_msgs.mc
-	$(MC2RC)
-
 $(OBJ)\krb4config.c: krbconfig.csv $(CONFDIR)\csvschema.cfg
 	$(CCSV) $** $@
 
-$(DLLFILE): $(OBJFILES) $(VERRESFILE) $(MSGRESFILE)
+$(DLLFILE): $(OBJFILES) $(VERRESFILE)
 	$(DLLGUILINK) $(LIBFILES) $(SDKLIBFILES) $(SCLIB)
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)

@@ -25,9 +25,7 @@
 /* $Id$ */
 
 #include "khmapp.h"
-#ifdef DEBUG
 #include<assert.h>
-#endif
 
 struct ch_icon_data {
     khm_int32   magic;          /* CH_ICON_DATA_MAGIC */

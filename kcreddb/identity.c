@@ -272,7 +272,15 @@ kcdb_identity_create_ex(khm_handle vidpro,
 
         *result = (khm_handle) id;
 
-        kcdb_identpro_notify_create((khm_handle) id);
+        {
+            khm_int32 rv;
+            rv = kcdb_identpro_notify_create((khm_handle) id);
+            assert(rv != KHM_ERROR_NO_PROVIDER);
+        }
+
+        if (vparam)
+            kcdb_identity_set_attr((khm_handle) id, KCDB_ATTR_PARAM, NULL, 0);
+
         kcdbint_ident_post_message(KCDB_OP_INSERT, id);
 
         if (h_kcdb)
@@ -530,6 +538,11 @@ kcdb_identity_delete(khm_handle vid) {
            we will get called again. */
         return KHM_ERROR_SUCCESS;
     } else if (id->refcount == 0) {
+        KHMEXP khm_int32 KHMAPI
+            khui_cache_del_by_owner(khm_handle owner);
+
+        khui_cache_del_by_owner(vid);
+
         /* If the identity is not active, it is not in the hashtable
            either */
         LDELETE(&kcdb_identities, id);
@@ -813,6 +826,7 @@ kcdb_identity_get_config(khm_handle vid,
     kcdb_identity * id;
     wchar_t cfname[KCONF_MAXCCH_NAME];
     khm_size cb;
+    khm_boolean need_to_notify_provider = FALSE;
 
     if(kcdb_is_active_identity(vid)) {
         id = (kcdb_identity *) vid;
@@ -889,6 +903,13 @@ kcdb_identity_get_config(khm_handle vid,
             } else {
                 /* IDProvider doesn't exist. Create. */
                 khc_write_string(hident, L"IDProvider", id->id_pro->name);
+
+                /* If the IDProvider value is missing, we also assume
+                   that the identity provider wasn't notified of the
+                   configuration space creation and has not had a
+                   chance to initialize it properly. */
+
+                need_to_notify_provider = TRUE;
             }
 
             if (!khc_value_exists(hident, L"IdentSerial")) {
@@ -904,6 +925,10 @@ kcdb_identity_get_config(khm_handle vid,
 
 _exit:
     LeaveCriticalSection(&cs_ident);
+
+    if (need_to_notify_provider) {
+        kcdb_identpro_notify_config_create(vid);
+    }
 
     if(hidents)
         khc_close_space(hidents);
@@ -970,6 +995,8 @@ struct kcdb_idref_result {
     khm_size  n_init_credentials;
 };
 
+/* Identity refresh callback.  Itereated over all the credentials in
+   the root credentials set. */
 static khm_int32 KHMAPI 
 kcdbint_idref_proc(khm_handle cred, void * r) {
     khm_handle vid;
@@ -1101,6 +1128,7 @@ kcdb_identity_refresh_all(void) {
             }
 
             kcdb_identity_hold((khm_handle) ident);
+            next = LNEXT(ident);
 
             LeaveCriticalSection(&cs_ident);
 
@@ -1108,7 +1136,6 @@ kcdb_identity_refresh_all(void) {
 
             EnterCriticalSection(&cs_ident);
 
-            next = LNEXT(ident);
             kcdb_identity_release((khm_handle) ident);
 
             hit_count++;

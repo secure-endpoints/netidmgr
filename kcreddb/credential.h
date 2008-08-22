@@ -58,6 +58,7 @@ extern khm_ui_8 kcdb_cred_id;
 
 #define kcdb_cred_is_cred(c)        ((c) && ((kcdb_cred *) c)->magic == KCDB_CRED_MAGIC)
 #define kcdb_cred_is_active_cred(c) (kcdb_cred_is_cred(c) && !(((kcdb_cred *) c)->flags & KCDB_CRED_FLAG_DELETED))
+#define kcdb_cred_is_privileged(c)  (((c)->flags & KCDB_CRED_FLAG_PRIVILEGED) == KCDB_CRED_FLAG_PRIVILEGED)
 
 #define kcdb_cred_lock_read()       (LockObtainRead(&l_creds))
 #define kcdb_cred_unlock_read()     (LockReleaseRead(&l_creds))

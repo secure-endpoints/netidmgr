@@ -33,7 +33,7 @@
 #include<commctrl.h>
 #include<htmlhelp.h>
 
-#define KHERR_HMODULE khm_hInstance
+#define KHERR_HMODULE  khm_hInstance
 #define KHERR_FACILITY khm_facility
 #define KHERR_FACILITY_ID 3
 
@@ -64,6 +64,7 @@
 #include "debugfuncs.h"
 #include "taskbar.h"
 #include "windowctl.h"
+#include "propertysheet.h"
 
 #include "reqdaemon.h"
 #include "notifier.h"

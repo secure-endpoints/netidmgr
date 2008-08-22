@@ -192,6 +192,8 @@ kmsg_cred_completion(kmq_message *m)
     case KMSG_CRED_PASSWORD:
         /* fallthrough */
     case KMSG_CRED_NEW_CREDS:
+        /* fallthrough */
+    case KMSG_CRED_ACQPRIV_ID:
         /* Cred types have attached themselves.  Trigger the next
            phase. */
         kmq_post_message(KMSG_CRED, KMSG_CRED_DIALOG_SETUP, 0, 
@@ -204,6 +206,17 @@ kmsg_cred_completion(kmq_message *m)
         /* khm_cred_dispatch_process_message() deals with the case
            where there are no credential types that wants to
            participate in this operation. */
+        if (nc->subtype == KHUI_NC_SUBTYPE_ACQDERIVED)
+            kmq_post_message(KMSG_CRED, KMSG_CRED_PREPROCESS_ID, 0,
+                             m->vparam);
+        else
+            khm_cred_dispatch_process_message(nc);
+        break;
+
+    case KMSG_CRED_PREPROCESS_ID:
+        nc = (khui_new_creds *) m->vparam;
+
+        nc->subtype = KHUI_NC_SUBTYPE_RENEW_CREDS;
         khm_cred_dispatch_process_message(nc);
         break;
 
@@ -290,14 +303,17 @@ kmsg_cred_completion(kmq_message *m)
 
                 khui_alert_create_empty(&alert);
 
-                if (nc->subtype == KMSG_CRED_NEW_CREDS) {
+                if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+                    nc->subtype == KMSG_CRED_ACQPRIV_ID) {
 
                     khui_alert_set_type(alert, KHUI_ALERTTYPE_ACQUIREFAIL);
 
                     cb = sizeof(w_idname);
                     if (nc->n_identities == 0 ||
-                        KHM_FAILED(kcdb_identity_get_name(nc->identities[0],
-                                                          w_idname, &cb))) {
+                        KHM_FAILED(kcdb_get_resource(nc->identities[0],
+                                                     KCDB_RES_DISPLAYNAME,
+                                                     0, NULL, NULL,
+                                                     w_idname, &cb))) {
                         /* an identity could not be determined */
                         LoadString(khm_hInstance, IDS_NC_FAILED_TITLE,
                                    ws_title, ARRAYLENGTH(ws_title));
@@ -319,8 +335,10 @@ kmsg_cred_completion(kmq_message *m)
 
                     cb = sizeof(w_idname);
                     if (nc->n_identities == 0 ||
-                        KHM_FAILED(kcdb_identity_get_name(nc->identities[0],
-                                                          w_idname, &cb))) {
+                        KHM_FAILED(kcdb_get_resource(nc->identities[0],
+                                                     KCDB_RES_DISPLAYNAME,
+                                                     0, NULL, NULL,
+                                                     w_idname, &cb))) {
                         LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE,
                                    ws_title, ARRAYLENGTH(ws_title));
                     } else {
@@ -341,8 +359,10 @@ kmsg_cred_completion(kmq_message *m)
 
                     cb = sizeof(w_idname);
                     if (nc->ctx.identity == NULL ||
-                        KHM_FAILED(kcdb_identity_get_name(nc->ctx.identity,
-                                                          w_idname, &cb))) {
+                        KHM_FAILED(kcdb_get_resource(nc->ctx.identity,
+                                                     KCDB_RES_DISPLAYNAME,
+                                                     0, NULL, NULL,
+                                                     w_idname, &cb))) {
                         LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE,
                                    ws_title, ARRAYLENGTH(ws_title));
                     } else {
@@ -882,7 +902,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         return;
 
     khui_cw_create_cred_blob(&nc);
-    nc->subtype = KMSG_CRED_NEW_CREDS;
+    nc->subtype = KHUI_NC_SUBTYPE_NEW_CREDS;
     dialog_nc = nc;
 
     khui_context_get(&nc->ctx);
@@ -1053,7 +1073,8 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     /* see if there's anything to do.  We can check this without
        obtaining a lock */
     if(nc->n_types == 0 ||
-       (nc->subtype == KMSG_CRED_NEW_CREDS &&
+       ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+         nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) &&
         nc->n_identities == 0) ||
        (nc->subtype == KMSG_CRED_PASSWORD &&
         nc->n_identities == 0))
@@ -1073,8 +1094,11 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
        process. */
     _begin_task(KHERR_CF_TRANSITIVE);
 
+    khm_nc_track_progress_of_this_task(nc);
+
     /* Describe the context */
-    if(nc->subtype == KMSG_CRED_NEW_CREDS) {
+    if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+       nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
         cbsize = sizeof(wsinsert);
         kcdb_identity_get_name(nc->identities[0], wsinsert, &cbsize);
 
@@ -1142,7 +1166,7 @@ khm_cred_addr_change(void) {
     khm_handle csp_cw = NULL;
     khm_int32 check_net = 0;
     kcdb_enumeration e = NULL;
-    khm_handle ident;
+    khm_handle ident = NULL;
     khm_size cb;
     khm_size n_idents;
     FILETIME ft_now;

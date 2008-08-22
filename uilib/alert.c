@@ -169,7 +169,7 @@ khui_alert_set_suggestion(khui_alert * alert,
 
     if(suggestion) {
         if(FAILED(StringCbLength(suggestion, 
-                                 KHUI_MAXCB_MESSAGE - sizeof(wchar_t), 
+                                 KHUI_MAXCB_MESSAGE, 
                                  &cb))) {
             return KHM_ERROR_INVALID_PARAM;
         }
@@ -205,7 +205,7 @@ khui_alert_set_message(khui_alert * alert, const wchar_t * message)
 
     if(message) {
         if(FAILED(StringCbLength(message, 
-                                 KHUI_MAXCB_MESSAGE - sizeof(wchar_t), 
+                                 KHUI_MAXCB_MESSAGE, 
                                  &cb))) {
             return KHM_ERROR_INVALID_PARAM;
         }
@@ -369,6 +369,54 @@ khui_alert_show_simple(const wchar_t * title,
     return rv;
 }
 
+KHMEXP khm_int32 KHMAPI
+khui_alert_monitor_progress(khui_alert * alert,
+                            kherr_context * ctx,
+                            khm_int32    monitor_flags)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    kherr_event * e;
+    khm_boolean release_context = FALSE;
+
+    if (ctx == NULL) {
+        ctx = kherr_peek_context();
+        release_context = TRUE;
+    }
+
+    if (ctx == NULL) {
+        return KHM_ERROR_INVALID_OPERATION;
+    }
+
+    e = kherr_get_desc_event(ctx);
+    if (e) {
+        if (e->short_desc && e->long_desc) {
+            khui_alert_set_title(alert, e->short_desc);
+            khui_alert_set_message(alert, e->long_desc);
+        } else if (e->short_desc) {
+            khui_alert_set_title(alert, e->short_desc);
+        } else if (e->long_desc) {
+            khui_alert_set_title(alert, e->long_desc);
+        }
+    }
+
+    alert->err_context = ctx;
+    kherr_hold_context(ctx);
+
+    alert->monitor_flags = monitor_flags;
+
+    if (alert->alert_type == KHUI_ALERTTYPE_NONE)
+        alert->alert_type = KHUI_ALERTTYPE_PROGRESS;
+
+    if (release_context && ctx)
+        kherr_release_context(ctx);
+
+    khui_alert_hold(alert);
+    rv = kmq_send_message(KMSG_ALERT, KMSG_ALERT_MONITOR_PROGRESS, 0,
+                          (void *) alert);
+
+    return rv;
+}
+
 KHMEXP khm_int32 KHMAPI 
 khui_alert_hold(khui_alert * alert) 
 {
@@ -408,6 +456,11 @@ free_alert(khui_alert * alert)
     }
 
     khui_context_release(&alert->ctx);
+
+    if (alert->err_context) {
+        kherr_release_context(alert->err_context);
+        alert->err_context = NULL;
+    }
 
     if(alert->flags & KHUI_ALERT_FLAG_FREE_STRUCT) {
         alert->flags &= ~KHUI_ALERT_FLAG_FREE_STRUCT;

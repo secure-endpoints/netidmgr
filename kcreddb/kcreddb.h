@@ -690,9 +690,9 @@ typedef struct tag_kcdb_resource_request {
                                      bytes used. */
 
     khm_int32        code;      /*!< Return value.  Set this to
-                                   ::KHM_ERROR_SUCCESS if the call was
-                                   successful, or to a suitable error
-                                   code if not. */
+                                     ::KHM_ERROR_SUCCESS if the call
+                                     was successful, or to a suitable
+                                     error code if not. */
 } kcdb_resource_request;
 
 #define KCDB_RESOURCE_REQ_MAGIC 0x31ff606d
@@ -1004,6 +1004,13 @@ kcdb_identpro_get_idsel_factory(khm_handle vidpro, kcdb_idsel_factory * pcb);
 */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_notify_create(khm_handle identity);
+
+/*! \brief Notify an identity provider of the creation of a configuration space for an identity
+
+    \see ::KMSG_IDENT_NOTIFY_CONFIG
+ */
+KHMEXP khm_int32 KHMAPI 
+kcdb_identpro_notify_config_create(khm_handle identity);
 
 #endif  /* NIMPRIVATE */
 
@@ -2001,7 +2008,8 @@ kcdb_credset_find_filtered(khm_handle credset,
         the matching credential is not required, you can pass in NULL.
 
     \retval KHM_ERROR_SUCCESS The search was successful.  A credential
-        was assigned to \a cred_dest
+        was assigned to \a cred_dest.  The returned handle should be
+        released with a call to kcdb_cred_release().
 
     \retval KHM_ERROR_NOT_FOUND A matching credential was not found.
  */
@@ -2290,6 +2298,14 @@ kcdb_cred_comp_generic(khm_handle cred1,
     flag may be subject to race conditions.
  */
 #define KCDB_CRED_FLAG_SELECTED    0x00000100
+
+/*! \brief Privileged credential
+
+    The contents of the credential should be considered privileged.
+    These credentials cannot be added to the root credentials set and
+    are never duplicated.
+ */
+#define KCDB_CRED_FLAG_PRIVILEGED  0x00000200
 
 /*! \brief Bitmask indicating all known credential flags
  */
@@ -3073,14 +3089,6 @@ FtIntervalToSeconds(const FILETIME * pft);
 KHMEXP long KHMAPI 
 FtIntervalToMilliseconds(const FILETIME * pft);
 
-/*! \brief Compare two FILETIME values
-
-    The return value is similar to the return value of strcmp(), based
-    on the comparison of the two FILETIME values.
- */
-KHMEXP long KHMAPI 
-FtCompare(LPFILETIME pft1, LPFILETIME pft2);
-
 /*! \brief Convert a FILETIME to a 64 bit int
 */
 KHMEXP khm_int64 KHMAPI
@@ -3104,6 +3112,8 @@ FtSub(const FILETIME * ft1, const FILETIME * ft2);
  */
 KHMEXP FILETIME KHMAPI
 FtAdd(const FILETIME * ft1, const FILETIME * ft2);
+
+#define FtIsZero(pft) (FtToInt(pft) == 0)
 
 /*! \brief Convert a FILETIME inverval to a string
 */
@@ -3599,7 +3609,7 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 /*! \brief The name of the identity
 
     - \b Type: STRING
-    - \b Flags: REQUIRED, COMPUTED, SYSTEM, ALTVIEW
+    - \b Flags: REQUIRED, COMPUTED, SYSTEM, ALTVIEW, HIDDEN
     - \b Alt ID: KCDB_ATTR_ID
  */
 #define KCDB_ATTR_ID_NAME       2
@@ -3711,6 +3721,14 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
  */
 #define KCDB_ATTR_LAST_UPDATE   16
 
+/*! \brief Display name of identity
+
+    - \b Type: STRING
+    - \b Flags: REQUIRED, COMPUTED, SYSTEM, ALTVIEW
+    - \b Alt ID: KCDB_ATTR_ID
+ */
+#define KCDB_ATTR_ID_DISPLAY_NAME 17
+
 /*! \brief Number of credentials
 
   Number of credentials in the root credentials set that are
@@ -3764,6 +3782,7 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 #define KCDB_ATTRNAME_NAME          L"Name"
 #define KCDB_ATTRNAME_ID            L"Identity"
 #define KCDB_ATTRNAME_ID_NAME       L"IdentityName"
+#define KCDB_ATTRNAME_ID_DISPLAY_NAME L"IdentityDisplayName"
 #define KCDB_ATTRNAME_TYPE          L"TypeId"
 #define KCDB_ATTRNAME_TYPE_NAME     L"TypeName"
 #define KCDB_ATTRNAME_FLAGS         L"Flags"

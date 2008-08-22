@@ -160,8 +160,10 @@ kinit_task_free(k5_kinit_task * kt)
     if (kt->principal)
         PFREE(kt->principal);
 
-    if (kt->password)
+    if (kt->password) {
+        SecureZeroMemory(kt->password, strlen(kt->password));
         PFREE(kt->password);
+    }
 
     if (kt->identity)
         kcdb_identity_release(kt->identity);
@@ -248,15 +250,11 @@ k5_kinit_task_confirm_and_wait(k5_kinit_task * kt)
         break;
 
     case K5_KINIT_STATE_CONFIRM:
-#ifdef DEBUG
         assert(FALSE);
-#endif
         break;
 
     default:
-#ifdef DEBUG
         assert(FALSE);
-#endif
     }
     LeaveCriticalSection(&kt->cs);
 
@@ -272,9 +270,7 @@ cp_check_continue(k5_kinit_task * kt) {
     size_t cch;
 
     if (KHM_FAILED(khui_cw_get_prompt_count(kt->nc, &n_p))) {
-#ifdef DEBUG
         assert(FALSE);
-#endif
         return TRUE;
     }
 
@@ -319,9 +315,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
     khm_int64 iexpiry;
     FILETIME expiry;
 
-#ifdef DEBUG
     assert(kt->nc);
-#endif
     
     if (KHM_FAILED(kcdb_identity_get_config(kt->identity, 0, &csp_idconfig)) ||
 
@@ -521,9 +515,8 @@ kinit_prompter(krb5_context context,
     khm_handle csp_prcache = NULL;
 
     kt = (k5_kinit_task *) data;
-#ifdef DEBUG
     assert(kt && kt->magic == K5_KINIT_TASK_MAGIC);
-#endif
+
     EnterCriticalSection(&kt->cs);
 
     if (kt->state == K5_KINIT_STATE_ABORTED) {
@@ -631,9 +624,7 @@ kinit_prompter(krb5_context context,
  _show_new_prompts:
     if (num_prompts == 0) {
 
-#ifdef DEBUG
         assert(FALSE);
-#endif
 
         khui_cw_notify_identity_state(kt->nc, NULL,
                                       KHUI_CWNIS_READY |
@@ -811,9 +802,7 @@ kinit_prompter(krb5_context context,
             else
                 d->length = 0;
         } else {
-#ifdef DEBUG
             assert(FALSE);
-#endif
             d->length = 0;
         }
 
@@ -822,6 +811,14 @@ kinit_prompter(krb5_context context,
             d->length == 0)
 
             kt->is_null_password = TRUE;
+    }
+
+    if (khui_cw_get_subtype(kt->nc) == KHUI_NC_SUBTYPE_ACQPRIV_ID &&
+        num_prompts == 1 &&
+        ptypes &&
+        ptypes[0] == KRB5_PROMPT_TYPE_PASSWORD &&
+        prompts[0].reply->length != 0) {
+        k5_reply_to_acqpriv_id_request(kt->nc, prompts[0].reply);
     }
 
  _exit:
@@ -877,10 +874,9 @@ kinit_task_proc(void * vparam)
         WaitForSingleObject(kt->h_task_wait, INFINITE);
         EnterCriticalSection(&kt->cs);
 
-#ifdef DEBUG
         assert(kt->state == K5_KINIT_STATE_CONFIRM ||
                kt->state == K5_KINIT_STATE_ABORTED);
-#endif
+
         if (kt->state != K5_KINIT_STATE_CONFIRM)
             goto done;
 
@@ -932,9 +928,7 @@ kinit_task_proc(void * vparam)
            then we need to retry the kinit call.  This time we use the
            real options. */
 
-#ifdef DEBUG
         assert(kt->is_valid_principal);
-#endif
         kt->state = K5_KINIT_STATE_INCALL;
         goto call_kinit;
     }

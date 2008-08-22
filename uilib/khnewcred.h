@@ -307,6 +307,12 @@ enum khui_wm_nc_notifications {
     WMNC_IDENTITY_STATE,
     /*!< Sent to the new credentials window to indicate that the
        identity state has changed for an identity. */
+
+    WMNC_COLLECT_PRIVCRED,
+    /*!< Sent to the new credentials window to begin the process of
+       collecting privileged information for an identity. */
+
+    WMNC_DERIVE_FROM_PRIVCRED,
 };
 
 /*! \brief Plugins can use WMNC_NOTIFY message codes from here on up
@@ -355,12 +361,28 @@ enum khui_wm_nc_ident_notify {
 #pragma deprecated("WMNC_IDENT_PREPROCESS")
 };
 
+
 typedef enum khui_nc_subtypes {
     KHUI_NC_SUBTYPE_NEW_CREDS = KMSG_CRED_NEW_CREDS,
+    /*!< Obtain new credentials for an identity */
+
     KHUI_NC_SUBTYPE_RENEW_CREDS = KMSG_CRED_RENEW_CREDS,
+    /*!< Obtain renewd credentials for an identity */
+
     KHUI_NC_SUBTYPE_PASSWORD = KMSG_CRED_PASSWORD,
+    /*!< Change the password for an identity */
+
+    KHUI_NC_SUBTYPE_ACQPRIV_ID = KMSG_CRED_ACQPRIV_ID,
+    /*!< Acquire privileged information for an identity */
+
     KHUI_NC_SUBTYPE_IDSPEC = 256,
-    KHUI_NC_SUBTYPE_DERIVED_ID
+    /*!< Choose an identity */
+
+    KHUI_NC_SUBTYPE_CONFIG_ID,
+    /*!< Configure an identity */
+
+    KHUI_NC_SUBTYPE_ACQDERIVED,
+    /*<! Acquire new credentials for a derived identity */
 } khui_nc_subtype;
 
 /*! \name Standard credtext link IDs
@@ -375,7 +397,8 @@ typedef enum khui_nc_subtypes {
 
 /*@}*/
 
-/*forward dcl*/
+/* forward declarations */
+
 struct tag_khui_new_creds_by_type;
 typedef struct tag_khui_new_creds_by_type khui_new_creds_by_type;
 struct tag_khui_new_creds_prompt;
@@ -940,12 +963,12 @@ khui_cw_get_subtype(khui_new_creds * c);
 KHMEXP khm_int32 KHMAPI
 khui_cw_get_result(khui_new_creds * c);
 
+KHMEXP khm_boolean KHMAPI
+khui_cw_get_use_as_default(khui_new_creds * c);
+
 KHMEXP khm_int32 KHMAPI
 khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notification,
                       khm_boolean sync_required, void * param);
-
-KHMEXP khm_boolean KHMAPI
-khui_cw_get_use_as_default(khui_new_creds * c);
 
 /*! \brief Progress is not known or not applicable
 
@@ -1074,6 +1097,11 @@ khui_cw_add_control_row(khui_new_creds * c,
                         HWND input,
                         khui_control_size size);
 
+/*! \brief Add a privileged interaction panel */
+KHMEXP khm_int32 KHMAPI
+khui_cw_show_privileged_dialog(khui_new_creds * nc, khm_int32 ctype,
+                               HWND hwnd, const wchar_t * caption);
+
 /*! \brief Clear all custom prompts
 
     Removes all the custom prompts from the new credentials dialog.
@@ -1185,6 +1213,16 @@ khui_cw_get_prompt_value(khui_new_creds * c,
                          khm_size idx, 
                          wchar_t * buf, 
                          khm_size *cbbuf);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_collect_privileged_credentials(khui_new_creds * c,
+                                       khm_handle identity,
+                                       khm_handle dest_credset);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_derive_credentials(khui_new_creds * c,
+                           khm_handle identity,
+                           khm_handle dest_credset);
 
 /*!@}*/ /* Credentials acquisition */
 /*!@}*/

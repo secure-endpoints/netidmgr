@@ -636,17 +636,60 @@ cw_create_privint_panel(HWND hwnd,
     return p;
 }
 
-static void
-cw_free_privint_panel(khui_new_creds_privint_panel * pp)
+KHMEXP khm_int32 KHMAPI
+khui_cw_free_privint(khui_new_creds_privint_panel * pp)
 {
     if (pp->hwnd) {
         DestroyWindow(pp->hwnd);
         pp->hwnd = NULL;
     }
 
+    pp->magic = 0;
+
     cw_free_prompts(pp);
 
     PFREE(pp);
+
+    return KHM_ERROR_SUCCESS;
+}
+
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_show_privileged_dialog(khui_new_creds * nc, khm_int32 ctype,
+                               HWND hwnd, const wchar_t * caption)
+{
+    khm_size i;
+    khui_new_creds_privint_panel * pp;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    ASSERT_NC(nc);
+
+    EnterCriticalSection(&nc->cs);
+    for (i=0; i < nc->n_types; i++) {
+        if (nc->types[i].nct->type == ctype)
+            break;
+    }
+    if (i == nc->n_types) {
+        rv = KHM_ERROR_NOT_FOUND;
+        goto done;
+    }
+
+    pp = cw_create_privint_panel(hwnd, caption);
+
+    pp->nc = nc;
+    pp->provider = &nc->types[i];
+    pp->use_custom = FALSE;
+
+    QPUT(&nc->types[i], pp);
+ done:
+    LeaveCriticalSection(&nc->cs);
+
+    if (KHM_SUCCEEDED(rv)) {
+        PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
+                    MAKEWPARAM(0, WMNC_SET_PROMPTS), (LPARAM) nc);
+    }
+
+    return rv;
 }
 
 
@@ -672,6 +715,9 @@ khui_cw_get_next_privint(khui_new_creds * c,
            order since we pick the first one we find a privint panel
            for. */
         for (i=0; i < c->n_types; i++) {
+            if (c->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)
+                continue;
+
             if (QTOP(&c->types[i])) {
                 QGET(&c->types[i], &pp);
                 break;
@@ -857,15 +903,13 @@ khui_cw_clear_prompts(khui_new_creds * c)
         if (p->hwnd) {
             khm_size i;
 
+            LeaveCriticalSection(&c->cs);
             SendMessage(p->hwnd, WM_CLOSE, 0, 0);
-#ifdef DEBUG
-            /* If the window is successfully destroyed, the dialog
-               procedure will set p->hwnd to NULL. */
-            assert(p->hwnd == NULL);
-#endif
+            EnterCriticalSection(&c->cs);
 
-            /* The controls have been destroyed.  We just
-               dis-associate the controls from the data structure */
+            /* The controls should already have been destroyed.  We
+               just dis-associate the controls from the data
+               structure */
 
             for (i=0; i < p->n_prompts; i++) {
                 if (p->prompts[i]) {
@@ -1188,3 +1232,40 @@ khui_cw_add_control_row(khui_new_creds * c,
     }
 }
 
+KHMEXP khm_int32 KHMAPI
+khui_cw_collect_privileged_credentials(khui_new_creds * c,
+                                       khm_handle identity,
+                                       khm_handle dest_credset)
+{
+    khui_collect_privileged_creds_data cpcd;
+
+    ASSERT_NC(c);
+
+    cpcd.nc = c;
+    cpcd.target_identity = identity;
+    cpcd.dest_credset = dest_credset;
+
+    return (khm_int32)
+        SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
+                    MAKEWPARAM(0, WMNC_COLLECT_PRIVCRED),
+                    (LPARAM) &cpcd);
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_derive_credentials(khui_new_creds * c,
+                           khm_handle identity,
+                           khm_handle dest_credset)
+{
+    khui_collect_privileged_creds_data cpcd;
+
+    ASSERT_NC(c);
+
+    cpcd.nc = c;
+    cpcd.target_identity = identity;
+    cpcd.dest_credset = dest_credset;
+
+    return (khm_int32)
+        SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
+                    MAKEWPARAM(0, WMNC_DERIVE_FROM_PRIVCRED),
+                    (LPARAM) &cpcd);
+}

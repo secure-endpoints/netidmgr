@@ -221,6 +221,11 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_dup(
 
     cred = (kcdb_cred *) vcred;
 
+    if (kcdb_cred_is_privileged(cred)) {
+        code = KHM_ERROR_INVALID_OPERATION;
+        goto _exit;
+    }
+
     if(KHM_FAILED(kcdb_cred_create(cred->name,
                                    cred->identity,
                                    cred->type,
@@ -348,6 +353,12 @@ khm_int32 kcdbint_cred_attr_cb(khm_handle h,
     case KCDB_ATTR_ID_NAME:
         return kcdb_identity_get_name((khm_handle) c->identity, 
                                       (wchar_t *) buf, pcb_buf);
+
+    case KCDB_ATTR_ID_DISPLAY_NAME:
+        return kcdb_get_resource((khm_handle) c->identity,
+                                 KCDB_RES_DISPLAYNAME,
+                                 0, NULL, NULL,
+                                 buf, pcb_buf);
 
     case KCDB_ATTR_TYPE:
         if(buf && *pcb_buf >= sizeof(khm_int32)) {

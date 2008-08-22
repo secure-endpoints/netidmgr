@@ -36,10 +36,13 @@ kherr_context * ctx_error_list = NULL;
 kherr_event * evt_free_list = NULL;
 
 kherr_handler_node * ctx_handlers = NULL;
-khm_size n_ctx_handlers;
-khm_size nc_ctx_handlers;
+khm_size n_ctx_handlers = 0;
+khm_size nc_ctx_handlers = 0;
 
 kherr_serial ctx_serial = 0;
+
+static kherr_context *
+peek_context(void);
 
 #ifdef DEBUG
 #define DEBUG_CONTEXT
@@ -57,61 +60,120 @@ kherr_debug_printf(wchar_t * fmt, ...)
 }
 #endif
 
-KHMEXP void KHMAPI 
-kherr_add_ctx_handler(kherr_ctx_handler h,
-                      khm_int32 filter,
-                      kherr_serial serial)
+/* Called with cs_error held */
+static void
+remove_ctx_handler_by_index(khm_size i)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+#ifdef DEBUG
+    assert(i < n_ctx_handlers);
+#endif
+
+    if (i < n_ctx_handlers - 1)
+        memmove(&ctx_handlers[i], &ctx_handlers[i+1],
+                (n_ctx_handlers - (i + 1)) * sizeof(ctx_handlers[0]));
+    else
+        memset(&ctx_handlers[i], 0, sizeof(ctx_handlers[0]));
+
+    n_ctx_handlers --;
+}
+
+static void
+add_ctx_handler_node(const kherr_handler_node * n)
 {
     khm_size idx;
 
-    assert(h);
-
     EnterCriticalSection(&cs_error);
-    if( ctx_handlers == NULL) {
-        nc_ctx_handlers = CTX_ALLOC_INCR;
-        n_ctx_handlers = 0;
-        ctx_handlers = PMALLOC(sizeof(*ctx_handlers) * nc_ctx_handlers);
-        /* No need to initialize */
-    } else if (n_ctx_handlers == nc_ctx_handlers) {
-        khm_size new_nc;
-        kherr_handler_node * new_ctxs;
 
-        new_nc = nc_ctx_handlers + CTX_ALLOC_INCR;
-        new_ctxs = PMALLOC(sizeof(*new_ctxs) * new_nc);
-        memcpy(new_ctxs, ctx_handlers, n_ctx_handlers * sizeof(*new_ctxs));
-
-        PFREE(ctx_handlers);
-        ctx_handlers = new_ctxs;
-        nc_ctx_handlers = new_nc;
+    /* Make sure we have enough space */
+    if (n_ctx_handlers + 1 > nc_ctx_handlers) {
+        nc_ctx_handlers = UBOUNDSS(n_ctx_handlers + 1, CTX_ALLOC_INCR, CTX_ALLOC_INCR);
+        ctx_handlers = PREALLOC(ctx_handlers, sizeof(*ctx_handlers) * nc_ctx_handlers);
     }
 
-    if (filter == 0)
-        filter = KHERR_CTX_BEGIN |
+    /* Since commit events are the most frequent, we put those
+       handlers at the top of the list.  When dispatching a commit
+       event, we stop looking at the list when we find a filter that
+       doesn't filter for commit events. */
+    if (n->filter & KHERR_CTX_EVTCOMMIT) {
+	idx = 0;
+        if (n_ctx_handlers > 0)
+            memmove(&ctx_handlers[1], &ctx_handlers[0],
+                    n_ctx_handlers * sizeof(ctx_handlers[0]));
+    } else {
+	idx = n_ctx_handlers;
+    }
+
+    n_ctx_handlers++;
+
+    ctx_handlers[idx] = *n;
+
+    if (ctx_handlers[idx].filter == 0)
+        ctx_handlers[idx].filter =
+            KHERR_CTX_BEGIN |
             KHERR_CTX_DESCRIBE |
             KHERR_CTX_END |
             KHERR_CTX_ERROR |
             KHERR_CTX_NEWCHILD |
             KHERR_CTX_FOLDCHILD;
 
-    /* Since commit events are the most frequent, we put those
-       handlers at the top of the list.  When dispatching a commit
-       event, we stop looking at the list when we find a filter that
-       doesn't filter for commit events. */
-    if (filter & KHERR_CTX_EVTCOMMIT) {
-	idx = 0;
-	memmove(&ctx_handlers[1], &ctx_handlers[0],
-		n_ctx_handlers * sizeof(ctx_handlers[0]));
-    } else {
-	idx = n_ctx_handlers;
+    if (ctx_handlers[idx].serial == KHERR_SERIAL_CURRENT) {
+        kherr_context * c;
+
+        c = peek_context();
+
+        if (IS_KHERR_CTX(c)) {
+            ctx_handlers[idx].serial = c->serial;
+        } else {
+
+            /* If we were going to refer to the current context and
+               there is no current context, then we don't want to keep
+               this handler node.  If we do, it will never get called
+               and will not be automatically removed from the list. */
+
+            remove_ctx_handler_by_index(idx);
+        }
     }
 
-    ctx_handlers[idx].h = h;
-    ctx_handlers[idx].filter = filter;
-    ctx_handlers[idx].serial = serial;
-
-    n_ctx_handlers++;
-
     LeaveCriticalSection(&cs_error);
+}
+
+KHMEXP void KHMAPI 
+kherr_add_ctx_handler(kherr_ctx_handler h,
+                      khm_int32 filter,
+                      kherr_serial serial)
+{
+    kherr_handler_node n;
+
+    assert(h);
+
+    n.filter = filter;
+    n.serial = serial;
+    n.use_param = FALSE;
+    n.vparam = NULL;
+    n.h.p_handler = h;
+
+    add_ctx_handler_node(&n);
+}
+
+KHMEXP void KHMAPI 
+kherr_add_ctx_handler_param(kherr_ctx_handler_param h,
+                            khm_int32 filter,
+                            kherr_serial serial,
+                            void * vparam)
+{
+    kherr_handler_node n;
+
+    assert(h);
+
+    n.filter = filter;
+    n.serial = serial;
+    n.use_param = TRUE;
+    n.vparam = vparam;
+    n.h.p_handler_param = h;
+
+    add_ctx_handler_node(&n);
 }
 
 KHMEXP void KHMAPI 
@@ -122,21 +184,46 @@ kherr_remove_ctx_handler(kherr_ctx_handler h,
     EnterCriticalSection(&cs_error);
 
     for (i=0 ; i < n_ctx_handlers; i++) {
-        if (ctx_handlers[i].h == h &&
+        if (!ctx_handlers[i].use_param &&
+            ctx_handlers[i].h.p_handler == h &&
             ctx_handlers[i].serial == serial) {
             break;
         }
     }
 
     if ( i < n_ctx_handlers ) {
-        n_ctx_handlers --;
-        for (; i < n_ctx_handlers; i++) {
-            ctx_handlers[i] = ctx_handlers[i + 1];
-        }
+        remove_ctx_handler_by_index(i);
     }
     
     LeaveCriticalSection(&cs_error);
 }
+
+
+KHMEXP void KHMAPI 
+kherr_remove_ctx_handler_param(kherr_ctx_handler_param h,
+                               kherr_serial serial,
+                               void * vparam)
+{
+    khm_size i;
+    EnterCriticalSection(&cs_error);
+
+    for (i=0 ; i < n_ctx_handlers; i++) {
+        if (ctx_handlers[i].use_param &&
+            ctx_handlers[i].h.p_handler_param == h &&
+            ctx_handlers[i].vparam == vparam &&
+            ctx_handlers[i].serial == serial) {
+            break;
+        }
+    }
+
+    if ( i < n_ctx_handlers ) {
+        remove_ctx_handler_by_index(i);
+    }
+    
+    LeaveCriticalSection(&cs_error);
+}
+
+
 
 /* Called with cs_error held */
 static void
@@ -144,29 +231,49 @@ notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
 {
     khm_size i;
 
-    kherr_ctx_handler h;
-
     for (i=0; i<n_ctx_handlers; i++) {
-        if (ctx_handlers[i].h && (ctx_handlers[i].filter & e) &&
+        if ((ctx_handlers[i].filter & e) != 0 &&
             (ctx_handlers[i].serial == 0 ||
              ctx_handlers[i].serial == c->serial)) {
-            if (IsBadCodePtr((FARPROC) ctx_handlers[i].h)) {
-                ctx_handlers[i].h = NULL;
-            } else {
-                h = ctx_handlers[i].h;
-                (*h)(e,c);
 
-                /* a context handler is allowed to remove itself
-                   during a callback.  It is, however, not allowed to
-                   remove anything else. */
-                if (h != ctx_handlers[i].h)
+            if (ctx_handlers[i].use_param) {
+                kherr_ctx_handler_param h;
+
+                h = ctx_handlers[i].h.p_handler_param;
+                (*h)(e, c, ctx_handlers[i].vparam);
+
+                /* A context handler is allowed to remove itself.  It
+                   is not allowed to remove anything else.  If it did
+                   so, we need to look at this entry again.*/
+                if (h != ctx_handlers[i].h.p_handler_param) {
                     i--;
+                    continue;
+                }
+            } else {
+                kherr_ctx_handler h;
+
+                h = ctx_handlers[i].h.p_handler;
+                (*h)(e, c);
+
+                /* See above */
+                if (h != ctx_handlers[i].h.p_handler) {
+                    i--;
+                    continue;
+                }
             }
+
+            /* If this was a notification that the context is done, we
+               should remove the handler. */
+            if (e == KHERR_CTX_END && ctx_handlers[i].serial == c->serial) {
+                remove_ctx_handler_by_index(i);
+                i--;
+            }
+
         } else if (e == KHERR_CTX_EVTCOMMIT &&
 		   !(ctx_handlers[i].filter & KHERR_CTX_EVTCOMMIT)) {
 	    /* All handlers that filter for commit events are at the
 	       top of the list.  If this handler wasn't filtering for
-	       it, then there's no point in goint further down the
+	       it, then there's no point in going further down the
 	       list. */
 	    break;
 	}
@@ -394,9 +501,9 @@ get_empty_context(void)
     kherr_context * c;
 
     EnterCriticalSection(&cs_error);
-    if(ctx_free_list)
+    if(ctx_free_list) {
         LPOP(&ctx_free_list, &c);
-    else {
+    } else {
         c = PMALLOC(sizeof(kherr_context));
     }
  
@@ -475,12 +582,12 @@ add_event(kherr_context * c, kherr_event * e)
 
     QPUT(c,e);
     if(c->severity >= e->severity) {
-        if (e->severity <= KHERR_ERROR)
-            notify_ctx_event(KHERR_CTX_ERROR, c);
-
         c->severity = e->severity;
         c->err_event = e;
         c->flags &= ~KHERR_CF_DIRTY;
+
+        if (e->severity <= KHERR_ERROR)
+            notify_ctx_event(KHERR_CTX_ERROR, c);
     }
     LeaveCriticalSection(&cs_error);
 }
@@ -1089,13 +1196,16 @@ kherr_del_last_event(void)
 KHMEXP void KHMAPI
 kherr_push_context(kherr_context * c)
 {
+#if 0
     kherr_context * p = NULL;
     int new_context = FALSE;
+#endif
 
     if (!IS_KHERR_CTX(c))
         return;
 
     EnterCriticalSection(&cs_error);
+#if 0
     p = peek_context();
     if(IS_KHERR_CTX(p) && (c->flags & KHERR_CF_UNBOUND)) {
         LDELETE(&ctx_root_list, c);
@@ -1104,13 +1214,16 @@ kherr_push_context(kherr_context * c)
         kherr_hold_context(p);
         new_context = TRUE;
     }
+#endif
+
     push_context(c);
 
+#if 0
     if (new_context && IS_KHERR_CTX(p)) {
         notify_ctx_event(KHERR_CTX_BEGIN, c);
         notify_ctx_event(KHERR_CTX_NEWCHILD, p);
     }
-
+#endif
     LeaveCriticalSection(&cs_error);
 }
 
@@ -1381,13 +1494,13 @@ get_progress(kherr_context * c, khm_ui_4 * pnum, khm_ui_4 * pdenom)
             get_progress(cc, &cnum, &cdenom);
 
             if (cdenom == 0) {
-                cnum = 0;
+                continue;
             } else {
                 if (cnum > cdenom)
                     cnum = cdenom;
 
                 if (cdenom != 256) {
-                    cnum = (cnum * 256) / cdenom;
+                    cnum = ((long)cnum * 256) / cdenom;
                     cdenom = 256;
                 }
             }

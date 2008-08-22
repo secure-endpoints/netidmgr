@@ -139,7 +139,8 @@ kcdb_attrib_init(void)
     attrib.flags = 
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED | 
-        KCDB_ATTR_FLAG_SYSTEM;
+        KCDB_ATTR_FLAG_SYSTEM |
+        KCDB_ATTR_FLAG_HIDDEN;
     attrib.compute_cb = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(wchar_t);
     attrib.compute_max_cbsize = KCDB_MAXCB_NAME;
@@ -168,6 +169,26 @@ kcdb_attrib_init(void)
     attrib.id = KCDB_ATTR_ID_NAME;
     attrib.alt_id = KCDB_ATTR_ID;
     attrib.name = KCDB_ATTRNAME_ID_NAME;
+    attrib.type = KCDB_TYPE_STRING;
+    LoadString(hinst_kcreddb, IDS_IDENTITY, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = 
+        KCDB_ATTR_FLAG_REQUIRED | 
+        KCDB_ATTR_FLAG_COMPUTED | 
+        KCDB_ATTR_FLAG_ALTVIEW |
+        KCDB_ATTR_FLAG_HIDDEN |
+        KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(wchar_t);
+    attrib.compute_max_cbsize = KCDB_IDENT_MAXCB_NAME;
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* ID Display Name */
+    attrib.id = KCDB_ATTR_ID_DISPLAY_NAME;
+    attrib.alt_id = KCDB_ATTR_ID;
+    attrib.name = KCDB_ATTRNAME_ID_DISPLAY_NAME;
     attrib.type = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_IDENTITY, sbuf, ARRAYLENGTH(sbuf));
     attrib.short_desc = sbuf;

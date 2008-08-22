@@ -196,7 +196,7 @@ khm_int32 KHMAPI kcdb_type_date_toString(
 {
     const FILETIME * pft;
 
-    if (cb_buf)
+    if (!cb_buf)
         return KHM_ERROR_INVALID_PARAM;
 
     pft = (const FILETIME *) d;

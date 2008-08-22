@@ -110,9 +110,9 @@ typedef struct khui_credwnd_col_t {
 
 /* column allocation */
 /* initial number of columns to be allocated */
-#define KHUI_CW_COL_INITIAL     8
+#define KHUI_CW_COL_INITIAL     16
 /* allocation increment, if we run out of space */
-#define KHUI_CW_COL_INCREMENT   8
+#define KHUI_CW_COL_INCREMENT   16
 
 #define KHUI_CW_COL_AUTOSIZE    0x00000001
 #define KHUI_CW_COL_SORT_INC    0x00000002
@@ -126,9 +126,6 @@ typedef struct khui_credwnd_col_t {
 /* Custom column attributes (are not kcdb attributes) */
 #define CW_CA_FLAGS -1
 #define CW_CANAME_FLAGS L"_CWFlags"
-
-#define CW_CA_TYPEICON -2
-#define CW_CANAME_TYPEICON L"_CWTypeIcon"
 
 #define cw_is_custom_attr(i) ((i)<0)
 
@@ -249,7 +246,7 @@ typedef struct khui_credwnd_tbl_t {
 
 } khui_credwnd_tbl;
 
-#define KHUI_MAXCB_HEADING 256
+#define KHUI_MAXCB_HEADING (sizeof(wchar_t) * 256)
 
 /* table flags */
 #define KHUI_CW_TBL_INITIALIZED 0x00000001

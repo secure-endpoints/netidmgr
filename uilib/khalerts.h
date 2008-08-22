@@ -137,6 +137,8 @@ typedef enum tag_khui_alert_types {
     KHUI_ALERTTYPE_RENEWFAIL,   /*!< Failed to renew credentials */
     KHUI_ALERTTYPE_ACQUIREFAIL, /*!< Failed to acquire credentials */
     KHUI_ALERTTYPE_CHPW,        /*!< Failed to change password */
+    KHUI_ALERTTYPE_PROGRESS,    /*!< General progress monitor */
+    KHUI_ALERTTYPE_PROGRESSACQ, /*!< Progress monitor for credentials acquisition */
 } khui_alert_type;
 
 /*! \brief Create an empty alert object

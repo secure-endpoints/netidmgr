@@ -47,7 +47,8 @@ typedef enum tag_nc_page {
     NC_PAGET_NEXT,
     NC_PAGET_PREV,
     NC_PAGET_FINISH,
-    NC_PAGET_CANCEL
+    NC_PAGET_CANCEL,
+    NC_PAGET_END
 } nc_page;
 
 
@@ -205,19 +206,25 @@ typedef struct tag_nc_privint {
 
 
 typedef struct tag_nc_nav {
-    HWND        hwnd;
+    HWND        hwnd;           /*!< Child dialog */
 
     khm_int32   transitions;    /*!< Combination of NC_TRANS_* */
 #define NC_TRANS_NEXT        0x0001
 #define NC_TRANS_PREV        0x0002
 #define NC_TRANS_FINISH      0x0004
 #define NC_TRANS_ABORT       0x0008
-#define NC_TRANS_SHOWDETAILS 0x0010
+#define NC_TRANS_SHOWCLOSEIF 0x0010
+#define NC_TRANS_CLOSE       0x0020
+
+    khm_int32   state;          /*!< State flags */
+#define NC_NAVSTATE_PREEND   0x0001
+#define NC_NAVSTATE_NOCLOSE  0x0002
 
 } nc_nav;
 
 typedef struct tag_nc_progress {
-    HWND        hwnd;
+    HWND        hwnd;           /*!< Child dialog */
+    HWND        hwnd_container; /*!< Container of alert windows */
 } nc_progress;
 
 
@@ -349,6 +356,9 @@ typedef struct tag_khui_new_creds {
     khm_boolean         force_topmost;
                                 /*!< Force New Credentials window to
                                   the top */
+    khm_boolean         is_modal;
+                                /*!< Is this a modal dialog? */
+
 } khui_new_creds;
 
 #define KHUI_NC_MAGIC 0x84270427
@@ -372,5 +382,11 @@ khui_cw_get_next_privint(khui_new_creds * c,
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_free_privint(khui_new_creds_privint_panel * pp);
+
+typedef struct khui_collect_privileged_cred_data {
+    khui_new_creds * nc;
+    khm_handle       target_identity;
+    khm_handle       dest_credset;
+} khui_collect_privileged_creds_data;
 
 #endif
