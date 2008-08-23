@@ -49,6 +49,8 @@ void khm_show_main_window(void);
 void khm_set_main_window_mode(int mode);
 void khm_close_main_window(void);
 void khm_hide_main_window(void);
+void khm_exit_application(void);
+khm_boolean khm_exiting_application(void);
 BOOL khm_is_main_window_visible(void);
 BOOL khm_is_main_window_active(void);
 void khm_adjust_window_dimensions_for_display(RECT * pr, int dock);

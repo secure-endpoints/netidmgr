@@ -109,7 +109,7 @@ khm_process_query_app_ver(khm_query_app_version * papp_ver) {
             papp_ver->request_swap = TRUE;
 
             if (khm_hwnd_main)
-                DestroyWindow(khm_hwnd_main);
+                khm_exit_application();
 
         } else {
 
@@ -267,7 +267,7 @@ khm_main_wnd_proc(HWND hwnd,
             return 0;
 
         case KHUI_ACTION_EXIT:
-            DestroyWindow(hwnd);
+            khm_exit_application();
             return 0;
 
         case KHUI_ACTION_OPEN_APP:
@@ -441,6 +441,10 @@ khm_main_wnd_proc(HWND hwnd,
             return 0;
         }
         break;
+
+    case WM_CLOSE:
+        khm_close_main_window();
+        return 0;
 
     case WM_MEASUREITEM:
         /* sent to measure the bitmaps associated with a menu item */
@@ -1176,33 +1180,31 @@ khm_activate_main_window(void) {
 
 void 
 khm_close_main_window(void) {
-    khm_handle csp_cw;
-    BOOL keep_running = FALSE;
+    khm_int32 keep_running = FALSE;
 
-    if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow",
-                                     KHM_PERM_READ, &csp_cw))) {
-        khm_int32 t;
-
-        if (KHM_SUCCEEDED(khc_read_int32(csp_cw, L"KeepRunning", 
-                                         &t))) {
-            keep_running = t;
-        } else {
-#ifdef DEBUG
-            assert(FALSE);
-#endif
-        }
-
-        khc_close_space(csp_cw);
-    } else {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-    }
+    khc_read_int32(NULL, L"CredWindow\\KeepRunning", &keep_running);
 
     if (keep_running)
         khm_hide_main_window();
     else
-        DestroyWindow(khm_hwnd_main);
+        khm_exit_application();
+}
+
+static volatile LONG exit_counter = 0;
+
+void
+khm_exit_application(void)
+{
+    InterlockedIncrement(&exit_counter);
+    if (khm_new_cred_ops_pending())
+        return;
+    DestroyWindow(khm_hwnd_main);
+}
+
+khm_boolean
+khm_exiting_application(void)
+{
+    return (exit_counter > 0);
 }
 
 void 

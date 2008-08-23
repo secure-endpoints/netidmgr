@@ -2560,9 +2560,10 @@ nc_handle_wm_initdialog(HWND hwnd,
     if (nc->is_modal) {
         switch (nc->subtype) {
         case KHUI_NC_SUBTYPE_ACQPRIV_ID:
-            khm_cred_begin_new_cred_op();
-            kmq_post_message(KMSG_CRED, KMSG_CRED_ACQPRIV_ID, 0,
-                             (void *) nc);
+            if (khm_cred_begin_new_cred_op()) {
+                kmq_post_message(KMSG_CRED, KMSG_CRED_ACQPRIV_ID, 0,
+                                 (void *) nc);
+            }
             break;
 
         default:
@@ -2925,8 +2926,9 @@ nc_handle_wm_nc_notify(HWND hwnd,
             kcdb_credset_flush(nc_child->ctx.credset);
             kcdb_credset_collect(nc_child->ctx.credset, pcd->dest_credset,
                                  NULL, KCDB_CREDTYPE_ALL, NULL);
-            khm_cred_begin_new_cred_op();
-            kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
+            if (khm_cred_begin_new_cred_op()) {
+                kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
+            }
         }
         break;
 

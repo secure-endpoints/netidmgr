@@ -171,23 +171,39 @@ khm_cred_wait_for_dialog(DWORD timeout, khm_int32 * result,
     return rv;
 }
 
-LONG pending_new_cred_ops = 0;
+static volatile LONG pending_new_cred_ops = 0;
 
-void
+khm_boolean
 khm_cred_begin_new_cred_op(void)
 {
     InterlockedIncrement(&pending_new_cred_ops);
+    if (khm_exiting_application()) {
+        khm_cred_end_new_cred_op();
+        return FALSE;
+    }
+    return TRUE;
 }
 
 void
 khm_cred_end_new_cred_op(void)
 {
     LONG pending;
+    khm_boolean exiting;
 
+    exiting = khm_exiting_application();
     pending = InterlockedDecrement(&pending_new_cred_ops);
-    if (pending == 0 && khm_startup.processing) {
-        kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
+    if (pending == 0) {
+        if (exiting)
+            khm_exit_application();
+        else if (khm_startup.processing)
+            kmq_post_message(KMSG_ACT, KMSG_ACT_CONTINUE_CMDLINE, 0, 0);
     }
+}
+
+khm_boolean
+khm_new_cred_ops_pending(void)
+{
+    return (pending_new_cred_ops > 0);
 }
 
 /* Completion handler for KMSG_CRED messages.  We control the overall
@@ -555,15 +571,15 @@ kmsg_cred_completion(kmq_message *m)
 
 void khm_cred_import(void)
 {
-    _begin_task(KHERR_CF_TRANSITIVE);
-    _report_sr0(KHERR_NONE, IDS_CTX_IMPORT);
-    _describe();
+    if (khm_cred_begin_new_cred_op()) {
+        _begin_task(KHERR_CF_TRANSITIVE);
+        _report_sr0(KHERR_NONE, IDS_CTX_IMPORT);
+        _describe();
 
-    khm_cred_begin_new_cred_op();
+        kmq_post_message(KMSG_CRED, KMSG_CRED_IMPORT, 0, 0);
 
-    kmq_post_message(KMSG_CRED, KMSG_CRED_IMPORT, 0, 0);
-
-    _end_task();
+        _end_task();
+    }
 }
 
 void khm_cred_set_default(void)
@@ -739,70 +755,70 @@ void khm_cred_renew_identity(khm_handle identity)
 {
     khui_new_creds * c;
 
-    khui_cw_create_cred_blob(&c);
+    if (khm_cred_begin_new_cred_op()) {
+        khui_cw_create_cred_blob(&c);
 
-    c->subtype = KMSG_CRED_RENEW_CREDS;
-    c->result = KHUI_NC_RESULT_PROCESS;
-    khui_context_create(&c->ctx,
-                        KHUI_SCOPE_IDENT,
-                        identity,
-                        KCDB_CREDTYPE_INVALID,
-                        NULL);
+        c->subtype = KMSG_CRED_RENEW_CREDS;
+        c->result = KHUI_NC_RESULT_PROCESS;
+        khui_context_create(&c->ctx,
+                            KHUI_SCOPE_IDENT,
+                            identity,
+                            KCDB_CREDTYPE_INVALID,
+                            NULL);
 
-    _begin_task(KHERR_CF_TRANSITIVE);
-    _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
-    _describe();
+        _begin_task(KHERR_CF_TRANSITIVE);
+        _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
+        _describe();
 
-    khm_cred_begin_new_cred_op();
+        kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
-    kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
-
-    _end_task();
+        _end_task();
+    }
 }
 
 void khm_cred_renew_cred(khm_handle cred)
 {
     khui_new_creds * c;
 
-    khui_cw_create_cred_blob(&c);
+    if (khm_cred_begin_new_cred_op()) {
+        khui_cw_create_cred_blob(&c);
 
-    c->subtype = KMSG_CRED_RENEW_CREDS;
-    c->result = KHUI_NC_RESULT_PROCESS;
-    khui_context_create(&c->ctx,
-                        KHUI_SCOPE_CRED,
-                        NULL,
-                        KCDB_CREDTYPE_INVALID,
-                        cred);
+        c->subtype = KMSG_CRED_RENEW_CREDS;
+        c->result = KHUI_NC_RESULT_PROCESS;
+        khui_context_create(&c->ctx,
+                            KHUI_SCOPE_CRED,
+                            NULL,
+                            KCDB_CREDTYPE_INVALID,
+                            cred);
 
-    _begin_task(KHERR_CF_TRANSITIVE);
-    _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
-    _describe();
+        _begin_task(KHERR_CF_TRANSITIVE);
+        _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
+        _describe();
 
-    khm_cred_begin_new_cred_op();
+        kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
-    kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
-
-    _end_task();
+        _end_task();
+    }
 }
 
 void khm_cred_renew_creds(void)
 {
     khui_new_creds * c;
 
-    khui_cw_create_cred_blob(&c);
-    c->subtype = KMSG_CRED_RENEW_CREDS;
-    c->result = KHUI_NC_RESULT_PROCESS;
-    khui_context_get(&c->ctx);
+    if (khm_cred_begin_new_cred_op()) {
+        khui_cw_create_cred_blob(&c);
+        c->subtype = KMSG_CRED_RENEW_CREDS;
+        c->result = KHUI_NC_RESULT_PROCESS;
+        khui_context_get(&c->ctx);
 
-    _begin_task(KHERR_CF_TRANSITIVE);
-    _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
-    _describe();
+        _begin_task(KHERR_CF_TRANSITIVE);
+        _report_sr0(KHERR_NONE, IDS_CTX_RENEW_CREDS);
+        _describe();
 
-    khm_cred_begin_new_cred_op();
+        kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
 
-    kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) c);
-
-    _end_task();
+        _end_task();
+    }
 }
 
 void khm_cred_change_password(wchar_t * title)
@@ -895,7 +911,8 @@ void khm_cred_obtain_new_creds(wchar_t * title)
     khm_size cb;
     khm_handle def_idpro = NULL;
 
-    if (!khm_cred_begin_dialog())
+    if (!khm_cred_begin_dialog() ||
+        !khm_cred_begin_new_cred_op())
         return;
 
     khui_cw_create_cred_blob(&nc);
@@ -930,6 +947,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         khui_context_release(&nc->ctx);
         nc->result = KHUI_NC_RESULT_CANCEL;
         khm_cred_end_dialog(nc);
+        khm_cred_end_new_cred_op();
         khui_cw_destroy_cred_blob(nc);
         return;
     }
@@ -982,16 +1000,14 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         _report_sr0(KHERR_NONE, IDS_CTX_NEW_CREDS);
         _describe();
 
-        khm_cred_begin_new_cred_op();
-
         kmq_post_message(KMSG_CRED, KMSG_CRED_NEW_CREDS, 0, 
                          (void *) nc);
-
         _end_task();
     } else {
         khui_context_release(&nc->ctx);
         nc->result = KHUI_NC_RESULT_CANCEL;
         khm_cred_end_dialog(nc);
+        khm_cred_end_new_cred_op();
         khui_cw_destroy_cred_blob(nc);
     }
 
@@ -1275,11 +1291,12 @@ khm_cred_process_startup_actions(void) {
 
             khm_startup.renew = FALSE;
 
-            khm_cred_begin_new_cred_op();
+            if (khm_cred_begin_new_cred_op()) {
 
-            khm_cred_renew_all_identities();
+                khm_cred_renew_all_identities();
 
-            khm_cred_end_new_cred_op();
+                khm_cred_end_new_cred_op();
+            }
 
             break;
         }
