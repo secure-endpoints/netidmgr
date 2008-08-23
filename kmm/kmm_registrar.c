@@ -309,8 +309,7 @@ void kmmint_init_plugin(kmm_plugin_i * p) {
 
     EnterCriticalSection(&cs_kmm);
     if(p->state != KMM_PLUGIN_STATE_REG &&
-        p->state != KMM_PLUGIN_STATE_HOLD)
-    {
+       p->state != KMM_PLUGIN_STATE_HOLD) {
         LeaveCriticalSection(&cs_kmm);
         goto _exit;
     }
@@ -554,6 +553,8 @@ void kmmint_exit_plugin(kmm_plugin_i * p) {
        kmmint_init_plugin() was never called for it. */
     if (p->state < KMM_PLUGIN_STATE_HOLD) {
         release_plugin = FALSE;
+    } else {
+        p->state = KMM_PLUGIN_STATE_EXITED;
     }
 
     LeaveCriticalSection(&cs_kmm);
