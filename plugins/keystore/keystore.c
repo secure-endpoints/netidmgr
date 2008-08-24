@@ -279,7 +279,6 @@ ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
     }
 
     ks->keys[i] = idk;
-    idk->flags = 0;
     ks->flags |= KS_FLAG_MODIFIED;
 
     if (i == ks->n_keys)
