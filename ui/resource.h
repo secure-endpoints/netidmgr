@@ -428,6 +428,7 @@
 #define IDC_TEXT2                       1181
 #define IDC_CONTAINER                   1183
 #define IDC_CLOSEIF                     1184
+#define IDC_BORDER                      1185
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -443,7 +444,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        226
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1185
+#define _APS_NEXT_CONTROL_VALUE         1186
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -953,18 +953,34 @@ nc_layout_privint(khui_new_creds * nc)
     HWND hw_r_p = NULL;
     HWND hw_target = NULL;
     HWND hw_tab = NULL;
-    RECT r, r_p;
+    RECT r_p;
     khm_int32 idf = 0;
     khm_boolean adv;
+    khui_new_creds_privint_panel * p;
 
     adv = (nc->page == NC_PAGE_CREDOPT_ADV);
 
     if (adv) {
         hw = nc->privint.hwnd_advanced;
         hw_tab = GetDlgItem(hw, IDC_NC_TAB);
+        assert(hw_tab != NULL);
     } else {
         hw = nc->privint.hwnd_basic;
     }
+
+    p = nc->privint.shown.current_panel;
+
+    if (p == NULL) {
+        khui_cw_get_next_privint(nc, &p);
+        nc->privint.shown.current_panel = p;
+    }
+
+    /* Fill in some blanks */
+    if (p && p->hwnd == NULL && p->use_custom)
+        p->hwnd = nc_create_custom_prompter_dialog(nc, hw, p);
+
+    if (p && p->caption[0] == L'\0')
+        LoadString(khm_hInstance, IDS_NC_IDENTITY, p->caption, ARRAYLENGTH(p->caption));
 
     /* Everytime there's a change in the order of the credentials
        providers (i.e. because the primary identity changed), the
@@ -972,55 +988,35 @@ nc_layout_privint(khui_new_creds * nc)
        re-initialize the tab control housing the panels. */
 
     if (adv && !nc->privint.initialized) {
-        wchar_t desc[KCDB_MAXCCH_SHORT_DESC];
-        TCITEM tci;
+        wchar_t desc[KCDB_MAXCCH_SHORT_DESC] = L"";
         khm_size i;
-        khui_new_creds_privint_panel * p;
-
-        ZeroMemory(&tci, sizeof(tci));
-        assert(hw_tab != NULL);
 
         TabCtrl_DeleteAllItems(hw_tab);
 
         khui_cw_lock_nc(nc);
 
-        if (nc->privint.shown.show_blank)
-            p = NULL;
-        else
-            p = QBOTTOM(&nc->privint.shown);
-
         if (p != NULL) {
-            tci.mask = TCIF_PARAM | TCIF_TEXT;
-            tci.pszText = p->caption;
-            tci.lParam = NC_PRIVINT_PANEL;
-
-            if (p->caption[0] == L'\0') {
-                LoadString(khm_hInstance, IDS_NC_IDENTITY,
-                           p->caption, ARRAYLENGTH(p->caption));
-            }
-
+            TCITEM tci = { TCIF_PARAM | TCIF_TEXT, 0, 0, p->caption, 0, 0, NC_PRIVINT_PANEL };
             TabCtrl_InsertItem(hw_tab, 0, &tci);
         }
 
         for (i=0; i < nc->n_types; i++) {
+            TCITEM tci = { TCIF_PARAM | TCIF_TEXT, 0, 0, nc->types[i].nct->name,
+                           0, 0, i };
+
             /* All the enabled types are at the front of the list */
             if (nc->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)
                 break;
 
-            tci.mask = TCIF_PARAM | TCIF_TEXT;
-            if (nc->types[i].nct->name) {
-                tci.pszText = nc->types[i].nct->name;
-            } else {
+            if (!tci.pszText) {
                 khm_size cb;
 
-                desc[0] = L'\0';
                 cb = sizeof(desc);
-                kcdb_get_resource((khm_handle)(khm_ssize) nc->types[i].nct->type,
+                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->types[i].nct->type),
                                   KCDB_RES_DESCRIPTION, KCDB_RFS_SHORT,
                                   NULL, NULL, desc, &cb);
                 tci.pszText = desc;
             }
-            tci.lParam = i;
 
             TabCtrl_InsertItem(hw_tab, i + 1, &tci);
         }
@@ -1048,22 +1044,7 @@ nc_layout_privint(khui_new_creds * nc)
         khui_cw_lock_nc(nc);
 
         if (panel_idx == NC_PRIVINT_PANEL) {
-            /* We have to show the privileged interaction panel */
-            if (nc->privint.shown.show_blank || QBOTTOM(&nc->privint.shown) == NULL) {
-                hw_target = NULL;
-            } else {
-                khui_new_creds_privint_panel * p;
-
-                p = QBOTTOM(&nc->privint.shown);
-
-                if (p->hwnd == NULL && p->use_custom) {
-                    nc_create_custom_prompter_dialog(nc, nc->privint.hwnd_advanced, p);
-                }
-
-                assert(p->hwnd != NULL);
-
-                hw_target = p->hwnd;
-            }
+            hw_target = (p)? p->hwnd : NULL;
         } else {
             /* We have to show the credentials options panel for some
                credentials type */
@@ -1073,34 +1054,20 @@ nc_layout_privint(khui_new_creds * nc)
 
         khui_cw_unlock_nc(nc);
 
-        if (hw_target != nc->privint.hwnd_current && nc->privint.hwnd_current != NULL) {
+        if (hw_target != nc->privint.hwnd_current && nc->privint.hwnd_current != NULL)
             SetWindowPos(nc->privint.hwnd_current, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
-        }
 
         nc->privint.hwnd_current = hw_target;
         nc->privint.idx_current = panel_idx;
 
     } else {
-        if (nc->privint.shown.show_blank || QBOTTOM(&nc->privint.shown) == NULL) {
-            hw_target = NULL;
-        } else {
-            khui_new_creds_privint_panel * p;
-
-            p = QBOTTOM(&nc->privint.shown);
-
-            if (p->hwnd == NULL && p->use_custom) {
-                nc_create_custom_prompter_dialog(nc, nc->privint.hwnd_basic, p);
-            }
-
-            hw_target = p->hwnd;
-
-            if (hw_target != nc->privint.hwnd_current && nc->privint.hwnd_current != NULL) {
-                SetWindowPos(nc->privint.hwnd_current, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
-            }
-        }
+        hw_target = (p)? p->hwnd : NULL;
+        if (hw_target != nc->privint.hwnd_current && nc->privint.hwnd_current != NULL)
+            SetWindowPos(nc->privint.hwnd_current, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
 
         nc->privint.hwnd_current = hw_target;
         nc->privint.idx_current = NC_PRIVINT_PANEL;
+        SetDlgItemText(nc->privint.hwnd_basic, IDC_BORDER, (p && p->caption)? p->caption: L"");
     }
 
     if (hw_target == NULL) {
@@ -1111,17 +1078,13 @@ nc_layout_privint(khui_new_creds * nc)
     assert(hw_r_p != NULL);
 
     if (adv) {
-        assert(hw_tab != NULL);
-
-        GetWindowRect(hw, &r);
         GetWindowRect(hw_tab, &r_p);
-        OffsetRect(&r_p, -r.left, -r.top);
+        MapWindowRect(NULL, hw, &r_p);
 
         TabCtrl_AdjustRect(hw_tab, FALSE, &r_p);
     } else {
-        GetWindowRect(hw, &r);
         GetWindowRect(hw_r_p, &r_p);
-        OffsetRect(&r_p, -r.left, -r.top);
+        MapWindowRect(NULL, hw, &r_p);
     }
 
     /* One thing to be careful about when dealing with third-party
@@ -1144,9 +1107,8 @@ nc_layout_privint(khui_new_creds * nc)
 
     SetParent(hw_target, hw);
 
-    if (hw_target != nc->privint.hwnd_noprompts) {
+    if (hw_target != nc->privint.hwnd_noprompts)
         SetWindowPos(nc->privint.hwnd_noprompts, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
-    }
 
     SetWindowPos(hw_target, hw_r_p, rect_coords(r_p), SWP_MOVESIZEZ);
 
@@ -1162,6 +1124,15 @@ nc_layout_privint(khui_new_creds * nc)
                    ((idf & KCDB_IDENT_FLAG_DEFAULT)? BST_CHECKED : BST_UNCHECKED));
     EnableWindow(GetDlgItem(hw, IDC_NC_MAKEDEFAULT),
                  !(idf & KCDB_IDENT_FLAG_DEFAULT));
+
+    /* if there are more privileged interaction panels to be
+       displayed, we enable the Next button.  If not, we enable the
+       Finish button. */
+    nc->nav.transitions &= ~(NC_TRANS_NEXT | NC_TRANS_PREV);
+    if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
+        nc->nav.transitions |= NC_TRANS_NEXT;
+    if (p && QPREV(p))
+        nc->nav.transitions |= NC_TRANS_PREV;
 }
 
 
@@ -1809,7 +1780,7 @@ nc_notify_new_identity(khui_new_creds * nc, BOOL notify_ui)
 
     /* All the privileged interaction panels are assumed to no longer
        be valid */
-    khui_cw_clear_prompts(nc);
+    khui_cw_clear_all_privints(nc);
 
     khui_cw_lock_nc(nc);
 
@@ -1919,17 +1890,14 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         break;
 
     case NC_PAGE_CREDOPT_BASIC:
-        nc->nav.transitions = NC_TRANS_FINISH;
         nc->page = NC_PAGE_CREDOPT_BASIC;
         break;
 
     case NC_PAGE_CREDOPT_ADV:
-        nc->nav.transitions = NC_TRANS_FINISH;
         nc->page = NC_PAGE_CREDOPT_ADV;
         break;
 
     case NC_PAGE_PASSWORD:
-        nc->nav.transitions = NC_TRANS_FINISH;
         nc->page = NC_PAGE_PASSWORD;
         break;
 
@@ -1945,14 +1913,15 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
 
                 switch (nc->subtype) {
                 case KHUI_NC_SUBTYPE_NEW_CREDS:
-                case KHUI_NC_SUBTYPE_ACQPRIV_ID:
                     nc->page = NC_PAGE_CREDOPT_ADV;
-                    nc->nav.transitions = NC_TRANS_FINISH;
+                    break;
+
+                case KHUI_NC_SUBTYPE_ACQPRIV_ID:
+                    nc->page = NC_PAGE_CREDOPT_BASIC;
                     break;
 
                 case KHUI_NC_SUBTYPE_PASSWORD:
                     nc->page = NC_PAGE_PASSWORD;
-                    nc->nav.transitions = NC_TRANS_FINISH;
                     break;
 
                 default:
@@ -1964,6 +1933,23 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
             }
             return;
 
+        case NC_PAGE_CREDOPT_ADV:
+        case NC_PAGE_CREDOPT_BASIC:
+        case NC_PAGE_PASSWORD:
+            {
+                khui_new_creds_privint_panel * p;
+
+                p = nc->privint.shown.current_panel;
+                if (p) {
+                    p->processed = TRUE;
+                    p = QNEXT(p);
+                }
+                if (p == NULL)
+                    khui_cw_get_next_privint(nc, &p);
+                nc->privint.shown.current_panel = p;
+            }
+            break;
+
         default:
             assert(FALSE);
         }
@@ -1974,6 +1960,19 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         case NC_PAGE_IDSPEC:
             if (nc->idspec.prev_page != NC_PAGE_NONE) {
                 nc->page = nc->idspec.prev_page;
+            }
+            break;
+
+        case NC_PAGE_CREDOPT_ADV:
+        case NC_PAGE_CREDOPT_BASIC:
+        case NC_PAGE_PASSWORD:
+            {
+                khui_new_creds_privint_panel * p;
+
+                p = nc->privint.shown.current_panel;
+                if (p)
+                    p = QPREV(p);
+                nc->privint.shown.current_panel = p;
             }
             break;
 
@@ -2033,18 +2032,22 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
             nc->page = NC_PAGE_PROGRESS;
 
         } else {
-
+            khm_size i;
             if (nc->is_modal) {
                 if (nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
-                    assert(nc->ctx.vparam);
-                    kcdb_credset_collect(nc->ctx.vparam, nc->ctx.credset,
-                                         NULL, KCDB_CREDTYPE_ALL,
-                                         NULL);
-                    nc->ctx.vparam = NULL;
+                    /* prevent the collector credential set from being
+                       destroyed */
+                    khui_cw_set_privileged_credential_collector(nc, NULL);
                 }
+                for (i=0; i < nc->n_types; i++)
+                    if (nc->types[i].nct->hwnd_panel) {
+                        DestroyWindow(nc->types[i].nct->hwnd_panel);
+                        nc->types[i].nct->hwnd_panel = NULL;
+                    }
                 EndDialog(nc->hwnd, nc->result);
-            } else
+            } else {
                 DestroyWindow(nc->hwnd);
+            }
             kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, (void *) nc);
             return;
 
@@ -2417,6 +2420,8 @@ nc_prompter_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             p = (khui_new_creds_privint_panel *)(LONG_PTR) GetWindowLongPtr(hwnd, DWLP_USER);
             assert(p->magic == KHUI_NEW_CREDS_PRIVINT_PANEL_MAGIC);
+
+            
 
             p->hwnd = NULL;
         }
@@ -2847,7 +2852,6 @@ nc_handle_wm_nc_notify(HWND hwnd,
         break;
 
     case WMNC_SET_PROMPTS:
-        khui_cw_get_next_privint(nc, NULL);
         nc->privint.initialized = FALSE;
 
         if (nc->page == NC_PAGE_PASSWORD ||
@@ -2903,8 +2907,7 @@ nc_handle_wm_nc_notify(HWND hwnd,
                                 KHUI_SCOPE_IDENT,
                                 pcd->target_identity,
                                 -1, NULL);
-            kcdb_credset_flush(nc_child->ctx.credset);
-            nc_child->ctx.vparam = pcd->dest_credset;
+            khui_cw_set_privileged_credential_collector(nc_child, pcd->dest_credset);
             khm_do_modal_newcredwnd(nc->hwnd, nc_child);
 
         }
@@ -2914,6 +2917,7 @@ nc_handle_wm_nc_notify(HWND hwnd,
         {
             khui_collect_privileged_creds_data * pcd;
             khui_new_creds * nc_child;
+            khm_handle cs_privcred = NULL;
 
             pcd = (khui_collect_privileged_creds_data *) lParam;
 
@@ -2923,11 +2927,13 @@ nc_handle_wm_nc_notify(HWND hwnd,
                                 KHUI_SCOPE_IDENT,
                                 pcd->target_identity,
                                 -1, NULL);
-            kcdb_credset_flush(nc_child->ctx.credset);
-            kcdb_credset_collect(nc_child->ctx.credset, pcd->dest_credset,
-                                 NULL, KCDB_CREDTYPE_ALL, NULL);
+            kcdb_credset_create(&cs_privcred);
+            kcdb_credset_collect(cs_privcred, pcd->dest_credset, NULL, KCDB_CREDTYPE_ALL, NULL);
+            khui_cw_set_privileged_credential_collector(nc_child, cs_privcred);
             if (khm_cred_begin_new_cred_op()) {
                 kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
+            } else {
+                khui_cw_destroy_cred_blob(nc_child);
             }
         }
         break;

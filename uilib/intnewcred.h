@@ -78,6 +78,8 @@ typedef struct tag_khui_new_creds_privint_panel {
                                    instead. (hwnd must be NULL).  This
                                    should only be set to TRUE if all
                                    the prompts have been specified. */
+    khm_boolean processed;            /*!< This panel has already been
+                                         processed. */
     wchar_t    *banner;         /*!< Banner text */
     wchar_t    *pname;          /*!< Heading */
     khui_new_creds_prompt ** prompts; /*!< Individual prompts */
@@ -178,14 +180,15 @@ typedef struct tag_nc_privint {
                                    necessary. */
 
     struct {
+        khui_new_creds_privint_panel * current_panel;
         khm_boolean show_blank; /*!< Show a blank panel instead of the
                                    tail of this queue. */
         QDCL(khui_new_creds_privint_panel);
     } shown;                    /*!< Queue of privileged interaction
                                    panels that have been shown.  The
-                                   currently displayed, or to be
-                                   displayed, panel is always at the
-                                   bottom of the queue. */
+                                   last displayed, or to be displayed,
+                                   panel is always at the bottom of
+                                   the queue. */
 
     khm_boolean initialized;    /*!< Has the tab control been
                                    initialized? */
@@ -338,6 +341,10 @@ typedef struct tag_khui_new_creds {
     khm_size            nc_providers;
                                 /*!< Internal */
 
+    khm_handle          cs_privcred;
+                                /*!< Credential set for transferring
+                                   privileged credentials */
+
     /* New Identity Wizard components*/
     nc_idspec           idspec; /*!< Identity specifier */
     nc_idsel            idsel;  /*!< Identity selector */
@@ -377,11 +384,18 @@ khui_cw_del_provider(khui_new_creds * c,
                      khm_handle       h_idpro);
 
 KHMEXP khm_int32 KHMAPI
+khui_cw_peek_next_privint(khui_new_creds * c,
+                          khui_new_creds_privint_panel ** ppp);
+
+KHMEXP khm_int32 KHMAPI
 khui_cw_get_next_privint(khui_new_creds * c,
                          khui_new_creds_privint_panel ** ppp);
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_free_privint(khui_new_creds_privint_panel * pp);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_clear_all_privints(khui_new_creds * c);
 
 typedef struct khui_collect_privileged_cred_data {
     khui_new_creds * nc;

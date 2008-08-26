@@ -74,6 +74,8 @@ khui_cw_destroy_cred_blob(khui_new_creds *c)
 
     ASSERT_NC(c);
 
+    khui_cw_clear_all_privints(c);
+
     EnterCriticalSection(&c->cs);
     for (i=0; i < c->n_identities; i++) {
         kcdb_identity_release(c->identities[i]);
@@ -96,6 +98,9 @@ khui_cw_destroy_cred_blob(khui_new_creds *c)
 
     if (c->window_title)
         PFREE(c->window_title);
+
+    if (c->cs_privcred)
+        kcdb_credset_delete(c->cs_privcred);
 
     ZeroMemory(c, sizeof(*c));
     PFREE(c);
@@ -692,6 +697,45 @@ khui_cw_show_privileged_dialog(khui_new_creds * nc, khm_int32 ctype,
     return rv;
 }
 
+KHMEXP khm_int32 KHMAPI
+khui_cw_peek_next_privint(khui_new_creds * c,
+                          khui_new_creds_privint_panel ** ppp)
+{
+    khm_int32 rv = KHM_ERROR_NOT_FOUND;
+    khm_size i;
+    ASSERT_NC(c);
+
+    if (ppp) *ppp = NULL;
+
+    EnterCriticalSection(&c->cs);
+    if (c->privint.legacy_panel &&
+        c->privint.legacy_panel != QBOTTOM(&c->privint.shown) &&
+        c->privint.legacy_panel->use_custom &&
+        !c->privint.legacy_panel->processed) {
+        if (ppp)
+            *ppp = c->privint.legacy_panel;
+        rv = KHM_ERROR_SUCCESS;
+        goto done;
+    }
+
+    for (i=0; i < c->n_types; i++) {
+        if (c->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)
+            continue;
+
+        if (QTOP(&c->types[i])) {
+            if (ppp)
+                *ppp = QTOP(&c->types[i]);
+            rv = KHM_ERROR_SUCCESS;
+            break;
+        }
+    }
+
+ done:
+    LeaveCriticalSection(&c->cs);
+
+    return rv;
+}
+
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_get_next_privint(khui_new_creds * c,
@@ -707,7 +751,7 @@ khui_cw_get_next_privint(khui_new_creds * c,
     /* First see if there is a usable legacy privileged interaction panel. */
     pp = c->privint.legacy_panel;
 
-    if (pp == NULL || !pp->use_custom) {
+    if (pp == NULL || !pp->use_custom || pp->processed) {
 
         pp = NULL;
 
@@ -726,17 +770,15 @@ khui_cw_get_next_privint(khui_new_creds * c,
     }
 
     if (pp) {
-#ifdef DEBUG
-        /* Make sure that pp isn't on the shown stack already. */
         khui_new_creds_privint_panel * q;
 
         for (q = QTOP(&c->privint.shown); q; q = QNEXT(q)) {
             if (pp == q)
                 break;
         }
-        assert(q == NULL);
-#endif
-        QPUT(&c->privint.shown, pp);
+        assert(q == NULL || q == c->privint.legacy_panel);
+        if (q == NULL)
+            QPUT(&c->privint.shown, pp);
         c->privint.shown.show_blank = FALSE;
     } else {
         c->privint.shown.show_blank = TRUE;
@@ -748,6 +790,36 @@ khui_cw_get_next_privint(khui_new_creds * c,
         *ppp = pp;
 
     return (pp)?KHM_ERROR_SUCCESS:KHM_ERROR_NOT_FOUND;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_clear_all_privints(khui_new_creds * c)
+{
+    khui_new_creds_privint_panel * p;
+    khm_size i;
+
+    ASSERT_NC(c);
+
+    khui_cw_clear_prompts(c);
+
+    EnterCriticalSection(&c->cs);
+
+    QGET(&c->privint.shown, &p);
+    while (p) {
+        khui_cw_free_privint(p);
+        QGET(&c->privint.shown, &p);
+    }
+
+    for (i=0; i < c->n_types; i++) {
+        while (QTOP(&c->types[i])) {
+            QGET(&c->types[i], &p);
+            khui_cw_free_privint(p);
+        }
+    }
+    c->privint.hwnd_current = NULL;
+    LeaveCriticalSection(&c->cs);
+
+    return KHM_ERROR_SUCCESS;
 }
 
 /************************************************************/
@@ -900,12 +972,14 @@ khui_cw_clear_prompts(khui_new_creds * c)
         if (q)
             QDEL(&c->privint.shown, p);
 
-        if (p->hwnd) {
+        {
             khm_size i;
 
-            LeaveCriticalSection(&c->cs);
-            SendMessage(p->hwnd, WM_CLOSE, 0, 0);
-            EnterCriticalSection(&c->cs);
+            if (p->hwnd != NULL) {
+                LeaveCriticalSection(&c->cs);
+                SendMessage(p->hwnd, WM_CLOSE, 0, 0);
+                EnterCriticalSection(&c->cs);
+            }
 
             /* The controls should already have been destroyed.  We
                just dis-associate the controls from the data
@@ -1249,6 +1323,35 @@ khui_cw_collect_privileged_credentials(khui_new_creds * c,
         SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
                     MAKEWPARAM(0, WMNC_COLLECT_PRIVCRED),
                     (LPARAM) &cpcd);
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_privileged_credential_collector(khui_new_creds * c,
+                                            khm_handle * dest_credset)
+{
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+    *dest_credset = c->cs_privcred;
+    LeaveCriticalSection(&c->cs);
+
+    if (*dest_credset)
+        return KHM_ERROR_SUCCESS;
+    else
+        return KHM_ERROR_NOT_FOUND;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_set_privileged_credential_collector(khui_new_creds * c,
+                                            khm_handle dest_credset)
+{
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+    c->cs_privcred = dest_credset;
+    LeaveCriticalSection(&c->cs);
+
+    return KHM_ERROR_SUCCESS;
 }
 
 KHMEXP khm_int32 KHMAPI

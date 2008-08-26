@@ -114,6 +114,7 @@ k5_force_password_change(k5_dlg_data * d) {
                        wbuf, NULL, KHUI_NCPROMPT_FLAG_HIDDEN);
 
     d->pwd_change = TRUE;
+    d->sync = TRUE;
 
     return TRUE;
 }
@@ -210,9 +211,13 @@ k5_handle_wmnc_notify(HWND hwnd,
     case WMNC_IDENTITY_CHANGE:
         {
             /* There has been a change of identity */
-            kmq_post_sub_msg(k5_sub, KMSG_CRED, 
-                             KMSG_CRED_DIALOG_NEW_IDENTITY, 
-                             0, (void *) d->nct.nc);
+            if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_PASSWORD) {
+                k5_force_password_change(d);
+            } else {
+                kmq_post_sub_msg(k5_sub, KMSG_CRED, 
+                                 KMSG_CRED_DIALOG_NEW_IDENTITY, 
+                                 0, (void *) d->nct.nc);
+            }
         }
         break;
 
@@ -677,17 +682,16 @@ void
 k5_reply_to_acqpriv_id_request(khui_new_creds * nc,
                                krb5_data * privdata)
 {
-    khui_action_context * ctx = NULL;
+    khm_handle credset = NULL;
     khm_handle cred = NULL;
     khm_handle identity = NULL;
     wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
     khm_size cb;
     FILETIME ft;
 
-    ctx = khui_cw_get_ctx(nc);
-
-    assert(ctx);
-    assert(ctx->credset);
+    khui_cw_get_privileged_credential_collector(nc, &credset);
+    if (credset == NULL)
+        return;
 
     khui_cw_get_primary_id(nc, &identity);
     assert(identity);
@@ -700,8 +704,8 @@ k5_reply_to_acqpriv_id_request(khui_new_creds * nc,
     kcdb_cred_set_attr(cred, KCDB_ATTR_ISSUE, &ft, sizeof(ft));
     kcdb_cred_set_attr(cred, attr_id_krb5_pkeyv1, privdata->data, privdata->length);
 
-    kcdb_credset_flush(ctx->credset);
-    kcdb_credset_add_cred(ctx->credset, cred, -1);
+    kcdb_credset_flush(credset);
+    kcdb_credset_add_cred(credset, cred, -1);
 
     kcdb_cred_release(cred);
     kcdb_identity_release(identity);
@@ -1070,6 +1074,10 @@ k5_handle_process_password(khui_new_creds * nc,
         khm_int32 rv = KHM_ERROR_SUCCESS;
         long code = 0;
 
+        khui_cw_unlock_nc(nc);
+        khui_cw_sync_prompt_values(nc);
+        khui_cw_lock_nc(nc);
+
         khui_cw_get_prompt_count(nc, &n_prompts);
         assert(n_prompts == 3);
 
@@ -1140,6 +1148,15 @@ k5_handle_process_password(khui_new_creds * nc,
         else {
             khm_handle csp_idcfg = NULL;
             krb5_context ctx = NULL;
+
+            /* if there is anyone requesting privileged data, give it
+               to them */
+            {
+                krb5_data pd;
+                pd.data = npwd;
+                pd.length = (unsigned int) strlen(npwd) + 1;
+                k5_reply_to_acqpriv_id_request(nc, &pd);
+            }
 
             /* we set a new password.  now we need to get initial
                credentials. */
@@ -1496,6 +1513,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
     case KMSG_CRED_PREPROCESS_ID:
         {
             khui_action_context * ctx = NULL;
+            khm_handle credset = NULL;
             khm_int32 code = 0;
             krb5_context k5ctx = 0;
             khm_handle cred = NULL;
@@ -1512,10 +1530,13 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 assert(FALSE);
                 break;
             }
+
+            khui_cw_get_privileged_credential_collector(nc, &credset);
+
             ctx = khui_cw_get_ctx(nc);
 
+            assert(credset);
             assert(ctx);
-            assert(ctx->credset);
             assert(ctx->scope == KHUI_SCOPE_IDENT);
             assert(ctx->identity != NULL);
 
@@ -1525,7 +1546,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
             k5_read_dlg_params(d, ctx->identity);
 
-            if (KHM_SUCCEEDED(kcdb_credset_get_cred(ctx->credset, 0, &cred))) {
+            if (KHM_SUCCEEDED(kcdb_credset_get_cred(credset, 0, &cred))) {
                 if (KHM_SUCCEEDED(kcdb_cred_get_attr(cred, attr_id_krb5_pkeyv1,
                                                      NULL, NULL, NULL))) {
                     kcdb_cred_get_attr(cred, attr_id_krb5_pkeyv1, NULL, NULL, &cb_pwd);

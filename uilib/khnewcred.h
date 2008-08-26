@@ -1224,6 +1224,14 @@ khui_cw_derive_credentials(khui_new_creds * c,
                            khm_handle identity,
                            khm_handle dest_credset);
 
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_privileged_credential_collector(khui_new_creds * c,
+                                            khm_handle * dest_credset);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_set_privileged_credential_collector(khui_new_creds * c,
+                                            khm_handle dest_credset);
+
 /*!@}*/ /* Credentials acquisition */
 /*!@}*/
 
