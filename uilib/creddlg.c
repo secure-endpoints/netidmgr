@@ -709,8 +709,10 @@ khui_cw_peek_next_privint(khui_new_creds * c,
 
     EnterCriticalSection(&c->cs);
     if (c->privint.legacy_panel &&
-        c->privint.legacy_panel != QBOTTOM(&c->privint.shown) &&
         c->privint.legacy_panel->use_custom &&
+        !QPREV(c->privint.legacy_panel) &&
+        !QNEXT(c->privint.legacy_panel) &&
+        c->privint.shown.current_panel != c->privint.legacy_panel &&
         !c->privint.legacy_panel->processed) {
         if (ppp)
             *ppp = c->privint.legacy_panel;
@@ -817,6 +819,7 @@ khui_cw_clear_all_privints(khui_new_creds * c)
         }
     }
     c->privint.hwnd_current = NULL;
+    c->privint.shown.current_panel = NULL;
     LeaveCriticalSection(&c->cs);
 
     return KHM_ERROR_SUCCESS;
@@ -946,7 +949,7 @@ khui_cw_clear_prompts(khui_new_creds * c)
     if (p) {
 
         /* Is this the current privileged interaction panel? */
-        if (p == QBOTTOM(&c->privint.shown) &&
+        if (p == c->privint.shown.current_panel &&
             !c->privint.shown.show_blank) {
 #ifdef DEBUG
             assert(p->use_custom);

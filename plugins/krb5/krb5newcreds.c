@@ -116,6 +116,8 @@ k5_force_password_change(k5_dlg_data * d) {
     d->pwd_change = TRUE;
     d->sync = TRUE;
 
+    khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
+
     return TRUE;
 }
 

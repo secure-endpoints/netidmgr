@@ -1133,6 +1133,8 @@ nc_layout_privint(khui_new_creds * nc)
         nc->nav.transitions |= NC_TRANS_NEXT;
     if (p && QPREV(p))
         nc->nav.transitions |= NC_TRANS_PREV;
+    if (nc->nav.state & NC_NAVSTATE_OKTOFINISH)
+        nc->nav.transitions |= NC_TRANS_FINISH;
 }
 
 
@@ -1314,11 +1316,13 @@ nc_privint_update_identity_state(khui_new_creds * nc,
         }
     }
 
-    if ((nflags & KHUI_CWNIS_READY) && !(nc->nav.transitions & NC_TRANS_FINISH)) {
+    if (nflags & KHUI_CWNIS_READY) {
         nc->nav.transitions |= NC_TRANS_FINISH;
+        nc->nav.state |= NC_NAVSTATE_OKTOFINISH;
         nc_layout_nav(nc);
-    } else if (!(nflags & KHUI_CWNIS_READY) && (nc->nav.transitions & NC_TRANS_FINISH)) {
+    } else {
         nc->nav.transitions &= ~NC_TRANS_FINISH;
+        nc->nav.state &= ~NC_NAVSTATE_OKTOFINISH;
         nc_layout_nav(nc);
     }
 }
@@ -1824,14 +1828,15 @@ nc_notify_new_identity(khui_new_creds * nc, BOOL notify_ui)
         }
     }
 
+    nc->privint.initialized = FALSE;
+    nc->nav.state &= ~NC_NAVSTATE_OKTOFINISH;
+
     khui_cw_unlock_nc(nc);
 
     nc_notify_types(nc, WMNC_IDENTITY_CHANGE, (LPARAM) nc, TRUE);
     nc_prep_cred_types(nc);
 
     khui_cw_lock_nc(nc);
-
-    nc->privint.initialized = FALSE;
 
     /* The currently selected privileged interaction panel also need
        to be reset.  However, we let nc_layout_privint() handle that
@@ -1890,14 +1895,17 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         break;
 
     case NC_PAGE_CREDOPT_BASIC:
+        nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
         nc->page = NC_PAGE_CREDOPT_BASIC;
         break;
 
     case NC_PAGE_CREDOPT_ADV:
+        nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
         nc->page = NC_PAGE_CREDOPT_ADV;
         break;
 
     case NC_PAGE_PASSWORD:
+        nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
         nc->page = NC_PAGE_PASSWORD;
         break;
 
@@ -1913,14 +1921,17 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
 
                 switch (nc->subtype) {
                 case KHUI_NC_SUBTYPE_NEW_CREDS:
+                    nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
                     nc->page = NC_PAGE_CREDOPT_ADV;
                     break;
 
                 case KHUI_NC_SUBTYPE_ACQPRIV_ID:
+                    nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
                     nc->page = NC_PAGE_CREDOPT_BASIC;
                     break;
 
                 case KHUI_NC_SUBTYPE_PASSWORD:
+                    nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
                     nc->page = NC_PAGE_PASSWORD;
                     break;
 
@@ -1947,6 +1958,7 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
                 if (p == NULL)
                     khui_cw_get_next_privint(nc, &p);
                 nc->privint.shown.current_panel = p;
+                nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
             }
             break;
 
@@ -1960,6 +1972,7 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         case NC_PAGE_IDSPEC:
             if (nc->idspec.prev_page != NC_PAGE_NONE) {
                 nc->page = nc->idspec.prev_page;
+                nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
             }
             break;
 
@@ -1973,6 +1986,7 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
                 if (p)
                     p = QPREV(p);
                 nc->privint.shown.current_panel = p;
+                nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
             }
             break;
 
