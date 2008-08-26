@@ -29,7 +29,9 @@
 #define IDS_CFG_ID_SHORT_DESC           119
 #define IDB_BITMAP1                     119
 #define IDB_NC_STATE                    119
+#define IDD_PASSWORD                    119
 #define IDS_CFG_ID_LONG_DESC            120
+#define IDD_NC_PRIV_PASSWORD            120
 #define IDS_IDPROV_DESC                 121
 #define IDS_ID_DISPLAYNAME              122
 #define IDS_ID_DESCRIPTION              123
@@ -65,7 +67,7 @@
 #define IDC_ADDNEW                      1053
 #define IDC_REMOVE                      1054
 #define IDC_CONFIGURE                   1055
-#define IDC_LIST2                       1059
+#define IDC_LBL_KSNAME                  1060
 
 // Next default values for new objects
 // 
@@ -73,7 +75,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1060
+#define _APS_NEXT_CONTROL_VALUE         1061
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

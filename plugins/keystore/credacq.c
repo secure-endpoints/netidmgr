@@ -50,12 +50,19 @@ struct nc_dialog_data {
     HWND hw_privint;
 
     keystore_t * ks;
+
+    /* for password changing */
+    khm_size n_ks;
+    keystore_t **aks;
+    HWND *hw_privints;
+    khm_size cur_idx;
 };
 
 INT_PTR
 privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
     struct nc_dialog_data * d = NULL;
+    keystore_t * ks;
 
     d = (struct nc_dialog_data *) lParam;
     assert(d);
@@ -65,9 +72,16 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     SetWindowLongPtr(hwnd, DWLP_USER, (LPARAM) d);
 #pragma warning(pop)
 
-    assert(d->ks);
+    if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
+        ks = d->ks;
+    else {
+        ks = d->aks[d->cur_idx];
+        /* TODO: set keystore name */
+    }
 
-    if (ks_is_keystore_locked(d->ks)) {
+    assert(ks);
+
+    if (ks_is_keystore_locked(ks)) {
         EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), TRUE);
         ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_HIDE);
         ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_HIDE);
@@ -212,9 +226,120 @@ creddlg_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     SetWindowLongPtr(hwnd, DWLP_USER, (LPARAM) d);
 #pragma warning(pop)
 
-    creddlg_setup_idlist(GetDlgItem(hwnd, IDC_IDLIST));
+    if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
+        creddlg_setup_idlist(GetDlgItem(hwnd, IDC_IDLIST));
 
     return FALSE;
+}
+
+INT_PTR
+creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
+{
+    khm_int32 ctype;
+    khm_size cb;
+    khm_handle identity = NULL;
+    keystore_t * ks = NULL;
+    HWND hw_privint;
+
+    cb = sizeof(ctype);
+    if (KHM_FAILED(khui_cw_get_primary_id(d->nct.nc, &identity)) ||
+        KHM_FAILED(kcdb_identity_get_attr(identity, KCDB_ATTR_TYPE,
+                                          NULL, &ctype, &cb)) ||
+        ctype != credtype_id) {
+        khui_cw_enable_type(d->nct.nc, credtype_id, FALSE);
+        kcdb_identity_release(identity);
+        return TRUE;
+    }
+
+    ks = find_keystore_for_identity(identity);
+    assert(ks);
+
+    if (d->ks)
+        ks_keystore_release(d->ks);
+    d->ks = ks;
+    /* leave ks held */
+
+    hw_privint = CreateDialogParam(hResModule,
+                                   MAKEINTRESOURCE(IDD_NC_PRIV),
+                                   GetParent(hwnd),
+                                   nc_privint_dlg_proc,
+                                   (LPARAM) d);
+    {
+        wchar_t caption[256];
+        LoadString(hResModule, IDS_NCPRIV_CAPTION, caption,
+                   ARRAYLENGTH(caption));
+
+        khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
+                                       hw_privint, caption);
+    }
+
+    d->hw_privint = hw_privint;
+
+    khui_cw_enable_type(d->nct.nc, credtype_id, TRUE);
+
+    kcdb_identity_release(identity);
+
+    khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
+
+    creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+    return TRUE;
+}
+
+INT_PTR
+creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
+{
+    khm_handle identity = NULL;
+    khm_size i;
+    khm_int32 id_type = KCDB_CREDTYPE_INVALID;
+    khm_size cb = sizeof(id_type);
+    khm_handle credset = NULL;
+
+    for (i=0; i < d->n_ks; i++) {
+        ks_keystore_release(d->aks[i]);
+    }
+    if (d->aks)
+        free(d->aks);
+    if (d->hw_privints)
+        free(d->hw_privints);
+
+    d->aks = NULL; d->n_ks = 0; d->hw_privints = NULL;
+
+    if (KHM_FAILED(khui_cw_get_primary_id(d->nct.nc, &identity)) ||
+        KHM_FAILED(kcdb_identity_get_attr(identity, KCDB_ATTR_TYPE, NULL, &id_type, &cb)) ||
+        (d->n_ks = get_keystores_with_identkey(identity, &d->aks)) == 0) {
+        khui_cw_enable_type(d->nct.nc, credtype_id, FALSE);
+        kcdb_identity_release(identity);
+        return TRUE;
+    }
+
+    d->hw_privints = malloc(sizeof(d->hw_privints[0]) * d->n_ks);
+    for (i=0; i < d->n_ks; i++) {
+        wchar_t caption[256];
+
+        d->cur_idx = i;
+        d->hw_privints[i] = CreateDialogParam(hResModule,
+                                              MAKEINTRESOURCE(IDD_NC_PRIV_PASSWORD),
+                                              GetParent(hwnd),
+                                              nc_privint_dlg_proc,
+                                              (LPARAM) d);
+        LoadString(hResModule, IDS_NCPRIV_CAPTION, caption, ARRAYLENGTH(caption));
+        khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
+                                       d->hw_privints[i], caption);
+    }
+
+    d->nct.type_deps[0] = id_type;
+    d->nct.n_type_deps = 1;
+    khui_cw_enable_type(d->nct.nc, credtype_id, TRUE);
+
+    if (KHM_FAILED(khui_cw_get_privileged_credential_collector(d->nct.nc, &credset))) {
+        kcdb_credset_create(&credset);
+        khui_cw_set_privileged_credential_collector(d->nct.nc, credset);
+    } else {
+        kcdb_credset_flush(credset);
+    }
+
+    kcdb_identity_release(identity);
+    return TRUE;
 }
 
 /* Note: This callback runs under the UI thread */
@@ -241,59 +366,86 @@ creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, int notification, khui_new_creds * nc_in) {
         /* Sent when the primary identity associated with the new
            credentials operation has changed. */
 
-        {
-            khm_int32 ctype;
-            khm_size cb;
-            khm_handle identity = NULL;
-            keystore_t * ks = NULL;
-            HWND hw_privint;
+        if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
+            return creddlg_WMNC_IDENTITY_CHANGE_new_creds(hwnd, d);
+        else
+            return creddlg_WMNC_IDENTITY_CHANGE_password(hwnd, d);
 
-            cb = sizeof(ctype);
-            if (KHM_FAILED(khui_cw_get_primary_id(d->nct.nc, &identity)) ||
-                KHM_FAILED(kcdb_identity_get_attr(identity, KCDB_ATTR_TYPE,
-                                                  NULL, &ctype, &cb)) ||
-                ctype != credtype_id) {
-                khui_cw_enable_type(d->nct.nc, credtype_id, FALSE);
-                kcdb_identity_release(identity);
-                return TRUE;
-            }
-
-            ks = find_keystore_for_identity(identity);
-            assert(ks);
-
-            if (d->ks)
-                ks_keystore_release(d->ks);
-            d->ks = ks;
-            /* leave ks held */
-
-            hw_privint = CreateDialogParam(hResModule,
-                                           MAKEINTRESOURCE(IDD_NC_PRIV),
-                                           GetParent(hwnd),
-                                           nc_privint_dlg_proc,
-                                           (LPARAM) d);
-            {
-                wchar_t caption[256];
-                LoadString(hResModule, IDS_NCPRIV_CAPTION, caption,
-                           ARRAYLENGTH(caption));
-
-                khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
-                                               hw_privint, caption);
-            }
-
-            d->hw_privint = hw_privint;
-
-            khui_cw_enable_type(d->nct.nc, credtype_id, TRUE);
-
-            kcdb_identity_release(identity);
-
-            creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
-            return TRUE;
-        }
-
-        break;
     }
 
     return TRUE;
+}
+
+void
+add_identkeys_from_credset(keystore_t * ks, khm_handle credset)
+{
+    khm_size n_creds = 0;
+    khm_size i;
+
+    kcdb_credset_get_size(credset, &n_creds);
+
+    for (i=0; i < n_creds; i++) {
+        khm_handle cred = NULL;
+        khm_handle identity = NULL;
+        khm_handle identpro = NULL;
+        wchar_t buf[KCDB_IDENT_MAXCCH_NAME];
+        khm_size cb;
+        identkey_t * idk = NULL;
+        void * data = NULL;
+
+        if (KHM_FAILED(kcdb_credset_get_cred(credset, i, &cred))) {
+            assert(FALSE);
+            continue;
+        }
+
+        kcdb_cred_get_identity(cred, &identity);
+        kcdb_identity_get_identpro(identity, &identpro);
+
+        assert(cred && identity && identpro);
+
+        idk = ks_identkey_create_new();
+
+        cb = sizeof(buf);
+        if (KHM_FAILED(kcdb_identity_get_name(identity, buf, &cb)))
+            goto done;
+        idk->identity_name = _wcsdup(buf);
+
+        cb = sizeof(buf);
+        if (KHM_FAILED(kcdb_get_resource(identity, KCDB_RES_DISPLAYNAME,
+                                         0, NULL, NULL, buf, &cb)))
+            goto done;
+        idk->display_name = _wcsdup(buf);
+
+        cb = sizeof(buf);
+        if (KHM_FAILED(kcdb_identpro_get_name(identpro, buf, &cb)))
+            goto done;
+        idk->provider_name = _wcsdup(buf);
+
+        cb = sizeof(idk->ft_ctime);
+        kcdb_cred_get_attr(cred, KCDB_ATTR_ISSUE, NULL, &idk->ft_ctime, &cb);
+        
+        cb = sizeof(idk->ft_expire);
+        kcdb_cred_get_attr(cred, KCDB_ATTR_EXPIRE, NULL, &idk->ft_expire, &cb);
+
+        ks_serialize_credential(cred, NULL, &cb);
+        if (cb == 0)
+            goto done;
+        data = malloc(cb);
+
+        ks_serialize_credential(cred, data, &cb);
+        ks_datablob_copy(&idk->plain_key, data, cb, 0);
+
+        idk->flags = 0;
+        ks_keystore_add_identkey(ks, idk);
+
+        idk = NULL;
+    done:
+        if (cred) kcdb_cred_release(cred);
+        if (identity) kcdb_identity_release(identity);
+        if (identpro) kcdb_identpro_release(identpro);
+        if (idk) ks_identkey_free(idk);
+        if (data) free(data);
+    }
 }
 
 void
@@ -308,74 +460,7 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
     rv = khui_cw_collect_privileged_credentials(d->nct.nc, NULL, credset);
 
     if (rv == KHUI_NC_RESULT_PROCESS) {
-        khm_size n_creds = 0;
-        khm_size i;
-
-        kcdb_credset_get_size(credset, &n_creds);
-
-        for (i=0; i < n_creds; i++) {
-            khm_handle cred = NULL;
-            khm_handle identity = NULL;
-            khm_handle identpro = NULL;
-            wchar_t buf[KCDB_IDENT_MAXCCH_NAME];
-            khm_size cb;
-            identkey_t * idk = NULL;
-            void * data = NULL;
-
-            if (KHM_FAILED(kcdb_credset_get_cred(credset, i, &cred))) {
-                assert(FALSE);
-                continue;
-            }
-
-            kcdb_cred_get_identity(cred, &identity);
-            kcdb_identity_get_identpro(identity, &identpro);
-
-            assert(cred && identity && identpro);
-
-            idk = ks_identkey_create_new();
-
-            cb = sizeof(buf);
-            if (KHM_FAILED(kcdb_identity_get_name(identity, buf, &cb)))
-                goto done;
-            idk->identity_name = _wcsdup(buf);
-
-            cb = sizeof(buf);
-            if (KHM_FAILED(kcdb_get_resource(identity, KCDB_RES_DISPLAYNAME,
-                                             0, NULL, NULL, buf, &cb)))
-                goto done;
-            idk->display_name = _wcsdup(buf);
-
-            cb = sizeof(buf);
-            if (KHM_FAILED(kcdb_identpro_get_name(identpro, buf, &cb)))
-                goto done;
-            idk->provider_name = _wcsdup(buf);
-
-            cb = sizeof(idk->ft_ctime);
-            kcdb_cred_get_attr(cred, KCDB_ATTR_ISSUE, NULL, &idk->ft_ctime, &cb);
-
-            cb = sizeof(idk->ft_expire);
-            kcdb_cred_get_attr(cred, KCDB_ATTR_EXPIRE, NULL, &idk->ft_expire, &cb);
-
-            ks_serialize_credential(cred, NULL, &cb);
-            if (cb == 0)
-                goto done;
-            data = malloc(cb);
-
-            ks_serialize_credential(cred, data, &cb);
-            ks_datablob_copy(&idk->plain_key, data, cb, 0);
-
-            idk->flags = 0;
-            ks_keystore_add_identkey(d->ks, idk);
-
-            idk = NULL;
-        done:
-            if (cred) kcdb_cred_release(cred);
-            if (identity) kcdb_identity_release(identity);
-            if (identpro) kcdb_identpro_release(identpro);
-            if (idk) ks_identkey_free(idk);
-            if (data) free(data);
-        }
-
+        add_identkeys_from_credset(d->ks, credset);
     } else {
         assert(FALSE);          /* for debugging */
     }
@@ -508,7 +593,7 @@ messages for documentation on how to handle each of the messages.
 ********************************************************************/
 
 
-/* Handler for KMSG_CRED_NEW_CREDS */
+/* Handler for KMSG_CRED_NEW_CREDS and KMSG_CRED_PASSWORD */
 khm_int32
 handle_kmsg_cred_new_creds(khui_new_creds * nc) {
 
@@ -531,9 +616,7 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
     LoadString(hResModule, IDS_CT_SHORT_DESC,
                wshortdesc, ARRAYLENGTH(wshortdesc));
     StringCbLength(wshortdesc, sizeof(wshortdesc), &cb);
-#ifdef DEBUG
     assert(cb > 0);
-#endif
     cb += sizeof(wchar_t);
 
     d->nct.name = malloc(cb);
@@ -541,7 +624,10 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
 
     d->nct.h_module = hResModule;
     d->nct.dlg_proc = nc_dlg_proc;
-    d->nct.dlg_template = MAKEINTRESOURCE(IDD_NEW_CREDS);
+    d->nct.dlg_template = 
+        (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_NEW_CREDS)?
+        MAKEINTRESOURCE(IDD_NEW_CREDS):
+        MAKEINTRESOURCE(IDD_PASSWORD);
 
     khui_cw_add_type(nc, &d->nct);
 
@@ -620,6 +706,167 @@ show_message_for_edit_control(HWND dlg, UINT id_edit,
     SendDlgItemMessage(dlg, id_edit, EM_SHOWBALLOONTIP, 0, (LPARAM) &bt);
 }
 
+khm_int32
+process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_t * ks,
+                                 khm_boolean derive_new)
+{
+    khm_size i;
+    khm_boolean ks_was_locked;
+
+    assert(hw_privint);
+
+    ks_was_locked = ks_is_keystore_locked(ks);
+
+    if (ks_was_locked) {
+        wchar_t pw[KHUI_MAXCCH_PASSWORD] = L"";
+        khm_size cb = 0;
+
+        GetDlgItemText(hw_privint, IDC_PASSWORD, pw, ARRAYLENGTH(pw));
+        StringCbLength(pw, sizeof(pw), &cb);
+
+        if (cb == 0) {
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+            show_message_for_edit_control(hw_privint, IDC_PASSWORD,
+                                          IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
+            return KHM_ERROR_SUCCESS;
+        } if (KHM_FAILED(ks_keystore_set_key_password(ks, pw, cb))) {
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+            show_message_for_edit_control(hw_privint, IDC_PASSWORD,
+                                          IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
+            SecureZeroMemory(pw, sizeof(pw));
+            return KHM_ERROR_SUCCESS;
+        } else {
+            ks_keystore_lock(ks);
+            if (ks_keystore_get_flags(ks) & KS_FLAG_MODIFIED)
+                save_keystore_with_identity(ks);
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
+            SecureZeroMemory(pw, sizeof(pw));
+        }
+    }
+
+    if (IsDlgButtonChecked(hw_privint, IDC_CHPW) == BST_CHECKED) {
+
+        /* Setting a new password */
+        wchar_t pw1[KHUI_MAXCCH_PASSWORD] = L"";
+        wchar_t pw2[KHUI_MAXCCH_PASSWORD] = L"";
+        khm_size cb = 0;
+
+        GetDlgItemText(hw_privint, IDC_NEWPW1, pw1, ARRAYLENGTH(pw1));
+        GetDlgItemText(hw_privint, IDC_NEWPW1, pw2, ARRAYLENGTH(pw2));
+
+        StringCbLength(pw1, sizeof(pw1), &cb);
+
+        if (cb == 0) {
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+            show_message_for_edit_control(hw_privint, IDC_NEWPW1,
+                                          IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
+            ks_keystore_reset_key(ks);
+            return KHM_ERROR_SUCCESS;
+        } else if (wcscmp(pw1, pw2)) {
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+            show_message_for_edit_control(hw_privint, IDC_NEWPW1,
+                                          IDS_TMISMPASS, IDS_MISMPASS, TTI_ERROR);
+            SecureZeroMemory(pw1, sizeof(pw1));
+            SecureZeroMemory(pw2, sizeof(pw2));
+            ks_keystore_reset_key(ks);
+            return KHM_ERROR_SUCCESS;
+        }
+
+        if (!ks_was_locked &&
+            KHM_FAILED(ks_keystore_set_key_password(ks, pw1, cb))) {
+
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+            show_message_for_edit_control(hw_privint, IDC_NEWPW1,
+                                          IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
+            SecureZeroMemory(pw1, sizeof(pw1));
+            SecureZeroMemory(pw2, sizeof(pw2));
+            ks_keystore_reset_key(ks);
+            return KHM_ERROR_SUCCESS;
+        } else if (ks_was_locked &&
+                   KHM_FAILED(ks_keystore_change_key_password(ks, pw1, cb))) {
+
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
+            show_message_for_edit_control(hw_privint, IDC_NEWPW1,
+                                          IDS_TUNSPASS, IDS_UNSPASS, TTI_ERROR);
+            SecureZeroMemory(pw1, sizeof(pw1));
+            SecureZeroMemory(pw2, sizeof(pw2));
+            ks_keystore_reset_key(ks);
+            return KHM_ERROR_SUCCESS;
+
+        } else {
+            ks_keystore_lock(ks);
+            if (ks_keystore_get_flags(ks) & KS_FLAG_MODIFIED)
+                save_keystore_with_identity(ks);
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
+            SecureZeroMemory(pw1, sizeof(pw1));
+            SecureZeroMemory(pw2, sizeof(pw2));
+        }
+    }
+
+    if (!derive_new)
+        goto done;
+
+    /* Now go through and derive all possible identities */
+    ks_keystore_unlock(ks);
+    for (i=0; i < ks->n_keys; i++) {
+        identkey_t * idk;
+        khm_handle identpro = NULL;
+        khm_handle identity = NULL;
+        khm_handle credential = NULL;
+        khm_handle credset = NULL;
+
+        idk = ks->keys[i];
+
+        if (idk->plain_key.cb_data == 0)
+            continue;
+
+        kcdb_identpro_find(idk->provider_name, &identpro);
+        if (identpro == NULL) goto done_with_idk;
+
+        kcdb_identity_create_ex(identpro, idk->identity_name,
+                                KCDB_IDENT_FLAG_CREATE, NULL, &identity);
+        if (identity == NULL) goto done_with_idk;
+
+        kcdb_credset_create(&credset);
+
+        ks_unserialize_credential(idk->plain_key.data, idk->plain_key.cb_data,
+                                  &credential);
+
+        if (credset == NULL || credential == NULL)
+            goto done_with_idk;
+
+        kcdb_credset_add_cred(credset, credential, -1);
+
+        khui_cw_derive_credentials(nc, identity, credset);
+            
+    done_with_idk:
+        if (identity) kcdb_identity_release(identity);
+        if (identpro) kcdb_identpro_release(identpro);
+        if (credset) kcdb_credset_delete(credset);
+    }
+    ks_keystore_lock(ks);
+
+ done:
+    ks_keystore_reset_key(ks);
+
+    return KHM_ERROR_SUCCESS;
+}
+
+khm_int32
+process_keystore_new_idkey(khui_new_creds * nc, HWND hw_privint, keystore_t * ks, khm_handle credset)
+{
+    add_identkeys_from_credset(ks, credset);
+    return process_keystore_new_credentials(nc, hw_privint, ks, FALSE);
+}
+
 /* Handler for KMSG_CRED_PROCESS */
 khm_int32
 handle_kmsg_cred_process(khui_new_creds * nc) {
@@ -643,155 +890,24 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
     assert(is_keystore_t(d->ks));
 
     if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
-        khm_size i;
-        khm_boolean ks_was_locked;
-
-        assert(d->hw_privint);
-
-        ks_was_locked = ks_is_keystore_locked(d->ks);
-
-        if (ks_was_locked) {
-            wchar_t pw[KHUI_MAXCCH_PASSWORD] = L"";
-            khm_size cb = 0;
-
-            GetDlgItemText(d->hw_privint, IDC_PASSWORD, pw, ARRAYLENGTH(pw));
-            StringCbLength(pw, sizeof(pw), &cb);
-
-            if (cb == 0) {
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                show_message_for_edit_control(d->hw_privint, IDC_PASSWORD,
-                                              IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
-                return KHM_ERROR_SUCCESS;
-            } if (KHM_FAILED(ks_keystore_set_key_password(d->ks, pw, cb))) {
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                show_message_for_edit_control(d->hw_privint, IDC_PASSWORD,
-                                              IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
-                SecureZeroMemory(pw, sizeof(pw));
-                return KHM_ERROR_SUCCESS;
-            } else {
-                ks_keystore_lock(d->ks);
-                if (ks_keystore_get_flags(d->ks) & KS_FLAG_MODIFIED)
-                    save_keystore_with_identity(d->ks);
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
-                SecureZeroMemory(pw, sizeof(pw));
-            }
-        }
-
-        if (IsDlgButtonChecked(d->hw_privint, IDC_CHPW) == BST_CHECKED) {
-
-            /* Setting a new password */
-            wchar_t pw1[KHUI_MAXCCH_PASSWORD] = L"";
-            wchar_t pw2[KHUI_MAXCCH_PASSWORD] = L"";
-            khm_size cb = 0;
-
-            GetDlgItemText(d->hw_privint, IDC_NEWPW1, pw1, ARRAYLENGTH(pw1));
-            GetDlgItemText(d->hw_privint, IDC_NEWPW1, pw2, ARRAYLENGTH(pw2));
-
-            StringCbLength(pw1, sizeof(pw1), &cb);
-
-            if (cb == 0) {
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
-                                              IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
-                ks_keystore_reset_key(d->ks);
-                return KHM_ERROR_SUCCESS;
-            } else if (wcscmp(pw1, pw2)) {
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
-                                              IDS_TMISMPASS, IDS_MISMPASS, TTI_ERROR);
-                SecureZeroMemory(pw1, sizeof(pw1));
-                SecureZeroMemory(pw2, sizeof(pw2));
-                ks_keystore_reset_key(d->ks);
-                return KHM_ERROR_SUCCESS;
-            }
-
-            if (!ks_was_locked &&
-                KHM_FAILED(ks_keystore_set_key_password(d->ks, pw1, cb))) {
-
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
-                                              IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
-                SecureZeroMemory(pw1, sizeof(pw1));
-                SecureZeroMemory(pw2, sizeof(pw2));
-                ks_keystore_reset_key(d->ks);
-                return KHM_ERROR_SUCCESS;
-            } else if (ks_was_locked &&
-                       KHM_FAILED(ks_keystore_change_key_password(d->ks, pw1, cb))) {
-
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
-                show_message_for_edit_control(d->hw_privint, IDC_NEWPW1,
-                                              IDS_TUNSPASS, IDS_UNSPASS, TTI_ERROR);
-                SecureZeroMemory(pw1, sizeof(pw1));
-                SecureZeroMemory(pw2, sizeof(pw2));
-                ks_keystore_reset_key(d->ks);
-                return KHM_ERROR_SUCCESS;
-
-            } else {
-                ks_keystore_lock(d->ks);
-                if (ks_keystore_get_flags(d->ks) & KS_FLAG_MODIFIED)
-                    save_keystore_with_identity(d->ks);
-                khui_cw_set_response(nc, credtype_id,
-                                     KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
-                SecureZeroMemory(pw1, sizeof(pw1));
-                SecureZeroMemory(pw2, sizeof(pw2));
-            }
-        }
-
-        /* Now go through and derive all possible identities */
-        ks_keystore_unlock(d->ks);
-        for (i=0; i < d->ks->n_keys; i++) {
-            identkey_t * idk;
-            khm_handle identpro = NULL;
-            khm_handle identity = NULL;
-            khm_handle credential = NULL;
+        if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_NEW_CREDS) {
+            return process_keystore_new_credentials(nc, d->hw_privint, d->ks, TRUE);
+        } else if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_PASSWORD) {
+            khm_size i;
             khm_handle credset = NULL;
 
-            idk = d->ks->keys[i];
-
-            if (idk->plain_key.cb_data == 0)
-                continue;
-
-            kcdb_identpro_find(idk->provider_name, &identpro);
-            if (identpro == NULL) goto done_with_idk;
-
-            kcdb_identity_create_ex(identpro, idk->identity_name,
-                                    KCDB_IDENT_FLAG_CREATE, NULL, &identity);
-            if (identity == NULL) goto done_with_idk;
-
-            kcdb_credset_create(&credset);
-
-            ks_unserialize_credential(idk->plain_key.data, idk->plain_key.cb_data,
-                                      &credential);
-
-            if (credset == NULL || credential == NULL)
-                goto done_with_idk;
-
-            kcdb_credset_add_cred(credset, credential, -1);
-
-            khui_cw_derive_credentials(d->nct.nc, identity, credset);
-            
-        done_with_idk:
-            if (identity) kcdb_identity_release(identity);
-            if (identpro) kcdb_identpro_release(identpro);
-            if (credset) kcdb_credset_delete(credset);
+            khui_cw_get_privileged_credential_collector(nc, &credset);
+            for (i=0; i < d->n_ks; i++) {
+                process_keystore_new_idkey(nc, d->hw_privints[i], d->aks[i], credset);
+            }
+            return KHM_ERROR_SUCCESS;
         }
-        ks_keystore_lock(d->ks);
-        ks_keystore_reset_key(d->ks);
-
-        return KHM_ERROR_SUCCESS;
-
     } else {
         /* user cancelled */
         ks_keystore_set_flags(d->ks, KS_FLAG_MODIFIED, 0);
         khui_cw_set_response(nc, credtype_id,
                              KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
+        return KHM_ERROR_SUCCESS;
     }
 
     return KHM_ERROR_SUCCESS;
@@ -846,6 +962,7 @@ handle_cred_acq_msg(khm_int32 msg_type,
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
     switch(msg_subtype) {
+    case KMSG_CRED_PASSWORD:
     case KMSG_CRED_NEW_CREDS:
         return handle_kmsg_cred_new_creds((khui_new_creds *) vparam);
 

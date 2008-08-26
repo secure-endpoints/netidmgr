@@ -553,6 +553,57 @@ get_keystore_credential_for_identity(khm_handle identity)
     return credential;
 }
 
+#define MAX_KS_LIST 16
+
+khm_size
+get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks)
+{
+    keystore_t *aks[MAX_KS_LIST];
+    khm_size n_ks = 0;
+    khm_size i, j;
+
+    EnterCriticalSection(&cs_ks);
+    for (i=0; i < n_keystores && n_ks < MAX_KS_LIST; i++) {
+        keystore_t * ks = keystores[i];
+        khm_boolean found = FALSE;
+
+        KSLOCK(ks);
+        for (j=0; j < ks->n_keys && !found; j++) {
+            identkey_t * idk = ks->keys[j];
+            khm_handle identpro = NULL;
+            khm_handle identity = NULL;
+
+            if (KHM_FAILED(kcdb_identpro_find(idk->provider_name, &identpro)) ||
+                KHM_FAILED(kcdb_identity_create_ex(identpro, idk->identity_name,
+                                                   KCDB_IDENT_FLAG_CREATE, NULL, &identity)))
+                goto done_with_idk;
+
+            if (kcdb_identity_is_equal(identity, s_identity)) {
+                aks[n_ks++] = ks;
+                ks_keystore_hold(ks);
+                found = TRUE;
+            }
+
+        done_with_idk:
+            if (identpro) kcdb_identpro_release(identpro);
+            if (identity) kcdb_identity_release(identity);
+        }
+        KSUNLOCK(ks);
+    }
+    LeaveCriticalSection(&cs_ks);
+
+    if (n_ks > 0) {
+        *pks = malloc(sizeof((*pks)[0]) * n_ks);
+        assert(*pks);
+        for (i=0; i < n_ks; i++)
+            (*pks)[i] = aks[i];
+    } else {
+        *pks = NULL;
+    }
+
+    return n_ks;
+}
+
 khm_int32
 save_keystore_with_identity(keystore_t * ks)
 {
