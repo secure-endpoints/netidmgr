@@ -75,8 +75,24 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
         ks = d->ks;
     else {
+        wchar_t desc[KHUI_MAXCCH_SHORT_DESC];
+        wchar_t fmt[64];
+        khm_handle identity;
+
         ks = d->aks[d->cur_idx];
-        /* TODO: set keystore name */
+        LoadString(hResModule, IDS_NC_PWDTITLE, fmt, ARRAYLENGTH(fmt));
+        StringCbPrintf(desc, sizeof(desc), fmt, ks->display_name);
+        SetDlgItemText(hwnd, IDC_LBL_KSNAME, desc);
+
+        identity = create_identity_from_keystore(ks);
+        if (identity) {
+            HICON icon;
+            khm_size cb = sizeof(icon);
+            if (KHM_SUCCEEDED(kcdb_get_resource(identity, KCDB_RES_ICON_NORMAL, 0, NULL, NULL,
+                                                &icon, &cb))) {
+                Static_SetIcon(GetDlgItem(hwnd, IDC_IDICON), icon);
+            }
+        }
     }
 
     assert(ks);
@@ -314,17 +330,14 @@ creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
 
     d->hw_privints = malloc(sizeof(d->hw_privints[0]) * d->n_ks);
     for (i=0; i < d->n_ks; i++) {
-        wchar_t caption[256];
-
         d->cur_idx = i;
         d->hw_privints[i] = CreateDialogParam(hResModule,
                                               MAKEINTRESOURCE(IDD_NC_PRIV_PASSWORD),
                                               GetParent(hwnd),
                                               nc_privint_dlg_proc,
                                               (LPARAM) d);
-        LoadString(hResModule, IDS_NCPRIV_CAPTION, caption, ARRAYLENGTH(caption));
         khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
-                                       d->hw_privints[i], caption);
+                                       d->hw_privints[i], d->aks[i]->display_name);
     }
 
     d->nct.type_deps[0] = id_type;
@@ -708,7 +721,7 @@ show_message_for_edit_control(HWND dlg, UINT id_edit,
 
 khm_int32
 process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_t * ks,
-                                 khm_boolean derive_new)
+                                 khm_handle key_source, khm_boolean derive_new)
 {
     khm_size i;
     khm_boolean ks_was_locked;
@@ -738,6 +751,10 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw, sizeof(pw));
             return KHM_ERROR_SUCCESS;
         } else {
+            if (key_source) {
+                ks_keystore_unlock(ks);
+                add_identkeys_from_credset(ks, key_source);
+            }
             ks_keystore_lock(ks);
             if (ks_keystore_get_flags(ks) & KS_FLAG_MODIFIED)
                 save_keystore_with_identity(ks);
@@ -860,13 +877,6 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
     return KHM_ERROR_SUCCESS;
 }
 
-khm_int32
-process_keystore_new_idkey(khui_new_creds * nc, HWND hw_privint, keystore_t * ks, khm_handle credset)
-{
-    add_identkeys_from_credset(ks, credset);
-    return process_keystore_new_credentials(nc, hw_privint, ks, FALSE);
-}
-
 /* Handler for KMSG_CRED_PROCESS */
 khm_int32
 handle_kmsg_cred_process(khui_new_creds * nc) {
@@ -884,27 +894,29 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
 
     khui_cw_find_type(nc, credtype_id, (khui_new_creds_by_type **) &d);
 
-    if (d == NULL || d->ks == NULL) {
+    if (d == NULL) {
         return KHM_ERROR_SUCCESS;
     }
-    assert(is_keystore_t(d->ks));
 
     if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
         if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_NEW_CREDS) {
-            return process_keystore_new_credentials(nc, d->hw_privint, d->ks, TRUE);
+            if (d->ks == NULL)
+                return KHM_ERROR_SUCCESS;
+            return process_keystore_new_credentials(nc, d->hw_privint, d->ks, NULL, TRUE);
         } else if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_PASSWORD) {
             khm_size i;
             khm_handle credset = NULL;
 
             khui_cw_get_privileged_credential_collector(nc, &credset);
             for (i=0; i < d->n_ks; i++) {
-                process_keystore_new_idkey(nc, d->hw_privints[i], d->aks[i], credset);
+                process_keystore_new_credentials(nc, d->hw_privints[i], d->aks[i], credset, FALSE);
             }
             return KHM_ERROR_SUCCESS;
         }
     } else {
         /* user cancelled */
-        ks_keystore_set_flags(d->ks, KS_FLAG_MODIFIED, 0);
+        if (d->ks)
+            ks_keystore_set_flags(d->ks, KS_FLAG_MODIFIED, 0);
         khui_cw_set_response(nc, credtype_id,
                              KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
         return KHM_ERROR_SUCCESS;

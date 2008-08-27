@@ -157,14 +157,11 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Password",IDC_LBL_PW,7,22,32,8
-    EDITTEXT        IDC_PASSWORD,71,19,272,14,ES_PASSWORD | ES_AUTOHSCROLL
-    CONTROL         "Change password",IDC_CHPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,67,73,10
-    EDITTEXT        IDC_NEWPW2,71,50,272,14,ES_PASSWORD | ES_AUTOHSCROLL
-    LTEXT           "Confirm password",IDC_LBL_NEWPW2,7,54,58,8
-    EDITTEXT        IDC_NEWPW1,71,35,272,14,ES_PASSWORD | ES_AUTOHSCROLL
-    LTEXT           "New password",IDC_LBL_NEWPW1,7,38,48,8
-    LTEXT           "Password for ...",IDC_LBL_KSNAME,7,7,336,11,0,WS_EX_CLIENTEDGE
+    LTEXT           "Password",IDC_LBL_PW,40,28,32,8
+    EDITTEXT        IDC_PASSWORD,93,25,250,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Password for ...",IDC_LBL_KSNAME,40,7,303,12,0,WS_EX_CLIENTEDGE
+    ICON            "",IDC_IDICON,7,7,20,20
+    LTEXT           "The identity for which you are changing the password has a private key stored in this KeyStore.  Enter the password for this KeyStore here to update the stored private key.",IDC_STATIC,40,49,303,28
 END
 
 
@@ -250,6 +247,8 @@ BEGIN
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 343
+        VERTGUIDE, 40
+        VERTGUIDE, 93
         TOPMARGIN, 7
         BOTTOMMARGIN, 77
     END
@@ -309,6 +308,7 @@ BEGIN
     IDS_UNSPASS             "The new password could not be set."
     IDS_IDK_CT_SHORT_DESC   "Private key"
     IDS_IDK_CT_LONG_DESC    "Private key"
+    IDS_NC_PWDTITLE         "Password for %s"
 END
 
 #endif    // English (U.S.) resources

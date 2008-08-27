@@ -264,6 +264,9 @@ ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
     for (i=0; i < ks->n_keys; i++) {
         if (!wcscmp(idk->provider_name, ks->keys[i]->provider_name) &&
             !wcscmp(idk->identity_name, ks->keys[i]->identity_name)) {
+            /* we don't allow a locked key to be replaced by an
+               unlocked key or vice versa. */
+            assert(!((ks->keys[i]->flags ^ idk->flags) & IDENTKEY_FLAG_LOCKED));
             idk->version = ks->keys[i]->version + 1;
             ks_identkey_free(ks->keys[i]);
             ks->keys[i] = NULL;
