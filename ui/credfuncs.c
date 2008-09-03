@@ -299,6 +299,7 @@ kmsg_cred_completion(kmq_message *m)
            there were any errors reported.  Otherwise we dispatch
            another set of messages. */
         if(!khm_cred_dispatch_process_level(nc)) {
+            int has_error = 0;
 
             if(kherr_is_error()) {
                 khui_alert * alert;
@@ -308,6 +309,8 @@ kmsg_cred_completion(kmq_message *m)
                 wchar_t w_idname[KCDB_IDENT_MAXCCH_NAME];
                 wchar_t ws_title[ARRAYLENGTH(ws_tfmt) + KCDB_IDENT_MAXCCH_NAME];
                 khm_size cb;
+
+                has_error = 1;
 
                 /* For renewals, we suppress the error message for the
                    following case:
@@ -460,7 +463,7 @@ kmsg_cred_completion(kmq_message *m)
                                  m->vparam);
             } else {
                 PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
-                            MAKEWPARAM(0, WMNC_DIALOG_PROCESS_COMPLETE),
+                            MAKEWPARAM(has_error, WMNC_DIALOG_PROCESS_COMPLETE),
                             0);
             }
         }
