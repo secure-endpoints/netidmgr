@@ -2795,6 +2795,19 @@ alert_bin_wnd_proc(HWND hwnd,
                 adata = QNEXT(adata);
             }
 
+
+#ifndef ALERT_STATIC_BACKGROUND
+            GetClientRect(hwnd, &r);
+            if (y < r.bottom) {
+                HBRUSH hb_background;
+
+                hb_background = GetSysColorBrush(COLOR_BTNFACE);
+
+                r.top = y;
+                FillRect(hdc, &r, hb_background);
+            }
+#endif
+
             SelectFont(hdc, hf_old);
 
             if (!in_printclient) {
