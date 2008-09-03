@@ -389,7 +389,7 @@ k5_read_dlg_params(k5_dlg_data * d, khm_handle identity)
     /* once we read the new data, in, it is no longer considered
        dirty */
     d->dirty = FALSE;
-    d->sync = FALSE;
+    d->sync = TRUE;
 }
 
 void
@@ -1159,6 +1159,9 @@ k5_handle_process_password(khui_new_creds * nc,
                 pd.length = (unsigned int) strlen(npwd) + 1;
                 k5_reply_to_acqpriv_id_request(nc, &pd);
             }
+
+            /* We don't need the prompts around anymore */
+            khui_cw_clear_prompts(nc);
 
             /* we set a new password.  now we need to get initial
                credentials. */
