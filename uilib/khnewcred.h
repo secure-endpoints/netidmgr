@@ -51,6 +51,12 @@
 */
 #define KHUI_WM_NC_NOTIFY (WM_APP + 0x101)
 
+/* void Cls_OnKhuiNcNotify(HWND hwnd, khui_wm_nc_notification code, int sParam, void * vparam)  */
+#define HANDLE_KHUI_WM_NC_NOTIFY(hwnd, wParam, lParam, fn) \
+    ((fn)((hwnd), HIWORD(wParam), LOWORD(wParam), (void *)(LPARAM)(lParam)), 0L)
+#define FORWARD_KHUI_WM_NC_NOTIFY(hwnd, code, sParam, nc) \
+    (void)(fn)((hwnd), KHUI_WM_NC_NOTIFY, MAKEWPARAM(sParam, code), (LPARAM) (nc))
+
 /*! \brief The first control ID that may be used by an identity provider */
 #define KHUI_CW_ID_MIN 8016
 
@@ -314,6 +320,8 @@ enum khui_wm_nc_notifications {
 
     WMNC_DERIVE_FROM_PRIVCRED,
 };
+
+typedef enum khui_wm_nc_notifications khui_wm_nc_notification;
 
 /*! \brief Plugins can use WMNC_NOTIFY message codes from here on up
 
