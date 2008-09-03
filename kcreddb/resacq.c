@@ -79,7 +79,7 @@ static khm_int32
 get_resource_from_identity(kcdb_resource_request * preq)
 {
     kcdb_identity * id = (kcdb_identity *) preq->h_obj;
-    khm_int32 rv;
+    khm_int32 rv = KHM_ERROR_NOT_FOUND;
     khm_size cb;
     khm_handle csp_id;
 
@@ -102,6 +102,35 @@ get_resource_from_identity(kcdb_resource_request * preq)
 
         preq->cb_buf = cb;
         return rv;
+
+        /* If there is a custom icon defined for this identity, then
+           that icon will always be used.  Otherwise we defer to the
+           identity provider. */
+    case KCDB_RES_ICON_DISABLED:
+    case KCDB_RES_ICON_NORMAL:
+        if (preq->buf == NULL || preq->cb_buf < sizeof(HICON)) {
+            preq->cb_buf = sizeof(HICON);
+            return KHM_ERROR_TOO_LONG;
+        }
+
+        if (KHM_SUCCEEDED(kcdb_identity_get_config(preq->h_obj, 0, &csp_id))) {
+            wchar_t icopath[MAX_PATH];
+            HICON h = NULL;
+
+            cb = sizeof(icopath);
+            if (KHM_SUCCEEDED(khc_read_string(csp_id, L"IconNormal", icopath, &cb))) {
+                khui_load_icon_from_resource_path(icopath, preq->flags, &h);
+            }
+
+            khc_close_space(csp_id);
+
+            if (h != NULL) {
+                *((HICON *) preq->buf) = h;
+                preq->cb_buf = sizeof(HICON);
+                return KHM_ERROR_SUCCESS;
+            }
+        }
+        break;
     }
 
     if (!kcdb_is_identity(id) || !kcdb_is_identpro(id->id_pro) ||
@@ -121,30 +150,7 @@ get_resource_from_identity(kcdb_resource_request * preq)
         switch (preq->res_id) {
         case KCDB_RES_ICON_DISABLED:
         case KCDB_RES_ICON_NORMAL:
-            if (preq->buf == NULL || preq->cb_buf < sizeof(HICON)) {
-                preq->cb_buf = sizeof(HICON);
-                return KHM_ERROR_TOO_LONG;
-            }
-
-            if (KHM_SUCCEEDED(kcdb_identity_get_config(preq->h_obj, 0, &csp_id))) {
-                wchar_t icopath[MAX_PATH];
-                HICON h = NULL;
-
-                cb = sizeof(icopath);
-                if (KHM_SUCCEEDED(khc_read_string(csp_id, L"IconNormal", icopath, &cb))) {
-                    khui_load_icon_from_resource_path(icopath, preq->flags, &h);
-                }
-
-                if (h != NULL) {
-                    *((HICON *) preq->buf) = h;
-                    preq->cb_buf = sizeof(HICON);
-                    rv = KHM_ERROR_SUCCESS;
-                }
-
-                khc_close_space(csp_id);
-            }
-
-            if (KHM_FAILED(rv)) {
+            {
                 HICON h;
                 int cx, cy;
 
