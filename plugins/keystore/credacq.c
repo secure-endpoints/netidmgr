@@ -357,7 +357,8 @@ creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
 
 /* Note: This callback runs under the UI thread */
 INT_PTR
-creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, int notification, khui_new_creds * nc_in) {
+creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, khui_wm_nc_notification notification,
+                          int sParam, void * vParam) {
 
     struct nc_dialog_data * d;
 
@@ -578,8 +579,10 @@ nc_dlg_proc(HWND hwnd,
             WPARAM wParam,
             LPARAM lParam) {
 
+#ifndef HANDLE_KHUI_WM_NC_NOTIFY
 #define HANDLE_KHUI_WM_NC_NOTIFY(hwnd, wParam, lParam, fn) \
     ((fn)((hwnd),HIWORD(wParam),(khui_new_creds *) (lParam)))
+#endif
 
     switch (uMsg) {
 #define PHANDLE_MSG(m) \
@@ -742,14 +745,14 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
             show_message_for_edit_control(hw_privint, IDC_PASSWORD,
                                           IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
-            return KHM_ERROR_SUCCESS;
+            return KHM_ERROR_INVALID_PARAM;
         } if (KHM_FAILED(ks_keystore_set_key_password(ks, pw, cb))) {
             khui_cw_set_response(nc, credtype_id,
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
             show_message_for_edit_control(hw_privint, IDC_PASSWORD,
                                           IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
             SecureZeroMemory(pw, sizeof(pw));
-            return KHM_ERROR_SUCCESS;
+            return KHM_ERROR_INVALID_PARAM;
         } else {
             if (key_source) {
                 ks_keystore_unlock(ks);
@@ -782,7 +785,7 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             show_message_for_edit_control(hw_privint, IDC_NEWPW1,
                                           IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
             ks_keystore_reset_key(ks);
-            return KHM_ERROR_SUCCESS;
+            return KHM_ERROR_INVALID_PARAM;
         } else if (wcscmp(pw1, pw2)) {
             khui_cw_set_response(nc, credtype_id,
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
@@ -791,7 +794,7 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
             ks_keystore_reset_key(ks);
-            return KHM_ERROR_SUCCESS;
+            return KHM_ERROR_INVALID_PARAM;
         }
 
         if (!ks_was_locked &&
@@ -804,7 +807,7 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
             ks_keystore_reset_key(ks);
-            return KHM_ERROR_SUCCESS;
+            return KHM_ERROR_INVALID_PARAM;
         } else if (ks_was_locked &&
                    KHM_FAILED(ks_keystore_change_key_password(ks, pw1, cb))) {
 
@@ -815,7 +818,7 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
             ks_keystore_reset_key(ks);
-            return KHM_ERROR_SUCCESS;
+            return KHM_ERROR_INVALID_PARAM;
 
         } else {
             ks_keystore_lock(ks);
@@ -827,6 +830,11 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw2, sizeof(pw2));
         }
     }
+
+    /* if we are done with the dialog, we can destroy it so that if
+       there are any other privileged interaction panels waiting, they
+       can take over */
+    DestroyWindow(hw_privint);
 
     if (!derive_new)
         goto done;
@@ -900,17 +908,25 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
 
     if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
         if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_NEW_CREDS) {
-            if (d->ks == NULL)
-                return KHM_ERROR_SUCCESS;
-            return process_keystore_new_credentials(nc, d->hw_privint, d->ks, NULL, TRUE);
+            if (d->ks != NULL)
+                process_keystore_new_credentials(nc, d->hw_privint, d->ks, NULL, TRUE);
+            return KHM_ERROR_SUCCESS;
         } else if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_PASSWORD) {
             khm_size i;
             khm_handle credset = NULL;
+            khm_boolean failed = FALSE;
 
             khui_cw_get_privileged_credential_collector(nc, &credset);
             for (i=0; i < d->n_ks; i++) {
-                process_keystore_new_credentials(nc, d->hw_privints[i], d->aks[i], credset, FALSE);
+                if (KHM_FAILED(process_keystore_new_credentials(nc, d->hw_privints[i],
+                                                                d->aks[i], credset, FALSE)))
+                    failed = TRUE;
             }
+
+            if (failed)
+                khui_cw_set_response(nc, credtype_id,
+                                     KHUI_NC_RESPONSE_NOEXIT |
+                                     KHUI_NC_RESPONSE_PENDING);
             return KHM_ERROR_SUCCESS;
         }
     } else {

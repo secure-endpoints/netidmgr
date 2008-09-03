@@ -242,6 +242,7 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
     }
 
     ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, path);
+    ks_keystore_set_flags(ks, KS_FLAG_MODIFIED, 0);
 
     if (buffer)
         free(buffer);
@@ -330,7 +331,6 @@ keystore_t *
 create_keystore_for_identity(khm_handle identity)
 {
     khm_size cb;
-    khm_int32 ctype;
     khm_handle csp_id = NULL;
     khm_handle csp_ks = NULL;
     keystore_t * ks = NULL;
@@ -649,6 +649,39 @@ save_keystore_with_identity(keystore_t * ks)
         khc_close_space(csp_id);
     if (csp_ks)
         khc_close_space(csp_ks);
+    if (identity)
+        kcdb_identity_release(identity);
+    return rv;
+}
+
+khm_int32
+destroy_keystore_identity(keystore_t * ks)
+{
+    khm_handle csp_id = NULL;
+    khm_handle identity;
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    khm_handle csp_t = NULL;
+
+    assert(is_keystore_t(ks));
+    KSLOCK(ks);
+    identity = ks->identity;
+    kcdb_identity_hold(identity);
+    KSUNLOCK(ks);
+
+    if (identity == NULL)
+        return KHM_ERROR_NOT_FOUND;
+
+    if (KHM_FAILED(rv = kcdb_identity_get_config(identity, KHM_PERM_WRITE, &csp_id)))
+        goto done;
+
+    rv = khc_remove_space(csp_id);
+
+    kcdb_identity_get_config(identity, KHM_PERM_READ, &csp_t);
+    assert(csp_t == NULL);
+
+ done:
+    if (csp_id)
+        khc_close_space(csp_id);
     if (identity)
         kcdb_identity_release(identity);
     return rv;

@@ -325,17 +325,39 @@ handle_kmsg_cred_refresh(void)
     return KHM_ERROR_SUCCESS;
 }
 
+static khm_int32 KHMAPI
+destroy_creds_proc(khm_handle cred, void * rock)
+{
+    khm_int32 ctype;
+    khm_handle identity = NULL;
+    keystore_t * ks = NULL;
+
+    if (KHM_FAILED(kcdb_cred_get_type(cred, &ctype)) ||
+        ctype != credtype_id ||
+        KHM_FAILED(kcdb_cred_get_identity(cred, &identity)))
+        return KHM_ERROR_SUCCESS;
+
+    ks = find_keystore_for_identity(identity);
+    if (ks) {
+        destroy_keystore_identity(ks);
+        ks_keystore_release(ks);
+    }
+
+    kcdb_identity_release(identity);
+    return KHM_ERROR_SUCCESS;
+}
+
 /* Handler for destroying credentials */
 khm_int32
 handle_kmsg_cred_destroy_creds(khui_action_context * ctx)
 {
-    /* TODO: Destroy credentials of our type as specified by the
-       action context passed in through vparam. */
+    khm_int32 rv;
 
-    /* The credential set in ctx->credset contains the credentials
-       that are to be destroyed. */
+    rv = kcdb_credset_apply(ctx->credset, destroy_creds_proc, NULL);
+    list_credentials();
 
-    return KHM_ERROR_SUCCESS;
+    return rv;
+
 }
 
 /* Begin a property sheet */

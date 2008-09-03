@@ -261,7 +261,6 @@ get_keystore_credential(keystore_t * ks);
 khm_handle
 get_identkey_credential(keystore_t * ks, identkey_t * idk);
 
-
 khm_handle
 get_keystore_credential_for_identity(khm_handle identity);
 
@@ -270,3 +269,6 @@ get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks);
 
 khm_int32
 save_keystore_with_identity(keystore_t * ks);
+
+khm_int32
+destroy_keystore_identity(keystore_t * ks);
