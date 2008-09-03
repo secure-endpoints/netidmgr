@@ -48,7 +48,8 @@ typedef enum tag_nc_page {
     NC_PAGET_PREV,
     NC_PAGET_FINISH,
     NC_PAGET_CANCEL,
-    NC_PAGET_END
+    NC_PAGET_END,
+    NC_PAGET_DEFAULT
 } nc_page;
 
 
@@ -69,7 +70,7 @@ typedef struct tag_khui_new_creds_privint_panel {
 
     khui_new_creds * nc;        /*!< New Credentials dialog that owns
                                   this panel.  */
-    struct tag_khui_new_creds_type_int * provider;
+    khm_int32  ctype;
                                 /*!< Credentials type that provided
                                   this panel, if known. */
 
@@ -218,11 +219,13 @@ typedef struct tag_nc_nav {
 #define NC_TRANS_ABORT       0x0008L
 #define NC_TRANS_SHOWCLOSEIF 0x0010L
 #define NC_TRANS_CLOSE       0x0020L
+#define NC_TRANS_RETRY       0x0040L
 
     khm_int32   state;          /*!< State flags */
 #define NC_NAVSTATE_PREEND     0x0001L
 #define NC_NAVSTATE_NOCLOSE    0x0002L
 #define NC_NAVSTATE_OKTOFINISH 0x0004L
+#define NC_NAVSTATE_CANCELLED  0x0008L
 
 } nc_nav;
 

@@ -422,6 +422,7 @@ BEGIN
     CONTROL         "&Close this window after operation is complete",IDC_CLOSEIF,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,9,161,10
     PUSHBUTTON      "Close",IDC_NC_CLOSE,313,5,50,14,NOT WS_VISIBLE
+    PUSHBUTTON      "&Retry",IDC_RETRY,258,5,50,14,NOT WS_VISIBLE
 END
 
 IDD_NC_IDSEL DIALOGEX 0, 0, 370, 30

@@ -418,6 +418,8 @@
 #define IDC_BACK                        1169
 #define IDC_NEXT                        1170
 #define IDC_FINISH                      1171
+#define IDC_FINISH2                     1172
+#define IDC_RETRY                       1172
 #define IDC_TEXT                        1173
 #define IDC_PROGRESS                    1174
 #define IDC_CFG_TYPE                    1177

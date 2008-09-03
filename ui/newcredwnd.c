@@ -644,7 +644,7 @@ nc_idsel_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
  * Identity Specification Window
  ************************************************************/
 
-static void
+static HWND
 nc_layout_idspec(khui_new_creds * nc)
 {
     HWND hw_list;
@@ -815,6 +815,8 @@ nc_layout_idspec(khui_new_creds * nc)
     }
 
     nc->idspec.in_layout = FALSE;
+
+    return hw_list;
 }
 
 static khm_boolean
@@ -886,12 +888,12 @@ nc_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 #define CFG_CLOSE_AFTER_PROCESS_END L"CredWindow\\Windows\\NewCred\\CloseAfterProcessEnd"
 
-static void
+static HWND
 nc_layout_nav(khui_new_creds * nc)
 {
     HDWP dwp;
 
-    dwp = BeginDeferWindowPos(7);
+    dwp = BeginDeferWindowPos(8);
 
     dwp = DeferWindowPos(dwp, GetDlgItem(nc->nav.hwnd, IDC_BACK), NULL, 0, 0, 0, 0,
                          ((nc->nav.transitions & NC_TRANS_PREV) ?
@@ -903,6 +905,10 @@ nc_layout_nav(khui_new_creds * nc)
 
     dwp = DeferWindowPos(dwp, GetDlgItem(nc->nav.hwnd, IDC_FINISH), NULL, 0, 0, 0, 0,
                          ((nc->nav.transitions & NC_TRANS_FINISH) ?
+                          SWP_SHOWONLY : SWP_HIDEONLY));
+
+    dwp = DeferWindowPos(dwp, GetDlgItem(nc->nav.hwnd, IDC_RETRY), NULL, 0, 0, 0, 0,
+                         ((nc->nav.transitions & NC_TRANS_RETRY) ?
                           SWP_SHOWONLY : SWP_HIDEONLY));
 
     dwp = DeferWindowPos(dwp, GetDlgItem(nc->nav.hwnd, IDC_NC_ABORT), NULL, 0, 0, 0, 0,
@@ -935,6 +941,13 @@ nc_layout_nav(khui_new_creds * nc)
     }
 
     EndDeferWindowPos(dwp);
+
+    return GetDlgItem(nc->nav.hwnd,
+                      (nc->nav.transitions & NC_TRANS_NEXT)? IDC_NEXT :
+                      (nc->nav.transitions & NC_TRANS_FINISH)? IDC_FINISH :
+                      (nc->nav.transitions & NC_TRANS_CLOSE)? IDC_NC_CLOSE :
+                      (nc->nav.transitions & NC_TRANS_ABORT)? IDC_NC_ABORT :
+                      IDCANCEL);
 }
 
 
@@ -944,9 +957,35 @@ nc_layout_nav(khui_new_creds * nc)
  * Privileged Interaction Dialog
  ************************************************************/
 
+/* If a privileged interaction panel was destroyed, then we remove it
+   from the queue of shown windows. */
+static void
+nc_purge_shown_windows(khui_new_creds * nc)
+{
+    khui_new_creds_privint_panel * p;
+    khui_new_creds_privint_panel * np;
+
+    for (p = QTOP(&nc->privint.shown); p; p = np) {
+        np = QNEXT(p);
+
+        if (!IsWindow(p->hwnd)) {
+            QDEL(&nc->privint.shown, p);
+
+            if (nc->privint.shown.current_panel == p)
+                nc->privint.shown.current_panel = NULL;
+
+            if (nc->privint.hwnd_current == p->hwnd)
+                nc->privint.hwnd_current = NULL;
+
+            p->hwnd = NULL;
+            khui_cw_free_privint(p);
+        }
+    }
+}
+
 /* Layout the privileged interaction panel in either the basic or the
    advanced mode. */
-static void
+static HWND
 nc_layout_privint(khui_new_creds * nc)
 {
     HWND hw;
@@ -967,6 +1006,8 @@ nc_layout_privint(khui_new_creds * nc)
     } else {
         hw = nc->privint.hwnd_basic;
     }
+
+    nc_purge_shown_windows(nc);
 
     p = nc->privint.shown.current_panel;
 
@@ -1135,6 +1176,10 @@ nc_layout_privint(khui_new_creds * nc)
         nc->nav.transitions |= NC_TRANS_PREV;
     if (nc->nav.state & NC_NAVSTATE_OKTOFINISH)
         nc->nav.transitions |= NC_TRANS_FINISH;
+
+    if (hw_target != NULL && (hw = GetNextDlgTabItem(hw_target, NULL, FALSE)) != NULL)
+        return hw;
+    return NULL;
 }
 
 
@@ -1154,6 +1199,7 @@ nc_privint_basic_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         nc = nc_get_dlg_data(hwnd);
         if (wParam == MAKEWPARAM(IDC_NC_ADVANCED, BN_CLICKED)) {
             nc_navigate(nc, NC_PAGE_CREDOPT_ADV);
+            return TRUE;
         }
         return FALSE;
 
@@ -1195,6 +1241,7 @@ nc_privint_advanced_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         nc = nc_get_dlg_data(hwnd);
         if (wParam == MAKEWPARAM(IDC_NC_ADVANCED, BN_CLICKED)) {
             nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
+            return TRUE;
         }
         return FALSE;
 
@@ -1502,6 +1549,7 @@ nc_layout_container(khui_new_creds * nc)
     RECT r;
     HDWP dwp = NULL;
     BOOL drv;
+    HWND nextctl = NULL;
 
 #define dlg_item(id) GetDlgItem(nc->hwnd, id)
 
@@ -1554,7 +1602,7 @@ nc_layout_container(khui_new_creds * nc)
 
         khui_cw_unlock_nc(nc);
 
-        nc_layout_idspec(nc);
+        nextctl = nc_layout_idspec(nc);
         nc_layout_nav(nc);
 
         break;
@@ -1594,7 +1642,7 @@ nc_layout_container(khui_new_creds * nc)
         khui_cw_unlock_nc(nc);
 
         nc_layout_idsel(nc);
-        nc_layout_privint(nc);
+        nextctl = nc_layout_privint(nc);
         nc_layout_nav(nc);
 
         break;
@@ -1634,7 +1682,7 @@ nc_layout_container(khui_new_creds * nc)
         khui_cw_unlock_nc(nc);
 
         nc_layout_idsel(nc);
-        nc_layout_privint(nc);
+        nextctl = nc_layout_privint(nc);
         nc_layout_nav(nc);
 
         break;
@@ -1674,7 +1722,7 @@ nc_layout_container(khui_new_creds * nc)
         khui_cw_unlock_nc(nc);
 
         nc_layout_idsel(nc);
-        nc_layout_privint(nc);
+        nextctl = nc_layout_privint(nc);
         nc_layout_nav(nc);
 
         break;
@@ -1715,7 +1763,7 @@ nc_layout_container(khui_new_creds * nc)
 
         nc_layout_idsel(nc);
         nc_layout_progress(nc);
-        nc_layout_nav(nc);
+        nextctl = nc_layout_nav(nc);
 
         break;
 
@@ -1724,6 +1772,9 @@ nc_layout_container(khui_new_creds * nc)
     }
 
 #undef dlg_item
+
+    if (nextctl)
+        PostMessage(nc->hwnd, WM_NEXTDLGCTL, (WPARAM) nextctl, TRUE);
 }
 
 
@@ -1990,6 +2041,21 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
             }
             break;
 
+        case NC_PAGE_PROGRESS:
+            {
+                if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+                    nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
+                    nc->page = NC_PAGE_CREDOPT_BASIC;
+                else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD)
+                    nc->page = NC_PAGE_PASSWORD;
+                else {
+                    assert(FALSE);
+                }
+
+                nc->nav.transitions = 0;
+            }
+            break;
+
         default:
             assert(FALSE);
         }
@@ -2021,6 +2087,9 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
         break;
 
     case NC_PAGET_CANCEL:
+        if (nc->nav.state & NC_NAVSTATE_CANCELLED)
+            break;
+
         if (nc->nav.state & NC_NAVSTATE_PREEND) {
 
             nc->nav.state &= ~NC_NAVSTATE_NOCLOSE;
@@ -2034,12 +2103,13 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
             khm_cred_dispatch_process_message(nc);
             nc->nav.transitions = 0;
             nc->page = NC_PAGE_PROGRESS;
-
+            nc->nav.state |= NC_NAVSTATE_CANCELLED;
         }
         break;
 
     case NC_PAGET_END:
-        if (nc->nav.state & NC_NAVSTATE_NOCLOSE) {
+        if ((nc->nav.state & NC_NAVSTATE_NOCLOSE) &&
+            !(nc->nav.state & NC_NAVSTATE_CANCELLED)) {
 
             nc->nav.state |= NC_NAVSTATE_PREEND;
             nc->nav.transitions = NC_TRANS_CLOSE;
@@ -2065,6 +2135,20 @@ nc_navigate(khui_new_creds * nc, nc_page new_page)
             kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, (void *) nc);
             return;
 
+        }
+        break;
+
+    case NC_PAGET_DEFAULT:
+        {
+            new_page = 
+                (nc->nav.transitions & NC_TRANS_NEXT)?   NC_PAGET_NEXT :
+                (nc->nav.transitions & NC_TRANS_FINISH)? NC_PAGET_FINISH :
+                (nc->nav.transitions & NC_TRANS_RETRY)?  NC_PAGET_FINISH :
+                (nc->nav.transitions & NC_TRANS_CLOSE)?  NC_PAGET_CANCEL :
+                (nc->nav.transitions & NC_TRANS_ABORT)?  NC_PAGET_CANCEL :
+                NC_PAGET_CANCEL;
+            nc_navigate(nc, new_page);
+            return;
         }
         break;
 
@@ -2104,19 +2188,14 @@ nc_nav_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             nc_navigate(nc, NC_PAGET_NEXT);
             return TRUE;
 
+        case MAKEWPARAM(IDC_RETRY, BN_CLICKED):
         case MAKEWPARAM(IDC_FINISH, BN_CLICKED):
             nc_navigate(nc, NC_PAGET_FINISH);
             return TRUE;
 
         case MAKEWPARAM(IDCANCEL, BN_CLICKED):
-            nc_navigate(nc, NC_PAGET_CANCEL);
-            return TRUE;
-
-        case MAKEWPARAM(IDC_NC_ABORT, BN_CLICKED):
-            nc_navigate(nc, NC_PAGET_CANCEL);
-            return TRUE;
-
         case MAKEWPARAM(IDC_NC_CLOSE, BN_CLICKED):
+        case MAKEWPARAM(IDC_NC_ABORT, BN_CLICKED):
             nc_navigate(nc, NC_PAGET_CANCEL);
             return TRUE;
 
@@ -2262,12 +2341,12 @@ nc_layout_custom_prompter(HWND hwnd, khui_new_creds_privint_panel * p, BOOL crea
         assert(r.bottom > 0);
 
         r.right = banner.cx;
-        r.bottom += margin.cy;
+        r.bottom += margin.cy / 2;
         OffsetRect(&r, x, y);
 
         if (create) {
             hw = CreateWindow(L"STATIC", p->pname,
-                              SS_CENTER | SS_SUNKEN | WS_CHILD,
+                              SS_CENTER | SS_SUNKEN | WS_CHILD | SS_CENTERIMAGE,
                               r.left, r.top, r.right - r.left, r.bottom - r.top,
                               hwnd, (HMENU) IDC_NCC_PNAME,
                               khm_hInstance, NULL);
@@ -2279,7 +2358,7 @@ nc_layout_custom_prompter(HWND hwnd, khui_new_creds_privint_panel * p, BOOL crea
             hdwp = DeferWindowPos(hdwp, hw, NULL, rect_coords(r), SWP_MOVESIZE);
         }
 
-        y = r.bottom;
+        y = r.bottom + margin.cy / 2;
     }
 
     if (p->banner) {
@@ -2289,7 +2368,7 @@ nc_layout_custom_prompter(HWND hwnd, khui_new_creds_privint_panel * p, BOOL crea
         assert(r.bottom > 0);
 
         r.right = banner.cx;
-        r.bottom += margin.cy;
+        r.bottom += margin.cy / 2;
         OffsetRect(&r, x, y);
 
         if (create) {
@@ -2474,10 +2553,7 @@ nc_create_custom_prompter_dialog(khui_new_creds * nc,
  ************************************************************/
 
 static LRESULT 
-nc_handle_wm_initdialog(HWND hwnd,
-                        UINT uMsg,
-                        WPARAM wParam,
-                        LPARAM lParam)
+container_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
     khui_new_creds * nc;
     int x, y;
@@ -2595,15 +2671,14 @@ nc_handle_wm_initdialog(HWND hwnd,
         khm_add_dialog(hwnd);
     }
 
+    SetWindowText(hwnd, nc->window_title);
+
     return TRUE;
 }
 
 
 static LRESULT 
-nc_handle_wm_destroy(HWND hwnd,
-                     UINT uMsg,
-                     WPARAM wParam,
-                     LPARAM lParam)
+container_WM_DESTROY(HWND hwnd)
 {
     khui_new_creds * nc;
 
@@ -2620,10 +2695,7 @@ nc_handle_wm_destroy(HWND hwnd,
 }
 
 static LRESULT 
-nc_handle_wm_command(HWND hwnd,
-                     UINT uMsg,
-                     WPARAM wParam,
-                     LPARAM lParam)
+container_WM_COMMAND(HWND hwnd, int id, HWND hwndCtl, UINT code)
 {
     khui_new_creds * nc;
 
@@ -2631,24 +2703,31 @@ nc_handle_wm_command(HWND hwnd,
     if (nc == NULL)
         return 0;
 
-    switch (wParam) {
-    case MAKEWPARAM(IDCANCEL, BN_CLICKED):
-        nc_navigate(nc, NC_PAGET_CANCEL);
-        break;
+    if (code == BN_CLICKED) {
+        switch (id) {
+        case IDCANCEL:
+            nc_navigate(nc, NC_PAGET_CANCEL);
+            return TRUE;
 
-    case MAKEWPARAM(IDOK, BN_CLICKED):
-        nc_navigate(nc, NC_PAGET_FINISH);
-        break;
+        case IDOK:
+            nc_navigate(nc, NC_PAGET_DEFAULT);
+            return TRUE;
+        }
+    }
+    
+    if (hwndCtl != 0) {
+        HWND owner = GetParent(hwndCtl);
+        if (owner != NULL && owner != hwnd) {
+            FORWARD_WM_COMMAND(owner, id, hwndCtl, code, PostMessage);
+            return TRUE;
+        }
     }
 
-    return TRUE;
+    return FALSE;
 }
 
 static LRESULT
-nc_handle_wm_moving(HWND hwnd,
-                    UINT uMsg,
-                    WPARAM wParam,
-                    LPARAM lParam)
+container_WM_WINDOWPOSCHANGING(HWND hwnd, LPWINDOWPOS wpos)
 {
     khui_new_creds * nc;
 
@@ -2659,17 +2738,302 @@ nc_handle_wm_moving(HWND hwnd,
     SendMessage(nc->privint.hwnd_current, KHUI_WM_NC_NOTIFY, 
                 MAKEWPARAM(0, WMNC_DIALOG_MOVE), (LPARAM) nc);
 
-    return FALSE;
+    return TRUE;
 }
 
 
+static LRESULT
+container_WMNC_DIALOG_SETUP(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
 
+    /* At this point, all the credential types that are interested in
+       the new credentials operation have attached themselves.
+
+       Each credentials type that wants to present a UI would provide
+       us with a dialog template and a dialog procedure.  We should
+       now create the dialogs using these.
+    */
+
+    assert(nc->privint.hwnd_advanced != NULL);
+
+    if(nc->n_types > 0) {
+        khm_size i;
+        for(i=0; i < nc->n_types;i++) {
+            khui_new_creds_by_type * t;
+
+            t = nc->types[i].nct;
+
+            if (t->dlg_proc == NULL) {
+                t->hwnd_panel = NULL;
+            } else {
+                /* Create the dialog panel */
+                t->hwnd_panel =
+                    CreateDialogParam(t->h_module, t->dlg_template,
+                                      nc->privint.hwnd_advanced,
+                                      t->dlg_proc, (LPARAM) nc);
+
+                assert(t->hwnd_panel);
+#if _WIN32_WINNT >= 0x0501
+                if (t->hwnd_panel) {
+                    EnableThemeDialogTexture(t->hwnd_panel,
+                                             ETDT_ENABLETAB);
+                }
+#endif
+            }
+        }
+    }
+
+    return TRUE;
+}
 
 static LRESULT
-nc_handle_wm_nc_notify(HWND hwnd,
-                       UINT uMsg,
-                       WPARAM wParam,
-                       LPARAM lParam)
+container_WMNC_DIALOG_ACTIVATE(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+    khm_int32 t;
+
+    /* About to activate the new credentials dialog.  We need
+       to set up the wizard. */
+    switch (nc->subtype) {
+    case KHUI_NC_SUBTYPE_ACQPRIV_ID:
+    case KHUI_NC_SUBTYPE_NEW_CREDS:
+
+        if (nc->n_identities > 0) {
+            /* If there is a primary identity, then we can
+               start in the credentials options page */
+
+            khm_int32 idflags = 0;
+            khm_handle ident;
+
+            nc_notify_new_identity(nc, FALSE);
+
+            ident = nc->identities[0];
+            assert(ident != NULL);
+            kcdb_identity_get_flags(ident, &idflags);
+
+            /* Check if this identity has a configuration.  If
+               so, we can continue in basic mode.  Otherwise
+               we should start in advanced mode so that the
+               user can specify identity options to be used
+               the next time. */
+            if (idflags & KCDB_IDENT_FLAG_CONFIG) {
+                nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
+            } else {
+                nc_navigate(nc, NC_PAGE_CREDOPT_ADV);
+            }
+        } else {
+            /* No primary identity.  We have to open with the
+               identity specification page */
+            nc_navigate(nc, NC_PAGE_IDSPEC);
+        }
+
+        break;
+
+    case KHUI_NC_SUBTYPE_PASSWORD:
+        if (nc->n_identities > 0) {
+            nc_notify_new_identity(nc, FALSE);
+            nc_navigate(nc, NC_PAGE_PASSWORD);
+        } else {
+            nc_navigate(nc, NC_PAGE_IDSPEC);
+        }
+        break;
+
+    case KHUI_NC_SUBTYPE_IDSPEC:
+        nc_navigate(nc, NC_PAGE_IDSPEC);
+        break;
+
+    default:
+        assert(FALSE);
+    }
+
+    ShowWindow(hwnd, SW_SHOWNORMAL);
+
+    t = 0;
+    /* bring the window to the top, if necessary */
+    if (KHM_SUCCEEDED(khc_read_int32(NULL,
+                                     L"CredWindow\\Windows\\NewCred\\ForceToTop",
+                                     &t)) &&
+
+        t != 0) {
+
+        BOOL sfw = FALSE;
+
+        /* it used to be that the above condition also called
+           !khm_is_dialog_active() to find out whether there
+           was a dialog active.  If there was, we wouldn't try
+           to bring the new cred window to the foreground. But
+           that was not the behavior we want. */
+
+        /* if the main window is not visible, then the SetWindowPos()
+           call is sufficient to bring the new creds window to the
+           top.  However, if the main window is visible but not
+           active, the main window needs to be activated before a
+           child window can be activated. */
+
+        SetActiveWindow(hwnd);
+
+        sfw = SetForegroundWindow(hwnd);
+
+        if (!sfw) {
+            FLASHWINFO fi;
+
+            ZeroMemory(&fi, sizeof(fi));
+
+            fi.cbSize = sizeof(fi);
+            fi.hwnd = hwnd;
+            fi.dwFlags = FLASHW_ALL;
+            fi.uCount = 3;
+            fi.dwTimeout = 0; /* use the default cursor blink rate */
+
+            FlashWindowEx(&fi);
+
+            nc->flashing_enabled = TRUE;
+        }
+
+    } else {
+        SetFocus(hwnd);
+    }
+
+    return TRUE;
+}
+
+static LRESULT
+container_WMNC_IDENTITY_CHANGE(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+    nc_notify_new_identity(nc, TRUE);
+    return TRUE;
+}
+
+static LRESULT
+container_WMNC_DIALOG_SWITCH_PANEL(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+#if 0
+    id = LOWORD(wParam);
+    if(id >= 0 && id <= (int) nc->n_types) {
+        /* one of the tab buttons were pressed */
+        if(nc->privint.idx_current == id) {
+            return TRUE; /* nothing to do */
+        }
+
+        nc->privint.idx_current = id;
+
+        TabCtrl_SetCurSel(nc->tab_wnd, id);
+    }
+
+    if(nc->mode == KHUI_NC_MODE_EXPANDED) {
+        nc_layout_new_cred_window(nc);
+        return TRUE;
+    }
+#endif
+    return TRUE;
+}
+
+static LRESULT
+container_WMNC_IDENTITY_STATE(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+    nc_privint_update_identity_state(nc, (nc_identity_state_notification *) vParam);
+    return TRUE;
+}
+
+static LRESULT
+container_WMNC_SET_PROMPTS(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+    nc->privint.initialized = FALSE;
+
+    if (nc->page == NC_PAGE_PASSWORD ||
+        nc->page == NC_PAGE_CREDOPT_ADV ||
+        nc->page == NC_PAGE_CREDOPT_BASIC) {
+
+        nc_layout_container(nc);
+    }
+    return TRUE;
+}
+
+static LRESULT
+container_WMNC_DIALOG_PROCESS_COMPLETE(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+    int has_error = sParam;
+
+    nc->response &= ~KHUI_NC_RESPONSE_PROCESSING;
+
+    if(nc->response & KHUI_NC_RESPONSE_NOEXIT) {
+                
+        nc_enable_controls(nc, TRUE);
+
+        /* reset state */
+        nc->result = KHUI_NC_RESULT_CANCEL;
+
+        nc_notify_types(nc, WMNC_DIALOG_PROCESS_COMPLETE, 0, TRUE);
+
+        if (has_error) {
+            nc->nav.transitions = NC_TRANS_RETRY | NC_TRANS_CLOSE | NC_TRANS_PREV;
+            nc_layout_nav(nc);
+            return TRUE;
+        } if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+              nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
+              nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
+        else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD)
+            nc_navigate(nc, NC_PAGE_PASSWORD);
+        else {
+            assert(FALSE);
+        }
+        return TRUE;
+    }
+
+    nc_navigate(nc, NC_PAGET_END);
+
+    return TRUE;
+}
+
+static LRESULT
+container_WMNC_COLLECT_PRIVCRED(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+    khui_collect_privileged_creds_data * pcd;
+    khui_new_creds * nc_child;
+
+    pcd = (khui_collect_privileged_creds_data *) vParam;
+
+    khui_cw_create_cred_blob(&nc_child);
+    nc_child->subtype = KHUI_NC_SUBTYPE_ACQPRIV_ID;
+    khui_context_create(&nc_child->ctx,
+                        KHUI_SCOPE_IDENT,
+                        pcd->target_identity,
+                        -1, NULL);
+    khui_cw_set_privileged_credential_collector(nc_child, pcd->dest_credset);
+    khm_do_modal_newcredwnd(nc->hwnd, nc_child);
+
+    return TRUE;
+}
+
+static LRESULT
+container_WMNC_DERIVE_FROM_PRIVCRED(HWND hwnd, khui_new_creds * nc, int sParam, void * vParam)
+{
+    khui_collect_privileged_creds_data * pcd;
+    khui_new_creds * nc_child;
+    khm_handle cs_privcred = NULL;
+
+    pcd = (khui_collect_privileged_creds_data *) vParam;
+
+    khui_cw_create_cred_blob(&nc_child);
+    nc_child->subtype = KHUI_NC_SUBTYPE_ACQDERIVED;
+    khui_context_create(&nc_child->ctx,
+                        KHUI_SCOPE_IDENT,
+                        pcd->target_identity,
+                        -1, NULL);
+    kcdb_credset_create(&cs_privcred);
+    kcdb_credset_collect(cs_privcred, pcd->dest_credset, NULL, KCDB_CREDTYPE_ALL, NULL);
+    khui_cw_set_privileged_credential_collector(nc_child, cs_privcred);
+    if (khm_cred_begin_new_cred_op()) {
+        kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
+    } else {
+        khui_cw_destroy_cred_blob(nc_child);
+    }
+
+    return TRUE;
+}
+
+static LRESULT
+container_KHUI_WM_NC_NOTIFY(HWND hwnd, khui_wm_nc_notification code,
+                            int sParam, void * vParam)
 {
     khui_new_creds * nc;
 
@@ -2677,290 +3041,34 @@ nc_handle_wm_nc_notify(HWND hwnd,
     if (nc == NULL)
         return FALSE;
 
-    switch(HIWORD(wParam)) {
+#define KHANDLE_CODE(c) \
+    case c: return container_##c(hwnd, nc, sParam, vParam)
 
-    case WMNC_DIALOG_SETUP:
+    switch(code) {
+        KHANDLE_CODE(WMNC_DIALOG_SETUP);
+        KHANDLE_CODE(WMNC_DIALOG_ACTIVATE);
+        KHANDLE_CODE(WMNC_IDENTITY_CHANGE);
+        KHANDLE_CODE(WMNC_DIALOG_SWITCH_PANEL);
+        KHANDLE_CODE(WMNC_IDENTITY_STATE);
+        KHANDLE_CODE(WMNC_SET_PROMPTS);
+        KHANDLE_CODE(WMNC_DIALOG_PROCESS_COMPLETE);
+        KHANDLE_CODE(WMNC_COLLECT_PRIVCRED);
+        KHANDLE_CODE(WMNC_DERIVE_FROM_PRIVCRED);
+    }
 
-        /* At this point, all the credential types that are interested
-           in the new credentials operation have attached themselves.
-
-           Each credentials type that wants to present a UI would
-           provide us with a dialog template and a dialog procedure.
-           We should now create the dialogs using these.
-        */
-
-        assert(nc->privint.hwnd_advanced != NULL);
-
-        if(nc->n_types > 0) {
-            khm_size i;
-            for(i=0; i < nc->n_types;i++) {
-                khui_new_creds_by_type * t;
-
-                t = nc->types[i].nct;
-
-                if (t->dlg_proc == NULL) {
-                    t->hwnd_panel = NULL;
-                } else {
-                    /* Create the dialog panel */
-                    t->hwnd_panel =
-                        CreateDialogParam(t->h_module, t->dlg_template,
-                                          nc->privint.hwnd_advanced,
-                                          t->dlg_proc, (LPARAM) nc);
-
-                    assert(t->hwnd_panel);
-#if _WIN32_WINNT >= 0x0501
-                    if (t->hwnd_panel) {
-                        EnableThemeDialogTexture(t->hwnd_panel,
-                                                 ETDT_ENABLETAB);
-                    }
-#endif
-                }
-            }
-        }
-
-        break;
-
-    case WMNC_DIALOG_ACTIVATE:
-        {
-            khm_int32 t;
-
-            /* About to activate the new credentials dialog.  We need
-               to set up the wizard. */
-            switch (nc->subtype) {
-            case KHUI_NC_SUBTYPE_ACQPRIV_ID:
-            case KHUI_NC_SUBTYPE_NEW_CREDS:
-
-                if (nc->n_identities > 0) {
-                    /* If there is a primary identity, then we can
-                       start in the credentials options page */
-
-                    khm_int32 idflags = 0;
-                    khm_handle ident;
-
-                    nc_notify_new_identity(nc, FALSE);
-
-                    ident = nc->identities[0];
-                    assert(ident != NULL);
-                    kcdb_identity_get_flags(ident, &idflags);
-
-                    /* Check if this identity has a configuration.  If
-                       so, we can continue in basic mode.  Otherwise
-                       we should start in advanced mode so that the
-                       user can specify identity options to be used
-                       the next time. */
-                    if (idflags & KCDB_IDENT_FLAG_CONFIG) {
-                        nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
-                    } else {
-                        nc_navigate(nc, NC_PAGE_CREDOPT_ADV);
-                    }
-                } else {
-                    /* No primary identity.  We have to open with the
-                       identity specification page */
-                    nc_navigate(nc, NC_PAGE_IDSPEC);
-                }
-
-                break;
-
-            case KHUI_NC_SUBTYPE_PASSWORD:
-                if (nc->n_identities > 0) {
-                    nc_notify_new_identity(nc, FALSE);
-                    nc_navigate(nc, NC_PAGE_PASSWORD);
-                } else {
-                    nc_navigate(nc, NC_PAGE_IDSPEC);
-                }
-                break;
-
-            case KHUI_NC_SUBTYPE_IDSPEC:
-                nc_navigate(nc, NC_PAGE_IDSPEC);
-                break;
-
-            default:
-                assert(FALSE);
-            }
-
-            ShowWindow(hwnd, SW_SHOWNORMAL);
-
-            t = 0;
-            /* bring the window to the top, if necessary */
-            if (KHM_SUCCEEDED(khc_read_int32(NULL,
-                                             L"CredWindow\\Windows\\NewCred\\ForceToTop",
-                                             &t)) &&
-
-                t != 0) {
-
-                BOOL sfw = FALSE;
-
-                /* it used to be that the above condition also called
-                   !khm_is_dialog_active() to find out whether there
-                   was a dialog active.  If there was, we wouldn't try
-                   to bring the new cred window to the foreground. But
-                   that was not the behavior we want. */
-
-                /* if the main window is not visible, then the SetWindowPos()
-                   call is sufficient to bring the new creds window to the
-                   top.  However, if the main window is visible but not
-                   active, the main window needs to be activated before a
-                   child window can be activated. */
-
-                SetActiveWindow(hwnd);
-
-                sfw = SetForegroundWindow(hwnd);
-
-                if (!sfw) {
-                    FLASHWINFO fi;
-
-                    ZeroMemory(&fi, sizeof(fi));
-
-                    fi.cbSize = sizeof(fi);
-                    fi.hwnd = hwnd;
-                    fi.dwFlags = FLASHW_ALL;
-                    fi.uCount = 3;
-                    fi.dwTimeout = 0; /* use the default cursor blink rate */
-
-                    FlashWindowEx(&fi);
-
-                    nc->flashing_enabled = TRUE;
-                }
-
-            } else {
-                SetFocus(hwnd);
-            }
-        }
-        break;
-
-    case WMNC_IDENTITY_CHANGE:
-        {
-            nc_notify_new_identity(nc, TRUE);
-        }
-        break;
-
-    case WMNC_DIALOG_SWITCH_PANEL:
-#if 0
-        id = LOWORD(wParam);
-        if(id >= 0 && id <= (int) nc->n_types) {
-            /* one of the tab buttons were pressed */
-            if(nc->privint.idx_current == id) {
-                return TRUE; /* nothing to do */
-            }
-
-            nc->privint.idx_current = id;
-
-            TabCtrl_SetCurSel(nc->tab_wnd, id);
-        }
-
-        if(nc->mode == KHUI_NC_MODE_EXPANDED) {
-            nc_layout_new_cred_window(nc);
-            return TRUE;
-        }
-#endif
-        break;
-
-    case WMNC_DIALOG_EXPAND:
-        assert(FALSE);
-        break;
-
-    case WMNC_IDENTITY_STATE:
-        {
-            nc_privint_update_identity_state(nc, (nc_identity_state_notification *) lParam);
-        }
-        break;
-
-    case WMNC_SET_PROMPTS:
-        nc->privint.initialized = FALSE;
-
-        if (nc->page == NC_PAGE_PASSWORD ||
-            nc->page == NC_PAGE_CREDOPT_ADV ||
-            nc->page == NC_PAGE_CREDOPT_BASIC) {
-
-            nc_layout_container(nc);
-        }
-        break;
-
-    case WMNC_DIALOG_PROCESS_COMPLETE:
-        {
-            nc->response &= ~KHUI_NC_RESPONSE_PROCESSING;
-
-            if(nc->response & KHUI_NC_RESPONSE_NOEXIT) {
-
-                nc_enable_controls(nc, TRUE);
-
-                /* reset state */
-                nc->result = KHUI_NC_RESULT_CANCEL;
-
-                nc_notify_types(nc, WMNC_DIALOG_PROCESS_COMPLETE, 0, TRUE);
-
-                if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-                    nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
-                    nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
-                else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD)
-                    nc_navigate(nc, NC_PAGE_PASSWORD);
-                else {
-                    assert(FALSE);
-                }
-                return TRUE;
-            }
-
-            nc_navigate(nc, NC_PAGET_END);
-        }
-        break;
-
-    case WMNC_UPDATE_LAYOUT:
-        assert(FALSE);
-        break;
-
-    case WMNC_COLLECT_PRIVCRED:
-        {
-            khui_collect_privileged_creds_data * pcd;
-            khui_new_creds * nc_child;
-
-            pcd = (khui_collect_privileged_creds_data *) lParam;
-
-            khui_cw_create_cred_blob(&nc_child);
-            nc_child->subtype = KHUI_NC_SUBTYPE_ACQPRIV_ID;
-            khui_context_create(&nc_child->ctx,
-                                KHUI_SCOPE_IDENT,
-                                pcd->target_identity,
-                                -1, NULL);
-            khui_cw_set_privileged_credential_collector(nc_child, pcd->dest_credset);
-            khm_do_modal_newcredwnd(nc->hwnd, nc_child);
-
-        }
-        break;
-
-    case WMNC_DERIVE_FROM_PRIVCRED:
-        {
-            khui_collect_privileged_creds_data * pcd;
-            khui_new_creds * nc_child;
-            khm_handle cs_privcred = NULL;
-
-            pcd = (khui_collect_privileged_creds_data *) lParam;
-
-            khui_cw_create_cred_blob(&nc_child);
-            nc_child->subtype = KHUI_NC_SUBTYPE_ACQDERIVED;
-            khui_context_create(&nc_child->ctx,
-                                KHUI_SCOPE_IDENT,
-                                pcd->target_identity,
-                                -1, NULL);
-            kcdb_credset_create(&cs_privcred);
-            kcdb_credset_collect(cs_privcred, pcd->dest_credset, NULL, KCDB_CREDTYPE_ALL, NULL);
-            khui_cw_set_privileged_credential_collector(nc_child, cs_privcred);
-            if (khm_cred_begin_new_cred_op()) {
-                kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
-            } else {
-                khui_cw_destroy_cred_blob(nc_child);
-            }
-        }
-        break;
-
-    } /* switch(HIWORD(wParam)) */
+#undef KHANDLE_CODE
 
     return TRUE;
 }
 
-static LRESULT nc_handle_wm_help(HWND hwnd,
-                                 UINT uMsg,
-                                 WPARAM wParam,
-                                 LPARAM lParam) {
+#ifndef HANDLE_WM_HELP
+#define HANDLE_WM_HELP(hwnd, wParam, lParam, fn) \
+    (LRESULT)(fn)((hwnd), (HELPINFO *)(LPARAM) lParam)
+#endif
+
+static LRESULT
+container_WM_HELP(HWND hwnd, HELPINFO * hlp)
+{
 #if 0
     static DWORD ctxids[] = {
         NC_TS_CTRL_ID_MIN, IDH_NC_TABMAIN,
@@ -2979,7 +3087,6 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
         0
     };
 
-    HELPINFO * hlp;
     HWND hw = NULL;
     HWND hw_ctrl;
     khui_new_creds * nc;
@@ -2987,8 +3094,6 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
     nc = nc_get_dlg_data(hwnd);
     if (nc == NULL)
         return FALSE;
-
-    hlp = (HELPINFO *) lParam;
 
     if (nc->subtype != KHUI_NC_SUBTYPE_NEW_CREDS &&
         nc->subtype != KHUI_NC_SUBTYPE_PASSWORD)
@@ -3030,8 +3135,7 @@ static LRESULT nc_handle_wm_help(HWND hwnd,
 }
 
 static LRESULT
-nc_handle_wm_close(HWND hwnd, UINT uMsg,
-                   WPARAM wParam, LPARAM lParam)
+container_WM_CLOSE(HWND hwnd)
 {
     khui_new_creds * nc;
 
@@ -3042,12 +3146,10 @@ nc_handle_wm_close(HWND hwnd, UINT uMsg,
 }
 
 
-static LRESULT nc_handle_wm_activate(HWND hwnd,
-                                     UINT uMsg,
-                                     WPARAM wParam,
-                                     LPARAM lParam) {
-    if (uMsg == WM_MOUSEACTIVATE || uMsg == WM_ACTIVATEAPP ||
-        wParam == WA_ACTIVE || wParam == WA_CLICKACTIVE) {
+static LRESULT
+container_WM_ACTIVATE(HWND hwnd, UINT state, HWND hwndActDeact, BOOL fMinimized)
+{
+    if (state == WA_ACTIVE || state == WA_CLICKACTIVE) {
 
         FLASHWINFO fi;
         khui_new_creds * nc;
@@ -3075,7 +3177,7 @@ static LRESULT nc_handle_wm_activate(HWND hwnd,
         }
     }
 
-    return (uMsg == WM_MOUSEACTIVATE)? MA_ACTIVATE : 0;
+    return FALSE;
 }
 
 INT_PTR CALLBACK nc_dlg_proc(HWND hwnd,
@@ -3083,34 +3185,21 @@ INT_PTR CALLBACK nc_dlg_proc(HWND hwnd,
                              WPARAM wParam,
                              LPARAM lParam)
 {
+#define KHANDLE_MSG(m) \
+    case m: return HANDLE_##m(hwnd, wParam, lParam, container_##m)
+
     switch(uMsg) {
-    case WM_INITDIALOG:
-        return nc_handle_wm_initdialog(hwnd, uMsg, wParam, lParam);
-
-    case WM_CLOSE:
-        return nc_handle_wm_close(hwnd, uMsg, wParam, lParam);
-
-    case WM_DESTROY:
-        return nc_handle_wm_destroy(hwnd, uMsg, wParam, lParam);
-
-    case WM_COMMAND:
-        return nc_handle_wm_command(hwnd, uMsg, wParam, lParam);
-
-    case WM_MOUSEACTIVATE:
-    case WM_ACTIVATE:
-    case WM_ACTIVATEAPP:
-        return nc_handle_wm_activate(hwnd, uMsg, wParam, lParam);
-
-    case WM_MOVE:
-    case WM_MOVING:
-        return nc_handle_wm_moving(hwnd, uMsg, wParam, lParam);
-
-    case WM_HELP:
-        return nc_handle_wm_help(hwnd, uMsg, wParam, lParam);
-
-    case KHUI_WM_NC_NOTIFY:
-        return nc_handle_wm_nc_notify(hwnd, uMsg, wParam, lParam);
+        KHANDLE_MSG(WM_INITDIALOG);
+        KHANDLE_MSG(WM_CLOSE);
+        KHANDLE_MSG(WM_DESTROY);
+        KHANDLE_MSG(WM_COMMAND);
+        KHANDLE_MSG(WM_ACTIVATE);
+        KHANDLE_MSG(WM_WINDOWPOSCHANGING);
+        KHANDLE_MSG(WM_HELP);
+        KHANDLE_MSG(KHUI_WM_NC_NOTIFY);
     }
+
+#undef KHANDLE_MSG
 
     return FALSE;
 }

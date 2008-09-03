@@ -51,7 +51,7 @@ void khm_add_dialog(HWND dlg) {
         khui_dialogs[n_khui_dialogs].active = TRUE;
         n_khui_dialogs++;
     } else {
-          assert(FALSE);
+        assert(FALSE);
     }
 }
 

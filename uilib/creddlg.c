@@ -682,7 +682,7 @@ khui_cw_show_privileged_dialog(khui_new_creds * nc, khm_int32 ctype,
     pp = cw_create_privint_panel(hwnd, caption);
 
     pp->nc = nc;
-    pp->provider = &nc->types[i];
+    pp->ctype = ctype;
     pp->use_custom = FALSE;
 
     QPUT(&nc->types[i], pp);
