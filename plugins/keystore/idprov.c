@@ -179,9 +179,6 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
            specified by h_obj */
         switch(preq->res_id) {
 
-            /* These are resources that we don't specify here.
-               Returning without setting preq->code will result in
-               NetIDMgr providing default resources. */
         case KCDB_RES_DISPLAYNAME:
         case KCDB_RES_DESCRIPTION:
             /* Not providing a description results in NetIDMgr using
@@ -191,9 +188,9 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
 
         case KCDB_RES_ICON_DISABLED:
         case KCDB_RES_ICON_NORMAL:
-            /* Not providing icons allows NetIDMgr to manage identity
-               icons. */
-
+            hicon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_IDENTITY),
+                              IMAGE_ICON, 0, 0,
+                              LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
             return KHM_ERROR_SUCCESS;
 
         default:
