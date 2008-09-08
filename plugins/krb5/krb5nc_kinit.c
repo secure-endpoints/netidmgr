@@ -851,6 +851,11 @@ kinit_task_proc(void * vparam)
 
     EnterCriticalSection(&kt->cs);
 
+    if (kt->state == K5_KINIT_STATE_ABORTED) {
+        LeaveCriticalSection(&kt->cs);
+        return KHM_ERROR_SUCCESS;
+    }
+
     if (kt->state != K5_KINIT_STATE_PREP) {
         LeaveCriticalSection(&kt->cs);
         assert(FALSE);

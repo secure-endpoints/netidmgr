@@ -1393,12 +1393,15 @@ k5_ident_resource_req(kcdb_resource_request * preq)
            specified by h_obj */
         switch(preq->res_id) {
 
-            /* These are resources that we don't specify here.
-               Returning without setting preq->code will result in NIM
-               providing default resources. */
-        case KCDB_RES_DESCRIPTION:
         case KCDB_RES_ICON_DISABLED:
         case KCDB_RES_ICON_NORMAL:
+            hicon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_KERBEROS),
+                              IMAGE_ICON, 0, 0,
+                              LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
+            break;
+
+            /* failover to NIM */
+        case KCDB_RES_DESCRIPTION:
             return KHM_ERROR_SUCCESS;
 
         default:

@@ -77,6 +77,8 @@ unsigned __stdcall task_runner(void * vparam)
     assert(tls_task != 0);
 #endif
 
+    PDESCTHREAD(L"Discardable Task Object", L"Util");
+
     if (!is_task(ptask))
         return KHM_ERROR_INVALID_PARAM;
 
