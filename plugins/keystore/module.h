@@ -120,6 +120,9 @@
 #define IDK_CREDTYPE_NAME "KeystoreIdentityPrivateKeyInstance"
 #define IDK_CREDTYPE_NAMEW _T(IDK_CREDTYPE_NAME)
 
+#define KHERR_FACILITY PLUGIN_FACILITYW
+#define KHERR_HMODULE  hResModule
+
 #include<windows.h>
 /* include the standard NetIDMgr header files */
 #include<netidmgr.h>

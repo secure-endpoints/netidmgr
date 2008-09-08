@@ -733,6 +733,10 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
 
     ks_was_locked = ks_is_keystore_locked(ks);
 
+    _begin_task(0);
+    _report_sr1(KHERR_INFO, IDS_S_NEW_CREDS, _dupstr(ks->display_name));
+    _describe();
+
     if (ks_was_locked) {
         wchar_t pw[KHUI_MAXCCH_PASSWORD] = L"";
         khm_size cb = 0;
@@ -745,6 +749,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
             show_message_for_edit_control(hw_privint, IDC_PASSWORD,
                                           IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
+            _report_sr0(KHERR_ERROR, IDS_TNOPASS);
+            _end_task();
             return KHM_ERROR_INVALID_PARAM;
         } if (KHM_FAILED(ks_keystore_set_key_password(ks, pw, cb))) {
             khui_cw_set_response(nc, credtype_id,
@@ -752,6 +758,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             show_message_for_edit_control(hw_privint, IDC_PASSWORD,
                                           IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
             SecureZeroMemory(pw, sizeof(pw));
+            _report_sr0(KHERR_ERROR, IDS_TBADPASS);
+            _end_task();
             return KHM_ERROR_INVALID_PARAM;
         } else {
             if (key_source) {
@@ -785,6 +793,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             show_message_for_edit_control(hw_privint, IDC_NEWPW1,
                                           IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
             ks_keystore_reset_key(ks);
+            _report_sr0(KHERR_ERROR, IDS_TNOPASS);
+            _end_task();
             return KHM_ERROR_INVALID_PARAM;
         } else if (wcscmp(pw1, pw2)) {
             khui_cw_set_response(nc, credtype_id,
@@ -794,6 +804,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
             ks_keystore_reset_key(ks);
+            _report_sr0(KHERR_ERROR, IDS_TMISMPASS);
+            _end_task();
             return KHM_ERROR_INVALID_PARAM;
         }
 
@@ -807,6 +819,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
             ks_keystore_reset_key(ks);
+            _report_sr0(KHERR_ERROR, IDS_TBADPASS);
+            _end_task();
             return KHM_ERROR_INVALID_PARAM;
         } else if (ks_was_locked &&
                    KHM_FAILED(ks_keystore_change_key_password(ks, pw1, cb))) {
@@ -818,6 +832,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
             ks_keystore_reset_key(ks);
+            _report_sr0(KHERR_ERROR, IDS_TUNSPASS);
+            _end_task();
             return KHM_ERROR_INVALID_PARAM;
 
         } else {
@@ -847,6 +863,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
         khm_handle identity = NULL;
         khm_handle credential = NULL;
         khm_handle credset = NULL;
+
+        _progress((khm_ui_4) i, (khm_ui_4) ks->n_keys);
 
         idk = ks->keys[i];
 
@@ -879,8 +897,11 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
     }
     ks_keystore_lock(ks);
 
+    _progress(1,1);
+
  done:
     ks_keystore_reset_key(ks);
+    _end_task();
 
     return KHM_ERROR_SUCCESS;
 }

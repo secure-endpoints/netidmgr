@@ -309,6 +309,7 @@ BEGIN
     IDS_IDK_CT_SHORT_DESC   "Private key"
     IDS_IDK_CT_LONG_DESC    "Private key"
     IDS_NC_PWDTITLE         "Password for %s"
+    IDS_S_NEW_CREDS         "Obtaining new credentials for %1!s!"
 END
 
 #endif    // English (U.S.) resources
