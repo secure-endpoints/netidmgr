@@ -162,7 +162,6 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
 {
     wchar_t buf[KCDB_MAXCCH_SHORT_DESC];
     HICON   hicon;
-    BOOL found = TRUE;
     size_t cb = 0;
 
     buf[0] = L'\0';
@@ -191,7 +190,7 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
             hicon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_IDENTITY),
                               IMAGE_ICON, 0, 0,
                               LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
-            return KHM_ERROR_SUCCESS;
+            break;
 
         default:
             /* Do default processing */
@@ -225,11 +224,11 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
             break;
 
         default:
-            found = FALSE;
+            return KHM_ERROR_SUCCESS;
         }
     }
 
-    if (found && buf[0] != L'\0' &&
+    if (buf[0] != L'\0' &&
         SUCCEEDED(StringCbLength(buf, sizeof(buf), &cb))) {
 
         /* We are returning a string */
@@ -243,7 +242,7 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
             preq->cb_buf = cb;
             preq->code = KHM_ERROR_SUCCESS;
         }
-    } else if (found && hicon != NULL) {
+    } else if (hicon != NULL) {
 
         /* We are returngin an icon */
 
