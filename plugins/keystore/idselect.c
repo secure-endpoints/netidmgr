@@ -24,6 +24,7 @@
 
 /* $Id$ */
 
+#include <shlwapi.h>
 #include "module.h"
 #include <commctrl.h>
 #include <assert.h>
@@ -44,6 +45,66 @@ struct idsel_dlg_data {
 static INT_PTR
 on_browse(HWND hwnd)
 {
+    OPENFILENAME ofn;
+    wchar_t path[MAX_PATH] = L"";
+    wchar_t filter[128];
+    wchar_t title[64];
+
+    ZeroMemory(&ofn, sizeof(ofn));
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hwnd;
+    ofn.hInstance = hResModule;
+    ofn.lpstrFilter = filter;
+    ofn.lpstrCustomFilter = NULL;
+    ofn.nMaxCustFilter = 0;
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFile = path;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.lpstrTitle = title;
+    ofn.Flags = OFN_DONTADDTORECENT | OFN_NOREADONLYRETURN;
+    ofn.lpstrDefExt = L"keystore";
+
+    GetDlgItemText(hwnd, IDC_PATH, path, ARRAYLENGTH(path));
+    LoadString(hResModule, IDS_NC_BROW_TITLE, title, ARRAYLENGTH(title));
+    LoadString(hResModule, IDS_NC_BROW_FILTER, filter, ARRAYLENGTH(filter));
+    {
+        wchar_t * c = filter;
+        for (; *c; c++) {
+            if (*c == L'%') *c = L'\0';
+        }
+    }
+
+    if (GetOpenFileName(&ofn)) {
+        keystore_t * ks = NULL;
+        wchar_t fpath[MAX_PATH+5];
+
+        SetDlgItemText(hwnd, IDC_PATH, path);
+
+        if (PathFileExists(path)) {
+            StringCbCopy(fpath, sizeof(fpath), L"FILE:");
+            StringCbCat(fpath, sizeof(fpath), path);
+
+            ks = create_keystore_from_location(fpath, NULL);
+            if (ks) {
+                wchar_t buf[KCDB_MAXCCH_SHORT_DESC];
+                khm_size cb;
+
+                cb = sizeof(buf);
+                if (KHM_SUCCEEDED(ks_keystore_get_string(ks, KCDB_RES_DISPLAYNAME,
+                                                         buf, &cb))) {
+                    SetDlgItemText(hwnd, IDC_NAME, buf);
+                }
+                if (KHM_SUCCEEDED(ks_keystore_get_string(ks, KCDB_RES_DESCRIPTION,
+                                                         buf, &cb))) {
+                    SetDlgItemText(hwnd, IDC_DESCRIPTION, buf);
+                }
+
+                ks_keystore_release(ks);
+            }
+        }
+    }
+
     return TRUE;
 }
 
@@ -53,8 +114,26 @@ on_get_ident(HWND hwnd, struct idsel_dlg_data *d, khm_handle *ph)
     khm_handle identity = NULL;
     keystore_t * ks = NULL;
     wchar_t desc[KCDB_MAXCCH_SHORT_DESC];
+    wchar_t path[MAX_PATH+5];
+    khm_boolean try_open = FALSE;
 
-    ks = ks_keystore_create_new();
+    if (IsDlgButtonChecked(hwnd, IDC_FILE) == BST_CHECKED) {
+        StringCbCopy(path, sizeof(path), L"FILE:");
+        GetDlgItemText(hwnd, IDC_PATH, path + 5, ARRAYLENGTH(path) - 5);
+        if (PathFileExists(path+5)) {
+            /* If the path exists, then we should try to create the
+               keystore using the path before */
+            try_open = TRUE;
+        }
+    } else {
+        StringCbCopy(path, sizeof(path), L"REG:");
+    }
+
+    if (try_open)
+        ks = create_keystore_from_location(path, NULL);
+
+    if (ks == NULL)
+        ks = ks_keystore_create_new();
 
     GetDlgItemText(hwnd, IDC_NAME, desc, ARRAYLENGTH(desc));
     ks_keystore_set_string(ks, KCDB_RES_DISPLAYNAME, desc);
@@ -64,16 +143,7 @@ on_get_ident(HWND hwnd, struct idsel_dlg_data *d, khm_handle *ph)
 
     identity = create_identity_from_keystore(ks);
 
-    if (IsDlgButtonChecked(hwnd, IDC_FILE) == BST_CHECKED) {
-        wchar_t path[MAX_PATH+5];
-
-        StringCbCopy(path, sizeof(path), L"FILE:");
-        GetDlgItemText(hwnd, IDC_PATH, path + 5, ARRAYLENGTH(path) - 5);
-        kcdb_identity_set_attr(identity, KCDB_ATTR_LOCATION, path, KCDB_CBSIZE_AUTO);
-    } else {
-        /* Registry */
-        kcdb_identity_set_attr(identity, KCDB_ATTR_LOCATION, L"REG:", KCDB_CBSIZE_AUTO);
-    }
+    kcdb_identity_set_attr(identity, KCDB_ATTR_LOCATION, path, KCDB_CBSIZE_AUTO);
 
     *ph = identity;
     /* leave identity held */

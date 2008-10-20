@@ -202,7 +202,8 @@ LIBFILES= 				\
 	$(NIDMLIBDIR)\nidmgr32.lib 	\
 	Crypt32.lib 			\
 	Rpcrt4.lib 			\
-	ComCtl32.lib
+	ComCtl32.lib			\
+	shlwapi.lib
 
 OBJFILES= \
 	$(OBJ)\credacq.obj		\

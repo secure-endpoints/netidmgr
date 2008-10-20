@@ -310,6 +310,8 @@ BEGIN
     IDS_IDK_CT_LONG_DESC    "Private key"
     IDS_NC_PWDTITLE         "Password for %s"
     IDS_S_NEW_CREDS         "Obtaining new credentials for %1!s!"
+    IDS_NC_BROW_TITLE       "Select Keystore Location"
+    IDS_NC_BROW_FILTER      "KeyStores%*.keystore%All files%*.*%%"
 END
 
 #endif    // English (U.S.) resources

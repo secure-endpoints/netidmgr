@@ -136,7 +136,21 @@ handle_kmsg_ident_notify_create(khm_handle ident)
 khm_int32
 handle_kmsg_ident_update(khm_handle ident) {
 
-    /* TODO: Handle this message */
+    keystore_t * ks;
+
+    ks = find_keystore_for_identity(ident);
+    if (ks != NULL && ks_keystore_has_key(ks)) {
+        KSLOCK(ks);
+        kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, sizeof(FILETIME));
+        kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, sizeof(FILETIME));
+        KSUNLOCK(ks);
+    } else {
+        kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, NULL, 0);
+        kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, NULL, 0);
+    }
+
+    if (ks)
+        ks_keystore_release(ks);
 
     return KHM_ERROR_SUCCESS;
 }

@@ -52,6 +52,8 @@
 #define IDS_IDK_CT_LONG_DESC            138
 #define IDS_NC_PWDTITLE                 139
 #define IDS_S_NEW_CREDS                 140
+#define IDS_NC_BROW_TITLE               141
+#define IDS_NC_BROW_FILTER              142
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041
