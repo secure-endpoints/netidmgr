@@ -744,7 +744,11 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
         GetDlgItemText(hw_privint, IDC_PASSWORD, pw, ARRAYLENGTH(pw));
         StringCbLength(pw, sizeof(pw), &cb);
 
-        if (cb == 0) {
+        if (cb == 0 && ks_keystore_has_key(ks)) {
+            /* Nothing to do.  We already have a key for this keystore
+               and the user wants us to use it. */
+        } else if (cb == 0) {
+
             khui_cw_set_response(nc, credtype_id,
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
             show_message_for_edit_control(hw_privint, IDC_PASSWORD,
@@ -752,7 +756,9 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             _report_sr0(KHERR_ERROR, IDS_TNOPASS);
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
-        } if (KHM_FAILED(ks_keystore_set_key_password(ks, pw, cb))) {
+
+        } else if (KHM_FAILED(ks_keystore_set_key_password(ks, pw, cb))) {
+
             khui_cw_set_response(nc, credtype_id,
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
             show_message_for_edit_control(hw_privint, IDC_PASSWORD,
@@ -761,18 +767,18 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             _report_sr0(KHERR_ERROR, IDS_TBADPASS);
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
-        } else {
-            if (key_source) {
-                ks_keystore_unlock(ks);
-                add_identkeys_from_credset(ks, key_source);
-            }
-            ks_keystore_lock(ks);
-            if (ks_keystore_get_flags(ks) & KS_FLAG_MODIFIED)
-                save_keystore_with_identity(ks);
-            khui_cw_set_response(nc, credtype_id,
-                                 KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
-            SecureZeroMemory(pw, sizeof(pw));
         }
+
+        if (key_source) {
+            ks_keystore_unlock(ks);
+            add_identkeys_from_credset(ks, key_source);
+        }
+        ks_keystore_lock(ks);
+        if (ks_keystore_get_flags(ks) & KS_FLAG_MODIFIED)
+            save_keystore_with_identity(ks);
+        khui_cw_set_response(nc, credtype_id,
+                             KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
+        SecureZeroMemory(pw, sizeof(pw));
     }
 
     if (IsDlgButtonChecked(hw_privint, IDC_CHPW) == BST_CHECKED) {
@@ -792,7 +798,6 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
             show_message_for_edit_control(hw_privint, IDC_NEWPW1,
                                           IDS_TNOPASS, IDS_NOPASS, TTI_ERROR);
-            ks_keystore_reset_key(ks);
             _report_sr0(KHERR_ERROR, IDS_TNOPASS);
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
@@ -803,7 +808,6 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
                                           IDS_TMISMPASS, IDS_MISMPASS, TTI_ERROR);
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
-            ks_keystore_reset_key(ks);
             _report_sr0(KHERR_ERROR, IDS_TMISMPASS);
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
@@ -818,7 +822,6 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
                                           IDS_TBADPASS, IDS_BADPASS, TTI_ERROR);
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
-            ks_keystore_reset_key(ks);
             _report_sr0(KHERR_ERROR, IDS_TBADPASS);
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
@@ -831,7 +834,6 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
                                           IDS_TUNSPASS, IDS_UNSPASS, TTI_ERROR);
             SecureZeroMemory(pw1, sizeof(pw1));
             SecureZeroMemory(pw2, sizeof(pw2));
-            ks_keystore_reset_key(ks);
             _report_sr0(KHERR_ERROR, IDS_TUNSPASS);
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
@@ -900,7 +902,6 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
     _progress(1,1);
 
  done:
-    ks_keystore_reset_key(ks);
     _end_task();
 
     return KHM_ERROR_SUCCESS;

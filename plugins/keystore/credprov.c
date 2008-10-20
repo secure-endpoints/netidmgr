@@ -339,7 +339,7 @@ destroy_creds_proc(khm_handle cred, void * rock)
 
     ks = find_keystore_for_identity(identity);
     if (ks) {
-        destroy_keystore_identity(ks);
+        ks_keystore_reset_key(ks);
         ks_keystore_release(ks);
     }
 

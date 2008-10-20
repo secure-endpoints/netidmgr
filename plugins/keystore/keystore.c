@@ -25,6 +25,9 @@
 #include "module.h"
 #include <assert.h>
 
+static void
+destroy_encryption_key(keystore_t * ks);
+
 void
 ks_datablob_init(datablob_t * pd)
 {
@@ -176,6 +179,7 @@ ks_keystore_create_new(void)
     ks->DBenc_key.pbData = NULL;
 
     GetSystemTimeAsFileTime(&ks->ft_ctime);
+    ks->ft_key_lifetime = IntToFt(KS_DEFAULT_KEY_LIFETIME);
 
     InitializeCriticalSection(&ks->cs);
     ks->refcount = 1;           /* initially held */
@@ -203,11 +207,7 @@ ks_keystore_free(keystore_t * ks)
     if (ks->location)
         free(ks->location);
 
-    if (ks->DBenc_key.pbData) {
-        SecureZeroMemory(ks->DBenc_key.pbData, ks->DBenc_key.cbData);
-        LocalFree(ks->DBenc_key.pbData);
-        ks->DBenc_key.pbData = NULL;
-    }
+    destroy_encryption_key(ks);
 
     for (i=0; i < ks->n_keys; i++)
         if (ks->keys[i] != NULL) {
@@ -465,6 +465,7 @@ typedef struct crypt_op {
 static khm_boolean
 lock_encryption_key(keystore_t * ks, const void * data, size_t cb_data) {
     DATA_BLOB db_in;
+    khm_boolean rv;
 
     assert(is_keystore_t(ks));
 
@@ -474,8 +475,14 @@ lock_encryption_key(keystore_t * ks, const void * data, size_t cb_data) {
     db_in.pbData = (void *) data;
     db_in.cbData = cb_data;
 
-    return CryptProtectData(&db_in, NULL, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN,
-                            &ks->DBenc_key);
+    rv = CryptProtectData(&db_in, NULL, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN,
+                          &ks->DBenc_key);
+    if (rv) {
+        GetSystemTimeAsFileTime(&ks->ft_key_ctime);
+        ks->ft_key_expire = FtAdd(&ks->ft_key_ctime, &ks->ft_key_lifetime);
+    }
+
+    return rv;
 }
 
 static khm_boolean
@@ -502,7 +509,25 @@ destroy_encryption_key(keystore_t * ks) {
         LocalFree(ks->DBenc_key.pbData);
         ks->DBenc_key.pbData = NULL;
         ks->DBenc_key.cbData = 0;
+        ks->ft_key_ctime = IntToFt(0);
+        ks->ft_key_expire = IntToFt(0);
     }
+}
+
+static khm_boolean
+has_encryption_key(keystore_t * ks) {
+    FILETIME ftc;
+
+    if (ks->DBenc_key.pbData == NULL)
+        return FALSE;
+
+    GetSystemTimeAsFileTime(&ftc);
+    if (CompareFileTime(&ftc, &ks->ft_key_expire) > 0) {
+        destroy_encryption_key(ks);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 
@@ -682,7 +707,6 @@ ks_keystore_set_key_password(keystore_t * ks, const void * key, khm_size cb_key)
     KSLOCK(ks);
     if (verify_key_on_keystore(ks, key, cb_key)) {
         lock_encryption_key(ks, key, cb_key);
-        ks->flags |= KS_FLAG_HASPKEY;
         rv = KHM_ERROR_SUCCESS;
     }
     KSUNLOCK(ks);
@@ -701,7 +725,6 @@ ks_keystore_change_key_password(keystore_t * ks, const void * key, khm_size cb_k
     if (KHM_FAILED(rv)) goto done;
 
     lock_encryption_key(ks, key, cb_key);
-    ks->flags |= KS_FLAG_HASPKEY;
 
  done:
     KSUNLOCK(ks);
@@ -715,7 +738,6 @@ ks_keystore_reset_key(keystore_t * ks)
 
     KSLOCK(ks);
     destroy_encryption_key(ks);
-    ks->flags &= ~KS_FLAG_HASPKEY;
     KSUNLOCK(ks);
 
     return KHM_ERROR_SUCCESS;
@@ -745,7 +767,7 @@ ks_keystore_unlock(keystore_t * ks)
         goto done2;
     }
 
-    if (ks->DBenc_key.cbData == 0 || ks->DBenc_key.pbData == NULL) {
+    if (!has_encryption_key(ks)) {
         rv = KHM_ERROR_NOT_READY;
         goto done2;
     }
@@ -798,7 +820,7 @@ ks_keystore_lock(keystore_t * ks)
 
     KSLOCK(ks);
 
-    if (ks->DBenc_key.cbData == 0 || ks->DBenc_key.pbData == NULL) {
+    if (!has_encryption_key(ks)) {
         rv = KHM_ERROR_NOT_READY;
         goto done2;
     }
@@ -857,4 +879,17 @@ ks_is_keystore_locked(keystore_t * ks)
     KSUNLOCK(ks);
 
     return is_locked;
+}
+
+khm_boolean
+ks_keystore_has_key(keystore_t * ks)
+{
+    khm_boolean has_key = FALSE;
+
+    assert(is_keystore_t(ks));
+    KSLOCK(ks);
+    has_key = has_encryption_key(ks);
+    KSUNLOCK(ks);
+
+    return has_key;
 }

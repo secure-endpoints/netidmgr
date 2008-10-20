@@ -69,9 +69,16 @@ typedef struct tag_keystore {
 
     khm_handle   identity;      /*!< Identity handle.  If known */
 
-    FILETIME     ft_expire;
-    FILETIME     ft_ctime;
-    FILETIME     ft_mtime;
+    FILETIME     ft_expire;     /*!< Expiration time for keystore */
+    FILETIME     ft_ctime;      /*!< Creation time of keystore */
+    FILETIME     ft_mtime;      /*!< Time of last modification */
+
+    FILETIME     ft_key_lifetime; /*!< Lifetime of key */
+    /* Default lifetime of a keystore master key is 5 minutes */
+#define KS_DEFAULT_KEY_LIFETIME 3000000000i64
+
+    FILETIME     ft_key_ctime;    /*!< Creation time of key */
+    FILETIME     ft_key_expire; /*!< Expiration time for encryption key */
 
     khm_size     n_keys;
     khm_size     nc_keys;
@@ -82,7 +89,6 @@ typedef struct tag_keystore {
     khm_int32    flags;
 #define KS_FLAG_SEEN     0x00000001
 #define KS_FLAG_MODIFIED 0x00000002
-#define KS_FLAG_HASPKEY  0x00000004
 
     DATA_BLOB    DBenc_key;     /*!< Encryption key */
     CRITICAL_SECTION cs;
@@ -168,6 +174,9 @@ ks_keystore_change_key_password(keystore_t * ks, const void * newkey, khm_size c
 
 extern khm_int32
 ks_keystore_reset_key(keystore_t * ks);
+
+extern khm_boolean
+ks_keystore_has_key(keystore_t * ks);
 
 extern khm_int32
 ks_keystore_unlock(keystore_t * ks);

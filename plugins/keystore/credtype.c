@@ -490,9 +490,11 @@ get_keystore_credential(keystore_t * ks)
         return NULL;
 
     KSLOCK(ks);
-    identity = ks->identity;
-    if (identity)
-        kcdb_identity_hold(identity);
+    if (ks_keystore_has_key(ks)) {
+        identity = ks->identity;
+        if (identity)
+            kcdb_identity_hold(identity);
+    }
     KSUNLOCK(ks);
 
     if (identity == NULL)
@@ -520,9 +522,9 @@ get_keystore_credential(keystore_t * ks)
     }
 
     KSLOCK(ks);
-    kcdb_cred_set_attr(credential, KCDB_ATTR_ISSUE, &ks->ft_ctime, KCDB_CBSIZE_AUTO);
-    if (FtToInt(&ks->ft_expire) != 0)
-        kcdb_cred_set_attr(credential, KCDB_ATTR_EXPIRE, &ks->ft_expire, KCDB_CBSIZE_AUTO);
+    kcdb_cred_set_attr(credential, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, KCDB_CBSIZE_AUTO);
+    if (FtToInt(&ks->ft_key_expire) != 0)
+        kcdb_cred_set_attr(credential, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, KCDB_CBSIZE_AUTO);
     if (ks->location)
         kcdb_cred_set_attr(credential, KCDB_ATTR_LOCATION, ks->location, KCDB_CBSIZE_AUTO);
     KSUNLOCK(ks);
