@@ -177,8 +177,10 @@ ks_keystore_create_new(void)
     ks->location = NULL;
     ks->keys = NULL;
     ks->DBenc_key.pbData = NULL;
+    UuidCreate(&ks->uuid);
 
     GetSystemTimeAsFileTime(&ks->ft_ctime);
+    ks->ft_mtime = ks->ft_ctime;
     ks->ft_key_lifetime = IntToFt(KS_DEFAULT_KEY_LIFETIME);
 
     InitializeCriticalSection(&ks->cs);
@@ -283,6 +285,7 @@ ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
 
     ks->keys[i] = idk;
     ks->flags |= KS_FLAG_MODIFIED;
+    GetSystemTimeAsFileTime(&ks->ft_mtime);
 
     if (i == ks->n_keys)
         ks->n_keys++;
@@ -312,6 +315,7 @@ ks_keystore_remove_identkey(keystore_t * ks, khm_size idx)
         rv = KHM_ERROR_NOT_FOUND;
     }
     ks->flags |= KS_FLAG_MODIFIED;
+    GetSystemTimeAsFileTime(&ks->ft_mtime);
 
     KSUNLOCK(ks);
 
@@ -393,8 +397,10 @@ ks_keystore_set_string(keystore_t * ks, kcdb_resource_id r_id, const wchar_t * b
     }
     if (buffer && buffer[0])
         *dest = _wcsdup(buffer);
-    if (set_modified)
+    if (set_modified) {
         ks->flags |= KS_FLAG_MODIFIED;
+        GetSystemTimeAsFileTime(&ks->ft_mtime);
+    }
 
  done:
 
@@ -850,6 +856,7 @@ ks_keystore_lock(keystore_t * ks)
         ks_datablob_free(&ks->keys[i]->plain_key);
         ks->keys[i]->flags |= IDENTKEY_FLAG_LOCKED;
         ks->flags |= KS_FLAG_MODIFIED;
+        GetSystemTimeAsFileTime(&ks->ft_mtime);
     }
 
     rv = KHM_ERROR_SUCCESS;

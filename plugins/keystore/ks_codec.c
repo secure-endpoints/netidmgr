@@ -47,7 +47,7 @@ typedef struct OptArg {
 
 #define ENCOK(e) ((e) && KHM_SUCCEEDED((e)->last_error))
 
-#define KSFF_VERSION 2
+#define KSFF_VERSION 3
 #define KSFF_DATA_MAGIC          0x7118b33b
 #define KSFF_COUNTEDSTRING_MAGIC 0xa4d16aef
 #define KSFF_IDENTKEY_MAGIC      0x981cb3ef
@@ -155,9 +155,7 @@ decode_KS_Size(Codec * e)
 {
     khm_ui_4 * ps = declare_serial_buffer(e, sizeof(khm_ui_4), FALSE);
     if (ps) {
-        khm_ui_4 r;
-        memcpy(&r, ps, sizeof(r));
-        return r;
+        return *ps;
     } else
         return 0;
 }
@@ -176,8 +174,6 @@ decode_KS_Int(Codec * e)
 {
     khm_int32 *pi = declare_serial_buffer(e, sizeof(khm_int32), FALSE);
     if (pi) {
-        khm_int32 r;
-        memcpy(&r, pi, sizeof(r));
         return *pi;
     } else
         return 0;
@@ -258,6 +254,27 @@ decode_KS_Data(Codec * e)
     d.cb_data = cb;
 
     return d;
+}
+
+void
+encode_KS_UUID(const UUID * uuid, Codec * e)
+{
+    UUID * p = declare_serial_buffer(e, sizeof(UUID), TRUE);
+    if (p) {
+        *p = *uuid;
+    }
+}
+
+UUID
+decode_KS_UUID(Codec * e)
+{
+    UUID *p = declare_serial_buffer(e, sizeof(UUID), FALSE);
+    if (p) {
+        return *p;
+    } else {
+        UUID dummy = {0,0,0,{0,0,0,0,0,0,0,0}};
+        return dummy;
+    }
 }
 
 void
@@ -374,6 +391,7 @@ encode_KS_Header(const keystore_t * ks, Codec * e)
 
     encode_KS_Int(KSFF_HEADER_MAGIC, e);
     encode_KS_Int(KSFF_VERSION, e);
+    encode_KS_UUID(&ks->uuid, e);
     encode_KS_CountedString(ks->display_name, KCDB_MAXCCH_NAME, e);
     encode_KS_CountedString(ks->description, KCDB_MAXCCH_LONG_DESC, e);
     encode_KS_Time(ks->ft_expire, e);
@@ -403,6 +421,7 @@ decode_KS_Header(Codec * e)
 
     ks = ks_keystore_create_new();
     if (ks == NULL) { e->last_error = KHM_ERROR_NO_RESOURCES; return NULL; }
+    ks->uuid = decode_KS_UUID(e);
     ks->display_name = decode_KS_CountedString(e, KCDB_MAXCCH_NAME);
     ks->description = decode_KS_CountedString(e, KCDB_MAXCCH_LONG_DESC);
     ks->ft_expire = decode_KS_Time(e);

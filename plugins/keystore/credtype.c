@@ -317,7 +317,32 @@ create_keystore_from_location(const wchar_t * path, khm_handle csp)
     }
 
     if (ks) {
+        khm_size i;
+
         ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, path);
+
+        /* Now see if we have opened the same keystore already.  If
+           so, we return the previously opened keystore instead. */
+        EnterCriticalSection(&cs_ks);
+        for (i=0; i < n_keystores; i++) {
+            RPC_STATUS st;
+
+            if (!keystores[i])
+                continue;
+            KSLOCK(keystores[i]);
+            if (UuidEqual(&keystores[i]->uuid, &ks->uuid, &st) &&
+                CompareFileTime(&ks->ft_mtime, &keystores[i]->ft_mtime) == 0) {
+
+                KSUNLOCK(keystores[i]);
+
+                ks_keystore_release(ks);
+                ks = keystores[i];
+                ks_keystore_hold(ks);
+                break;
+            }
+            KSUNLOCK(keystores[i]);
+        }
+        LeaveCriticalSection(&cs_ks);
     }
 
     if (buffer)
@@ -377,7 +402,7 @@ update_keystore_list(void)
                                        &e, NULL);
 
     EnterCriticalSection(&cs_ks);
-    
+
     for (i=0; i < n_keystores; i++) {
         KSLOCK(keystores[i]);
         keystores[i]->flags &= ~KS_FLAG_SEEN;

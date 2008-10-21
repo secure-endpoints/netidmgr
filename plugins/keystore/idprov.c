@@ -113,8 +113,6 @@ handle_kmsg_ident_notify_create(khm_handle ident)
 
         if (!is_keystore_t(ks))
             ks = NULL;
-    } else {
-        assert(FALSE);
     }
 
     if (ks) {
@@ -126,8 +124,21 @@ handle_kmsg_ident_notify_create(khm_handle ident)
         KSUNLOCK(ks);
         associate_keystore_and_identity(ks, ident);
         ks_keystore_release(ks);
+        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID, KCDB_IDENT_FLAG_VALID);
+        kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, NULL, 0);
     } else {
-        //update_keystore_list();
+        /* A keystore could not be created for the identity.  This may
+           be because the keystore blob couldn't be read or was
+           corrupted etc. */
+
+        wchar_t buf[128] = L"";
+
+        LoadString(hResModule, IDS_INVALIDID, buf, ARRAYLENGTH(buf));
+        kcdb_identity_set_attr(ident, KCDB_ATTR_DISPLAY_NAME, buf,
+                               KCDB_CBSIZE_AUTO);
+        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_INVALID, KCDB_IDENT_FLAG_INVALID);
+        LoadString(hResModule, IDS_INVALIDREASON, buf, ARRAYLENGTH(buf));
+        kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, buf, KCDB_CBSIZE_AUTO);
     }
 
     return KHM_ERROR_SUCCESS;

@@ -312,6 +312,12 @@ BEGIN
     IDS_S_NEW_CREDS         "Obtaining new credentials for %1!s!"
     IDS_NC_BROW_TITLE       "Select Keystore Location"
     IDS_NC_BROW_FILTER      "KeyStores%*.keystore%All files%*.*%%"
+    IDS_INVALIDID           "[Invalid KeyStore]"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_INVALIDREASON       "The KeyStore for this identity could not be opened."
 END
 
 #endif    // English (U.S.) resources

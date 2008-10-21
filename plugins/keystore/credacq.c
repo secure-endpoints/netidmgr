@@ -95,7 +95,16 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
         }
     }
 
-    assert(ks);
+    if (ks == NULL) {
+        EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), FALSE);
+        EnableWindow(GetDlgItem(hwnd, IDC_NEWPW1), FALSE);
+        EnableWindow(GetDlgItem(hwnd, IDC_NEWPW2), FALSE);
+        EnableWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), FALSE);
+        EnableWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), FALSE);
+        EnableWindow(GetDlgItem(hwnd, IDC_CHPW), FALSE);
+
+        return FALSE;        
+    }
 
     if (ks_is_keystore_locked(ks)) {
         EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), TRUE);
@@ -268,7 +277,6 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
     }
 
     ks = find_keystore_for_identity(identity);
-    assert(ks);
 
     if (d->ks)
         ks_keystore_release(d->ks);
@@ -295,9 +303,16 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
 
     kcdb_identity_release(identity);
 
-    khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
+    if (d->ks) {
+        khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
+        creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+    } else {
+        wchar_t status[KHUI_MAXCCH_MESSAGE] = L"";
+        khm_size cb = sizeof(status);
 
-    creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+        kcdb_identity_get_attr(identity, KCDB_ATTR_STATUS, NULL, status, &cb);
+        khui_cw_notify_identity_state(d->nct.nc, status, KHUI_CWNIS_VALIDATED | KHUI_CWNIS_NOPROGRESS, 0);
+    }
     return TRUE;
 }
 

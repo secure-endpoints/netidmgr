@@ -35,7 +35,7 @@ typedef struct tag_datablob {
 #define datablob_is_empty(d) ((d)->cb_data == 0 || (d)->data == NULL)
 
 typedef struct tag_identkey {
-    khm_int32     magic;
+    khm_int32    magic;
 
     wchar_t     *provider_name;
     wchar_t     *identity_name;
@@ -62,6 +62,8 @@ typedef struct tag_identkey {
 
 typedef struct tag_keystore {
     khm_int32    magic;
+
+    UUID         uuid;
 
     wchar_t     *display_name;
     wchar_t     *description;
