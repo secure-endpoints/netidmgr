@@ -283,6 +283,18 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
     d->ks = ks;
     /* leave ks held */
 
+    if (d->ks == NULL) {
+        /* There is no valid keystore for this identity. */
+        wchar_t status[KHUI_MAXCCH_MESSAGE] = L"";
+        khm_size cb = sizeof(status);
+
+        kcdb_identity_get_attr(identity, KCDB_ATTR_STATUS, NULL, status, &cb);
+        khui_cw_notify_identity_state(d->nct.nc, status, KHUI_CWNIS_VALIDATED | KHUI_CWNIS_NOPROGRESS, 0);
+        kcdb_identity_release(identity);
+
+        return TRUE;
+    }
+
     hw_privint = CreateDialogParam(hResModule,
                                    MAKEINTRESOURCE(IDD_NC_PRIV),
                                    GetParent(hwnd),
@@ -303,16 +315,9 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
 
     kcdb_identity_release(identity);
 
-    if (d->ks) {
-        khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
-        creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
-    } else {
-        wchar_t status[KHUI_MAXCCH_MESSAGE] = L"";
-        khm_size cb = sizeof(status);
+    khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
+    creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
 
-        kcdb_identity_get_attr(identity, KCDB_ATTR_STATUS, NULL, status, &cb);
-        khui_cw_notify_identity_state(d->nct.nc, status, KHUI_CWNIS_VALIDATED | KHUI_CWNIS_NOPROGRESS, 0);
-    }
     return TRUE;
 }
 

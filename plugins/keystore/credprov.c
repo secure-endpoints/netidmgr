@@ -293,22 +293,41 @@ list_credentials(void)
     for (i=0; i < n_keystores; i++) {
         khm_handle credential;
         khm_size j;
+        int add_idkeys = 0;
 
         credential = get_keystore_credential(keystores[i]);
-        if (credential == NULL)
-            continue;
-
-        kcdb_credset_add_cred(g_credset, credential, -1);
-        kcdb_cred_release(credential);
+        if (credential != NULL) {
+            kcdb_credset_add_cred(g_credset, credential, -1);
+            kcdb_cred_release(credential);
+            add_idkeys = 1;
+        }
 
         KSLOCK(keystores[i]);
         for (j=0; j < keystores[i]->n_keys; j++) {
-            credential = get_identkey_credential(keystores[i], keystores[i]->keys[j]);
-            if (credential == NULL)
-                continue;
+            if (add_idkeys) {
+                credential = get_identkey_credential(keystores[i], keystores[i]->keys[j]);
+                if (credential == NULL)
+                    continue;
 
-            kcdb_credset_add_cred(g_credset, credential, -1);
-            kcdb_cred_release(credential);
+                kcdb_credset_add_cred(g_credset, credential, -1);
+                kcdb_cred_release(credential);
+            }
+
+            if (keystores[i]->identity) {
+                khm_handle prov = NULL;
+                khm_handle ident = NULL;
+
+                if (KHM_SUCCEEDED(kcdb_identpro_find(keystores[i]->keys[j]->provider_name, &prov)) &&
+                    KHM_SUCCEEDED(kcdb_identity_create_ex(prov, keystores[i]->keys[j]->identity_name,
+                                                          KCDB_IDENT_FLAG_CREATE, NULL, &ident))) {
+                    kcdb_identity_set_parent(ident, keystores[i]->identity);
+                }
+
+                if (prov)
+                    kcdb_identpro_release(prov);
+                if (ident)
+                    kcdb_identity_release(ident);
+            }
         }
         KSUNLOCK(keystores[i]);
     }
