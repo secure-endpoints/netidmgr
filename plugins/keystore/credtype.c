@@ -33,11 +33,14 @@ khm_size nc_keystores;
 keystore_t ** keystores = NULL;
 #define KEYSTORE_LIST_ALLOC_SIZE 4
 
+key_type_map_ * key_type_map = NULL;
+khm_size n_key_type_map = 0;
+khm_size nc_key_type_map = 0;
+
 #define HT_IDENTITY_TO_KEYSTORE_SIZE 11
 hashtable * ht_identity_to_keystore = NULL;
 
-/* Functions for handling our credentials type.
-*/
+/* Functions for handling our credentials type. */
 
 khm_int32 KHMAPI
 cred_is_equal(khm_handle cred1,
@@ -471,6 +474,66 @@ update_keystore_list(void)
     LeaveCriticalSection(&cs_ks);
 }
 
+khm_int32
+get_provider_key_type(const wchar_t * provider_name)
+{
+    khm_size i;
+    khm_int32 ctype = KCDB_CREDTYPE_INVALID;
+
+    EnterCriticalSection(&cs_ks);
+    for (i=0; i < n_key_type_map; i++) {
+        if (!wcscmp(provider_name, key_type_map[i].provider_name))
+            break;
+    }
+
+    if (i == n_key_type_map) {
+        kcdb_credtype ct;
+        wchar_t ctypename[KCDB_MAXCCH_NAME];
+        wchar_t short_desc[KCDB_MAXCCH_SHORT_DESC];
+        khm_size cb;
+        khm_handle provider = NULL;
+
+        if (n_key_type_map == nc_key_type_map) {
+            nc_key_type_map = UBOUNDSS(n_key_type_map, 4, 4);
+            key_type_map = PREALLOC(key_type_map, sizeof(key_type_map[0]) * nc_key_type_map); 
+        }
+
+        ZeroMemory(&key_type_map[i], sizeof(key_type_map[i]));
+
+        key_type_map[i].provider_name = _wcsdup(provider_name);
+
+        ZeroMemory(&ct, sizeof(ct));
+
+        ct.id = KCDB_CREDTYPE_AUTO;
+        ct.name = ctypename;
+        ct.short_desc = short_desc;
+        ct.long_desc = NULL;
+
+        kmq_create_subscription(idk_credprov_msg_proc, &ct.sub);
+        ct.is_equal = idk_cred_is_equal;
+
+        StringCbPrintf(ctypename, sizeof(ctypename), L"KeyStoreKey_%s", provider_name);
+
+        cb = sizeof(short_desc);
+        if (KHM_FAILED(kcdb_identpro_find(provider_name, &provider)) ||
+            KHM_FAILED(kcdb_get_resource(provider, KCDB_RES_INSTANCE, KCDB_RFS_SHORT, NULL,
+                                         NULL, short_desc, &cb))) {
+            StringCbCopy(short_desc, sizeof(short_desc), provider_name);
+        }
+
+        kcdb_credtype_register(&ct, &key_type_map[i].ctype);
+
+        if (provider)
+            kcdb_identpro_release(provider);
+        n_key_type_map++;
+    }
+
+    ctype = key_type_map[i].ctype;
+    LeaveCriticalSection(&cs_ks);
+
+    return ctype;
+}
+
 khm_handle
 get_identkey_credential(keystore_t * ks, identkey_t * idk)
 {
@@ -487,7 +550,8 @@ get_identkey_credential(keystore_t * ks, identkey_t * idk)
     assert(idk->provider_name);
     assert(idk->identity_name);
 
-    if (KHM_FAILED(kcdb_cred_create(idk->identity_name, ks->identity, idk_credtype_id,
+    if (KHM_FAILED(kcdb_cred_create(idk->identity_name, ks->identity,
+                                    get_provider_key_type(idk->provider_name),
                                     &credential)))
         goto done;
 
@@ -501,7 +565,7 @@ get_identkey_credential(keystore_t * ks, identkey_t * idk)
  done:
     KSUNLOCK(ks);
 
-    return credential;    
+    return credential;
 }
 
 khm_handle

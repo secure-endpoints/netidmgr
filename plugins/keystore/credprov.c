@@ -208,6 +208,7 @@ handle_kmsg_system_exit(void)
 {
     khui_config_node cnode;
     khui_config_node cn_idents;
+    khm_size i;
 
     /* It should not be assumed that initialization of the plugin went
        well at this point since we receive a KMSG_SYSTEM_EXIT even if
@@ -222,6 +223,19 @@ handle_kmsg_system_exit(void)
         kcdb_credset_delete(g_credset);
         g_credset = NULL;
     }
+
+    EnterCriticalSection(&cs_ks);
+    for (i=0; i < n_key_type_map; i++) {
+        kcdb_credtype_unregister(key_type_map[i].ctype);
+        free(key_type_map[i].provider_name);
+        ZeroMemory(&key_type_map[i], sizeof(key_type_map[i]));
+    }
+    if (key_type_map)
+        PFREE(key_type_map);
+    key_type_map = NULL;
+    n_key_type_map = 0;
+    nc_key_type_map = 0;
+    LeaveCriticalSection(&cs_ks);
 
     /* Now unregister any configuration nodes we registered. */
 
@@ -331,7 +345,15 @@ list_credentials(void)
         }
         KSUNLOCK(keystores[i]);
     }
+
+    for (i=0; i < n_key_type_map; i++) {
+        LeaveCriticalSection(&cs_ks);
+        kcdb_credset_collect(NULL, g_credset, NULL, key_type_map[i].ctype, NULL);
+        EnterCriticalSection(&cs_ks);
+    }
+
     LeaveCriticalSection(&cs_ks);
+
     kcdb_credset_collect(NULL, g_credset, NULL, credtype_id, NULL);
     kcdb_credset_collect(NULL, g_credset, NULL, idk_credtype_id, NULL);
 }

@@ -237,6 +237,15 @@ extern khm_size n_keystores;
 extern khm_size nc_keystores;
 extern keystore_t ** keystores;
 
+typedef struct {
+    khm_int32  ctype;
+    wchar_t *  provider_name;
+} key_type_map_;
+
+extern key_type_map_ * key_type_map;
+extern khm_size n_key_type_map;
+extern khm_size nc_key_type_map;
+
 void
 init_credtype(void);
 
