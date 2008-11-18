@@ -158,6 +158,40 @@ associate_keystore_and_identity(keystore_t * ks, khm_handle identity)
     LeaveCriticalSection(&cs_ks);
 }
 
+khm_handle
+create_default_keystore(void)
+{
+    keystore_t * ks = NULL;
+    khm_handle identity = NULL;
+
+    ks = ks_keystore_create_new();
+
+    {
+        wchar_t idname[KCDB_MAXCCH_NAME];
+        LoadString(hResModule, IDS_DEF_KSNAME, idname, ARRAYLENGTH(idname));
+        ks_keystore_set_string(ks, KCDB_RES_DISPLAYNAME, idname);
+    }
+    {
+        wchar_t desc[KCDB_MAXCCH_SHORT_DESC];
+        LoadString(hResModule, IDS_DEF_KSDESC, desc, ARRAYLENGTH(desc));
+        ks_keystore_set_string(ks, KCDB_RES_DESCRIPTION, desc);
+    }
+    ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, L"REG:");
+    ks_keystore_set_flags(ks, KS_FLAG_MODIFIED, KS_FLAG_MODIFIED);
+
+    identity = create_identity_from_keystore(ks);
+
+    kcdb_identity_set_attr(identity, KCDB_ATTR_LOCATION, L"REG:", KCDB_CBSIZE_AUTO);
+
+    save_keystore_with_identity(ks);
+
+    ks_keystore_release(ks);
+
+    kcdb_identity_set_default(identity);
+
+    return identity;
+}
+
 /* MUST NOT be called with cs_ks held */
 /* Obtains ks->cs */
 khm_handle
@@ -469,6 +503,18 @@ update_keystore_list(void)
             continue;
         }
         KSUNLOCK(keystores[i]);
+    }
+
+    if (n_keystores == 0) {
+        khm_handle def_ks;
+
+        LeaveCriticalSection(&cs_ks);
+        if (n_keystores == 0)
+            def_ks = create_default_keystore();
+        EnterCriticalSection(&cs_ks);
+
+        if (def_ks)
+            kcdb_identity_release(def_ks);
     }
 
     LeaveCriticalSection(&cs_ks);

@@ -284,3 +284,6 @@ save_keystore_with_identity(keystore_t * ks);
 
 khm_int32
 destroy_keystore_identity(keystore_t * ks);
+
+khm_handle
+create_default_keystore(void);

@@ -50,6 +50,7 @@ struct nc_dialog_data {
     HWND hw_privint;
 
     keystore_t * ks;
+    khm_boolean  foreign_id;
 
     /* for password changing */
     khm_size n_ks;
@@ -317,6 +318,7 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
 
     khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
     creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+    d->foreign_id = FALSE;
 
     return TRUE;
 }
@@ -375,11 +377,113 @@ creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
     return TRUE;
 }
 
+INT_PTR
+creddlg_WMNC_COLLECT_PRIVCRED(HWND hwnd, struct nc_dialog_data * d)
+{
+    if (khui_cw_get_persist_private_data(d->nct.nc)) {
+        khm_handle identity = NULL;
+        keystore_t * ks = NULL;
+        HWND hw_privint;
+
+        khui_cw_revoke_privileged_dialogs(d->nct.nc, credtype_id);
+
+        khui_cw_get_privileged_credential_store(d->nct.nc, &identity);
+        if (identity == NULL) {
+            khui_cw_enable_type(d->nct.nc, credtype_id, FALSE);
+            return TRUE;
+        }
+
+        ks = find_keystore_for_identity(identity);
+
+        if (d->ks)
+            ks_keystore_release(d->ks);
+        d->ks = ks;
+        /* leave ks held */
+
+        if (d->ks == NULL) {
+            /* No keystore? */
+            assert(FALSE);
+            khui_cw_enable_type(d->nct.nc, credtype_id, FALSE);
+            kcdb_identity_release(identity);
+            return TRUE;
+        }
+
+        hw_privint = CreateDialogParam(hResModule,
+                                       MAKEINTRESOURCE(IDD_NC_PRIV_STORE),
+                                       GetParent(hwnd),
+                                       nc_privint_dlg_proc,
+                                       (LPARAM) d);
+        {
+            wchar_t caption[256];
+            LoadString(hResModule, IDS_NCPRIV_CAPTION, caption,
+                       ARRAYLENGTH(caption));
+
+            khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
+                                           hw_privint, caption);
+        }
+
+        d->hw_privint = hw_privint;
+
+        khui_cw_enable_type(d->nct.nc, credtype_id, TRUE);
+
+        kcdb_identity_release(identity);
+
+        creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+
+        d->foreign_id = TRUE;
+
+        return TRUE;
+    } else {
+        khui_cw_revoke_privileged_dialogs(d->nct.nc, credtype_id);
+        khui_cw_enable_type(d->nct.nc, credtype_id, FALSE);
+        return TRUE;
+    }
+}
+
+INT_PTR
+creddlg_WMNC_DIALOG_PREPROCESS(HWND hwnd, struct nc_dialog_data * d)
+{
+    khm_handle pid = NULL;
+    khm_handle persist_id = NULL;
+    khm_int32 ctype_pid = KCDB_CREDTYPE_INVALID;
+    khm_int32 ctype_store = KCDB_CREDTYPE_INVALID;
+    khm_size cb = sizeof(ctype_pid);
+
+    if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS &&
+
+        KHM_SUCCEEDED(khui_cw_get_primary_id(d->nct.nc, &pid)) &&
+
+        KHM_SUCCEEDED(kcdb_identity_get_attr(pid, KCDB_ATTR_TYPE, NULL, &ctype_pid, &cb)) &&
+
+        ctype_pid != credtype_id &&
+
+        khui_cw_get_persist_private_data(d->nct.nc) &&
+
+        KHM_SUCCEEDED(khui_cw_get_privileged_credential_store(d->nct.nc, &persist_id)) &&
+
+        KHM_SUCCEEDED(kcdb_identity_get_attr(persist_id, KCDB_ATTR_TYPE, NULL, &ctype_store, &cb)) &&
+
+        ctype_store == credtype_id) {
+
+        d->nct.n_type_deps = 1;
+        d->nct.type_deps[0] = ctype_pid;
+
+    }
+
+    if (pid)
+        kcdb_identity_release(pid);
+
+    if (persist_id)
+        kcdb_identity_release(persist_id);
+
+    return TRUE;
+}
+
 /* Note: This callback runs under the UI thread */
 INT_PTR
 creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, khui_wm_nc_notification notification,
-                          int sParam, void * vParam) {
-
+                          int sParam, void * vParam)
+{
     struct nc_dialog_data * d;
 
     /* Refer to the khui_wm_nc_notifications enumeration in the
@@ -404,6 +508,12 @@ creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, khui_wm_nc_notification notification,
             return creddlg_WMNC_IDENTITY_CHANGE_new_creds(hwnd, d);
         else
             return creddlg_WMNC_IDENTITY_CHANGE_password(hwnd, d);
+
+    case WMNC_COLLECT_PRIVCRED:
+        return creddlg_WMNC_COLLECT_PRIVCRED(hwnd, d);
+
+    case WMNC_DIALOG_PREPROCESS:
+        return creddlg_WMNC_DIALOG_PREPROCESS(hwnd, d);
 
     }
 
@@ -859,6 +969,9 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             return KHM_ERROR_INVALID_PARAM;
 
         } else {
+            if (!ks_was_locked && key_source) {
+                add_identkeys_from_credset(ks, key_source);
+            }
             ks_keystore_lock(ks);
             if (ks_keystore_get_flags(ks) & KS_FLAG_MODIFIED)
                 save_keystore_with_identity(ks);
@@ -950,8 +1063,16 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
 
     if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
         if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_NEW_CREDS) {
-            if (d->ks != NULL)
-                process_keystore_new_credentials(nc, d->hw_privint, d->ks, NULL, TRUE);
+            if (d->ks != NULL) {
+                if (d->foreign_id) {
+                    khm_handle cs_source = NULL;
+
+                    khui_cw_get_privileged_credential_collector(nc, &cs_source);
+                    process_keystore_new_credentials(nc, d->hw_privint, d->ks, cs_source, FALSE);
+                } else {
+                    process_keystore_new_credentials(nc, d->hw_privint, d->ks, NULL, TRUE);
+                }
+            }
             return KHM_ERROR_SUCCESS;
         } else if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_PASSWORD) {
             khm_size i;

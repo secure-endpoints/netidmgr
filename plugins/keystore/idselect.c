@@ -285,6 +285,22 @@ idsel_factory(HWND hwnd_parent, HWND * phwnd_return) {
 khm_int32
 handle_kmsg_ident_get_idsel_factory(kcdb_idsel_factory * pcb)
 {
+    khm_handle csp_p = NULL;
+    khm_int32 allow_create = 0;
+
+    if (KHM_FAILED(kmm_get_plugin_config(IDPROV_NAMEW, 0, &csp_p)) ||
+        KHM_FAILED(khc_read_int32(csp_p, L"AllowMultipleKeystores", &allow_create)) ||
+        allow_create == 0) {
+        if (csp_p)
+            khc_close_space(csp_p);
+        return KHM_ERROR_INVALID_OPERATION;
+    }
+
+    if (csp_p) {
+        khc_close_space(csp_p);
+        csp_p = NULL;
+    }
+
     *pcb = idsel_factory;
 
     return KHM_ERROR_SUCCESS;

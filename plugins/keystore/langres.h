@@ -33,6 +33,8 @@
 #define IDS_CFG_ID_LONG_DESC            120
 #define IDD_NC_PRIV_PASSWORD            120
 #define IDS_IDPROV_DESC                 121
+#define IDD_NC_PRIV1                    121
+#define IDD_NC_PRIV_STORE               121
 #define IDS_ID_DISPLAYNAME              122
 #define IDS_ID_DESCRIPTION              123
 #define IDS_ID_INSTANCE                 124
@@ -56,6 +58,8 @@
 #define IDS_NC_BROW_FILTER              142
 #define IDS_INVALIDID                   143
 #define IDS_INVALIDREASON               144
+#define IDS_DEF_KSNAME                  145
+#define IDS_DEF_KSDESCF                 146
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041

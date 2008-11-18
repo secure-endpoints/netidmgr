@@ -164,6 +164,20 @@ BEGIN
     LTEXT           "The identity for which you are changing the password has a private key stored in this KeyStore.  Enter the password for this KeyStore here to update the stored private key.",IDC_INFO,40,49,303,28
 END
 
+IDD_NC_PRIV_STORE DIALOGEX 0, 0, 350, 84
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Password",IDC_LBL_PW,7,10,32,8
+    EDITTEXT        IDC_PASSWORD,71,7,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "New password",IDC_LBL_NEWPW1,7,28,48,8
+    EDITTEXT        IDC_NEWPW1,71,25,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Confirm password",IDC_LBL_NEWPW2,7,46,58,8
+    EDITTEXT        IDC_NEWPW2,71,43,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Change password",IDC_CHPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,67,73,10
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -252,6 +266,14 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 77
     END
+
+    IDD_NC_PRIV_STORE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 343
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 77
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -318,6 +340,8 @@ END
 STRINGTABLE 
 BEGIN
     IDS_INVALIDREASON       "The KeyStore for this identity could not be opened."
+    IDS_DEF_KSNAME          "My Keystore"
+    IDS_DEF_KSDESCF         "Default user keystore for %s"
 END
 
 #endif    // English (U.S.) resources

@@ -82,9 +82,26 @@ handle_kmsg_ident_validate_name(kcdb_ident_name_xfer * nx) {
 khm_int32
 handle_kmsg_ident_set_default(khm_handle def_ident) {
 
-    /* TODO: Handle this message */
+    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+    khm_size cb = sizeof(idname);
+    khm_handle csp_p = NULL;
+    khm_int32 rv;
 
-    return KHM_ERROR_SUCCESS;
+    rv = kmm_get_plugin_config(IDPROV_NAMEW, KHM_FLAG_CREATE, &csp_p);
+    if (KHM_FAILED(rv))
+        return rv;
+
+    rv = kcdb_identity_get_name(def_ident, idname, &cb);
+    if (KHM_FAILED(rv))
+        goto done;
+
+    rv = khc_write_string(csp_p, L"DefaultIdentity", idname);
+
+ done:
+    if (csp_p)
+        khc_close_space(csp_p);
+
+    return rv;
 }
 
 khm_int32
@@ -124,8 +141,31 @@ handle_kmsg_ident_notify_create(khm_handle ident)
         KSUNLOCK(ks);
         associate_keystore_and_identity(ks, ident);
         ks_keystore_release(ks);
-        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID, KCDB_IDENT_FLAG_VALID);
+        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
         kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, NULL, 0);
+
+        {
+            khm_handle csp_p = NULL;
+            wchar_t didname[KCDB_IDENT_MAXCCH_NAME];
+            wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+
+            cb = sizeof(idname);
+
+            if (KHM_SUCCEEDED(kmm_get_plugin_config(IDPROV_NAMEW, 0, &csp_p)) &&
+                KHM_SUCCEEDED(khc_read_string(csp_p, L"DefaultIdentity", didname, &cb)) &&
+                (cb = sizeof(idname)) != 0 &&
+                KHM_SUCCEEDED(kcdb_identity_get_name(ident, idname, &cb)) &&
+                !wcscmp(idname, didname)) {
+
+                kcdb_identity_set_default_int(ident);
+
+            }
+
+            if (csp_p)
+                khc_close_space(csp_p);
+        }
+
     } else {
         /* A keystore could not be created for the identity.  This may
            be because the keystore blob couldn't be read or was
@@ -155,9 +195,12 @@ handle_kmsg_ident_update(khm_handle ident) {
         kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, sizeof(FILETIME));
         kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, sizeof(FILETIME));
         KSUNLOCK(ks);
+        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
     } else {
         kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, NULL, 0);
         kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, NULL, 0);
+        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_INVALID, KCDB_IDENT_FLAG_INVALID);
     }
 
     if (ks)
@@ -278,6 +321,7 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
             *((HICON *) preq->buf) = hicon;
             preq->cb_buf = sizeof(HICON);
             preq->code = KHM_ERROR_SUCCESS;
+
         }
     }
 
