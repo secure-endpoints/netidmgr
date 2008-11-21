@@ -92,7 +92,7 @@ begin_encode_optional(khm_ui_2 ordinal, OptArg * opt, Codec * e)
 {
     opt->optRecord = declare_serial_buffer(e, sizeof(OptRecord), TRUE);
     if (opt->optRecord)
-        opt->optRecord->signature = (KSFF_OPTSIG_MAGIC | ordinal);
+        opt->optRecord->signature = (KSFF_OPTSIG_MAGIC | (khm_int32) ordinal);
     opt->cb_used = e->cb_used;
 }
 
@@ -109,7 +109,7 @@ begin_decode_optional(khm_ui_2 ordinal, OptArg * opt, Codec * e)
 {
     opt->optRecord = e->current;
     if (e->cb_free >= sizeof(OptRecord) &&
-        opt->optRecord->signature == (KSFF_OPTSIG_MAGIC | ordinal)) {
+        opt->optRecord->signature == (khm_int32) (KSFF_OPTSIG_MAGIC | (khm_int32) ordinal)) {
         declare_serial_buffer(e, sizeof(OptRecord), FALSE);
         return TRUE;
     }
@@ -211,7 +211,7 @@ encode_KS_Data(const datablob_t * dsrc,
     void * db;
 
     encode_KS_Int(KSFF_DATA_MAGIC, e);
-    encode_KS_Size(dsrc->cb_data, e);
+    encode_KS_Size((khm_ui_4) dsrc->cb_data, e);
 
     db = declare_serial_buffer(e, dsrc->cb_data, TRUE);
     if (db) {
@@ -288,7 +288,7 @@ encode_KS_CountedString(const wchar_t * wstr, khm_size cch_max,
         cch = 0;
 
     encode_KS_Int(KSFF_COUNTEDSTRING_MAGIC, e);
-    encode_KS_Size(cch, e);
+    encode_KS_Size((khm_ui_4) cch, e);
 
     s = declare_serial_buffer(e, cch * sizeof(wchar_t), TRUE);
     if (s) {
@@ -397,7 +397,7 @@ encode_KS_Header(const keystore_t * ks, Codec * e)
     encode_KS_Time(ks->ft_expire, e);
     encode_KS_Time(ks->ft_ctime, e);
     encode_KS_Time(ks->ft_mtime, e);
-    encode_KS_Size(ks->n_keys, e);
+    encode_KS_Size((khm_ui_4) ks->n_keys, e);
     for (i=0; i < ks->n_keys; i++) {
         encode_KS_IdentKey(ks->keys[i], e);
     }
@@ -574,7 +574,7 @@ encode_KS_Credential(khm_handle credential, Codec * e)
     }
 
     /*[7] Number of attributes */
-    encode_KS_Size(n_defined_attrs, e);
+    encode_KS_Size((khm_ui_4) n_defined_attrs, e);
 
     for (i=0; i < n_attrs; i++) {
         khm_size cb_data;

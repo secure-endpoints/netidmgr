@@ -79,12 +79,12 @@ idk_cred_is_equal(khm_handle cred1,
 
 static khm_int32 hash_ptr(const void * key)
 {
-    return (khm_int32) key;
+    return (khm_int32) (((khm_size)key >> 2) & 0x7fffffff);
 }
 
 static khm_int32 comp_ptr(const void *k1, const void *k2)
 {
-    return ((khm_int32) k1) - ((khm_int32) k2);
+	return (k1 > k2)? -1 : ((k1 == k2)? 0 : 1);
 }
 
 static void add_ref_ks(const void *k, void * d)
@@ -173,7 +173,7 @@ create_default_keystore(void)
     }
     {
         wchar_t desc[KCDB_MAXCCH_SHORT_DESC];
-        LoadString(hResModule, IDS_DEF_KSDESC, desc, ARRAYLENGTH(desc));
+        LoadString(hResModule, IDS_DEF_KSDESCF, desc, ARRAYLENGTH(desc));
         ks_keystore_set_string(ks, KCDB_RES_DESCRIPTION, desc);
     }
     ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, L"REG:");
@@ -256,7 +256,7 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
         if (cb_buffer) {
             buffer = malloc(cb_buffer);
             ks_keystore_serialize(ks, buffer, &cb_buffer);
-            WriteFile(hf, buffer, cb_buffer, &numwritten, NULL);
+            WriteFile(hf, buffer, (DWORD) cb_buffer, &numwritten, NULL);
             assert(numwritten == cb_buffer);
             free(buffer);
             buffer = NULL;
@@ -325,7 +325,7 @@ create_keystore_from_location(const wchar_t * path, khm_handle csp)
                 goto done_file;
         }
 
-        if (!ReadFile(hf, buffer, cb_buffer, &cb_read, NULL))
+        if (!ReadFile(hf, buffer, (DWORD) cb_buffer, &cb_read, NULL))
             goto done_file;
 
         ks_keystore_unserialize(buffer, cb_read, &ks);
@@ -506,7 +506,7 @@ update_keystore_list(void)
     }
 
     if (n_keystores == 0) {
-        khm_handle def_ks;
+        khm_handle def_ks = NULL;
 
         LeaveCriticalSection(&cs_ks);
         if (n_keystores == 0)

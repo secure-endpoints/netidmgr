@@ -29,6 +29,9 @@
 #include <commctrl.h>
 #include <assert.h>
 
+extern void creddlg_setup_idlist(HWND);
+extern void creddlg_refresh_idlist(HWND, keystore_t *);
+
 /* Dialog procedure and support code for displaying property sheets
    for credentials of type MyCred. */
 
@@ -37,9 +40,6 @@ BOOL pp_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     khui_property_sheet * ps;
     PROPSHEETPAGE * p;
     keystore_t * ks;
-    extern creddlg_setup_idlist(HWND);
-    extern creddlg_refresh_idlist(HWND, keystore_t *);
-
     p = (PROPSHEETPAGE *) lParam;
     ps = (khui_property_sheet *) p->lParam;
 

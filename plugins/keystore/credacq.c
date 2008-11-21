@@ -188,7 +188,7 @@ creddlg_setup_idlist(HWND hwlist)
     GetClientRect(hwlist, &r);
     for (i=0; i < ARRAYLENGTH(columns); i++) {
         columns[i].cx = columns[i].cx * (r.right - r.left) / 256;
-        LoadString(hResModule, (UINT) columns[i].pszText, buf, ARRAYLENGTH(buf));
+        LoadString(hResModule, (UINT)(UINT_PTR) columns[i].pszText, buf, ARRAYLENGTH(buf));
         columns[i].pszText = buf;
         ListView_InsertColumn(hwlist, i, &columns[i]);
     }
@@ -209,7 +209,7 @@ creddlg_refresh_idlist(HWND hwlist, keystore_t * ks)
     for (i=0; i < ks->n_keys; i++) {
         LVITEM lvi_id = {
             LVIF_PARAM | LVIF_STATE | LVIF_TEXT | LVIF_IMAGE,
-            i, 0,
+            (int) i, 0,
             INDEXTOOVERLAYMASK((ks->keys[i]->flags & IDENTKEY_FLAG_LOCKED)?2:1),
             LVIS_OVERLAYMASK,
             ks->keys[i]->display_name, 0,
@@ -217,11 +217,13 @@ creddlg_refresh_idlist(HWND hwlist, keystore_t * ks)
         wchar_t idtype[KCDB_MAXCCH_NAME] = L"";
         LVITEM lvi_type = {
             LVIF_TEXT,
-            i, 1, 0, 0,
-            idtype, 0,
+            (int) i, 1, 0, 0,
+            NULL, 0,
             0, 0, 0, 0, 0, 0};
         khm_size cb;
         khm_handle idpro;
+
+		lvi_type.pszText = idtype;
 
         if (KHM_SUCCEEDED(kcdb_identpro_find(ks->keys[i]->provider_name, &idpro))) {
             cb = sizeof(idtype);
@@ -537,7 +539,7 @@ add_identkeys_from_credset(keystore_t * ks, khm_handle credset)
         identkey_t * idk = NULL;
         void * data = NULL;
 
-        if (KHM_FAILED(kcdb_credset_get_cred(credset, i, &cred))) {
+        if (KHM_FAILED(kcdb_credset_get_cred(credset, (khm_int32) i, &cred))) {
             assert(FALSE);
             continue;
         }
@@ -757,7 +759,7 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
     ZeroMemory(d, sizeof(*d));
 
     d->nct.type = credtype_id;
-    d->nct.ordinal = -1;
+    d->nct.ordinal = (khm_size) -1;
 
     LoadString(hResModule, IDS_CT_SHORT_DESC,
                wshortdesc, ARRAYLENGTH(wshortdesc));

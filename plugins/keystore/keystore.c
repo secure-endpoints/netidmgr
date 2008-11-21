@@ -413,7 +413,7 @@ ks_keystore_get_string(keystore_t * ks, kcdb_resource_id r_id,
               wchar_t * buffer, khm_size *pcb_buffer)
 {
     const wchar_t * src = NULL;
-    size_t maxlen;
+    size_t maxlen = 0;
 
     assert(is_keystore_t(ks));
 
@@ -479,7 +479,7 @@ lock_encryption_key(keystore_t * ks, const void * data, size_t cb_data) {
         return FALSE;
 
     db_in.pbData = (void *) data;
-    db_in.cbData = cb_data;
+    db_in.cbData = (DWORD) cb_data;
 
     rv = CryptProtectData(&db_in, NULL, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN,
                           &ks->DBenc_key);
@@ -570,7 +570,7 @@ derive_new_key_from_data(crypt_op * op, const void * data, khm_size cb_key)
     }
 
     CCall(CryptCreateHash(op->hProv, CALG_SHA1, 0, 0, &hHash));
-    CCall(CryptHashData(hHash, data, cb_key, 0));
+    CCall(CryptHashData(hHash, data, (DWORD) cb_key, 0));
     CCall(CryptDeriveKey(op->hProv, CALG_RC4, hHash, CRYPT_NO_SALT, &op->hKey));
 
     rv = TRUE;
@@ -594,14 +594,14 @@ encrypt_data(crypt_op * op, const datablob_t * plain,
 
     CCall(CryptCreateHash(op->hProv, CALG_SHA1, 0, 0, &hEncHash));
 
-    cbData = plain->cb_data;
+    cbData = (DWORD) plain->cb_data;
     CCall(CryptEncrypt(op->hKey, hEncHash, TRUE, 0, NULL, &cbData, 0));
 
     ks_datablob_alloc(encrypted, max(cbData, plain->cb_data));
     memcpy(encrypted->data, plain->data, plain->cb_data);
-    cbData = plain->cb_data;
+    cbData = (DWORD) plain->cb_data;
     CCall(CryptEncrypt(op->hKey, hEncHash, TRUE, 0, encrypted->data, &cbData,
-                       encrypted->cb_alloc));
+                       (DWORD) encrypted->cb_alloc));
     encrypted->cb_data = cbData;
 
     cbData = sizeof(cbHash);
@@ -640,7 +640,7 @@ decrypt_data(crypt_op * op,
 
     ks_datablob_alloc(plain, encrypted->cb_data);
     memcpy(plain->data, encrypted->data, encrypted->cb_data);
-    cbData = encrypted->cb_data;
+    cbData = (DWORD) encrypted->cb_data;
     CCall(CryptDecrypt(op->hKey, hDecHash, TRUE, 0, plain->data, &cbData));
     plain->cb_data = cbData;
 

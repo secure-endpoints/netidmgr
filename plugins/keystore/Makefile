@@ -132,11 +132,12 @@ incflags = -I"$(NIDMINCDIR)" -I"$(OBJ)" -I.
 rincflags = /i "$(NIDMINCDIR)" /i "$(OBJ)" /i .
 
 ldebug = $(ldebug) /DEBUG
-cdebug = $(cdebug) -Os -Zi
+cdebug = $(cdebug) -Os -Zi -WX
+cwarn = -wd4204
 
 cdefines = $(cdefines) -DUNICODE -D_UNICODE
 
-C2OBJ=$(CC) $(cdebug) $(cflags) $(incflags) $(cdefines) /Fo"$@" /c $**
+C2OBJ=$(CC) $(cdebug) $(cflags) $(incflags) $(cdefines) $(cwarn) /Fo"$@" /c $**
 
 DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:"$@" /IMPLIB:"$(DEST)\$(@B).lib" $**
 
