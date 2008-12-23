@@ -768,14 +768,6 @@ cw_update_creds(khui_credwnd_tbl * tbl)
                 if (KHM_FAILED(kcdb_identpro_get_type(idpro, &cwi->credtype)))
                     cwi->credtype = KCDB_CREDTYPE_INVALID;
                 kcdb_identpro_release(idpro);
-
-                cb = sizeof(cwi->h_icon_lg);
-                kcdb_get_resource(ident, KCDB_RES_ICON_NORMAL, 0,
-                                  NULL, NULL, &cwi->h_icon_lg, &cb);
-
-                cb = sizeof(cwi->h_icon_lg_dis);
-                kcdb_get_resource(ident, KCDB_RES_ICON_DISABLED, 0,
-                                  NULL, NULL, &cwi->h_icon_lg_dis, &cb);
             }
 
             kcdb_identity_get_flags(ident, &cwi->ident_flags);
@@ -919,6 +911,7 @@ cw_timer_proc(HWND hwnd,
             /* flags have changed */
             /* the outline needs to be updated */
             cw_update_outline(tbl);
+            cw_update_extents(tbl, TRUE);
             InvalidateRect(tbl->hwnd, NULL, FALSE);
         } else {
             /* just invalidate the row */
@@ -972,6 +965,7 @@ cw_timer_proc(HWND hwnd,
         nflags = cw_get_buf_exp_flags(tbl, o->identity);
         if ((o->flags & CW_EXPSTATE_MASK) != nflags) {
             cw_update_outline(tbl);
+            cw_update_extents(tbl, FALSE);
             InvalidateRect(tbl->hwnd, NULL, FALSE);
         } else {
             RECT rc, rr, ri;
@@ -1097,20 +1091,220 @@ iwcscmp(const void * p1, const void * p2) {
 static khm_int32 KHMAPI
 cw_id_name_compare_func(khm_handle h1, khm_handle h2, void * vparam)
 {
-    wchar_t n1[KCDB_IDENT_MAXCCH_NAME];
-    wchar_t n2[KCDB_IDENT_MAXCCH_NAME];
+    wchar_t n1[KCDB_IDENT_MAXCCH_NAME] = L"";
+    wchar_t n2[KCDB_IDENT_MAXCCH_NAME] = L"";
     khm_size cb;
+    khm_int32 *pflags = (khm_int32 *) vparam;
 
     if (kcdb_identity_is_equal(h1, h2))
         return 0;
 
     cb = sizeof(n1);
-    kcdb_identity_get_name(h1, n1, &cb);
+    kcdb_get_resource(h1, KCDB_RES_DISPLAYNAME, 0, NULL, NULL, n1, &cb);
 
     cb = sizeof(n2);
-    kcdb_identity_get_name(h2, n2, &cb);
+    kcdb_get_resource(h2, KCDB_RES_DISPLAYNAME, 0, NULL, NULL, n2, &cb);
 
-    return wcscmp(n1, n2);
+    return lstrcmpi(n1, n2) * (((*pflags) & KHUI_CW_COL_SORT_DEC)? -1 : 1);
+}
+
+
+typedef struct tag_idnode {
+    khm_handle identity;
+    khm_int32  n_creds;
+    int        level;
+
+    TQDCL(struct tag_idnode);
+} idnode;
+
+static idnode * create_idnode(khm_handle id, int level)
+{
+    idnode * n = (idnode *) PMALLOC(sizeof(idnode));
+    khm_size cb = sizeof(n->n_creds);
+
+    n->identity = id;
+    if (id)
+        kcdb_identity_get_attr(id, KCDB_ATTR_N_CREDS, NULL, &n->n_creds, &cb);
+    else
+        n->n_creds = 0;
+    n->level = level;
+    kcdb_identity_hold(id);
+    TQINIT(n);
+
+    return n;
+}
+
+static void free_idnode(idnode * n)
+{
+    if (n->identity)
+        kcdb_identity_release(n->identity);
+
+    while (TQFIRSTCHILD(n)) {
+        idnode * c;
+
+        TQGETCHILD(n, &c);
+        free_idnode(c);
+    }
+
+    ZeroMemory(n, sizeof(*n));
+    PFREE(n);
+}
+
+static void fill_idtree(idnode * n, khm_int32 flags, int level)
+{
+    kcdb_enumeration e;
+    khm_size n_ids = 0;
+    khm_handle id = NULL;
+
+    if (KHM_FAILED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_ACTIVE, KCDB_IDENT_FLAG_ACTIVE, &e, &n_ids)))
+        return;
+
+    kcdb_enum_sort(e, cw_id_name_compare_func, &flags);
+
+    while (KHM_SUCCEEDED(kcdb_enum_next(e, &id))) {
+        khm_handle id_parent = NULL;
+
+        kcdb_identity_get_parent(id, &id_parent);
+        if (id_parent == n->identity) {
+            /* found one */
+            idnode * c = create_idnode(id, level);
+
+            TQPUTCHILD(n, c);
+
+            fill_idtree(c, flags, level+1);
+            n->n_creds += c->n_creds;
+        }
+
+        if (id_parent)
+            kcdb_identity_release(id_parent);
+    }
+
+    kcdb_enum_end(e);
+}
+
+static idnode * inorder_idtree_next(idnode * n)
+{
+    idnode * p;
+
+    if (TQFIRSTCHILD(n))
+        return TQFIRSTCHILD(n);
+
+    if (TQNEXTCHILD(n))
+        return TQNEXTCHILD(n);
+
+    for (p = TQPARENT(n); p; p = TQPARENT(p)) {
+        if (TQNEXTCHILD(p))
+            return TQNEXTCHILD(p);
+    }
+
+    return NULL;
+}
+
+/* Only called for outlines that represent identities */
+static void
+cw_update_outline_index_range(khui_credwnd_tbl * tbl, khui_credwnd_outline * o)
+{
+    khm_size n = 0, i;
+    khm_size min = (khm_size) -1, max = (khm_size) -1;
+
+    kcdb_credset_get_size(tbl->credset, &n);
+
+    for (i=0; i < n; i++) {
+        khm_handle cred = NULL;
+        khm_handle ident = NULL;
+        int done = 0;
+
+        kcdb_credset_get_cred(tbl->credset, (khm_int32) i, &cred);
+        kcdb_cred_get_identity(cred, &ident);
+
+        if (kcdb_identity_is_equal(ident, o->identity)) {
+            if (min == (khm_size) -1)
+                min = i;
+            max = i;
+        } else if (min != (khm_size) -1) {
+            done = 1;
+        }
+
+        if (cred) kcdb_cred_release(cred);
+        if (ident) kcdb_identity_release(ident);
+        if (done) break;
+    }
+
+    o->idx_start = min;
+    o->idx_end = max;
+}
+
+static void
+cw_update_outline_idexp(khui_credwnd_tbl *tbl, khm_int32 * grouping, int n_grouping)
+{
+    idnode *root = create_idnode(NULL, 0);
+    idnode * n;
+    int n_rows = 0;
+
+    fill_idtree(root, tbl->cols[grouping[0]].flags, 0);
+
+    for (n = TQFIRSTCHILD(root); n; n = inorder_idtree_next(n)) {
+        khui_credwnd_outline * o;
+
+        for (o = tbl->outline; o; o = LNEXT(o)) {
+            if (kcdb_identity_is_equal(o->identity, n->identity))
+                break;
+        }
+
+        if (o) {
+            /* found it */
+            o->flags &= KHUI_CW_O_SELECTED;
+            o->flags |= KHUI_CW_O_VISIBLE;
+            if (n->n_creds == 0)
+                o->flags |= KHUI_CW_O_EMPTY;
+        } else {
+            khm_int32 rv;
+            wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+            khm_size cb;
+
+            /* not found.  create */
+            cb = sizeof(idname);
+            rv = kcdb_get_resource(n->identity, KCDB_RES_DISPLAYNAME,
+                                   KCDB_RFS_SHORT, NULL, NULL,
+                                   idname, &cb);
+            assert(KHM_SUCCEEDED(rv));
+
+            o = cw_new_outline_node(idname);
+            LPUSH(&tbl->outline, o);
+            o->flags = KHUI_CW_O_VISIBLE;
+            if (n->n_creds == 0)
+                o->flags |= KHUI_CW_O_EMPTY;
+            o->level = 0;
+            o->col = grouping[0];
+            o->identity = n->identity;
+            kcdb_identity_hold(n->identity);
+            o->attr_id = KCDB_ATTR_ID;
+        }
+
+        o->flags |= KHUI_CW_O_NOOUTLINE;
+        o->flags &= ~KHUI_CW_O_EXPAND;
+        o->start = n_rows;
+        o->length = 1;
+        o->indent = n->level;
+        o->idx_start = (khm_size) -1;
+        o->idx_end = (khm_size) -1;
+
+        cw_update_outline_index_range(tbl, o);
+        cw_set_tbl_row_header(tbl, n_rows, grouping[0], o);
+
+        n_rows++;
+    }
+
+    tbl->n_rows = n_rows;
+    tbl->flags |= KHUI_CW_TBL_ROW_DIRTY;
+    tbl->flags &= ~KHUI_CW_TBL_COL_DIRTY;
+
+    if (tbl->cursor_row >= tbl->n_rows)
+        tbl->cursor_row = tbl->n_rows - 1;
+    if (tbl->cursor_row < 0)
+        tbl->cursor_row = 0;
+
+    free_idnode(root);
 }
 
 #define MAX_GROUPING 256
@@ -1207,6 +1401,12 @@ cw_update_outline(khui_credwnd_tbl * tbl)
                 KillTimer(tbl->hwnd, (UINT_PTR) &(tbl->rows[i]));
                 tbl->rows[i].flags &= ~KHUI_CW_ROW_TIMERSET;
             }
+    }
+
+    if (n_grouping == 1 && tbl->cols[grouping[0]].attr_id == KCDB_ATTR_ID_DISPLAY_NAME &&
+        tbl->n_cols == grouping[0] + 1) {
+        cw_update_outline_idexp(tbl, grouping, n_grouping);
+        goto _exit;
     }
 
     if(KHM_FAILED(kcdb_credset_get_size(tbl->credset, &n_creds)))
@@ -1387,11 +1587,11 @@ cw_update_outline(khui_credwnd_tbl * tbl)
                         rawdata = NULL;
                     }
 
-                    cbbuf = 0;
+                    cb_rawdata = 0;
                 }
 
                 for (to = ((ol)? TFIRSTCHILD(ol) : tbl->outline); to; to = LNEXT(to)) {
-                    if (tt->comp(buf, cbbuf, to->rawdata, to->cb_rawdata) == 0)
+                    if (tt->comp(rawdata, cb_rawdata, to->rawdata, to->cb_rawdata) == 0)
                         break;
                 }
 
@@ -1649,7 +1849,8 @@ cw_update_outline(khui_credwnd_tbl * tbl)
             n_idents == 0)
             goto done_with_idents;
 
-        kcdb_enum_sort(e, cw_id_name_compare_func, NULL);
+        flags = tbl->cols[grouping[0]].flags;
+        kcdb_enum_sort(e, cw_id_name_compare_func, &flags);
 
         for (ident = NULL; KHM_SUCCEEDED(kcdb_enum_next(e, &ident)); ) {
             for (o = tbl->outline; o; o = LNEXT(o)) {
@@ -2335,18 +2536,30 @@ cw_draw_header(HDC hdc,
                            (r->top + r->bottom - KHUI_SMICON_CY) / 2, 0);
 
         r->left += KHUI_SMICON_CX * 3 / 2;
+        r->left += KHUI_SMICON_CX * o->indent;
 
         if (cr->flags & KHUI_CW_ROW_EXPVIEW) {
             int cx = GetSystemMetrics(SM_CXICON);
             int cy = GetSystemMetrics(SM_CYICON);
-            HICON icon;
+            HICON icon = NULL;
+            khm_size cb;
 
-            if (cwi == NULL || cwi->id_credcount == 0) {
-                icon = 
-                    ((cwi && cwi->h_icon_lg_dis)? cwi->h_icon_lg_dis : tbl->hi_ident_lg_dis);
+            if (cwi) {
+
+                cb = sizeof(icon);
+                kcdb_get_resource(cwi->ident,
+                                  (cwi->id_credcount > 0)? KCDB_RES_ICON_DISABLED : KCDB_RES_ICON_NORMAL,
+                                  0, NULL, NULL, &icon, &cb);
+                if (icon == NULL && cwi->id_credcount == 0) {
+                    kcdb_get_resource(cwi->ident,
+                                      KCDB_RES_ICON_NORMAL,
+                                      0, NULL, NULL, &icon, &cb);
+                }
+
+                if (icon == NULL)
+                    icon = tbl->hi_ident_lg;
             } else {
-                icon =
-                    ((cwi && cwi->h_icon_lg)? cwi->h_icon_lg : tbl->hi_ident_lg);
+                icon = tbl->hi_ident_lg_dis;
             }
 
             DrawIcon(hdc, r->left, (r->top + r->bottom - cy) / 2, icon);
@@ -2504,6 +2717,11 @@ cw_draw_header(HDC hdc,
                         LoadString(khm_hInstance, IDS_CW_EXPIRED,
                                    buf, ARRAYLENGTH(buf));
                     }
+                } else {
+                    khm_size cb = sizeof(buf);
+                    /* If there is status text to be displayed, we
+                       do */
+                    kcdb_identity_get_attr(o->identity, KCDB_ATTR_STATUS, NULL, buf, &cb);
                 }
 #endif
 
