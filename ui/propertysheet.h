@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2007 Secure Endpoints Inc.
+ * Copyright (c) 2005 Massachusetts Institute of Technology
+ * Copyright (c) 2008 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -24,27 +25,27 @@
 
 /* $Id$ */
 
-#ifndef __NETIDMGR_WINDOWCTL_H
-#define __NETIDMGR_WINDOWCTL_H
+#ifndef __NETIDMGR_PROPERTYSHEET_H
+#define __NETIDMGR_PROPERTYSHEET_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void khm_add_dialog(HWND dlg);
-void khm_del_dialog(HWND dlg);
-BOOL khm_is_dialog_active(void);
+void 
+khm_pp_begin(khui_property_sheet * s);
 
-void khm_enter_modal(HWND hwnd);
-void khm_leave_modal(void);
+void 
+khm_pp_precreate(khui_property_sheet * s);
 
-void khm_add_property_sheet(khui_property_sheet * s);
-void khm_del_property_sheet(khui_property_sheet * s);
+void 
+khm_pp_end(khui_property_sheet * s);
 
-BOOL khm_check_ps_message(LPMSG pmsg);
-BOOL khm_check_dlg_message(LPMSG pmsg);
+void 
+khm_pp_destroy(khui_property_sheet *ps);
 
-BOOL khm_find_and_activate_property_sheet(khui_action_context * pctx);
+LRESULT
+khm_show_properties(void);
 
 #ifdef __cplusplus
 }

@@ -32,6 +32,10 @@
 /*! \defgroup khui_remote Connecting to NetIDMgr from another process
   @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Leash compatibility */
 #define ID_OBTAIN_TGT_WITH_LPARAM       32810
 
@@ -77,6 +81,10 @@ typedef struct {
          + sizeof(WCHAR) * (NETID_TITLE_SZ + \
          2 * NETID_USERNAME_SZ + 2 * NETID_REALM_SZ + \
          2 * NETID_CCACHE_NAME_SZ))
+
+#ifdef __cplusplus
+}
+#endif
 
 /*!@} */
 /*!@} */

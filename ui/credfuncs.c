@@ -604,6 +604,18 @@ void khm_cred_set_default_identity(khm_handle identity)
     kcdb_identity_set_default(identity);
 }
 
+void khm_cred_show_identity_options()
+{
+    khui_action_context ctx;
+
+    khui_context_get(&ctx);
+
+    if (ctx.identity)
+        khm_show_identity_config_pane(ctx.identity);
+
+    khui_context_release(&ctx);
+}
+
 void khm_cred_prompt_for_identity_modal(const wchar_t * w_title,
                                         khm_handle *pidentity)
 {
@@ -1104,6 +1116,13 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
         nc->types[i].nct->flags &= ~ KHUI_NCT_FLAG_PROCESSED;
     }
     nc->response = 0;
+
+    if (nc->persist_privcred) {
+        if (nc->cs_privcred)
+            kcdb_credset_flush(nc->cs_privcred);
+        else
+            kcdb_credset_create(&nc->cs_privcred);
+    }
     LeaveCriticalSection(&nc->cs);
 
     /* Consindering all that can go wrong here and the desire to

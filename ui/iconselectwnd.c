@@ -329,7 +329,7 @@ ofn_hook(HWND hwnd,
                 case CDN_FILEOK:
                     {
                         if (c->index == -1) {
-                            SetWindowLong(hwnd, DWL_MSGRESULT, TRUE);
+                            SetWindowLong(hwnd, DWLP_MSGRESULT, TRUE);
                             return TRUE;
                         }
                     }
@@ -345,6 +345,8 @@ ofn_hook(HWND hwnd,
 
     return 0;
 }
+
+extern void unexpand_env_var_prefix(wchar_t * s, size_t cb_s);
 
 khm_boolean
 khm_show_select_icon_dialog(HWND hw_parent, wchar_t * path, khm_size cb_path)
@@ -390,7 +392,6 @@ khm_show_select_icon_dialog(HWND hw_parent, wchar_t * path, khm_size cb_path)
     if (bSetIcon) {
         wchar_t resstring[MAX_PATH + MAX_PATH];
         const wchar_t * prefix;
-        void unexpand_env_var_prefix(wchar_t * s, size_t cb_s);
 
         if (icondata.index >= BMP_OFFSET) {
             icondata.restype = KHM_RESTYPE_BITMAP;

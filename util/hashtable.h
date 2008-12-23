@@ -36,6 +36,10 @@
 #include<khdefs.h>
 #include<khlist.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief A hash function
 
     The function should take a key as a parameter and return an
@@ -106,18 +110,20 @@ typedef struct hashtable_t {
     \param[in] delr A del-ref function. Optional; can be NULL.
 
  */
-KHMEXP hashtable * KHMAPI hash_new_hashtable(khm_int32 n, 
-                               hash_function_t hash, 
-                               comp_function_t comp,
-                               add_ref_function_t addr,
-                               del_ref_function_t delr);
+KHMEXP hashtable * KHMAPI
+hash_new_hashtable(khm_int32 n, 
+                   hash_function_t hash, 
+                   comp_function_t comp,
+                   add_ref_function_t addr,
+                   del_ref_function_t delr);
 
 /*! \brief Delete a hashtable
 
     \note Not thread-safe.  Applications must serialize calls that
         reference the same hashtable.
  */
-KHMEXP void KHMAPI hash_del_hashtable(hashtable * h);
+KHMEXP void KHMAPI
+hash_del_hashtable(hashtable * h);
 
 /*! \brief Add an object to a hashtable
 
@@ -147,7 +153,8 @@ KHMEXP void KHMAPI hash_del_hashtable(hashtable * h);
     \note Not thread-safe.  Applications must serialize calls that
         reference the same hashtable.
  */
-KHMEXP void KHMAPI hash_add(hashtable * h, const void * key, void * data);
+KHMEXP void KHMAPI
+hash_add(hashtable * h, const void * key, void * data);
 
 /*! \brief Delete an object from a hashtable
 
@@ -161,7 +168,8 @@ KHMEXP void KHMAPI hash_add(hashtable * h, const void * key, void * data);
     \note Not thread-safe.  Applications must serialize calls that
         reference the same hashtable.
  */
-KHMEXP void KHMAPI hash_del(hashtable * h, const void * key);
+KHMEXP void KHMAPI
+hash_del(hashtable * h, const void * key);
 
 /*! \brief Resolve and association
 
@@ -175,7 +183,8 @@ KHMEXP void KHMAPI hash_del(hashtable * h, const void * key);
     \note Not thread-safe.  Applications must serialize calls that
         reference the same hashtable.
  */
-KHMEXP void * KHMAPI hash_lookup(hashtable * h, const void * key);
+KHMEXP void * KHMAPI
+hash_lookup(hashtable * h, const void * key);
 
 /*! \brief Check for the presence of an association
 
@@ -190,7 +199,8 @@ KHMEXP void * KHMAPI hash_lookup(hashtable * h, const void * key);
     \note Not thead-safe.  Application must serialize calls that
         reference the same hashtable.
  */
-KHMEXP khm_boolean KHMAPI hash_exist(hashtable * h, const void * key);
+KHMEXP khm_boolean KHMAPI
+hash_exist(hashtable * h, const void * key);
 
 /*! \brief Compute a hashvalue for a unicode string
 
@@ -207,7 +217,8 @@ KHMEXP khm_boolean KHMAPI hash_exist(hashtable * h, const void * key);
         str.  If the string is not \a NULL terminated, the behavior is
         undefined.
  */
-KHMEXP khm_int32 hash_string(const void *str);
+KHMEXP khm_int32
+hash_string(const void *str);
 
 /*! \brief Compare two strings
 
@@ -223,7 +234,12 @@ KHMEXP khm_int32 hash_string(const void *str);
         vs1 and \a vs2.  If the strings are not NULL terminated, the
         behavior is undefined.
  */
-KHMEXP khm_int32 hash_string_comp(const void *vs1, const void *vs2);
+KHMEXP khm_int32
+hash_string_comp(const void *vs1, const void *vs2);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*@}*/
 /*@}*/

@@ -33,7 +33,15 @@
 
 #define MIT_PWD_DLL_CLASS L"MITPasswordWnd"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 khm_int32 khm_unregister_passwnd_class(void);
 khm_int32 khm_register_passwnd_class(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

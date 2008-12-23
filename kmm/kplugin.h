@@ -43,6 +43,10 @@ plugin.
 - \ref plugins
 @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Initialize the module
 
     This is the first callback function to be called in a module.
@@ -87,7 +91,7 @@ plugin.
 KHMEXP_EXP khm_int32 KHMAPI init_module(kmm_module h_module);
 
 /*! \brief Type for init_module() */
-typedef khm_int32 (KHMAPI *init_module_t)(kmm_module);
+typedef khm_int32 (KHMCALLBACK *init_module_t)(kmm_module);
 
 #if defined(_WIN64)
 #define EXP_INIT_MODULE "init_module"
@@ -104,7 +108,7 @@ typedef khm_int32 (KHMAPI *init_module_t)(kmm_module);
 
     Essentially, this is a message subscriber for KMQ messages.
 */
-KHMEXP_EXP khm_int32 KHMAPI _plugin_proc(khm_int32 msg_type, khm_int32 msg_subtype, khm_ui_4 uparam, void * vparam);
+KHMEXP_EXP khm_int32 KHMCALLBACK _plugin_proc(khm_int32 msg_type, khm_int32 msg_subtype, khm_ui_4 uparam, void * vparam);
 
 /*! \brief Type for init_plugin() */
 typedef kmq_callback_t _plugin_proc_t;
@@ -127,10 +131,10 @@ typedef kmq_callback_t _plugin_proc_t;
 
     \note This callback is not required.
 */
-KHMEXP_EXP khm_int32 KHMAPI exit_module(kmm_module h_module);
+KHMEXP_EXP khm_int32 KHMCALLBACK exit_module(kmm_module h_module);
 
 /*! \brief Type for exit_module() */
-typedef khm_int32 (KHMAPI *exit_module_t)(kmm_module);
+typedef khm_int32 (KHMCALLBACK *exit_module_t)(kmm_module);
 
 #if defined(_WIN64)
 #define EXP_EXIT_MODULE "exit_module"
@@ -138,6 +142,10 @@ typedef khm_int32 (KHMAPI *exit_module_t)(kmm_module);
 #define EXP_EXIT_MODULE "_exit_module@4"
 #else
 #error  EXP_EXIT_MODULE not defined for platform
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 /*@}*/

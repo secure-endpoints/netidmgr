@@ -27,6 +27,10 @@
 #ifndef NETIDMGR_TASKBAR_H
 #define NETIDMGR_TASKBAR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void khm_init_taskbar_funcs(void);
 
 void khm_exit_taskbar_funcs(void);
@@ -34,5 +38,9 @@ void khm_exit_taskbar_funcs(void);
 void khm_taskbar_add_window(HWND hwnd);
 
 void khm_taskbar_remove_window(HWND hwnd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

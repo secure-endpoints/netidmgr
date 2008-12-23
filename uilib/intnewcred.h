@@ -174,6 +174,7 @@ typedef struct tag_nc_privint {
     HWND        hwnd_basic;     /*!< Handle to Basic window */
     HWND        hwnd_advanced;  /*!< Handle to Advanced window */
     HWND        hwnd_noprompts; /*!< Handle to no-prompt dialog */
+    HWND        hwnd_persist;   /*!< Handle to save password dialog */
 
     khui_new_creds_privint_panel * legacy_panel;
                                 /*!< Legacy privileged interaction
@@ -348,6 +349,13 @@ typedef struct tag_khui_new_creds {
     khm_handle          cs_privcred;
                                 /*!< Credential set for transferring
                                    privileged credentials */
+    khm_boolean         persist_privcred;
+                                /*!< Should the privileged crdentials
+                                   be saved? */
+    khm_handle          persist_identity;
+                                /*!< identity which will be used to
+                                   store privileged credentials. */
+
 
     /* New Identity Wizard components*/
     nc_idspec           idspec; /*!< Identity specifier */

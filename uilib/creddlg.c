@@ -102,6 +102,9 @@ khui_cw_destroy_cred_blob(khui_new_creds *c)
     if (c->cs_privcred)
         kcdb_credset_delete(c->cs_privcred);
 
+    if (c->persist_identity)
+        kcdb_identity_release(c->persist_identity);
+
     ZeroMemory(c, sizeof(*c));
     PFREE(c);
 
@@ -251,6 +254,13 @@ khui_cw_get_use_as_default(khui_new_creds * c)
     return c->set_default;
 }
 
+KHMEXP khm_boolean KHMAPI
+khui_cw_get_persist_private_data(khui_new_creds * c)
+{
+    ASSERT_NC(c);
+    return c->persist_privcred;
+}
+
 KHMEXP khm_int32 KHMAPI 
 khui_cw_add_type(khui_new_creds * c, 
                  khui_new_creds_by_type * t)
@@ -380,6 +390,7 @@ khui_cw_enable_type(khui_new_creds * c,
             t->flags |= KHUI_NCT_FLAG_DISABLED;
         }
     }
+    c->privint.initialized = FALSE;
     LeaveCriticalSection(&c->cs);
 
     return (t)?KHM_ERROR_SUCCESS:KHM_ERROR_NOT_FOUND;
@@ -495,6 +506,11 @@ khui_cw_add_provider(khui_new_creds * c,
     ZeroMemory(&c->providers[c->n_providers], sizeof(c->providers[0]));
 
     c->providers[c->n_providers].h = h_idpro;
+    rv = kcdb_identpro_get_idsel_factory(h_idpro, &c->providers[c->n_providers].cb);
+    if (c->providers[c->n_providers].cb == NULL) {
+        goto _exit;
+    }
+
     kcdb_identpro_hold(h_idpro);
 
     c->n_providers++;
@@ -658,7 +674,6 @@ khui_cw_free_privint(khui_new_creds_privint_panel * pp)
     return KHM_ERROR_SUCCESS;
 }
 
-
 KHMEXP khm_int32 KHMAPI
 khui_cw_show_privileged_dialog(khui_new_creds * nc, khm_int32 ctype,
                                HWND hwnd, const wchar_t * caption)
@@ -795,6 +810,44 @@ khui_cw_get_next_privint(khui_new_creds * c,
 }
 
 KHMEXP khm_int32 KHMAPI
+khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
+{
+    khui_new_creds_privint_panel *p, *np;
+    khm_size i;
+
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+
+    for (p = QTOP(&c->privint.shown); p; p = np) {
+        np = QNEXT(p);
+        if (p->ctype == ctype) {
+            QDEL(&c->privint.shown, p);
+            if (c->privint.shown.current_panel == p)
+                c->privint.shown.current_panel = NULL;
+            khui_cw_free_privint(p);
+        }
+    }
+
+    for (i=0; i < c->n_types; i++) {
+        if (c->types[i].nct->type != ctype)
+            continue;
+        while (QTOP(&c->types[i])) {
+            QGET(&c->types[i], &p);
+            if (c->privint.shown.current_panel == p)
+                c->privint.shown.current_panel = NULL;
+            khui_cw_free_privint(p);
+        }
+    }
+    LeaveCriticalSection(&c->cs);
+
+    PostMessage(c->hwnd, KHUI_WM_NC_NOTIFY, 
+                MAKEWPARAM(0, WMNC_SET_PROMPTS), (LPARAM) c);
+
+    return KHM_ERROR_SUCCESS;
+}
+
+KHMEXP khm_int32 KHMAPI
 khui_cw_clear_all_privints(khui_new_creds * c)
 {
     khui_new_creds_privint_panel * p;
@@ -818,7 +871,6 @@ khui_cw_clear_all_privints(khui_new_creds * c)
             khui_cw_free_privint(p);
         }
     }
-    c->privint.hwnd_current = NULL;
     c->privint.shown.current_panel = NULL;
     LeaveCriticalSection(&c->cs);
 
@@ -1339,6 +1391,24 @@ khui_cw_get_privileged_credential_collector(khui_new_creds * c,
     LeaveCriticalSection(&c->cs);
 
     if (*dest_credset)
+        return KHM_ERROR_SUCCESS;
+    else
+        return KHM_ERROR_NOT_FOUND;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_privileged_credential_store(khui_new_creds * c,
+                                        khm_handle * p_id)
+{
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+    *p_id = c->persist_identity;
+    if (*p_id)
+        kcdb_identity_hold(*p_id);
+    LeaveCriticalSection(&c->cs);
+
+    if (*p_id)
         return KHM_ERROR_SUCCESS;
     else
         return KHM_ERROR_NOT_FOUND;

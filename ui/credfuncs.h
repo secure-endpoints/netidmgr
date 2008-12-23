@@ -28,6 +28,10 @@
 #ifndef __KHIMAIRA_CREDFUNCS_H
 #define __KHIMAIRA_CREDFUNCS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 khm_boolean
 khm_cred_begin_new_cred_op(void);
 
@@ -58,6 +62,9 @@ khm_cred_renew_cred(khm_handle cred);
 
 void 
 khm_cred_renew_creds(void);
+
+void
+khm_cred_show_identity_options();
 
 void
 khm_cred_prompt_for_identity_modal(const wchar_t * w_title,
@@ -105,5 +112,9 @@ khm_cred_addr_change(void);
 
 void
 khm_cred_import(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

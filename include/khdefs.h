@@ -105,7 +105,7 @@ typedef khm_int32 khm_boolean;
 
 /*! \brief A size
  */
-typedef size_t khm_size;
+typedef __w64 size_t khm_size;
 
 /*! \typedef ssize_t
     \brief Signed size specifier
@@ -117,7 +117,7 @@ typedef size_t khm_size;
 #ifdef  _WIN64
 typedef __int64    ssize_t;
 #else
-typedef _W64 int   ssize_t;
+typedef __w64 int   ssize_t;
 #endif
 #define _SSIZE_T_DEFINED
 #endif 
@@ -129,7 +129,7 @@ typedef unsigned __int64 khm_wparm;
 /*TODO: is this enough? */
 typedef unsigned __int64 khm_lparm;
 #elif defined(_WIN32)
-typedef unsigned __int32 khm_wparm;
+typedef __w64 unsigned __int32 khm_wparm;
 typedef unsigned __int64 khm_lparm;
 #else
 #error khm_wparm and khm_lparm need to be defined for this platform
@@ -173,6 +173,7 @@ typedef unsigned __int64 khm_lparm;
 
 #ifdef _WIN32
 #define KHMAPI __stdcall
+#define KHMCALLBACK __stdcall
 
 #define KHMEXP_EXP __declspec(dllexport)
 #define KHMEXP_IMP __declspec(dllimport)

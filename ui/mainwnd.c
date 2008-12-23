@@ -266,6 +266,10 @@ khm_main_wnd_proc(HWND hwnd,
             khm_cred_set_default();
             return 0;
 
+        case KHUI_ACTION_OPT_IDENT:
+            khm_cred_show_identity_options();
+            return 0;
+
         case KHUI_ACTION_EXIT:
             khm_exit_application();
             return 0;

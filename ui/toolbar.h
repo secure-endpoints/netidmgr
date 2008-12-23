@@ -27,6 +27,11 @@
 #ifndef __KHIMAIRA_TOOLBAR_H
 #define __KHIMAIRA_TOOLBAR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 extern HWND khui_hwnd_standard_toolbar;
 
 void khui_init_toolbar(void);
@@ -48,5 +53,9 @@ void khm_update_standard_toolbar(void);
 #define KHUI_TOOLBAR_IMAGE_HEIGHT 27
 #define KHUI_TOOLBAR_BGCOLOR RGB(0xd7,0xd7,0xd7)
 #define KHUI_TOOLBAR_MAX_BTNS 64
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

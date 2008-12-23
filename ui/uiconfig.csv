@@ -59,6 +59,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
      Description,KC_STRING,"",Description of the view
      ColumnList,KC_STRING,"","List of columns for the view, in order"
      _AppVersion,KC_BINARY,0,Binary version stamp
+     Base,KC_STRING,"",View on which this view is based on
      Columns,KC_SPACE,0,"Column definitions.  Each column name should have a corresponding subspace here.  The name of the column should be a property or field name, unless it is a pseudo column like _CWFlags."
        _Schema,KC_SPACE,0,Column definition schema
         Width,KC_INT32,0,Width of the column

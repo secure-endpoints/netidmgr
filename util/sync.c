@@ -142,8 +142,10 @@ KHMEXP khm_boolean KHMAPI InitializeOnce(PIONCE pOnce)
 #define FAILOVER_MS    100
 
         this_thrd = GetCurrentThreadId();
-        while (pOnce->i_done == 0 && pOnce->i_thrd != this_thrd)
-            { Sleep((spin_count / MAX_SPIN_COUNT) * FAILOVER_MS); spin_count++; }
+        while (pOnce->i_done == 0 && (DWORD) pOnce->i_thrd != this_thrd) {
+            Sleep((spin_count / MAX_SPIN_COUNT) * FAILOVER_MS);
+            spin_count++;
+        }
         return FALSE;
     }
 }

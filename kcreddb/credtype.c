@@ -345,7 +345,7 @@ KHMEXP khm_int32 KHMAPI kcdb_credtype_get_id(
 {
     int i;
 
-    *id = 0;
+    *id = KCDB_CREDTYPE_INVALID;
     if(!name)
         return KHM_ERROR_INVALID_PARAM;
 

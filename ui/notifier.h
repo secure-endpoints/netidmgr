@@ -27,6 +27,10 @@
 #ifndef __KHIMAIRA_NOTIFIER_H
 #define __KHIMAIRA_NOTIFIER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern HWND hwnd_notifier;
 
 enum khm_notif_expstate {
@@ -56,7 +60,7 @@ void
 khm_notify_icon_change(khm_int32 severity);
 
 void
-khm_notify_icon_tooltip(wchar_t * s);
+khm_notify_icon_tooltip(const wchar_t * s);
 
 void 
 khm_notify_icon_balloon(khm_int32 severity,
@@ -82,5 +86,8 @@ khui_alert_create_container(HWND hwnd,
                             const RECT * pos,
                             khm_int32 flags);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

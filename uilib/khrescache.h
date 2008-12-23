@@ -29,6 +29,10 @@
 
 #include "khdefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef NIMPRIVATE
 
 KHMEXP void KHMAPI 
@@ -158,5 +162,9 @@ khui_ilist_draw_bg(khui_ilist * il, int idx, HDC dc, int x, int y,
 
 #define KHUI_SMICON_CX 16
 #define KHUI_SMICON_CY 16
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

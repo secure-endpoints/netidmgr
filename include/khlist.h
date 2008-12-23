@@ -37,30 +37,32 @@
 
 #define LINIT(pe)                               \
     do {                                        \
-    (pe)->next = NULL;                          \
-    (pe)->prev = NULL; } while(0)
+        (pe)->next = NULL;                      \
+        (pe)->prev = NULL;                      \
+    } while(0)
 
 #define LPUSH(pph,pe)                           \
     do {                                        \
-    (pe)->next = *pph;                          \
-    (pe)->prev = NULL;                          \
-    if(*(pph)) (*(pph))->prev = (pe);           \
-    (*(pph)) = (pe); } while(0)
+        (pe)->next = *pph;                      \
+        (pe)->prev = NULL;                      \
+        if(*(pph)) (*(pph))->prev = (pe);       \
+        (*(pph)) = (pe);                        \
+    } while(0)
 
 #define LPOP(pph,ppe)                           \
     do {                                        \
-    *(ppe) = *(pph);                            \
-    if(*(pph)) *(pph) = (*(pph))->next;         \
-    if(*(pph)) (*(pph))->prev = NULL;           \
-    if(*(ppe)) (*(ppe))->next = NULL;           \
+        *(ppe) = *(pph);                        \
+        if(*(pph)) *(pph) = (*(pph))->next;     \
+        if(*(pph)) (*(pph))->prev = NULL;       \
+        if(*(ppe)) (*(ppe))->next = NULL;       \
     } while(0)
 
 #define LDELETE(pph,pe)                                 \
     do {                                                \
-    if((pe)->prev) (pe)->prev->next = (pe)->next;       \
-    if((pe)->next) (pe)->next->prev = (pe)->prev;       \
-    if(*(pph) == (pe)) *(pph) = (pe)->next;             \
-    (pe)->next = (pe)->prev = NULL;                     \
+        if((pe)->prev) (pe)->prev->next = (pe)->next;   \
+        if((pe)->next) (pe)->next->prev = (pe)->prev;   \
+        if(*(pph) == (pe)) *(pph) = (pe)->next;         \
+        (pe)->next = (pe)->prev = NULL;                 \
     } while(0)
 
 #define LEMPTY(pph) (*(pph) == NULL)
@@ -77,26 +79,29 @@
 
 #define TINIT(pe)                               \
     do {                                        \
-    (pe)->children = NULL;                      \
-    (pe)->parent = NULL; } while(0)
+        (pe)->children = NULL;                  \
+        (pe)->parent = NULL;                    \
+    } while(0)
 
 #define TADDCHILD(pt,pe)                        \
     do {                                        \
-    LPUSH(&((pt)->children),(pe));              \
-    (pe)->parent = (pt); } while(0)
+        LPUSH(&((pt)->children),(pe));          \
+        (pe)->parent = (pt);                    \
+    } while(0)
 
 #define TFIRSTCHILD(pt) ((pt)?(pt)->children:NULL)
 
 #define TPOPCHILD(pt, ppe)                      \
     do {                                        \
-    LPOP(&((pt)->children), ppe);               \
-    if(*(ppe)) (*(ppe))->parent = NULL;         \
+        LPOP(&((pt)->children), ppe);           \
+        if(*(ppe)) (*(ppe))->parent = NULL;     \
     } while(0)
 
 #define TDELCHILD(pt, pe)                       \
     do {                                        \
-    LDELETE(&((pt)->children), (pe));           \
-    (pe)->parent = NULL; } while(0)
+        LDELETE(&((pt)->children), (pe));       \
+        (pe)->parent = NULL;                    \
+    } while(0)
 
 #define TPARENT(pe) ((pe)?(pe)->parent:NULL)
 
@@ -107,53 +112,53 @@
 
 #define QINIT(pq)                               \
     do {                                        \
-    (pq)->head = (pq)->tail = NULL;             \
+        (pq)->head = (pq)->tail = NULL;         \
     } while(0)
 
 /* Place an element at the tail of the queue */
 #define QPUT(pq, pe)                            \
     do {                                        \
-    LPUSH(&(pq)->tail, (pe));                   \
-    if(!(pq)->head) (pq)->head = (pe);          \
+        LPUSH(&(pq)->tail, (pe));               \
+        if(!(pq)->head) (pq)->head = (pe);      \
     } while(0)
 
 /* Place an element at the head of the queue */
 #define QPUSH(pq, pe)                           \
     do {                                        \
-    (pe)->next = NULL;                          \
-    (pe)->prev = (pq)->head;                    \
-    if((pq)->head) (pq)->head->next = (pe);     \
-    if(!(pq)->tail) (pq)->tail = (pe);          \
-    (pq)->head = (pe);                          \
+        (pe)->next = NULL;                      \
+        (pe)->prev = (pq)->head;                \
+        if((pq)->head) (pq)->head->next = (pe); \
+        if(!(pq)->tail) (pq)->tail = (pe);      \
+        (pq)->head = (pe);                      \
     } while (0)
 
 #define QGET(pq, ppe)                                           \
     do {                                                        \
-    *(ppe) = (pq)->head;                                        \
-    if(*(ppe)) {                                                \
-        (pq)->head = (*(ppe))->prev;                            \
-        if( (*(ppe))->prev ) (*(ppe))->prev->next = NULL;       \
-        (*(ppe))->prev = NULL;                                  \
-        if( (pq)->tail == *(ppe)) (pq)->tail = NULL;            \
-    }                                                           \
+        *(ppe) = (pq)->head;                                    \
+        if(*(ppe)) {                                            \
+            (pq)->head = (*(ppe))->prev;                        \
+            if( (*(ppe))->prev ) (*(ppe))->prev->next = NULL;   \
+            (*(ppe))->prev = NULL;                              \
+            if( (pq)->tail == *(ppe)) (pq)->tail = NULL;        \
+        }                                                       \
     } while(0)
 
-#define QDEL(pq, pe)                                    \
-    do {                                                \
-        if((pq)->head == (pe)) (pq)->head = LPREV(pe);  \
-        LDELETE(&((pq)->tail), (pe));                   \
+#define QDEL(pq, pe)                                            \
+    do {                                                        \
+        if((pq)->head == (pe)) (pq)->head = LPREV(pe);          \
+        LDELETE(&((pq)->tail), (pe));                           \
     } while(0)
 
 
 #define QGETT(pq,ppe)                                           \
     do {                                                        \
-    *(ppe) = (pq)->tail;                                        \
-    if(*(ppe)) {                                                \
-        (pq)->tail = (*(ppe))->next;                            \
-        if( (*(ppe))->next ) (*(ppe))->next->prev = NULL;       \
-        (*(ppe))->next = NULL;                                  \
-        if( (pq)->head == *(ppe)) (pq)->head = NULL;            \
-    }                                                           \
+        *(ppe) = (pq)->tail;                                    \
+        if(*(ppe)) {                                            \
+            (pq)->tail = (*(ppe))->next;                        \
+            if( (*(ppe))->next ) (*(ppe))->next->prev = NULL;   \
+            (*(ppe))->next = NULL;                              \
+            if( (pq)->head == *(ppe)) (pq)->head = NULL;        \
+        }                                                       \
     } while(0)
 
 #define QTOP(pq) ((pq)->head)
@@ -166,10 +171,21 @@
     if ((pre) == NULL ||                        \
         QNEXT(pre) == NULL) { QPUT(pt, pe); }   \
     else {                                      \
-        (pe)->prev = (pre)->prev;               \
-        (pe)->next = (pre);                     \
-        (pre)->prev->next = (pe);               \
-        (pre)->prev = (pe);                     \
+        QNEXT(pe) = QNEXT(pre);                 \
+        QPREV(pe) = (pre);                      \
+        QPREV(QNEXT(pre)) = (pe);               \
+        QNEXT(pre) = (pe);                      \
+    }} while(0)
+
+#define QINSERTP(pt, post, pe)                  \
+    do {                                        \
+    if ((post) == NULL ||                       \
+        QPREV(post) == NULL) { QPUSH(pt, pe);   \
+    } else {                                    \
+        QPREV(pe) = QPREV(post);                \
+        QNEXT(pe) = (post);                     \
+        QNEXT(QPREV(post)) = (pe);              \
+        QPREV(post) = (pe);                     \
     }} while(0)
 
 /* Trees with FIFO child lists */
@@ -180,36 +196,53 @@
 
 #define TQINIT(pe)                              \
     do {                                        \
-    LINIT(pe);                                  \
-    QINIT(pe);                                  \
-    (pe)->parent = NULL; } while(0)
+        LINIT(pe);                              \
+        QINIT(pe);                              \
+        (pe)->parent = NULL;                    \
+    } while(0)
 
 #define TQPUTCHILD(pt,pe)                       \
     do {                                        \
-    QPUT((pt), (pe));                           \
-    (pe)->parent = (pt); } while(0)
+        QPUT((pt), (pe));                       \
+        (pe)->parent = (pt);                    \
+    } while(0)
 
 #define TQINSERT(pt, pre, pe)                   \
     do {                                        \
-    QINSERT(pt, pre, pe);                       \
-    (pe)->parent = (pt); } while(0)
+        QINSERT(pt, pre, pe);                   \
+        (pe)->parent = (pt);                    \
+    } while(0)
+
+#define TQINSERTP(pt, post, pe)                 \
+    do {                                        \
+        QINSERTP(pt, post, pe);                 \
+        (pe)->parent = (pt);                    \
+    } while(0)
 
 #define TQGETCHILD(pt,ppe)                      \
     do {                                        \
-    QGET(pt, ppe);                              \
-    if (*(ppe)) { *(ppe)->parent = NULL; }      \
+        QGET(pt, ppe);                          \
+        if (*(ppe)) { (*(ppe))->parent = NULL; }        \
     } while(0)
 
 #define TQDELCHILD(pt, pe)                      \
     do {                                        \
-    QDEL(pt, pe);                               \
-    (pe)->parent = NULL; } while(0)
+        QDEL(pt, pe);                           \
+        (pe)->parent = NULL;                    \
+    } while(0)
 
 #define TQFIRSTCHILD(pt) ((pt)?QTOP(pt):NULL)
 
-#define TQNEXTCHILD(pe) QNEXT(pe)
+#define TQLASTCHILD(pt) ((pt)?QBOTTOM(pt):NULL)
 
-#define TQPREVCHILD(pe) QPREV(pe)
+#define TQNEXTSIBLING(pe) QNEXT(pe)
+#define TQPREVSIBLING(pe) QPREV(pe)
+
+#define TQNEXTCHILD TQNEXTSIBLING
+#define TQPREVCHILD TQPREVSIBLING
+
+#pragma deprecated("TQNEXTCHILD")
+#pragma deprecated("TQPREVCHILD")
 
 #define TQPARENT(pe) ((pe)?(pe)->parent:NULL)
 

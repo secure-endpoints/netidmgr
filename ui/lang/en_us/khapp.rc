@@ -140,6 +140,7 @@ IDB_WDG_STICK           BITMAP                  "..\\..\\images\\wdg_stick.bmp"
 IDB_WDG_STICK_HI        BITMAP                  "..\\..\\images\\wdg_stick_hi.bmp"
 IDB_WDG_STUCK           BITMAP                  "..\\..\\images\\wdg_stuck.bmp"
 IDB_FLAG_RENEW          BITMAP                  "..\\..\\images\\flag_renewable.bmp"
+IDB_CREDWND_IMAGELIST   BITMAP                  "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\ui\\images\\credwnd-images.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -397,6 +398,7 @@ BEGIN
     LTEXT           "Prompts",IDC_NC_R_PROMPTS,10,14,350,84,NOT WS_VISIBLE | WS_BORDER
     CONTROL         "Make this the default identity",IDC_NC_MAKEDEFAULT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,110,109,10
+    CONTROL         "Save password",IDC_PERSIST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,121,110,150,10
     PUSHBUTTON      "Advanced options &>>",IDC_NC_ADVANCED,274,105,89,15
 END
 
@@ -472,6 +474,16 @@ BEGIN
     CONTROL         "",IDC_LIST,"SysListView32",LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,29,28,130,191
     LTEXT           "Static",IDC_OFN_POS,0,0,8,226,NOT WS_VISIBLE
     GROUPBOX        "Select an icon below",IDC_STATIC,21,17,145,209
+END
+
+IDD_NC_PERSIST DIALOGEX 0, 0, 349, 53
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    ICON            "",IDC_IDICON,7,7,20,20
+    CONTROL         "Save my password in %s",IDC_PERSIST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,35,12,306,10
+    LTEXT           "Saving your password in this location allows you to obtain credentials for multiple identities using this single key store.  You may be asked to enter a password for the keystore.",IDC_STATIC,46,28,296,18
 END
 
 
@@ -631,7 +643,6 @@ BEGIN
         VERTGUIDE, 10
         VERTGUIDE, 360
         TOPMARGIN, 7
-        BOTTOMMARGIN, 112
         HORZGUIDE, 14
         HORZGUIDE, 98
     END
@@ -682,6 +693,14 @@ BEGIN
     BEGIN
         RIGHTMARGIN, 166
         BOTTOMMARGIN, 226
+    END
+
+    IDD_NC_PERSIST, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 342
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 46
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -802,12 +821,16 @@ BEGIN
     IDS_CFG_IDENTITY_SHORT  "%s"
     IDS_CFG_IDENTITY_LONG   "Options for %s"
     IDS_CTX_DESTROY_CREDS   "Destroying credentials"
+    IDS_NC_PERSIST          "Save password in %s"
     IDS_WARN_TITLE          "Some of your credentials are about to expire"
     IDS_ALERT_MOREINFO      "...\nClick here for more..."
 END
 
 STRINGTABLE 
 BEGIN
+    IDS_WARN_EXP_TITLE      "Some of your credentials have expired"
+    IDS_WARN_EXPD_CRED      "Credentials for %1!.180s! have expired."
+    IDS_IDACTIONT_CONFIG    "Options for %s"
     IDS_WARN_WM_TITLE       "Network Identity Manager is still running"
     IDS_WARN_WM_MSG         "Click the Network Identity Manager icon below to open the application.\n\nOr right click the icon to access the Network Identity Manager menu."
     IDS_CFG_ID_TAB_SHORT    "General"
@@ -854,6 +877,7 @@ BEGIN
     IDS_NC_SETDEF           "&Set as default identity"
     IDS_WT_ACQ_PRIV_ID      "Acquire privileged credentials"
     IDS_WARN_EXP_CRED       "Credentials for %1!.180s! will expire %2!s!."
+    IDS_IDACTION_CONFIG     "Configure %s"
     IDS_PACTION_YES         "&Yes"
     IDS_PACTION_NO          "&No"
     IDS_PACTION_YESALL      "Y&es to all"
@@ -970,6 +994,8 @@ BEGIN
     IDS_ACTION_VIEW_ALL_IDS "All identities"
     IDS_NC_NEW_IDENT_D      "Click here to specify an identity that is not listed."
     IDS_NC_IDSEL_PROMPT     "Choose an identity ..."
+    IDS_ACTION_OPT_IDENT    "Show identity options"
+    IDS_ACTIONT_OPT_IDENT   "Configure options for the selected identity"
 END
 
 #endif    // English (U.S.) resources

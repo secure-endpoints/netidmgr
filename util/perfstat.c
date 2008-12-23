@@ -489,6 +489,6 @@ perf_set_thread_desc(const char * file, int line,
     LPUSH(&threads, t);
     LeaveCriticalSection(&cs_alloc);
 
-    set_thread_name(-1, name);
+    set_thread_name((DWORD) -1, name);
 }
 

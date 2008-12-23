@@ -35,6 +35,7 @@
 
 #if _WIN32_WINNT >= 0x0501
 #include<uxtheme.h>
+#include<tmschema.h>
 #endif
 
 #include<assert.h>
@@ -567,13 +568,55 @@ nc_idsel_handle_wm_notify_for_idsel(HWND hwnd, khui_new_creds * nc, LPNMHDR pnmh
                 SetRect(&r, margin.cx, margin.cy, r.right - margin.cx, r.bottom - margin.cy);
 
                 if (pcd->uItemState & CDIS_SELECTED) {
-                    OffsetRect(&r, margin.cx / 2, margin.cy / 2);
+                    OffsetRect(&r, margin.cx / 4, margin.cy / 4);
+                }
+
+                {
+                    RECT   sr;
+#if _WIN32_WINNT >= 0x0501
+                    HTHEME ht = OpenThemeData(hwnd, L"TOOLBAR");
+
+                    if (ht) {
+                        SIZE sz = { 32, 0 };
+
+                        CopyRect(&sr, &r);
+                        GetThemePartSize(ht, pcd->hdc, TP_SPLITBUTTONDROPDOWN, TS_NORMAL,
+                                         &sr, TS_MIN, &sz);
+                        sr.left = sr.right - (sz.cx + margin.cx * 3);
+
+                        if (pcd->uItemState & CDIS_HOT)
+                            DrawThemeBackground(ht, pcd->hdc,
+                                                TP_SEPARATOR,
+                                                TS_NORMAL, &sr, NULL);
+                        DrawThemeBackground(ht, pcd->hdc,
+                                            TP_SPLITBUTTONDROPDOWN,
+                                            TS_NORMAL, &sr, NULL);
+                        CloseThemeData(ht);
+
+                        r.right = sr.left - margin.cx;
+                    } else {
+#endif
+                        int mx = GetSystemMetrics(SM_CXSMICON) / 2;
+                        POINT p[3] = {{ -1, 0 }, { 1, 0 }, { 0, 1 }};
+                        int i;
+
+                        CopyRect(&sr, &r);
+                        sr.left = sr.right - (margin.cx * 3 + mx);
+                        for (i=0; i < ARRAYLENGTH(p); i++) {
+                            p[i].x = (sr.left + sr.right + p[i].x * mx) / 2;
+                            p[i].y = (sr.top + sr.bottom + p[i].y * mx) / 2;
+                        }
+                        DrawEdge(pcd->hdc, &sr, EDGE_ETCHED, BF_LEFT);
+                        Polygon(pcd->hdc, p, ARRAYLENGTH(p));
+
+                        r.right = sr.left - margin.cx;
+#if _WIN32_WINNT >= 0x0501
+                    }
+#endif
                 }
 
                 nc_idsel_draw_identity_item(nc, pcd->hdc, &r,
                                             0, FALSE, FALSE, &nc->idsel.id);
-
-                /* TODO: Also draw a chevron */
 
                 nc_set_dlg_retval(hwnd, 0);
             }
@@ -974,8 +1017,9 @@ nc_purge_shown_windows(khui_new_creds * nc)
             if (nc->privint.shown.current_panel == p)
                 nc->privint.shown.current_panel = NULL;
 
-            if (nc->privint.hwnd_current == p->hwnd)
+            if (nc->privint.hwnd_current == p->hwnd) {
                 nc->privint.hwnd_current = NULL;
+            }
 
             p->hwnd = NULL;
             khui_cw_free_privint(p);
@@ -993,8 +1037,11 @@ nc_layout_privint(khui_new_creds * nc)
     HWND hw_target = NULL;
     HWND hw_tab = NULL;
     RECT r_p;
+	RECT r_persist = {0,0,0,0};
     khm_int32 idf = 0;
     khm_boolean adv;
+    khm_boolean do_persist = FALSE;
+    khm_handle  parent_id = NULL;
     khui_new_creds_privint_panel * p;
 
     adv = (nc->page == NC_PAGE_CREDOPT_ADV);
@@ -1010,6 +1057,93 @@ nc_layout_privint(khui_new_creds * nc)
     nc_purge_shown_windows(nc);
 
     p = nc->privint.shown.current_panel;
+
+    /* Decide whether we want to allow saving privileged credentials.
+       We do so if the all of the following is true:
+
+       1. The primary identity has KCDB_IDENT_FLAG_KEY_EXPORT set.
+
+       2. The primary identity has no parent identity.
+
+       3. We are showing the first privileged interaction panel.
+
+       4. There is exactly one identity with both
+          KCDB_IDENT_FLAG_KEY_STORE, and KCDB_IDENT_FLAG_DEFAULT set
+          and is not the primary identity.
+
+       5. The type of the key store identity is a participant of this
+          new credentials dialog.
+    */
+
+    khui_cw_lock_nc(nc);
+    assert(nc->n_identities > 0);
+
+    if (nc->n_identities > 0) {
+        kcdb_identity_get_flags(nc->identities[0], &idf);
+        kcdb_identity_get_parent(nc->identities[0], &parent_id);
+    }
+    khui_cw_unlock_nc(nc);
+
+    do {
+        kcdb_enumeration e = NULL;
+        khm_handle h_ks = NULL;
+        khm_int32  ks_type = KCDB_CREDTYPE_INVALID;
+        khm_size n = 0;
+        khm_size cb;
+        khui_new_creds_by_type * t = NULL;
+
+        /* 1. */
+        if (!(idf & KCDB_IDENT_FLAG_KEY_EXPORT))
+            break;
+
+        /* 2. */
+        if (parent_id != NULL)
+            break;
+
+        /* 3. */
+        if (QTOP(&nc->privint.shown) != NULL &&
+            QTOP(&nc->privint.shown) != nc->privint.shown.current_panel)
+            break;
+
+        /* 4. */
+        if (KHM_SUCCEEDED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_KEY_STORE | KCDB_IDENT_FLAG_DEFAULT,
+                                                   KCDB_IDENT_FLAG_KEY_STORE | KCDB_IDENT_FLAG_DEFAULT,
+                                                   &e, &n))) {
+            if (n != 1 || KHM_FAILED(kcdb_enum_next(e, &h_ks)) || h_ks == NULL) {
+                kcdb_enum_end(e);
+                break;
+            }
+            kcdb_enum_end(e);
+        } else
+            break;
+
+        /* 5. */
+        cb = sizeof(ks_type);
+        if (KHM_FAILED(kcdb_identity_get_attr(h_ks, KCDB_ATTR_TYPE, NULL, &ks_type, &cb))) {
+            kcdb_identity_release(h_ks);
+            break;
+        }
+
+        if (KHM_FAILED(khui_cw_find_type(nc, ks_type, &t))) {
+            kcdb_identity_release(h_ks);
+            break;
+        }
+
+        /*  */
+        do_persist = TRUE;
+
+        khui_cw_lock_nc(nc);
+        if (nc->persist_identity)
+            kcdb_identity_release(nc->persist_identity);
+
+        nc->persist_identity = h_ks;
+        khui_cw_unlock_nc(nc);
+
+    } while (FALSE);
+
+    if (parent_id) {
+        kcdb_identity_release(parent_id);
+    }
 
     if (p == NULL) {
         khui_cw_get_next_privint(nc, &p);
@@ -1036,6 +1170,9 @@ nc_layout_privint(khui_new_creds * nc)
 
         khui_cw_lock_nc(nc);
 
+#pragma warning(push)
+#pragma warning(disable: 4204)
+
         if (p != NULL) {
             TCITEM tci = { TCIF_PARAM | TCIF_TEXT, 0, 0, p->caption, 0, 0, NC_PRIVINT_PANEL };
             TabCtrl_InsertItem(hw_tab, 0, &tci);
@@ -1061,6 +1198,8 @@ nc_layout_privint(khui_new_creds * nc)
 
             TabCtrl_InsertItem(hw_tab, i + 1, &tci);
         }
+
+#pragma warning(pop)
 
         nc->privint.initialized = TRUE;
         khui_cw_unlock_nc(nc);
@@ -1091,6 +1230,7 @@ nc_layout_privint(khui_new_creds * nc)
                credentials type */
             assert(panel_idx >= 0 && (khm_size) panel_idx < nc->n_types);
             hw_target = nc->types[panel_idx].nct->hwnd_panel;
+            do_persist = FALSE;
         }
 
         khui_cw_unlock_nc(nc);
@@ -1111,6 +1251,48 @@ nc_layout_privint(khui_new_creds * nc)
         SetDlgItemText(nc->privint.hwnd_basic, IDC_BORDER, (p && p->caption)? p->caption: L"");
     }
 
+    if (do_persist) {
+        HICON hicon;
+        wchar_t idname[KCDB_IDENT_MAXCCH_NAME] = L"";
+        wchar_t msgtext[KCDB_MAXCCH_NAME];
+        wchar_t format[64];
+        khm_size cb;
+
+        assert(nc->persist_identity);
+
+        LoadString(khm_hInstance, IDS_NC_PERSIST, format, ARRAYLENGTH(format));
+        cb = sizeof(idname);
+        kcdb_get_resource(nc->persist_identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                          idname, &cb);
+        StringCbPrintf(msgtext, sizeof(msgtext), format, idname);
+
+        cb = sizeof(hicon);
+        kcdb_get_resource(nc->persist_identity, KCDB_RES_ICON_NORMAL, 0, NULL, NULL,
+                          &hicon, &cb);
+
+        if (adv) {
+
+            SetDlgItemText(nc->privint.hwnd_persist, IDC_PERSIST, msgtext);
+
+            SendDlgItemMessage(nc->privint.hwnd_persist, IDC_IDICON, STM_SETICON,
+                               (WPARAM) hicon, 0);
+
+            CheckDlgButton(nc->privint.hwnd_persist, IDC_PERSIST,
+                           nc->persist_privcred ? BST_CHECKED : BST_UNCHECKED);
+        } else {
+            SetDlgItemText(nc->privint.hwnd_basic, IDC_PERSIST, msgtext);
+            CheckDlgButton(nc->privint.hwnd_basic, IDC_PERSIST,
+                           nc->persist_privcred ? BST_CHECKED : BST_UNCHECKED);
+            SetWindowPos(GetDlgItem(nc->privint.hwnd_basic, IDC_PERSIST), NULL, 0,0,0,0, SWP_SHOWONLY);
+        }
+    } else {
+        if (adv) {
+            SetWindowPos(nc->privint.hwnd_persist, NULL, 0,0,0,0, SWP_HIDEONLY);
+        } else {
+            SetWindowPos(GetDlgItem(nc->privint.hwnd_basic, IDC_PERSIST), NULL, 0,0,0,0, SWP_HIDEONLY);
+        }
+    }
+
     if (hw_target == NULL) {
         hw_target = nc->privint.hwnd_noprompts;
     }
@@ -1123,6 +1305,16 @@ nc_layout_privint(khui_new_creds * nc)
         MapWindowRect(NULL, hw, &r_p);
 
         TabCtrl_AdjustRect(hw_tab, FALSE, &r_p);
+
+        if (do_persist) {
+            RECT r;
+
+            r_persist = r_p;
+
+            GetClientRect(nc->privint.hwnd_persist, &r);
+            r_p.bottom -= r.bottom - r.top;            
+            r_persist.top = r_p.bottom;
+        }
     } else {
         GetWindowRect(hw_r_p, &r_p);
         MapWindowRect(NULL, hw, &r_p);
@@ -1152,14 +1344,9 @@ nc_layout_privint(khui_new_creds * nc)
         SetWindowPos(nc->privint.hwnd_noprompts, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
 
     SetWindowPos(hw_target, hw_r_p, rect_coords(r_p), SWP_MOVESIZEZ);
-
-    khui_cw_lock_nc(nc);
-    assert(nc->n_identities > 0);
-
-    if (nc->n_identities > 0) {
-        kcdb_identity_get_flags(nc->identities[0], &idf);
+    if (adv && do_persist) {
+        SetWindowPos(nc->privint.hwnd_persist, hw_target, rect_coords(r_persist), SWP_MOVESIZEZ);
     }
-    khui_cw_unlock_nc(nc);
 
     CheckDlgButton(hw, IDC_NC_MAKEDEFAULT,
                    ((idf & KCDB_IDENT_FLAG_DEFAULT)? BST_CHECKED : BST_UNCHECKED));
@@ -1183,6 +1370,41 @@ nc_layout_privint(khui_new_creds * nc)
 }
 
 
+/* Save passwords banner. IDD_NC_PERSIST */
+static INT_PTR CALLBACK
+nc_persist_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    khui_new_creds * nc;
+
+    switch (uMsg) {
+    case WM_INITDIALOG:
+        nc = (khui_new_creds *) lParam;
+        nc_set_dlg_data(hwnd, nc);
+        return TRUE;
+
+    case WM_COMMAND:
+        nc = nc_get_dlg_data(hwnd);
+        if (wParam == MAKEWPARAM(IDC_PERSIST, BN_CLICKED)) {
+            khui_new_creds_by_type * t = NULL;
+            khm_int32 ks_type = KCDB_CREDTYPE_INVALID;
+            khm_size cb;
+
+            nc->persist_privcred = (!!IsDlgButtonChecked(hwnd, IDC_PERSIST) == BST_CHECKED);
+            cb = sizeof(ks_type);
+            kcdb_identity_get_attr(nc->persist_identity, KCDB_ATTR_TYPE, NULL, &ks_type, &cb);
+            khui_cw_find_type(nc, ks_type, &t);
+            if (t != NULL && t->hwnd_panel != NULL) {
+                SendMessage(t->hwnd_panel, KHUI_WM_NC_NOTIFY,
+                            MAKEWPARAM(0, WMNC_COLLECT_PRIVCRED), 0);
+            }
+        }
+        return TRUE;
+
+    default:
+        return FALSE;
+    }
+}
+
 /* Privileged Interaction (Basic). IDD_NC_PRIVINT_BASIC */
 static INT_PTR CALLBACK
 nc_privint_basic_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -1200,8 +1422,9 @@ nc_privint_basic_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         if (wParam == MAKEWPARAM(IDC_NC_ADVANCED, BN_CLICKED)) {
             nc_navigate(nc, NC_PAGE_CREDOPT_ADV);
             return TRUE;
+        } else {
+            return nc_persist_dlg_proc(hwnd, uMsg, wParam, lParam);
         }
-        return FALSE;
 
     default:
         return FALSE;
@@ -1325,7 +1548,7 @@ nc_privint_update_identity_state(khui_new_creds * nc,
                 nc_idsel_set_status_string(nc, notif->state_string);
             else
                 nc_idsel_set_status_string(nc, L"");
-
+            
         } else {
             /* The identity may have KCDB_IDENT_FLAG_INVALID or
                KCDB_IDENT_FLAG_UNKNOWN set. */
@@ -1848,9 +2071,7 @@ nc_notify_new_identity(khui_new_creds * nc, BOOL notify_ui)
 
     else {
 
-        if (kcdb_identpro_is_equal(idpro, k5idpro))
-            isk5 = TRUE;
-
+        isk5 = TRUE;
         default_off = FALSE;
 
     }
@@ -1881,6 +2102,10 @@ nc_notify_new_identity(khui_new_creds * nc, BOOL notify_ui)
 
     nc->privint.initialized = FALSE;
     nc->nav.state &= ~NC_NAVSTATE_OKTOFINISH;
+    nc->persist_privcred = FALSE;
+    if (nc->persist_identity)
+        kcdb_identity_release(nc->persist_identity);
+    nc->persist_identity = NULL;
 
     khui_cw_unlock_nc(nc);
 
@@ -2601,6 +2826,14 @@ container_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
                           MAKEINTRESOURCE(IDD_NC_NOPROMPTS),
                           hwnd, nc_noprompts_dlg_proc, (LPARAM) nc);
 
+    nc->privint.hwnd_persist =
+        CreateDialogParam(khm_hInstance,
+                          MAKEINTRESOURCE(IDD_NC_PERSIST),
+                          nc->privint.hwnd_advanced, nc_persist_dlg_proc, (LPARAM) nc);
+#if _WIN32_WINNT >= 0x0501
+    EnableThemeDialogTexture(nc->privint.hwnd_persist, ETDT_ENABLETAB);
+#endif
+
     nc->idspec.hwnd =
         CreateDialogParam(khm_hInstance,
                           MAKEINTRESOURCE(IDD_NC_IDSPEC),
@@ -2804,9 +3037,20 @@ container_WMNC_DIALOG_ACTIVATE(HWND hwnd, khui_new_creds * nc, int sParam, void 
             khm_int32 idflags = 0;
             khm_handle ident;
 
-            nc_notify_new_identity(nc, FALSE);
+            khm_handle parent = NULL;
 
             ident = nc->identities[0];
+
+            if (KHM_SUCCEEDED(kcdb_identity_get_parent(ident, &parent)) &&
+                parent != NULL) {
+
+                kcdb_identity_release(ident);
+                ident = nc->identities[0] = parent;
+
+            }
+
+            nc_notify_new_identity(nc, FALSE);
+
             assert(ident != NULL);
             kcdb_identity_get_flags(ident, &idflags);
 
@@ -2998,6 +3242,7 @@ container_WMNC_COLLECT_PRIVCRED(HWND hwnd, khui_new_creds * nc, int sParam, void
                         KHUI_SCOPE_IDENT,
                         pcd->target_identity,
                         -1, NULL);
+    nc->persist_privcred = TRUE;
     khui_cw_set_privileged_credential_collector(nc_child, pcd->dest_credset);
     khm_do_modal_newcredwnd(nc->hwnd, nc_child);
 

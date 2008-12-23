@@ -27,7 +27,16 @@
 #ifndef __KHIMAIRA_ABOUTWND_H
 #define __KHIMAIRA_ABOUTWND_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void
 khm_create_about_window(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

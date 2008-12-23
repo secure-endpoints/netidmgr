@@ -37,6 +37,10 @@
  */
 /*@{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct tag_khm_task;
 typedef struct tag_khm_task * khm_task;
 
@@ -85,6 +89,10 @@ typedef struct tag_khm_task_callback_params {
 
 KHMEXP khm_int32 KHMAPI
 task_call_parent(khm_ui_4 uparam, void * vparam);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*@}*/
 

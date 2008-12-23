@@ -30,6 +30,10 @@
 #define KHUI_MAIN_WINDOW_CLASS  L"KhmMainWindowClass"
 #define KHUI_NULL_WINDOW_CLASS  L"KhmNullWindowClass"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern ATOM khm_main_window_class;
 extern HWND khm_hwnd_main;
 extern HWND khm_hwnd_rebar;
@@ -78,4 +82,9 @@ khm_main_wnd_proc(HWND hwnd,
 #define KHM_DOCK_AUTO        256
 #define KHM_DOCKF_DOCKHINT   0x0000ffff
 #define KHM_DOCKF_XBORDER    0x00010000
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

@@ -46,6 +46,7 @@
 #define IDS_FTS_REL_TOM                 140
 #define IDS_FTS_REL_YEST                141
 #define IDS_PARAM                       142
+#define IDS_STATUS                      143
 #define IDS_FTS_REL_TOD                 144
 #define IDS_FTS_TS                      145
 

@@ -27,6 +27,10 @@
 #ifndef __KHIMAIRA_STATUSBAR_H
 #define __KHIMAIRA_STATUSBAR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct khm_statusbar_part_t {
     int id;
     int width;
@@ -51,5 +55,9 @@ void khm_create_statusbar(HWND p);
 void khm_update_statusbar(HWND parent);
 void khm_statusbar_set_part(int id, HICON icon, wchar_t * text);
 LRESULT khm_statusbar_notify(LPNMHDR nmhdr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

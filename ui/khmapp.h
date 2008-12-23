@@ -46,9 +46,12 @@
 #include<intalert.h>
 
 #include "resource.h"
-#include "appearance.h"
-#include "credfuncs.h"
 #include "appglobal.h"
+#include "appearance.h"
+#include "container.h"
+#include "drawfuncs.h"
+
+#include "credfuncs.h"
 #include "mainwnd.h"
 #include "mainmenu.h"
 #include "toolbar.h"

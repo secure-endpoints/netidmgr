@@ -40,6 +40,10 @@
 
 @{ */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Window message sent to credentials type panels
 
     This message is sent to the child windows.
@@ -974,6 +978,9 @@ khui_cw_get_result(khui_new_creds * c);
 KHMEXP khm_boolean KHMAPI
 khui_cw_get_use_as_default(khui_new_creds * c);
 
+KHMEXP khm_boolean KHMAPI
+khui_cw_get_persist_private_data(khui_new_creds * c);
+
 KHMEXP khm_int32 KHMAPI
 khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notification,
                       khm_boolean sync_required, void * param);
@@ -1104,6 +1111,9 @@ khui_cw_add_control_row(khui_new_creds * c,
                         HWND label,
                         HWND input,
                         khui_control_size size);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype);
 
 /*! \brief Add a privileged interaction panel */
 KHMEXP khm_int32 KHMAPI
@@ -1239,6 +1249,14 @@ khui_cw_get_privileged_credential_collector(khui_new_creds * c,
 KHMEXP khm_int32 KHMAPI
 khui_cw_set_privileged_credential_collector(khui_new_creds * c,
                                             khm_handle dest_credset);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_get_privileged_credential_store(khui_new_creds * c,
+                                        khm_handle * p_id);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*!@}*/ /* Credentials acquisition */
 /*!@}*/

@@ -39,6 +39,10 @@
 
 @{ */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Configuration window notification message
 
     This is the message that will be used to notify dialog panels.
@@ -83,6 +87,11 @@ enum khui_wm_cfg_notifications {
     /*!< Sent from the UI library to the configuration window to
       notify the window that the node list has changed.  This message
       is sent synchronously before the node is removed. */
+
+    WMCFG_INIT_PANEL = 5,
+    /*!< Sent to all the configuration subpanels after they are
+       created.  The subpanels should return TRUE if the subpanel does
+       not apply to the context in which they were created. */
 };
 
 /*! \brief Registration information for a configuration node
@@ -631,6 +640,10 @@ KHMEXP void KHMAPI
 khui_cfg_set_flags_inst(khui_config_init_data * d,
                         khm_int32 flags,
                         khm_int32 mask);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*!@} */
 /*!@} */

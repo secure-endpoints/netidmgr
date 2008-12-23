@@ -50,8 +50,17 @@ We currently support the following tags:
 #define KHUI_HTWND_MAXCCH_TEXT 2048
 #define KHUI_HTWND_MAXCB_TEXT (sizeof(wchar_t) * KHUI_HTWND_MAXCCH_TEXT)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 HWND khm_create_htwnd(HWND parent, LPWSTR text, int x, int y, int width, int height, DWORD ex_style, DWORD style);
 void khm_unregister_htwnd_class(void);
 void khm_register_htwnd_class(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

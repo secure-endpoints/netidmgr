@@ -50,6 +50,10 @@
 
 #include "khremote.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Maximum length of a name in characters
 
     The length includes the terminating NULL
@@ -177,6 +181,10 @@ typedef khm_int32
  */
 KHMEXP khm_int32 KHMAPI
 khui_request_UI_callback(khm_ui_callback cb, void * rock);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*!@}*/
 

@@ -27,6 +27,10 @@
 #ifndef __NETIDMGR_APPEARANCE_H__
 #define __NETIDMGR_APPEARANCE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum tag_khm_ui_element {
 
     /* Fonts */
@@ -108,5 +112,9 @@ khm_init_themes(void);
 
 void
 khm_exit_themes(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

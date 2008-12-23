@@ -253,6 +253,8 @@ int kmqint_call_completion_handler(kmq_msg_completion_handler h,
 
 KHMEXP khm_int32 KHMAPI kmq_init(void) {
     if (InitializeOnce(&kmq_init_once)) {
+		unsigned thrd_id;
+
         EnterCriticalSection(&cs_kmq_global);
 
         InitializeCriticalSection(&cs_compl);
@@ -262,9 +264,11 @@ KHMEXP khm_int32 KHMAPI kmq_init(void) {
 
         kmq_h_compl = (HANDLE) _beginthreadex(NULL, 4 * 4096,
                                               kmqint_completion_thread_proc,
-                                              NULL, 0, &kmq_tid_compl);
+                                              NULL, 0, &thrd_id);
 
         assert(kmq_h_compl != NULL);
+
+		kmq_tid_compl = (kmq_thread_id) thrd_id;
 
         LeaveCriticalSection(&cs_kmq_global);
 

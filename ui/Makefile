@@ -54,6 +54,8 @@ OBJFILES= 			\
 	$(OBJ)\propertysheet.obj  	\
 	$(OBJ)\windowctl.obj	\
 	$(OBJ)\iconselectwnd.obj	\
+	$(OBJ)\container.obj	\
+	$(OBJ)\drawfuncs.obj	\
 	$(OBJ)\cfg_general_wnd.obj	\
 	$(OBJ)\cfg_identities_wnd.obj	\
 	$(OBJ)\cfg_notif_wnd.obj	\

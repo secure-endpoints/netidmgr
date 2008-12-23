@@ -35,6 +35,10 @@
 /*! \defgroup util_sync Synchronization
     @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief A read/write lock
 
     A classic read/write lock.  Allows multiple readers or a single
@@ -130,11 +134,71 @@ typedef struct tag_i_once {
 
 typedef i_once_t IONCE, *PIONCE;
 
+/*! \brief Declare a initialize-once data structure
+
+    \see InitializeOnce()
+  */
 #define DECLARE_ONCE(name) i_once_t __declspec(align(8)) name
 
+/*! \brief Ensure that initialization is performed only once
+
+    The InitializeOnce()/InitializeOnceDone() functions can be used to
+    ensure that an initialization routine is only invoked once.  When
+    InitializeOnce() is called with a pointer to an ::IONCE data
+    structure for the first time, it returns TRUE.  Any subsequent
+    call to InitializeOnce() will block until the thread that received
+    the TRUE return value calls InitializeOnceDone().
+
+    This is illustrated in the example below:
+
+    \code
+
+    ...
+    DECLARE_ONCE(my_init_data);
+    ...
+    void MyInitializationFunction(void)
+    {
+       if (InitializeOnce(&my_init_data)) {
+
+          // The code here is guaranteed to execute only once.
+          // Any other threads that call MyInitializationFunction()
+          // while this initialization code is running will block
+          // until we call InitializeOnceDone() below.
+
+          PerformLengthyInitOperation();
+
+          InitializeOnceDone(&my_init_data);
+       }
+    }
+
+    ...
+    ...
+    // Whenever we call MyInitializationFunction() we are
+    // guaranteed that:
+    //
+    // 1. PerformLengthyInitOperation() will only be called
+    //    once.
+    // 
+    // 2. By the time MyInitializationFunction() returns
+    //    PerformLengthyInitOperation() has finished running.
+
+    MyInitializationFunction();
+
+    \endcode
+
+  */
 KHMEXP khm_boolean KHMAPI InitializeOnce(PIONCE pOnce);
 
+/*! \brief Notify that the initialize-once code is complete
+
+  \see InitializeOnce()
+
+  */
 KHMEXP void KHMAPI InitializeOnceDone(PIONCE pOnce);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*@}*/
 /*@}*/

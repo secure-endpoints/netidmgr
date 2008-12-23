@@ -33,6 +33,10 @@
 /*! \defgroup kmm NetIDMgr Module Manager
 @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief A handle to a module.
 */
 typedef khm_handle kmm_module;
@@ -1068,5 +1072,10 @@ kmm_get_resource_hmodule(kmm_module m);
 /*@}*/ /* Convenience Macros */
 #endif
 /*@}*/ /* group kmm_loc */
+
+#ifdef __cplusplus
+}
+#endif
+
 /*@}*/ /* group kmm */
 #endif

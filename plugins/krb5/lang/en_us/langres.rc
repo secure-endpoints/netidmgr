@@ -348,7 +348,7 @@ IDI_DELETED             ICON                    "..\\..\\images\\deleted.ico"
 IDI_NEW                 ICON                    "..\\..\\images\\new.ico"
 IDI_NORMAL              ICON                    "..\\..\\images\\normal.ico"
 IDI_MODIFIED            ICON                    "..\\..\\images\\modified.ico"
-IDI_KERBEROS            ICON                    "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\plugins\\krb5\\images\\kerberos.ico"
+IDI_KERBEROS            ICON                    "..\\..\\images\\kerberos.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

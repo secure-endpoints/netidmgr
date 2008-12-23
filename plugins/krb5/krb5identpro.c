@@ -248,7 +248,7 @@ update_crossfeed(HWND hwnd, khm_boolean from_uname) {
     if (from_uname) {
 
         idx = (int)SendMessage(hw_realm, CB_FINDSTRINGEXACT,
-                               -1, (LPARAM) un_realm);
+                               (WPARAM) -1, (LPARAM) un_realm);
 
         if (idx != CB_ERR) {
             wchar_t srealm[KCDB_IDENT_MAXCCH_NAME];
@@ -270,7 +270,7 @@ update_crossfeed(HWND hwnd, khm_boolean from_uname) {
             }
         }
 
-        SendMessage(hw_realm, CB_SELECTSTRING, -1, (LPARAM) un_realm);
+        SendMessage(hw_realm, CB_SELECTSTRING, (WPARAM) -1, (LPARAM) un_realm);
 
         SetWindowText(hw_realm, un_realm);
 
@@ -302,7 +302,7 @@ update_crossfeed(HWND hwnd, khm_boolean from_uname) {
     trim_str(realm, ARRAYLENGTH(realm));
 
     idx = (int)SendMessage(hw_realm, CB_FINDSTRINGEXACT,
-                           -1, (LPARAM) realm);
+                           (WPARAM) -1, (LPARAM) realm);
 
     if (idx != CB_ERR) {
         wchar_t srealm[KCDB_IDENT_MAXCCH_NAME];
@@ -318,7 +318,7 @@ update_crossfeed(HWND hwnd, khm_boolean from_uname) {
 
     StringCchCopy(un_realm, cch_left, realm);
 
-    SendMessage(hw_un, CB_SELECTSTRING, -1, (LPARAM) un);
+    SendMessage(hw_un, CB_SELECTSTRING, (WPARAM) -1, (LPARAM) un);
 
     SetWindowText(hw_un, un);
 
@@ -426,7 +426,7 @@ k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             assert(KHM_SUCCEEDED(rv));
 
             for (t = ms; t && *t; t = multi_string_next(t)) {
-                lr = SendMessage(hw_realm, CB_FINDSTRINGEXACT, -1, (LPARAM) t);
+                lr = SendMessage(hw_realm, CB_FINDSTRINGEXACT, (WPARAM) -1, (LPARAM) t);
                 if (lr != CB_ERR)
                     continue;
 
@@ -450,7 +450,7 @@ k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	    ms = khm_krb5_get_realm_list();
 	    if(ms) {
 		for (t = ms; t && *t; t = multi_string_next(t)) {
-		    lr = SendMessage(hw_realm, CB_FINDSTRINGEXACT, -1, (LPARAM) t);
+		    lr = SendMessage(hw_realm, CB_FINDSTRINGEXACT, (WPARAM) -1, (LPARAM) t);
 		    if (lr != CB_ERR)
 			continue;
 
@@ -462,7 +462,7 @@ k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             /* set the current selection of the realms list */
             if (defrealm) {
-                SendMessage(hw_realm, CB_SELECTSTRING, -1, (LPARAM) defrealm);
+                SendMessage(hw_realm, CB_SELECTSTRING, (WPARAM) -1, (LPARAM) defrealm);
             } else {
                 SendMessage(hw_realm, CB_SETCURSEL, 0, 0);
             }
@@ -498,13 +498,13 @@ k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 *--t = L'\0';
                 t++;
 
-                SendMessage(hw_realm, CB_SELECTSTRING, -1, (LPARAM) t);
+                SendMessage(hw_realm, CB_SELECTSTRING, (WPARAM) -1, (LPARAM) t);
                 SetWindowText(hw_realm, t);
             }
 
             if (defident[0] != L'\0') {
                 /* there is a username */
-                SendMessage(hw_un, CB_SELECTSTRING, -1, (LPARAM) defident);
+                SendMessage(hw_un, CB_SELECTSTRING, (WPARAM) -1, (LPARAM) defident);
                 SetWindowText(hw_un, defident);
             }
 
@@ -1237,8 +1237,8 @@ k5_ident_init(khm_int32 msg_type,
               khm_ui_4 uparam,
               void * vparam) {
 
-    khm_boolean found_default;
-    khm_handle ident;
+    khm_boolean found_default = FALSE;
+    khm_handle ident = NULL;
 
     /* First get a handle to self.  Something is very wrong if we
        can't do that. */

@@ -29,8 +29,16 @@
 
 #define KHUI_PROPERTYWND_CLASS_NAME L"NetIDMgrPropertyWnd"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 khm_int32 khm_register_propertywnd_class(void);
 
 khm_int32 khm_unregister_propertywnd_class(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

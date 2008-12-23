@@ -49,7 +49,7 @@ const wchar_t * kmm_facility = L"KMM";
 
 KHMEXP void KHMAPI kmm_init(void)
 {
-    DWORD dummy;
+    unsigned dummy;
 
     EnterCriticalSection(&cs_kmm);
     kmm_all_modules = NULL;

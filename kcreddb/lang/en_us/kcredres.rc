@@ -71,7 +71,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ID                  ICON                    "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\kcreddb\\images\\id.ico"
+IDI_ID                  ICON                    "..\\..\\images\\id.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -130,6 +130,7 @@ BEGIN
     IDS_FTS_REL_TOM         "tomorrow at %s"
     IDS_FTS_REL_YEST        "yesterday at %s"
     IDS_PARAM               "Extended Parameter"
+    IDS_STATUS              "Status"
 END
 
 STRINGTABLE 

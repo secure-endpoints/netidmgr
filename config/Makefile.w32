@@ -216,6 +216,8 @@ khldllconflags=$(khldllconflags) $(conlibsdll)
 
 C2OBJ=$(CC) $(khcflags) $(KH_AUXCFLAGS) /Fo"$@" /c $**
 
+CPP2OBJ=$(CC) $(khcflags) $(KH_AUXCFLAGS) /EHsc /Fo"$@" /c $**
+
 EXECONLINK=$(LINK) /NOLOGO $(khlconflags) /OUT:$@ $**
 
 EXEGUILINK=$(LINK) /NOLOGO $(khlguiflags) /OUT:$@ $**
@@ -233,8 +235,14 @@ MC2RC=$(MC) $(MCFLAGS) -h $(OBJ)\ -m 1024 -r $(OBJ)\ -x $(OBJ)\ $**
 {}.c{$(OBJ)}.obj:
 	$(C2OBJ)
 
+{}.cpp{$(OBJ)}.obj:
+	$(CPP2OBJ)
+
 {$(OBJ)}.c{$(OBJ)}.obj:
 	$(C2OBJ)
+
+{$(OBJ)}.cpp{$(OBJ)}.obj:
+	$(CPP2OBJ)
 
 {}.h{$(INCDIR)}.h:
 	$(CP) $** $@

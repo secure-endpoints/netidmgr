@@ -884,7 +884,7 @@ void cfgui_init(void) {
     hwnd_cfgui = NULL;
 }
 
-void cfgui_exit(exit) {
+void cfgui_exit(void) {
     DeleteCriticalSection(&cs_cfgui);
 }
 

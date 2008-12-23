@@ -938,6 +938,32 @@ cfgui_destroy_window(void) {
     /* cfgui_hwnd will be set to NULL in the dialog proc */
 }
 
+void
+khm_show_identity_config_pane(khm_handle identity) {
+    khui_config_node cfg_ids = NULL;
+    khui_config_node cfg_id = NULL;
+    wchar_t cfgname[KHUI_MAXCCH_NAME];
+    khm_size cb;
+
+    cb = sizeof(cfgname);
+    if (KHM_FAILED(kcdb_identity_get_short_name(identity, FALSE, cfgname, &cb)))
+        goto exit;
+
+    if (KHM_FAILED(khui_cfg_open(NULL, L"KhmIdentities", &cfg_ids)))
+        goto exit;
+
+    if (KHM_FAILED(khui_cfg_open(cfg_ids, cfgname, &cfg_id)))
+        goto exit;
+
+    khm_show_config_pane(cfg_id);
+
+ exit:
+    if (cfg_id)
+        khui_cfg_release(cfg_id);
+    if (cfg_ids)
+        khui_cfg_release(cfg_ids);
+}
+
 void 
 khm_show_config_pane(khui_config_node node) {
     if (cfgui_hwnd != NULL) {
@@ -948,6 +974,11 @@ khm_show_config_pane(khui_config_node node) {
         cfgui_create_window(node);
     }
 }
+
+/* TODO: The configuratoin system is not quite right.  While we should
+   allow registering subpanels for all nodes in some container, there
+   should also be a way for the panel to refuse an instantiation on a
+   particular configuration node. */
 
 /* Goes through all the active identities that have configuration
    information associated with it and makes sure that there is a

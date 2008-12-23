@@ -36,7 +36,7 @@ typedef struct tag_kcdb_identity {
     khm_int32 magic;            /*!< Must be KCDB_IDENT_MAGIC (invariant) */
     const wchar_t * name;       /*!< Name of the identity (invariant)*/
     kcdb_identpro_i * id_pro;   /*!< Held pointer to identity provider (invariant) */
-    khm_int64 serial;           /*!< Serial number for the identity (invariant) */
+    khm_ui_8 serial;            /*!< Serial number for the identity (invariant) */
 
     khm_int32 flags;            /*!< Identity flags from KCDB_IDENT_FLAG_* */
     khm_int32 refcount;         /*!< Reference count */
@@ -54,6 +54,9 @@ typedef struct tag_kcdb_identity {
 
     FILETIME  ft_lastupdate;    /*!< Time at which credentials were
                                    last updated for this identity. */
+
+    struct tag_kcdb_identity * parent;
+                                /*!< Parent identity, if there is one. */
 
     LDCL(struct tag_kcdb_identity);
 } kcdb_identity;

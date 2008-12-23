@@ -759,7 +759,8 @@ kinit_prompter(krb5_context context,
         kt->state = K5_KINIT_STATE_WAIT;
 
         kcdb_identity_set_flags(kt->identity,
-                                KCDB_IDENT_FLAG_VALID, KCDB_IDENT_FLAG_VALID);
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT,
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
         khui_cw_notify_identity_state(kt->nc, L"",
                                       KHUI_CWNIS_VALIDATED |
                                       KHUI_CWNIS_READY, 0);
@@ -813,7 +814,7 @@ kinit_prompter(krb5_context context,
             kt->is_null_password = TRUE;
     }
 
-    if (khui_cw_get_subtype(kt->nc) == KHUI_NC_SUBTYPE_ACQPRIV_ID &&
+    if (khui_cw_get_persist_private_data(kt->nc) &&
         num_prompts == 1 &&
         ptypes &&
         ptypes[0] == KRB5_PROMPT_TYPE_PASSWORD &&
@@ -869,7 +870,8 @@ kinit_task_proc(void * vparam)
         kt->state = K5_KINIT_STATE_WAIT;
 
         kcdb_identity_set_flags(kt->identity,
-                                KCDB_IDENT_FLAG_VALID, KCDB_IDENT_FLAG_VALID);
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT,
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
         khui_cw_notify_identity_state(kt->nc, L"",
                                       KHUI_CWNIS_VALIDATED |
                                       KHUI_CWNIS_READY, 0);
@@ -959,8 +961,8 @@ kinit_task_proc(void * vparam)
         switch (kt->kinit_code) {
         case 0:
             kcdb_identity_set_flags(kt->identity,
-                                    KCDB_IDENT_FLAG_VALID,
-                                    KCDB_IDENT_FLAG_VALID);
+                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT,
+                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
             khui_cw_notify_identity_state(kt->nc, L"",
                                           KHUI_CWNIS_READY |
                                           KHUI_CWNIS_VALIDATED, 0);
@@ -969,8 +971,8 @@ kinit_task_proc(void * vparam)
 
         case KRB5KDC_ERR_KEY_EXP:
             kcdb_identity_set_flags(kt->identity,
-                                    KCDB_IDENT_FLAG_VALID,
-                                    KCDB_IDENT_FLAG_VALID);
+                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT,
+                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
             k5_force_password_change(kt->dlg_data);
             LoadString(hResModule, IDS_K5ERR_KEY_EXPIRED, msg, ARRAYLENGTH(msg));
             khui_cw_notify_identity_state(kt->nc, msg,

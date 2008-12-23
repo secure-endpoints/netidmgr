@@ -27,11 +27,19 @@
 #ifndef __NETIDMGR_DEBUGFUNCS_H
 #define __NETIDMGR_DEBUGFUNCS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void khm_init_debug(void);
 void khm_exit_debug(void);
 
 void khm_start_file_log(void);
 void khm_stop_file_log(void);
 void khm_get_file_log_path(khm_size cb_buf, wchar_t * buf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

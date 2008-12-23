@@ -40,6 +40,10 @@
 /*!\defgroup khui_pp Property sheets
 @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* forward dcl */
 struct tag_khui_property_page;
 
@@ -202,6 +206,10 @@ khui_ps_destroy_sheet(khui_property_sheet * sheet);
 
 KHMEXP khm_int32 KHMAPI 
 khui_property_wnd_set_record(HWND hwnd_pwnd, khm_handle record);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*!@}*/
 /*!@}*/

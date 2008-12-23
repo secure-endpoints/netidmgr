@@ -299,7 +299,7 @@ unsigned __stdcall kmmint_plugin_broker(void * lpParameter)
 
   \note Should only be called from the context of the registrar thread */
 void kmmint_init_plugin(kmm_plugin_i * p) {
-    DWORD dummy;
+    unsigned dummy;
     khm_handle csp_plugin   = NULL;
     khm_handle csp_plugins  = NULL;
     khm_int32 t;

@@ -68,6 +68,10 @@ will display 4 ticks if it is displaying the interval 3-10mins.
 
 @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief Tracker data */
 typedef struct tag_khui_tracker {
     WNDPROC fn_edit;
@@ -108,6 +112,11 @@ khui_tracker_refresh(khui_tracker * tc);
 
 KHMEXP void KHMAPI
 khui_tracker_kill_controls(khui_tracker * tc);
+
+#ifdef __cplusplus
+}
+#endif
+
 /*!@}*/
 /*!@}*/
 

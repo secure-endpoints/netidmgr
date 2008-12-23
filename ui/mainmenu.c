@@ -661,6 +661,7 @@ struct identity_action_map {
     khm_int32  destroy_cmd;
     khm_int32  new_cmd;
     khm_int32  setdef_cmd;
+    khm_int32  config_cmd;
     int        refreshcycle;
 };
 
@@ -769,6 +770,19 @@ create_identity_cmd_map(khm_handle ident) {
         khui_action_create(actionname, caption, tooltip, ident,
                            KHUI_ACTIONTYPE_IDENTITY, NULL);
 
+    /* config */
+    GETFORMAT(IDS_IDACTIONT_CONFIG);
+    EXPFORMAT(tooltip, displayname);
+
+    GETFORMAT(IDS_IDACTION_CONFIG);
+    EXPFORMAT(caption, displayname);
+
+    StringCbPrintf(actionname, sizeof(actionname), L"C:%s", idshortname);
+
+    actmap->config_cmd =
+        khui_action_create(actionname, caption, tooltip, ident,
+                           KHUI_ACTIONTYPE_IDENTITY, NULL);
+
     actmap->refreshcycle = idcmd_refreshcycle;
 
 #undef GETFORMAT
@@ -793,11 +807,13 @@ purge_identity_cmd_map(void) {
             khui_action_delete(id_action_map[i].destroy_cmd);
             khui_action_delete(id_action_map[i].new_cmd);
             khui_action_delete(id_action_map[i].setdef_cmd);
+            khui_action_delete(id_action_map[i].config_cmd);
 
             id_action_map[i].renew_cmd = 0;
             id_action_map[i].destroy_cmd = 0;
             id_action_map[i].new_cmd = 0;
             id_action_map[i].setdef_cmd = 0;
+            id_action_map[i].config_cmd = 0;
         }
     }
 }
@@ -864,6 +880,18 @@ khm_get_identity_new_creds_action(khm_handle ident) {
 
     if (map)
         return map->new_cmd;
+    else
+        return 0;
+}
+
+khm_int32
+khm_get_identity_config_action(khm_handle ident) {
+    struct identity_action_map * map;
+
+    map = get_identity_cmd_map(ident);
+
+    if (map)
+        return map->config_cmd;
     else
         return 0;
 }
@@ -1054,6 +1082,12 @@ khm_check_identity_menu_action(khm_int32 act_id) {
 
             if (id_action_map[i].setdef_cmd == act_id) {
                 khm_cred_set_default_identity(id_action_map[i].identity);
+
+                return TRUE;
+            }
+
+            if (id_action_map[i].config_cmd == act_id) {
+                khm_show_identity_config_pane(id_action_map[i].identity);
 
                 return TRUE;
             }

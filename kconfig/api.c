@@ -1616,9 +1616,9 @@ khc_write_string(khm_handle pconf,
         if (KHM_SUCCEEDED(khc_read_string(pconf, pvalue, buffer, &tmpsize)) &&
             tmpsize == cbsize) {
             if (khc_handle_flags(pconf) & KCONF_FLAG_IFMODCI)
-                is_equal = !_wcsicmp(buffer, buf);
+                is_equal = !lstrcmpi(buffer, buf);
             else
-                is_equal = !wcscmp(buffer, buf);
+                is_equal = !lstrcmp(buffer, buf);
         }
 
         if (buffer != tmpbuf)
@@ -1821,7 +1821,7 @@ khc_write_int64(khm_handle pconf, const wchar_t * pvalue, khm_int64 buf) {
 KHMEXP khm_int32 KHMAPI 
 khc_write_binary(khm_handle pconf, 
                  const wchar_t * pvalue, 
-                 void * buf, khm_size bufsize) {
+                 const void * buf, khm_size bufsize) {
     HKEY pk = NULL;
     kconf_conf_space * c;
     khm_int32 rv = KHM_ERROR_SUCCESS;

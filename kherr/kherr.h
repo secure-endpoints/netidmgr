@@ -41,6 +41,10 @@
 #include "khdefs.h"
 #include "khlist.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \name Customizable macros
 @{ */
 #ifndef KHERR_FACILITY
@@ -724,13 +728,13 @@ kherr_val(khm_octet ptype, khm_ui_8 pvalue) {
     return p;
 }
 
-#define _int32(i)   kherr_val(KEPT_INT32, (khm_ui_8) i)
-#define _uint32(ui) kherr_val(KEPT_UINT32, (khm_ui_8) ui)
-#define _int64(i)   kherr_val(KEPT_INT64, (khm_ui_8) i)
-#define _uint64(ui) kherr_val(KEPT_UINT64, (khm_ui_8) ui)
-#define _cstr(cs)   kherr_val(KEPT_STRINGC, (khm_ui_8) cs)
-#define _tstr(ts)   kherr_val(KEPT_STRINGT, (khm_ui_8) ts)
-#define _cptr(p)    kherr_val(KEPT_PTR, (khm_ui_8) p)
+#define _int32(i)   kherr_val(KEPT_INT32, (khm_ui_8) (i))
+#define _uint32(ui) kherr_val(KEPT_UINT32, (khm_ui_8) (ui))
+#define _int64(i)   kherr_val(KEPT_INT64, (khm_ui_8) (i))
+#define _uint64(ui) kherr_val(KEPT_UINT64, (khm_ui_8) (ui))
+#define _cstr(cs)   kherr_val(KEPT_STRINGC, (khm_ui_8) (cs))
+#define _tstr(ts)   kherr_val(KEPT_STRINGT, (khm_ui_8) (ts))
+#define _cptr(p)    kherr_val(KEPT_PTR, (khm_ui_8) (p))
 #define _vnull()    kherr_val(KEPT_NONE, 0)
 #define _dupstr(s)  kherr_dup_string(s)
 
@@ -1189,11 +1193,15 @@ KHMEXP void KHMAPI kherr_evaluate_last_event(void);
 #define KHM_FACILITY_USER      128
 /*@}*/
 
-/*@}*/
-
 /* In debug mode, outputs the formatted string to the debug console */
 #ifdef DEBUG
 KHMEXP void kherr_debug_printf(wchar_t * fmt, ...);
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
+/*@}*/
 
 #endif

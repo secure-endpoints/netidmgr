@@ -32,6 +32,10 @@
 /*! \defgroup khui_actions Actions
   @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct tag_khui_action;
 typedef struct tag_khui_action khui_action;
 
@@ -998,6 +1002,10 @@ KHMEXP void KHMAPI khui_init_actions(void);
 KHMEXP void KHMAPI khui_exit_actions(void);
 
 /*! \endcond */
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 /*@}*/

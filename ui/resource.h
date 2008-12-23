@@ -159,18 +159,18 @@
 #define IDI_ID                          187
 #define IDS_CTX_DESTROY_CREDS           188
 #define IDB_IMPORT_SM_DIS               188
-#define IDS_WARN_EXPIRE                 189
 #define IDB_IMPORT                      189
+#define IDS_NC_PERSIST                  189
 #define IDS_WARN_TITLE                  190
 #define IDB_IMPORT_DIS                  190
 #define IDS_ALERT_MOREINFO              191
 #define IDB_IMPORT_SM                   191
-#define IDS_WARN_EXPIRED                192
 #define IDB_CHPW_SM                     192
-#define IDS_WARN_EXPIRE_ID              193
+#define IDS_WARN_EXP_TITLE              192
 #define IDB_CHPW                        193
-#define IDS_WARN_EXPIRED_ID             194
+#define IDS_WARN_EXPD_CRED              193
 #define IDB_CHPW_DIS                    194
+#define IDS_IDACTIONT_CONFIG            194
 #define IDS_WARN_WM_TITLE               195
 #define IDB_CHPW_DIS_SM                 195
 #define IDS_WARN_WM_MSG                 196
@@ -232,11 +232,14 @@
 #define IDS_ERR_SUGG_NO_IDENTPRO        225
 #define IDI_CHECK                       225
 #define IDS_NC_REN_FAILED_TITLE         226
+#define IDD_NC_PERSIST                  226
 #define IDS_CW_DEFAULT                  227
+#define IDB_CREDWND_IMAGELIST           227
 #define IDS_ACTION_OPT_PLUGINS          228
 #define IDS_NC_SETDEF                   229
 #define IDS_WT_ACQ_PRIV_ID              230
 #define IDS_WARN_EXP_CRED               231
+#define IDS_IDACTION_CONFIG             232
 #define IDS_PACTION_YES                 233
 #define IDS_PACTION_NO                  234
 #define IDS_PACTION_YESALL              235
@@ -328,6 +331,8 @@
 #define IDS_ACTION_VIEW_ALL_IDS         321
 #define IDS_NC_NEW_IDENT_D              322
 #define IDS_NC_IDSEL_PROMPT             323
+#define IDS_ACTION_OPT_IDENT            324
+#define IDS_ACTIONT_OPT_IDENT           325
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027
@@ -410,7 +415,6 @@
 #define IDC_NC_R_MAIN                   1155
 #define IDC_NC_R_MAIN_LG                1156
 #define IDC_NC_R_NAV                    1157
-#define IDC_NC_DETAILS                  1161
 #define IDC_NC_R_IDSPEC                 1163
 #define IDC_IDSEL                       1164
 #define IDC_NC_TAB                      1165
@@ -418,19 +422,19 @@
 #define IDC_BACK                        1169
 #define IDC_NEXT                        1170
 #define IDC_FINISH                      1171
-#define IDC_FINISH2                     1172
 #define IDC_RETRY                       1172
 #define IDC_TEXT                        1173
 #define IDC_PROGRESS                    1174
 #define IDC_CFG_TYPE                    1177
 #define IDC_CFG_CHICON                  1178
 #define IDC_CFG_RESETICON               1179
-#define IDC_LIST1                       1180
 #define IDC_LIST                        1180
 #define IDC_TEXT2                       1181
 #define IDC_CONTAINER                   1183
 #define IDC_CLOSEIF                     1184
 #define IDC_BORDER                      1185
+#define IDC_IDICON                      1186
+#define IDC_PERSIST                     1187
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -444,9 +448,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        226
+#define _APS_NEXT_RESOURCE_VALUE        229
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1186
+#define _APS_NEXT_CONTROL_VALUE         1189
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

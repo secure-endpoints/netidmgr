@@ -27,6 +27,10 @@
 #ifndef __KHIMAIRA_APPGLOBAL_H
 #define __KHIMAIRA_APPGLOBAL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Helpfile */
 #define NIDM_HELPFILE              L"netidmgr.chm"
 
@@ -158,5 +162,9 @@ int khm_compare_version(const khm_version * v1, const khm_version * v2);
 #define MAX_RES_STRING 1024
 
 #define ELLIPSIS L"..."
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

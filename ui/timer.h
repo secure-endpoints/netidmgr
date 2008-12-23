@@ -27,6 +27,10 @@
 #ifndef __KHIMAIRA_TIMER_H
 #define __KHIMAIRA_TIMER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* note that the ordering of the first few enum constants are
    significant.  The values of the constants up to KHUI_N_TTYPES are
    used as indices.  */
@@ -96,5 +100,9 @@ khm_timer_exit(void);
 
 khm_int32
 khm_get_identity_timer_info(khm_handle identity, khui_timer_info * pinfo, khm_int64 last_halftime);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

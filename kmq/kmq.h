@@ -43,6 +43,10 @@
 #include "khlist.h"
 #include "kherr.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* general */
 #ifdef _WIN32
 typedef DWORD kmq_thread_id;
@@ -59,6 +63,9 @@ typedef DWORD kmq_timer;
         window message
  */
 #define KMQ_WM_DISPATCH (WM_APP+0x100)
+
+#define HANDLE_KMQ_WM_DISPATCH(hwnd, wParam, lParam, fn) \
+    ((fn)((lParam)))
 #endif
 
 /* callback */
@@ -67,10 +74,10 @@ typedef DWORD kmq_timer;
 
     Should return TRUE if the message is properly handled.  Otherwise
     return FALSE */
-typedef khm_int32 (KHMAPI *kmq_callback_t)(khm_int32 msg_type, 
-                                           khm_int32 msg_sub_type, 
-                                           khm_ui_4 uparam, 
-                                           void * vparam);
+typedef khm_int32 (KHMCALLBACK *kmq_callback_t)(khm_int32 msg_type, 
+                                                khm_int32 msg_sub_type, 
+                                                khm_ui_4 uparam, 
+                                                void * vparam);
 
 /* message */
 
@@ -721,6 +728,10 @@ KHMEXP khm_boolean KHMAPI kmq_is_call_aborted(void);
 KHMEXP khm_int32 KHMAPI kmq_set_completion_handler(
     khm_int32 type, 
     kmq_msg_completion_handler hander);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*@}*/
 #endif

@@ -32,6 +32,10 @@
 #include<khuidefs.h>
 #include<intnewcred.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void khm_register_newcredwnd_class(void);
 void khm_unregister_newcredwnd_class(void);
 INT_PTR khm_do_modal_newcredwnd(HWND parent, khui_new_creds * c);
@@ -39,5 +43,9 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c);
 void khm_prep_newcredwnd(HWND hwnd);
 void khm_show_newcredwnd(HWND hwnd);
 void khm_nc_track_progress_of_this_task(khui_new_creds * nc);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

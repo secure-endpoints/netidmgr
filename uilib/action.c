@@ -135,6 +135,7 @@ khui_action_ref khui_toolbar_standard[] = {
 
 khui_action_ref khui_menu_ident_ctx[] = {
     MENU_ACTION(KHUI_ACTION_PROPERTIES),
+    MENU_ACTION(KHUI_ACTION_OPT_IDENT),
     MENU_SEP(),
     MENU_ACTION(KHUI_ACTION_SET_DEF_ID),
     MENU_ACTION(KHUI_ACTION_SET_SRCH_ID),

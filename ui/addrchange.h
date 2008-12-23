@@ -27,10 +27,18 @@
 #ifndef __NETIDMGR_ADDRCHANGE_H
 #define __NETIDMGR_ADDRCHANGE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void
 khm_addr_change_notifier_init(void);
 
 void
 khm_addr_change_notifier_exit(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

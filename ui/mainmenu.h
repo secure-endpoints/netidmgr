@@ -28,6 +28,11 @@
 #ifndef __KHIMAIRA_MAINMENU_H
 #define __KHIMAIRA_MAINMENU_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 extern HWND khui_main_menu_toolbar;
 
 #define MENU_ACTIVATE_DEFAULT   -1
@@ -64,5 +69,9 @@ void khui_exit_menu(void);
 
 #define MENU_SIZE_ICON_X 16
 #define MENU_SIZE_ICON_Y 16
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

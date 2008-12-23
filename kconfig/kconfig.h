@@ -30,6 +30,10 @@
 #include "khdefs.h"
 #include "mstring.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
 /*! \defgroup kconf NetIDMgr Configuration Provider */
 /*@{*/
 
@@ -771,7 +775,7 @@ khc_write_int64(khm_handle conf,
 KHMEXP khm_int32 KHMAPI 
 khc_write_binary(khm_handle conf, 
                  const wchar_t * value_name, 
-                 void * buf, 
+                 const void * buf, 
                  khm_size bufsize);
 
 /*! \brief Get the type of a value in a configuration space
@@ -956,5 +960,185 @@ khc_enum_subspaces(khm_handle conf,
 KHMEXP khm_int32 KHMAPI
 khc_remove_space(khm_handle conf);
 /*@}*/
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+#include <string>
+
+namespace nim {
+
+    class ConfigSpace {
+    protected:
+        khm_handle csp;
+        khm_int32  last_error;
+
+    public:
+        ConfigSpace()  {
+            csp = NULL; 
+            last_error = KHM_ERROR_NOT_READY;
+        }
+
+        ConfigSpace(khm_handle _csp) {
+            csp = _csp;
+            last_error = KHM_ERROR_SUCCESS;
+        }
+
+        ConfigSpace(const wchar_t * name, khm_int32 flags = 0) {
+            csp = NULL;
+            last_error = khc_open_space(NULL, name, flags, &csp);
+        }
+
+        ConfigSpace(ConfigSpace & parent, const wchar_t * name, khm_int32 flags = 0) {
+            csp = NULL;
+            last_error = khc_open_space(parent.csp, name, flags, &csp);
+        }
+
+        ~ConfigSpace() {
+            Close();
+        }
+
+        khm_int32 Close() {
+            if (csp) {
+                last_error = khc_close_space(csp);
+                csp = NULL;
+                return last_error;
+            } else {
+                return KHM_ERROR_SUCCESS;
+            }
+        }
+
+        khm_int32 Open(const wchar_t * name, khm_int32 flags = 0) {
+            Close();
+            return last_error = khc_open_space(NULL, name, flags, &csp);
+        }
+
+        khm_int32 Open(ConfigSpace & parent, const wchar_t * name, khm_int32 flags = 0) {
+            Close();
+            return last_error = khc_open_space(parent.csp, name, flags, &csp);
+        }
+
+        khm_int32 GetLastError() { return last_error; }
+
+        khm_int32 GetInt32(const wchar_t * name, khm_int32 def = 0) {
+            khm_int32 val = def;
+            last_error = khc_read_int32(csp, name, &val);
+            return val;
+        }
+
+        khm_int64 GetInt64(const wchar_t * name, khm_int64 def = 0) {
+            khm_int64 val = 0;
+            last_error = khc_read_int64(csp, name, &val);
+            return val;
+        }
+
+        std::wstring GetString(const wchar_t * name, const wchar_t * def = L"") {
+            khm_size cb = 0;
+
+            last_error = khc_read_string(csp, name, NULL, &cb);
+            if (last_error == KHM_ERROR_TOO_LONG) {
+                wchar_t * wbuffer = NULL;
+
+                wbuffer = static_cast<wchar_t *>(PMALLOC(cb));
+                last_error = khc_read_string(csp, name, wbuffer, &cb);
+                if (KHM_SUCCEEDED(last_error)) {
+                    std::wstring val(wbuffer);
+                    PFREE(wbuffer);
+                    return val;
+                }
+
+                PFREE(wbuffer);
+            }
+
+            std::wstring val(def);
+
+            return val;
+        }
+
+        void * GetBinary(const wchar_t * name, void * buffer, khm_size & cb) {
+            last_error = khc_read_binary(csp, name, buffer, &cb);
+            return (KHM_SUCCEEDED(last_error))? buffer : NULL;
+        }
+
+        template <class target>
+        target& GetObject(const wchar_t * name, target& obj) {
+            khm_size cb = sizeof(obj);
+            last_error = khc_read_binary(csp, name, &obj, &cb);
+            return obj;
+        }
+
+        multi_string GetMultiString(const wchar_t * name) {
+            khm_size cb = 0;
+
+            do {
+                last_error = khc_read_multi_string(csp, name, NULL, &cb);
+                if (last_error != KHM_ERROR_TOO_LONG) break;
+
+                wchar_t * wbuffer = NULL;
+
+                wbuffer = static_cast<wchar_t *>(PMALLOC(cb));
+                last_error = khc_read_multi_string(csp, name, wbuffer, &cb);
+                if (KHM_FAILED(last_error)) {
+                    PFREE(wbuffer);
+                    break;
+                }
+
+                multi_string val(wbuffer);
+
+                PFREE(wbuffer);
+
+                return val;
+
+            } while (false);
+
+            multi_string val;
+
+            return val;
+        }
+
+        void Set(const wchar_t * name, khm_int32 val) {
+            last_error = khc_write_int32(csp, name, val);
+        }
+
+        void Set(const wchar_t * name, bool val) {
+            last_error = khc_write_int32(csp, name, (khm_int32)((val)? 1 : 0));
+        }
+
+        void Set(const wchar_t * name, khm_int64 val) {
+            last_error = khc_write_int64(csp, name, val);
+        }
+
+        void Set(const wchar_t * name, std::wstring & val) {
+            last_error = khc_write_string(csp, name, val.c_str());
+        }
+
+        void Set(const wchar_t * name, const wchar_t * val) {
+            last_error = khc_write_string(csp, name, val);
+        }
+
+        void Set(const wchar_t * name, multi_string val) {
+            wchar_t * wval = val.new_c_multi_string();
+            last_error = khc_write_multi_string(csp, name, wval);
+            PFREE(wval);
+        }
+
+        void Set(const wchar_t * name, const void * data, khm_size cb_data) {
+            last_error = khc_write_binary(csp, name, data, cb_data);
+        }
+
+        template <class target>
+        void SetObject(const wchar_t * name, target& t) {
+            Set(name, &t, sizeof(t));
+        }
+
+        khm_int32 Exists(const wchar_t * name) {
+            return khc_value_exists(csp, name);
+        }
+    };
+}
+#endif
 
 #endif

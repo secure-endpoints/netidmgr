@@ -27,6 +27,10 @@
 #ifndef __KHIMAIRA_REQDAEMON_H
 #define __KHIMAIRA_REQDAEMON_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void
 khm_register_reqdaemonwnd_class(void);
 
@@ -38,5 +42,9 @@ khm_init_request_daemon(void);
 
 void
 khm_exit_request_daemon(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

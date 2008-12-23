@@ -37,6 +37,10 @@
 /*!\defgroup khui_alert Alerter and Error Reporting
 @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct tag_khui_alert;
 typedef struct tag_khui_alert khui_alert;
 
@@ -398,6 +402,10 @@ khui_alert_lock(khui_alert * alert);
 */
 KHMEXP void KHMAPI 
 khui_alert_unlock(khui_alert * alert);
+
+#ifdef __cplusplus
+}
+#endif
 
 /*!@}*/
 /*!@}*/

@@ -33,6 +33,10 @@
 /*! \defgroup khui_hyperlink Hyperlink 
 @{*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \brief A hyperlink
 
     When a link in a hypertext window is clicked, this structure is
@@ -70,6 +74,10 @@ typedef struct tag_khui_htwnd_link {
 
 #define KHUI_MAXCCH_HTLINK_FIELD 256
 #define KHUI_MAXCB_HTLINK_FIELD (KHUI_MAXCCH_HTLINK_FIELD * sizeof(wchar_t))
+
+#ifdef __cplusplus
+}
+#endif
 
 /*!@}*/
 /*!@}*/

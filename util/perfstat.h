@@ -49,6 +49,10 @@
 #define PDESCTHREAD(n,c) ((void) 0)
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 KHMEXP void *
 perf_malloc(const char * file, int line, size_t s);
 
@@ -70,5 +74,9 @@ perf_calloc(const char * file, int line, size_t num, size_t size);
 KHMEXP void
 perf_set_thread_desc(const char * file, int line,
                      const wchar_t * name, const wchar_t * creator);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -410,6 +410,20 @@ kcdb_attrib_init(void)
 
     kcdb_attrib_register(&attrib, NULL);
 
+    /* Status */
+    attrib.id = KCDB_ATTR_STATUS;
+    attrib.name = KCDB_ATTRNAME_STATUS;
+    attrib.type = KCDB_TYPE_STRING;
+    LoadString(hinst_kcreddb, IDS_STATUS, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc = sbuf;
+    attrib.long_desc = NULL;
+    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb = NULL;
+    attrib.compute_min_cbsize = 0;
+    attrib.compute_max_cbsize = 0;
+
+    kcdb_attrib_register(&attrib, NULL);
+
     /* Last Update */
     attrib.id = KCDB_ATTR_LAST_UPDATE;
     attrib.name = KCDB_ATTRNAME_LAST_UPDATE;

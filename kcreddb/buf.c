@@ -383,7 +383,7 @@ kcdb_buf_get_attrib_string(khm_handle  record,
 KHMEXP khm_int32 KHMAPI
 kcdb_buf_set_attr(khm_handle  record,
                   khm_int32   attr_id,
-                  void *      buffer,
+                  const void *buffer,
                   khm_size    cbbuf)
 {
     if (record == NULL)
@@ -404,7 +404,7 @@ kcdb_buf_set_attr(khm_handle  record,
 KHMEXP khm_int32 KHMAPI
 kcdb_buf_set_attrib(khm_handle  record,
                     const wchar_t *   attr_name,
-                    void *      buffer,
+                    const void *      buffer,
                     khm_size    cbbuf)
 {
     if (record == NULL)

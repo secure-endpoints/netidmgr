@@ -479,7 +479,7 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_set_attrib(
 KHMEXP khm_int32 KHMAPI kcdb_cred_set_attr(
     khm_handle vcred, 
     khm_int32 attr_id, 
-    void * buffer, 
+    const void *buffer, 
     khm_size cbbuf)
 {
     kcdb_cred * cred;

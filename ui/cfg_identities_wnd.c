@@ -93,6 +93,13 @@ add_subpanels(HWND hwnd,
                                        reg.dlg_proc,
                                        (LPARAM) &idata);
 
+        /* TODO: verify that we actually need this instantiation of a
+           subpanel.  We should augment the API to include a callback
+           or maybe we can send a message to the dialog box to ask if
+           it really wants to instantiate itself or something like
+           that.  Maybe we can augment the idata structure to get
+           feedback. */
+
 #ifdef DEBUG
         assert(hwnd_panel);
 #endif
@@ -1078,6 +1085,12 @@ change_icon_ident (HWND hwnd, khui_config_init_data * idata)
            the old icon will get flushed out of the cache. */
 
         cb = sizeof(hicon);
+        kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE | KCDB_RFI_SMALL,
+                          NULL, NULL, &hicon, &cb);
+        kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE | KCDB_RFI_SMALL,
+                          NULL, NULL, &hicon, &cb);
+        kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE,
+                          NULL, NULL, &hicon, &cb);
         kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE,
                           NULL, NULL, &hicon, &cb);
 #ifdef DEBUG
@@ -1095,6 +1108,8 @@ change_icon_ident (HWND hwnd, khui_config_init_data * idata)
         hicon = NULL; cb = sizeof(hicon);
         kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE,
                           NULL, NULL, &hicon, &cb);
+
+        InvalidateRect(khm_hwnd_main_cred, NULL, TRUE);
     }
 
  _cleanup:
@@ -1124,14 +1139,21 @@ reset_icon_ident (HWND hwnd, khui_config_init_data * idata)
     khc_remove_value(csp_id, L"IconNormal", 0);
 
     cb = sizeof(hicon);
+    kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE | KCDB_RFI_SMALL,
+                      NULL, NULL, &hicon, &cb);
+    kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE | KCDB_RFI_SMALL,
+                      NULL, NULL, &hicon, &cb);
+    kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE,
+                      NULL, NULL, &hicon, &cb);
     kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE,
-                          NULL, NULL, &hicon, &cb);
+                      NULL, NULL, &hicon, &cb);
 #ifdef DEBUG
     assert(hicon != NULL);
 #endif
     SendDlgItemMessage(hwnd, IDC_CFG_ICON, STM_SETICON,
                        (WPARAM) hicon, 0);
     InvalidateRect(GetDlgItem(hwnd, IDC_CFG_ICON), NULL, TRUE);
+    InvalidateRect(khm_hwnd_main_cred, NULL, TRUE);
 
     if (csp_id)
         khc_close_space(csp_id);

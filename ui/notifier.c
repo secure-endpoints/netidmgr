@@ -3476,7 +3476,7 @@ void khm_notify_icon_change(khm_int32 severity) {
     notifier_severity = severity;
 }
 
-void khm_notify_icon_tooltip(wchar_t * s) {
+void khm_notify_icon_tooltip(const wchar_t * s) {
     wchar_t buf[256];
 
     LoadString(khm_hInstance, IDS_NOTIFY_PREFIX, buf, ARRAYLENGTH(buf));

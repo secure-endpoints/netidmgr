@@ -27,7 +27,16 @@
 #ifndef __NETIDMGR_ICONSELECTWND_H__
 #define __NETIDMGR_ICONSELECTWND_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 khm_boolean
 khm_show_select_icon_dialog(HWND hw_parent, wchar_t * path, khm_size cb_path);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

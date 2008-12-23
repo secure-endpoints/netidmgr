@@ -28,6 +28,7 @@
 #define __NETIDMGR_H
 
 #include "khdefs.h"
+#include "kherror.h"
 
 #include "utils.h"
 #include "khuidefs.h"
@@ -35,7 +36,6 @@
 #include "khmsgtypes.h"
 #include "kcreddb.h"
 #include "kherr.h"
-#include "kherror.h"
 #include "kconfig.h"
 #include "kmm.h"
 #include "kplugin.h"

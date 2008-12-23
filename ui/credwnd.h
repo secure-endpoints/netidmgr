@@ -27,6 +27,11 @@
 #ifndef __KHIMAIRA_CREDWND_H
 #define __KHIMAIRA_CREDWND_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define KHUI_CREDWND_CLASS_NAME L"NetIDMgrCredWnd"
 
 #define KHUI_CREDWND_FLAG_ATTRNAME L"CredWndFlags"
@@ -47,6 +52,7 @@ typedef struct khui_credwnd_outline_t {
     khm_int32   length;     /* number of rows in outline */
     khm_int32   level;      /* outline level */
     khm_int32   col;        /* outline column */
+    khm_int32   indent;     /* indent */
     wchar_t     *header;    /* caption for this header */
     khm_int32   attr_id;
 
@@ -135,9 +141,6 @@ typedef struct tag_khui_credwnd_ident {
     wchar_t    name[KCDB_IDENT_MAXCCH_NAME];
     wchar_t    provider_name[KCDB_MAXCCH_NAME];
     khm_int32  credtype;
-
-    HICON      h_icon_lg;
-    HICON      h_icon_lg_dis;
 
     khm_int32  ident_flags;
 
@@ -302,5 +305,10 @@ void    cw_insert_header_cols(khui_credwnd_tbl * tbl);
 void    khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act);
 
 void    khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

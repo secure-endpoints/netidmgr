@@ -29,6 +29,10 @@
 
 #include<khdefs.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \addtogroup util
     @{ */
 
@@ -357,5 +361,65 @@ multi_string_copy_cch(wchar_t * s_dest,
                       const wchar_t * src);
 
 /*@}*/
+
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+
+#pragma warning(push)
+#pragma warning(disable: 4995)
+
+#include <string>
+#include <vector>
+
+#pragma warning(pop)
+
+namespace nim {
+
+    class multi_string : public std::vector<std::wstring *> {
+
+    public:
+        multi_string() { }
+
+        multi_string(const wchar_t * mstring) {
+            for (const wchar_t * str = mstring; str; str = multi_string_next(str))
+                push_back(new std::wstring(str));
+        }
+
+        ~multi_string() {
+            for (iterator i = begin(); i != end(); ++i) {
+                if (*i) {
+                    delete *i;
+                    *i = NULL;
+                }
+            }
+        }
+
+        wchar_t * new_c_multi_string() {
+            size_t cch = 0;
+
+            for (iterator i = begin(); i != end(); ++i) {
+                cch += (*i)->length() + 1;
+            }
+
+            (cch != 0)? cch++ : cch = 2;
+
+            wchar_t * wbuffer = static_cast<wchar_t *>(PMALLOC(cch * sizeof(wchar_t)));
+            wchar_t * wptr = wbuffer;
+
+            for (iterator i = begin(); i != end(); ++i) {
+                StringCchCopyEx(wptr, cch, (*i)->c_str(), &wptr, &cch, 0);
+            }
+
+            *wptr++ = L'\0';
+            (cch == 2) ? *wptr++ = L'\0': 0;
+
+            return wbuffer;
+        }
+    };
+}
+#endif
 
 #endif

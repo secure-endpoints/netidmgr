@@ -27,10 +27,18 @@
 #ifndef __KHIMAIRA_CONFIGWND_H
 #define __KHIMAIRA_CONFIGWND_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define CFGACTION_MAGIC 0x38f8
 
 void 
 khm_show_config_pane(khui_config_node node);
+
+void
+khm_show_identity_config_pane(khm_handle identity);
 
 void khm_init_config(void);
 void khm_exit_config(void);
@@ -85,4 +93,9 @@ khm_cfg_appearance_proc(HWND hwnd,
                         UINT uMsg,
                         WPARAM wParam,
                         LPARAM lParam);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

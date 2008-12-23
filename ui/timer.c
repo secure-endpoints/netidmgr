@@ -39,12 +39,17 @@
 /* The minimum half time interval is 60 seconds*/
 #define TT_MIN_HALFLIFE_INTERVAL 60
 
+/* The maximum lifetime at which we consider a credential is as good
+   as dead as far as notifications are concerned in seconds*/
+#define TT_EXPIRED_THRESHOLD 60
+
 #define SECONDS_TO_FT(s) ((s) * 10000000i64)
 #define FT_TO_MS(ft) ((ft) / 10000i64)
 
 /* as above, in FILETIME units of 100ns */
 #define FT_MIN_HALFLIFE_INTERVAL SECONDS_TO_FT(TT_MIN_HALFLIFE_INTERVAL)
 
+#define FT_EXPIRED_THRESHOLD SECONDS_TO_FT(TT_EXPIRED_THRESHOLD)
 
 khui_timer_event * khui_timers = NULL;
 khm_size khui_n_timers = 0;
@@ -201,21 +206,30 @@ tmr_fire_timer(khm_int64 * pnext_event) {
                     khm_size cb;
                     FILETIME ft;
                     khm_int32 cmd;
+                    khm_boolean expired;
 
                     khui_alert * alert = NULL;
 
+                    expired = (khui_timers[i].type == KHUI_TTYPE_ID_EXP ||
+                               khui_timers[i].type == KHUI_TTYPE_CRED_EXP ||
+                               curtime + FT_EXPIRED_THRESHOLD > khui_timers[i].key_expire);
+
                     khui_alert_create_empty(&alert);
 
-                    LoadString(khm_hInstance, IDS_WARN_TITLE, buffer, ARRAYLENGTH(buffer));
+                    LoadString(khm_hInstance,
+                               (expired ? IDS_WARN_EXP_TITLE : IDS_WARN_TITLE),
+                               buffer, ARRAYLENGTH(buffer));
                     khui_alert_set_title(alert, buffer);
 
-                    LoadString(khm_hInstance, IDS_WARN_EXP_CRED, format, ARRAYLENGTH(format));
+                    LoadString(khm_hInstance,
+                               (expired ? IDS_WARN_EXPD_CRED : IDS_WARN_EXP_CRED),
+                               format, ARRAYLENGTH(format));
                     cb = sizeof(bufname);
                     kcdb_get_resource(khui_timers[i].key, KCDB_RES_DISPLAYNAME,
                                       0, NULL, NULL, bufname, &cb);
                     ft = IntToFt(khui_timers[i].key_expire);
                     cb = sizeof(timestamp);
-                    FtToStringEx(&ft, FTSE_INTERVAL | FTSE_RELATIVE, NULL, format, &cb);
+                    FtToStringEx(&ft, FTSE_RELATIVE, NULL, timestamp, &cb);
                     FormatString(buffer, sizeof(buffer), format, bufname, timestamp);
                     khui_alert_set_message(alert, buffer);
 
