@@ -388,6 +388,14 @@ namespace nim {
                 push_back(new std::wstring(str));
         }
 
+        multi_string(const multi_string& that) {
+            for (const_iterator i = that.begin(); i != that.end(); ++i) {
+                if (*i) {
+                    push_back(new std::wstring(*(*i), 0));
+                }
+            }
+        }
+
         ~multi_string() {
             for (iterator i = begin(); i != end(); ++i) {
                 if (*i) {

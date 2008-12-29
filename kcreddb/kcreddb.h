@@ -4186,8 +4186,8 @@ namespace nim {
 
         static khm_int32 KHMCALLBACK InternalComparator(khm_handle h1, khm_handle h2, void * param) {
             ComparatorData * d = reinterpret_cast<ComparatorData *>(param);
-            T t1(h1), t2(h2);
-            t1.Hold(); t2.Hold();
+            T t1, t2;
+            t1 = h1; t2 = h2;
             return d->f(t1, t2, d->param);
         }
 
@@ -4206,7 +4206,50 @@ namespace nim {
     };
 
     template<class T> class _BufferImpl {
+
     public:
+
+        T& Attach(khm_handle _h) {
+            T *pT = static_cast<T*>(this);
+            if (pT->h)
+                pT->Release();
+            pT->h = _h;
+            return *pT;
+        }
+
+        void Detach() {
+            T *pT = static_cast<T*>(this);
+            if (pT->h) {
+                pT->h = NULL;
+            }
+        }
+
+        T& Assign(khm_handle _h) {
+            T *pT = static_cast<T*>(this);
+            if (pT->h)
+                pT->Release();
+            pT->h = _h;
+            if (pT->h)
+                pT->Hold();
+            return *pT;
+        }
+
+        void Unassign() {
+            T *pT = static_cast<T*>(this);
+            pT->Assign(NULL);
+        }
+
+        operator khm_handle () const {
+            const T *pT = static_cast<const T*>(this);
+            return pT->h;
+        }
+
+        khm_handle GetHandle() {
+            T *pT = static_cast<T*>(this);
+            pT->Hold();
+            return pT->h;
+        }
+
         std::wstring GetAttribString(const wchar_t * attr_name, khm_int32 flags = 0) const {
             const T *pT = static_cast<const T*>(this);
             std::wstring ret;
@@ -4319,46 +4362,10 @@ namespace nim {
                 return NULL;
         }
 
-        khm_handle GetHandle() {
-            T *pT = static_cast<T*>(this);
-            pT->Hold();
-            return pT->h;
-        }
-
-        T& operator = (T const &that) {
-            T *pT = static_cast<T*>(this);
-
-            if (!pT->IsEqualTo(that)) {
-                pT->Release();
-                pT->h = that.h;
-                pT->Hold();
-            }
-
-            return *pT;
-        }
-
-        T& operator = (khm_handle h) {
-            T *pT = static_cast<T*>(this);
-            return pT->Attach(h);
-        }
-
         bool operator == (T const &that) const {
             const T *pT = static_cast<const T*>(this);
 
             return pT->IsEqualTo(that);
-        }
-
-        operator khm_handle () const {
-            const T *pT = static_cast<const T*>(this);
-            return pT->h;
-        }
-
-        T& Attach(khm_handle _h) {
-            T *pT = static_cast<T*>(this);
-            if (pT->h)
-                pT->Release();
-            pT->h = _h;
-            return *pT;
         }
 
         bool IsValid() const {
@@ -4375,10 +4382,15 @@ namespace nim {
         U         *info;
         khm_int32  last_error;
 
+        _InfoImpl() {
+            info = NULL;
+            last_error = KHM_ERROR_NOT_READY;
+        }
+
     public:
         khm_int32 GetLastError() const {
             const T *pT = static_cast<const T*>(this);
-            return (pT->info)? KHM_ERROR_NOT_READY: pT->last_error;
+            return (pT->info == NULL)? KHM_ERROR_NOT_READY: pT->last_error;
         }
 
         const U* operator -> () {
@@ -4403,6 +4415,7 @@ namespace nim {
             h = NULL;
         }
 
+        explicit
         Buffer(khm_handle buf) {
             h = buf;
         }
@@ -4415,6 +4428,14 @@ namespace nim {
         ~Buffer() {
             Release();
             h = NULL; 
+        }
+
+        Buffer& operator = (const Buffer& that) {
+            return Assign(that.h);
+        }
+
+        Buffer& operator = (khm_handle _h) {
+            return Assign(_h);
         }
 
         khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
@@ -4466,9 +4487,7 @@ namespace nim {
         friend class _InfoImpl<CredentialTypeInfo, kcdb_credtype>;
 
     public:
-        CredentialTypeInfo() {
-            info = NULL;
-        }
+        CredentialTypeInfo() {}
 
         CredentialTypeInfo(khm_int32 _ctype) {
             Lookup(_ctype);
@@ -4516,6 +4535,16 @@ namespace nim {
 
         ~CredentialType() { }
 
+        CredentialType& operator = (const CredentialType& that) {
+            ctype = that.ctype;
+            return *this;
+        }
+
+        CredentialType& operator = (khm_int32 _ctype) {
+            ctype = _ctype;
+            return *this;
+        }
+
         khm_int32 Lookup(const wchar_t * type_name) {
             return kcdb_credtype_get_id(type_name, &ctype);
         }
@@ -4538,11 +4567,6 @@ namespace nim {
             return CredentialTypeInfo(ctype);
         }
 
-        CredentialType& operator = (CredentialType that) {
-            ctype = that.ctype;
-            return *this;
-        }
-
         bool operator == (const CredentialType & that) const {
             return ctype == that.ctype;
         }
@@ -4561,6 +4585,7 @@ namespace nim {
             h = NULL;
         }
 
+        explicit
         IdentityProvider(khm_handle _h) {
             h = _h;
         }
@@ -4577,6 +4602,14 @@ namespace nim {
         ~IdentityProvider() {
             Release();
             h = NULL;
+        }
+
+        IdentityProvider& operator = (const IdentityProvider& that) {
+            return Assign(that.h);
+        }
+
+        IdentityProvider& operator = (khm_handle _h) {
+            return Assign(_h);
         }
 
         khm_int32 Hold() {
@@ -4636,11 +4669,13 @@ namespace nim {
     public:
         Identity() { h = NULL; }
 
+        explicit
         Identity(khm_handle _identity) {
             h = _identity;
         }
 
         Identity(IdentityProvider &provider, const wchar_t * name, khm_int32 flags, void * vparam = NULL) {
+            h = NULL;
             Create(provider, name, flags, vparam);
         }
 
@@ -4652,6 +4687,14 @@ namespace nim {
         ~Identity() { 
             Release();
             h = NULL; 
+        }
+
+        Identity& operator = (const Identity& that) {
+            return Assign(that.h);
+        }
+
+        Identity& operator = (khm_handle _h) {
+            return Assign(_h);
         }
 
         khm_int32 Create(IdentityProvider &provider, const wchar_t * name, khm_int32 flags,
@@ -4784,13 +4827,16 @@ namespace nim {
         friend class _BufferImpl<Credential>;
 
     public:
-        Credential() { h = NULL; }
+        Credential() {
+            h = NULL;
+        }
 
         Credential(const wchar_t * name, Identity & identity, CredentialType & ctype) {
             kcdb_cred_create(name, static_cast<khm_handle>(identity),
                              static_cast<khm_int32>(ctype), &h);
         }
 
+        explicit
         Credential(khm_handle _h) {
             h = _h;
         }
@@ -4802,8 +4848,17 @@ namespace nim {
 
         ~Credential() {
             if (h) {
-                Release(); h = NULL;
+                Release();
+                h = NULL;
             }
+        }
+
+        Credential& operator = (const Credential& that) {
+            return Assign(that.h);
+        }
+
+        Credential& operator = (khm_handle _h) {
+            return Assign(_h);
         }
 
         khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
@@ -4892,24 +4947,34 @@ namespace nim {
         bool  delete_after_use;
 
     public:
-        CredentialSet() { Create(); }
+        CredentialSet() {
+            h = NULL; 
+            delete_after_use = false; 
+            Create(); 
+        }
 
+        explicit
         CredentialSet(khm_handle _h) {
+            h = NULL;
+            delete_after_use = false;
             Attach(_h);
         }
 
         CredentialSet(const CredentialSet& _that) {
-            Attach(_that.h);
+            h = NULL;
+            delete_after_use = false;
+            Assign(_that.h);
         }
 
         ~CredentialSet() {
             Detach();
         }
 
-        void Attach(khm_handle _h) {
+        CredentialSet& Attach(khm_handle _h) {
             Detach();
             h = _h;
-            delete_after_use = false;
+            delete_after_use = true;
+            return *this;
         }
 
         void Detach() {
@@ -4920,12 +4985,32 @@ namespace nim {
             delete_after_use = false;
         }
 
+        CredentialSet& Assign(khm_handle _h) {
+            Detach();
+            h = _h;
+            delete_after_use = false;
+            return *this;
+        }
+
+        void Unassign() {
+            Detach();
+        }
+
+        CredentialSet& operator = (const CredentialSet& that) {
+            return Assign(that.h);
+        }
+
+        CredentialSet& operator = (khm_handle _h) {
+            return Assign(_h);
+        }
+
         khm_int32 Create() {
             khm_int32 rv;
 
             Detach();
             rv = kcdb_credset_create(&h);
-            if (KHM_SUCCEEDED(rv)) delete_after_use = true;
+            if (KHM_SUCCEEDED(rv))
+                delete_after_use = true;
             return rv;
         }
 
@@ -5025,8 +5110,9 @@ namespace nim {
     private:
         static khm_int32 KHMCALLBACK _InternalApplyFunction(khm_handle cred, void * pv) {
             struct _InternalApplyData * data = static_cast<_InternalApplyData *>(pv);
-            kcdb_cred_hold(cred);
-            return data->f(Credential(cred), data->f_data);
+            Credential _cred;
+            _cred = cred;
+            return (*data->f)(_cred, data->f_data);
         }
 
     public:
@@ -5078,7 +5164,7 @@ namespace nim {
         }
     };
 
-    CredentialSet::Enumeration CredentialSet::Enum() const {
+    inline CredentialSet::Enumeration CredentialSet::Enum() const {
         return Enumeration(this);
     }
 
@@ -5095,23 +5181,21 @@ namespace nim {
 
     public:
         AttributeTypeInfo() {
-            info = NULL;
         }
 
         AttributeTypeInfo(khm_int32 id) {
-            info = NULL;
             Lookup(id);
         }
 
         AttributeTypeInfo(const wchar_t * name) {
-            info = NULL;
             Lookup(name);
         }
 
         AttributeTypeInfo(const AttributeTypeInfo& that) {
-            info = NULL;
             if (that.info != NULL) {
                 Lookup(that.info->id);
+            } else {
+                Release();
             }
         }
 
@@ -5145,23 +5229,21 @@ namespace nim {
 
     public:
         AttributeInfo() {
-            info = NULL;
         }
 
         AttributeInfo(khm_int32 attr_id) {
-            info = NULL;
             Lookup(attr_id);
         }
 
         AttributeInfo(const wchar_t * attr_name) {
-            info = NULL;
             Lookup(attr_name);
         }
 
         AttributeInfo(const AttributeInfo& that) {
-            info = NULL;
             if (that.info != NULL)
                 Lookup(that.info->id);
+            else
+                Release();
         }
 
         ~AttributeInfo() {
