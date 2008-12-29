@@ -1,11 +1,9 @@
 
-#include <windows.h>
+#include "khmapp.h"
 #include <windowsx.h>
 #include <commctrl.h>
 #include <assert.h>
-#include "container.h"
 
-extern HINSTANCE khm_hInstance;
 
 namespace nim {
 
@@ -204,6 +202,25 @@ namespace nim {
             }
 
         MarkForExtentUpdate(); 
+        Invalidate();
+    }
+
+    void DisplayElement::Show(bool show)
+    {
+        if (visible == show)
+            return;
+
+        visible = show;
+        MarkForExtentUpdate();
+        Invalidate();
+    }
+
+    void DisplayElement::Select(bool _select)
+    {
+        if (selected == _select)
+            return;
+
+        selected = _select;
         Invalidate();
     }
 
@@ -982,6 +999,11 @@ namespace nim {
                               parent, (HMENU)(INT_PTR) id,
                               khm_hInstance, &cp);
         return hwnd;
+    }
+
+    BOOL ControlWindow::ShowWindow(int nCmdShow)
+    {
+        return ::ShowWindow(hwnd, nCmdShow);
     }
 
     void ControlWindow::HandleOnPaint(HWND hwnd)

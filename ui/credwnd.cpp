@@ -83,6 +83,56 @@ namespace nim
         }
     };
 
+
+    class OutlineWidget : public WithFixedSizePos< DisplayElement > {
+    public:
+        OutlineWidget(const Point& _p) {
+            SetPosition(_p);
+            SetSize(g_theme->sz_icon_sm);
+        }
+
+        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
+            g_theme->DrawCredWindowOutlineWidget(g, bounds,
+                                                 (DrawState)
+                                                 (((TQPARENT(this)->expanded)?
+                                                   DrawStateChecked : DrawStateNone) |
+                                                  ((highlight)?
+                                                   DrawStateHotTrack : DrawStateNone)));
+        }
+
+        virtual void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
+            TQPARENT(this)->Expand(!TQPARENT(this)->expanded);
+        }
+
+        virtual void OnMouse(const Point& p, UINT keyflags) {
+            bool h = highlight;
+            __super::OnMouse(p, keyflags);
+            if (!h)
+                Invalidate();
+        }
+
+        virtual void OnMouseOut(void) {
+            __super::OnMouseOut();
+            Invalidate();
+        }
+    };
+
+
+    class IconWidget : public WithFixedSizePos< DisplayElement > {
+        Bitmap i;
+        bool large;
+    public:
+        IconWidget(const Point& _p, HICON _icon, bool _large) : i(_icon), large(_large) {
+            SetPosition(_p);
+            SetSize((large)? g_theme->sz_icon : g_theme->sz_icon_sm);
+        }
+
+        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
+            g.DrawImage(&i, bounds);
+        }
+    };
+
+
     class CwOutline;
     class CwIdentityOutline;
     class CwCredTypeOutline;
@@ -140,10 +190,21 @@ namespace nim
         virtual void OnTimer() { }
 
         virtual void UpdateLayoutPre(Graphics& g, Rect& layout);
-
         virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
 
         virtual void PaintSelf(Graphics& g, const Rect& bounds);
+
+        virtual DrawState GetExpirationState() {
+            return DrawStateNone;
+        }
+
+        virtual DrawState GetDrawState() {
+            return (DrawState)(GetExpirationState() |
+                               ((expanded) ? DrawStateChecked : DrawStateNone) |
+                               ((highlight) ? DrawStateHotTrack : DrawStateNone) |
+                               ((selected) ? DrawStateSelected : DrawStateNone) |
+                               ((focus) ? DrawStateFocusRect : DrawStateNone));
+        }
     };
 
 
@@ -156,9 +217,12 @@ namespace nim
     public:
         CwIdentityOutline(Identity& _identity, int _column)
             : identity(_identity), CwOutline(_column) {
+            icon_widget = NULL;
         }
 
-        ~CwIdentityOutline() { }
+        ~CwIdentityOutline() {
+            icon_widget = NULL; // Will be deleted automatically
+        }
 
         virtual bool Represents(Credential& credential) {
             return credential.GetIdentity() == identity;
@@ -250,38 +314,6 @@ namespace nim
         virtual void PaintSelf(Graphics& g, const Rect& bounds);
     };
 
-    class OutlineWidget : public WithFixedSizePos< DisplayElement > {
-    public:
-        OutlineWidget(const Point& _p) {
-            SetPosition(_p);
-            SetSize(g_theme->sz_icon_sm);
-        }
-
-        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
-            g_theme->DrawCredWindowElement(g, bounds, DrawOutlineWidget,
-                                           (highlight)? DrawStateHotTrack : DrawStateNone);
-        }
-
-        virtual void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
-            TQPARENT(this)->Expand(!TQPARENT(this)->expanded);
-        }
-    };
-
-    class IconWidget : public WithFixedSizePos< DisplayElement > {
-        Bitmap i;
-        bool large;
-    public:
-        IconWidget(const Point& _p, HICON _icon, bool _large) : i(_icon), large(_large) {
-            SetPosition(_p);
-            SetSize((large)? g_theme->sz_icon : g_theme->sz_icon_sm);
-        }
-
-        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
-            g.DrawImage(&i, bounds);
-        }
-    };
-
-
 #define DCL_KMSG(T,ST) \
     khm_int32 OnKmsg ## T ## _ ## ST (khm_ui_4 uparam, void * vparam)
 #define DEFINE_KMSG(T,ST) \
@@ -298,7 +330,8 @@ namespace nim
     // DisplayContainer and CwOutlineBase.  This is expected.
 #pragma warning(disable: 4250)
 
-    class CwTable : public DisplayContainer, public CwOutlineBase
+    class CwTable : public WithVerticalLayout< WithNavigation< WithTooltips< DisplayContainer > > >,
+                    public CwOutlineBase
     {
     public:
         // Credentials selection
@@ -342,6 +375,11 @@ namespace nim
         virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
         virtual void OnContextMenu(const Point& p);
 
+        virtual DWORD GetStyle();
+        virtual DWORD GetStyleEx();
+
+        virtual void PaintSelf(Graphics& g, const Rect& bounds);
+
     public:                     // Handlers for KMSG_*
         DCL_KMSG(CRED, ROOTDELTA);
         DCL_KMSG(CRED, PP_BEGIN);
@@ -362,6 +400,9 @@ namespace nim
 
 
     // Implementation section
+
+    khm_int32 CwTable::attrib_to_action[KCDB_ATTR_MAX_ID + 1] = {0};
+
     inline CwOutline * NextOutline(DisplayElement * e) {
         for (DisplayElement * i = e; i != NULL; i = TQNEXTSIBLING(i)) {
             CwOutline * t = dynamic_cast< CwOutline * >(i);
@@ -371,14 +412,27 @@ namespace nim
         return static_cast< CwOutline * >(NULL);
     }
 
-#define for_each_child(c)                                           \
-    for (CwOutline * c = NextOutline(TQFIRSTCHILD(this)),           \
-             *nc = NextOutline(TQNEXTSIBLING(c));                   \
-         c != NULL;                                                 \
-         c = nc, nc = NextOutline(TQNEXTSIBLING(c)))
+    template <class T>
+    bool AllowRecursiveInsert(DisplayColumnList& columns, int column)
+    {
+        return false;
+    }
+
+    template <>
+    bool AllowRecursiveInsert<Credential&>(DisplayColumnList& columns, int column)
+    {
+        return (column > 0 && (unsigned) column < columns.size() && columns[column]->group);
+    }
+
+#define for_each_child(c)                                               \
+    for (CwOutline * c = NextOutline(TQFIRSTCHILD(this)),               \
+             *nc = ((c != NULL)?NextOutline(TQNEXTSIBLING(c)):NULL);    \
+         c != NULL;                                                     \
+         c = nc, nc = ((c != NULL)?NextOutline(TQNEXTSIBLING(c)):NULL))
 
     template <class T>
-    CwOutlineBase * CwOutlineBase::Insert(T& obj, DisplayColumnList& columns, unsigned int column) {
+    CwOutlineBase * CwOutlineBase::Insert(T& obj, DisplayColumnList& columns, unsigned int column) 
+    {
         CwOutlineBase * target = NULL;
         bool insert_new = false;
 
@@ -412,7 +466,8 @@ namespace nim
         return target;
     }
 
-    void CwOutlineBase::BeginUpdate() {
+    void CwOutlineBase::BeginUpdate() 
+    {
         insertion_point = NextOutline(TQFIRSTCHILD(this));
         CancelTimer();
 
@@ -420,7 +475,8 @@ namespace nim
             c->BeginUpdate();
     }
 
-    void CwOutlineBase::EndUpdate() {
+    void CwOutlineBase::EndUpdate()
+    {
         CwOutlineBase * c;
 
         for (insertion_point = NextOutline(insertion_point);
@@ -468,11 +524,7 @@ namespace nim
 
     void CwOutline::PaintSelf(Graphics& g, const Rect& bounds)
     {
-        g_theme->DrawCredWindowElement(g, bounds, DrawOutlineBackground,
-                                       static_cast< DrawState >
-                                       (((selected)? DrawStateSelected : DrawStateNone) |
-                                        ((highlight)? DrawStateHotTrack : DrawStateNone) |
-                                        ((focus)? DrawStateFocusRect : DrawStateNone)));
+        g_theme->DrawCredWindowOutline(g, bounds, GetDrawState());
     }
 
     void CwIdentityOutline::UpdateLayoutPre(Graphics& g, Rect& layout)
@@ -480,27 +532,37 @@ namespace nim
         __super::UpdateLayoutPre(g, layout);
 
         if (icon_widget == NULL) {
-            icon_widget = new IconWidget(Point(0,0),
-                                         identity.GetIcon(KCDB_RES_ICON_NORMAL),
-                                         true);
+            InsertChildAfter(icon_widget =
+                             new IconWidget(Point(0,0),
+                                            identity.GetIcon(KCDB_RES_ICON_NORMAL),
+                                            true));
         }
-
-        icon_widget->origin =
-            g_theme->pt_margin_cx +
-            g_theme->pt_margin_cy +
-            ((expandable)? g_theme->pt_icon_cx + g_theme->pt_margin_cx : Point(0,0));
 
         layout.Y = g_theme->sz_icon.Height + g_theme->sz_margin.Height * 2;
     }
 
     void CwIdentityOutline::UpdateLayoutPost(Graphics& g, const Rect& layout)
     {
+        icon_widget->origin =
+            g_theme->pt_margin_cx +
+            g_theme->pt_margin_cy +
+            ((expandable)? g_theme->pt_icon_sm_cx + g_theme->pt_margin_cx : Point(0,0));
+
         __super::UpdateLayoutPost(g, layout);
     }
 
     void CwIdentityOutline::PaintSelf(Graphics& g, const Rect& bounds)
     {
         __super::PaintSelf(g, bounds);
+
+        KhmTextLayout t(g, bounds, g_theme);
+        DrawState s = GetDrawState();
+
+        t.SetLeftMargin(g_theme->sz_margin.Width * 2 +
+                        ((expandable)? g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width : 0) +
+                        g_theme->sz_icon.Width);
+        t.DrawText(identity.GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndIdentity, s);
+        //t.DrawText(identity.GetType().GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndType, s);
     }
 
     void CwCredTypeOutline::UpdateLayoutPre(Graphics& g, Rect& layout)
@@ -551,7 +613,7 @@ namespace nim
     CwOutline * CreateOutlineNode(Identity & identity, DisplayColumnList& columns, int column)
     {
         assert((unsigned) column >= columns.size() ||
-               (static_cast<CwColumn *>(columns[column]))->attr_id == KCDB_ATTR_ID);
+               (static_cast<CwColumn *>(columns[column]))->attr_id == KCDB_ATTR_ID_DISPLAY_NAME);
         return new CwIdentityOutline(identity, column);
     }
 
@@ -566,15 +628,29 @@ namespace nim
             return new CwCredentialRow(cred, column);
 
         switch (cwcol->attr_id) {
-        case KCDB_ATTR_ID:
+        case KCDB_ATTR_ID_DISPLAY_NAME:
             return new CwIdentityOutline(cred.GetIdentity(), column);
 
-        case KCDB_ATTR_TYPE:
+        case KCDB_ATTR_TYPE_NAME:
             return new CwCredTypeOutline(cred.GetType(), column);
 
         default:
             return new CwGenericOutline(cred, cwcol->attr_id, column);
         }
+    }
+
+    void CwTable::PaintSelf(Graphics& g, const Rect& bounds)
+    {
+        Rect clip;
+        Region rgn;
+
+        if (g.GetClip(&rgn) == Ok) {
+            rgn.GetBounds(&clip, &g);
+        } else {
+            bounds.GetBounds(&clip);
+        }
+
+        g_theme->DrawCredWindowBackground(g, bounds, clip);
     }
 
     void
@@ -819,7 +895,7 @@ namespace nim
 
         if (is_identity_view &&
             (columns.size() != 1 ||
-             static_cast<CwColumn*>(columns[0])->attr_id != KCDB_ATTR_ID_NAME ||
+             static_cast<CwColumn*>(columns[0])->attr_id != KCDB_ATTR_ID_DISPLAY_NAME ||
              !columns[0]->group)) {
             assert(FALSE);
             is_identity_view = false;
@@ -1264,6 +1340,15 @@ namespace nim
         __super::OnCommand(id, hwndCtl, codeNotify);
     }
 
+    DWORD CwTable::GetStyle() {
+        return WS_CHILD | WS_CLIPCHILDREN | WS_CLIPSIBLINGS |
+            WS_HSCROLL | WS_VISIBLE | WS_VSCROLL;
+    }
+
+    DWORD CwTable::GetStyleEx() {
+        return 0;
+    }
+
     void CwTable::OnContextMenu(const Point& p)
     {
         // TODO: show context menu.  note that x,y = (-1,-1) if the
@@ -1280,7 +1365,7 @@ namespace nim
         ControlWindow::UnregisterWindowClass();
     }
 
-    CwTable * main_table = NULL;
+    static CwTable * main_table = NULL;
 
     extern "C" HWND 
     khm_create_credwnd(HWND parent) {
@@ -1296,6 +1381,8 @@ namespace nim
         GetClientRect(parent, &r);
 
         hwnd = main_table->Create(parent, RectFromRECT(&r), 0, NULL);
+
+        main_table->ShowWindow();
 
         return hwnd;
     }

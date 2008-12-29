@@ -37,10 +37,13 @@ namespace nim {
 
     typedef enum DrawState {
         DrawStateNone         = 0,
-        DrawStateNoBackground = (1L << 0),
-        DrawStateSelected     = (1L << 1),
-        DrawStateHotTrack     = (1L << 2),
-        DrawStateFocusRect    = (1L << 3),
+        DrawStateHotTrack     = (1L << 0),
+        DrawStateActive       = (1L << 1),
+        DrawStateSelected     = (1L << 2),
+        DrawStateChecked      = (1L << 3),
+        DrawStateDisabled     = (1L << 4),
+        DrawStateFocusRect    = (1L << 5),
+        DrawStateNoBackground = (1L << 6),
 
         DrawStateExpired      = (1L << 16),
         DrawStateCritial      = (1L << 17),
@@ -49,8 +52,10 @@ namespace nim {
 
     typedef enum DrawElement {
         DrawNone             = 0,
-        DrawOutlineBackground,
-        DrawOutlineWidget,
+        DrawCwBackground,
+        DrawCwOutlineBackground,
+        DrawCwOutlineWidget,
+        DrawCwNormalBackground,
     } DrawElement;
 
     class KhmDraw {
@@ -78,6 +83,8 @@ namespace nim {
         Size    sz_icon;        // Size of large icon
         Size    sz_icon_sm;     // Size of small icon
         Size    sz_margin;      // Size of small margin
+
+        int     line_thickness;
 
         Point   pt_margin_cx;
         Point   pt_margin_cy;
@@ -117,20 +124,92 @@ namespace nim {
         void LoadTheme(const wchar_t * themename = NULL);
         void UnloadTheme(void);
 
-        void DrawCredWindowBackground(Graphics & g, const Rect& extents, const Rect& clip);
-        void DrawCredWindowElement(Graphics & g, const Rect& bounds, DrawElement elem, DrawState state );
+        void DrawCredWindowBackground(Graphics & g, const Rect& extents,
+                                      const Rect& clip);
 
-        // Utilities
-        Rect& VCenter(Rect & r, const Rect & ref) {
-            r.Y = (ref.GetTop() + ref.GetBottom() - r.Height) / 2;
-            return r;
+        void DrawCredWindowOutline(Graphics& g, const Rect& extents, DrawState state);
+
+        void DrawCredWindowOutlineWidget(Graphics& g, const Rect& extents, DrawState state);
+
+        void DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state);
+    };
+
+    typedef enum DrawTextStyle {
+        DrawTextCredWndIdentity  = 1,
+        DrawTextCredWndType,
+        DrawTextCredWndStatus,
+        DrawTextCredWndNormal
+    };
+
+    class KhmTextLayout {
+        KhmDraw  * d; 
+        Graphics * g;
+        RectF      extents;
+        REAL       cursor;
+        REAL       baseline;
+
+    public:
+        KhmTextLayout(Graphics& _g, const Rect& _extents, KhmDraw * theme) {
+            d = theme;
+            g = &_g;
+            extents = RectF((REAL)_extents.X, (REAL)_extents.Y,
+                            (REAL)_extents.Width, (REAL)_extents.Height);
+            cursor = extents.X;
+            baseline = extents.Y;
         }
+
+        void SetLeftMargin(INT x1) {
+            extents.X += x1;
+            extents.Width -= x1;
+            cursor = __max(cursor, extents.X);
+        }
+
+        void SetRightMargin(INT x2) {
+            extents.Width -= x2;
+        }
+
+        void LineBreak() {
+            cursor = extents.X;
+            extents.Height = extents.GetBottom() - baseline;
+            extents.Y = baseline;
+        }
+
+        void DrawText(std::wstring& text, DrawTextStyle style, DrawState state);
     };
 
     extern KhmDraw * g_theme;
 
     inline Rect RectFromRECT(const RECT * r) {
         return Rect(r->left, r->top, r->right - r->left, r->bottom - r->top);
+    }
+
+    inline Color operator * (const Color& left, BYTE right) {
+        unsigned int a = (((unsigned int) left.GetAlpha()) * right) / 255;
+        return Color((left.GetValue() & (Color::RedMask | Color::GreenMask | Color::BlueMask)) |
+                     (a << Color::AlphaShift));
+    }
+
+    inline Color& operator += (Color& left, const Color& right) {
+        UINT la = (UINT) left.GetAlpha();
+        UINT ra = (UINT) right.GetAlpha();
+        UINT a = la + ((255 - la) * ra) / 255;
+        UINT r = (left.GetRed() * la + right.GetRed() * ra) / 255;
+        UINT g = (left.GetGreen() * la + right.GetGreen() * ra) / 255;
+        UINT b = (left.GetBlue() * la + right.GetBlue() * ra) / 255;
+
+        left.SetValue(Color::MakeARGB(a, __min(r, 255), __min(g, 255), __min(b, 255)));
+        return left;
+    }
+
+    inline Color operator + (const Color& left, const Color& right) {
+        UINT la = (UINT) left.GetAlpha();
+        UINT ra = (UINT) right.GetAlpha();
+        UINT a = la + ((255 - la) * ra) / 255;
+        UINT r = (left.GetRed() * la + right.GetRed() * ra) / 255;
+        UINT g = (left.GetGreen() * la + right.GetGreen() * ra) / 255;
+        UINT b = (left.GetBlue() * la + right.GetBlue() * ra) / 255;
+
+        return Color(Color::MakeARGB(a, __min(r, 255), __min(g, 255), __min(b, 255)));
     }
 
     std::wstring
@@ -145,6 +224,12 @@ namespace nim {
                           HINSTANCE inst = khm_hInstance);
 
 } /* namespace nim */
+#else  /* not __cplusplus */
+
+void khm_init_drawfuncs(void);
+
+void khm_exit_drawfuncs(void);
+
 #endif
 
 #endif

@@ -30,8 +30,6 @@
 namespace nim
 {
 
-    KhmDraw * g_theme = NULL;
-
     KhmDraw::KhmDraw()
     {
         isThemeLoaded = FALSE;
@@ -67,8 +65,10 @@ namespace nim
         sz_icon.Height    = GetSystemMetrics(SM_CYICON);
         sz_icon_sm.Width  = GetSystemMetrics(SM_CXSMICON);
         sz_icon_sm.Height = GetSystemMetrics(SM_CYSMICON);
-        sz_margin.Width   = sz_icon_sm.Width / 2;
-        sz_margin.Height  = sz_icon_sm.Height / 2;
+        sz_margin.Width   = sz_icon_sm.Width / 4;
+        sz_margin.Height  = sz_icon_sm.Height / 4;
+
+        line_thickness = 1;
 
 #define CXCY_FROM_SIZE(p,s)                     \
         p ## _cx.X = s.Width;                   \
@@ -145,7 +145,76 @@ namespace nim
         }
     }
 
+    void 
+    KhmDraw::DrawCredWindowOutline(Graphics& g, const Rect& extents, DrawState state)
+    {
+        GraphicsPath outline;
+        int dx = sz_margin.Width;
+        int dy = sz_margin.Height;
+        int width = extents.Width - line_thickness * 2;
+        int height = extents.Height - line_thickness * 2;
 
+        outline.AddArc(0, 0, dx*2, dy*2, 180.0, 90.0);
+        outline.AddLine(dx, 0, width - dx, 0);
+        outline.AddArc(width - dx*2, 0, dx*2, dy*2, 270.0, 90.0);
+        outline.AddLine(width, dy, width, height - dy);
+        outline.AddArc(width - dx*2, height - dy*2, dx*2, dy*2, 0, 90.0);
+        outline.AddLine(width - dx, height, dx, height);
+        outline.AddArc(0, height - 2*dy, dx*2, dy*2, 90.0, 90.0);
+        outline.AddLine(0, height - dy, 0, dy);
+
+        Matrix m;
+
+        m.Reset();
+        m.Translate((REAL) extents.X + line_thickness, (REAL) extents.Y + line_thickness);
+        outline.Transform(&m);
+
+        Color tl(Color::White);
+        Color br(Color::Coral);
+        Color upper(Color::Coral);
+        Color lower(Color::White);
+
+        tl = tl * 200;
+        br = br * 128;
+        upper = upper * 128;
+        lower = lower * 128;
+
+        if (state & DrawStateSelected) {
+            Color sel = c_selection * 128;
+
+            tl += sel;
+            br += sel;
+            upper += sel;
+            lower += sel;
+        }
+
+        LinearGradientBrush bb(Point(0, extents.GetTop()), Point(0,extents.GetBottom()), upper, lower);
+        LinearGradientBrush pb(Point(extents.GetLeft(), extents.GetTop()),
+                               Point(extents.GetRight(), extents.GetBottom()),
+                               tl, br);
+
+        Pen p(&pb,2);
+
+        g.FillPath(&bb, &outline);
+        g.DrawPath(&p, &outline);
+    }
+
+    void 
+    KhmDraw::DrawCredWindowOutlineWidget(Graphics& g, const Rect& extents, DrawState state)
+    {
+        CredWndImages image;
+
+        image = ((state & DrawStateChecked)?
+                 ((state & DrawStateHotTrack)? ImgExpandHi : ImgExpand) :
+                 ((state & DrawStateHotTrack)? ImgCollapseHi : ImgCollapse));
+
+        DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
+    }
+
+    void 
+    KhmDraw::DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state)
+    {
+    }
 
     std::wstring LoadStringResource(UINT res_id, HINSTANCE inst)
     {
@@ -172,15 +241,75 @@ namespace nim
                                    LR_DEFAULTCOLOR | LR_DEFAULTSIZE | ((shared)? LR_SHARED : 0));
     }
 
-    void
-    khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act)
+    void KhmTextLayout::DrawText(std::wstring& text, DrawTextStyle style, DrawState state)
     {
+        switch (style) {
+        case DrawTextCredWndIdentity:
+            {
+                Font f(g->GetHDC(), d->hf_header);
+                StringFormat fmt(StringFormatFlagsNoWrap);
+
+                fmt.SetTrimming(StringTrimmingEllipsisCharacter);
+
+                if (cursor > extents.X)
+                    LineBreak();
+
+                RectF b;
+
+                g->MeasureString(text.c_str(), -1, &f, extents, &fmt, &b);
+                baseline = __max(baseline, b.GetBottom());
+                cursor = b.GetRight();
+
+                SolidBrush br((state & DrawStateSelected)? d->c_text_selected: d->c_text);
+
+                g->DrawString(text.c_str(), -1, &f, extents, &fmt, &br);
+            }
+            break;
+
+        case DrawTextCredWndType:
+            {
+            }
+            break;
+
+        case DrawTextCredWndStatus:
+            {
+            }
+            break;
+
+        case DrawTextCredWndNormal:
+            {
+            }
+            break;
+        }
     }
 
-    void
-    khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
+    KhmDraw * g_theme = NULL;
+    ULONG_PTR gdiplus_token;
+
+    extern "C" void khm_init_drawfuncs(void)
     {
+        if (g_theme == NULL) {
+            GdiplusStartupInput gdip_inp;
+
+            GdiplusStartup(&gdiplus_token, &gdip_inp, NULL);
+
+            g_theme = new KhmDraw;
+
+            g_theme->LoadTheme();
+        }
     }
+
+    extern "C" void khm_exit_drawfuncs(void)
+    {
+        if (g_theme != NULL) {
+            delete g_theme;
+            g_theme = NULL;
+
+            GdiplusShutdown(gdiplus_token);
+        }
+    }
+
+
 
 #if 0
     void
@@ -312,3 +441,14 @@ namespace nim
 
 #endif
 }
+
+void
+khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act)
+{
+}
+
+void
+khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
+{
+}
+

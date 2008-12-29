@@ -79,6 +79,7 @@ SDKLIBFILES= 			\
 	iphlpapi.lib		\
 	shlwapi.lib		\
 	msimg32.lib		\
+	gdiplus.lib		\
 	ole32.lib
 
 !if "$(APPVER)" != "5.0"

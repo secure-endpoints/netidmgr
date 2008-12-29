@@ -453,11 +453,14 @@ void
 khm_init_themes(void)
 {
     open_theme_handle(NULL);
+    khm_init_drawfuncs();
 }
 
 void
 khm_exit_themes(void)
 {
+    khm_exit_drawfuncs();
+
     if (csp_theme) {
         khc_close_space(csp_theme);
         csp_theme = NULL;

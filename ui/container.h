@@ -153,6 +153,8 @@ namespace nim {
     public:
         HWND Create(HWND parent, Rect & extents, int id, LPVOID createParams = NULL);
 
+        BOOL ShowWindow(int nCmdShow = SW_SHOW);
+
         static void RegisterWindowClass(void);
 
         static void UnregisterWindowClass(void);
@@ -317,14 +319,19 @@ namespace nim {
     public:
         DisplayElement() {
             TQINIT(this); 
-            visible        = true; 
+            owner          = NULL;
+
             expandable     = false; 
-            expanded       = false; 
             is_outline     = false;
-            recalc_extents = true; 
+
+            visible        = true; 
+            expanded       = false; 
+
             focus          = false;
             selected       = false;
-            owner          = NULL;
+            highlight      = false;
+
+            recalc_extents = true; 
         };
 
         virtual ~DisplayElement() {
@@ -367,27 +374,25 @@ namespace nim {
 
         DisplayElement * DescendantFromPoint(const Point & p);
 
-        void OnPaint(Graphics& g, const Rect& bounds);
-
         void UpdateLayout(Graphics & g, const Rect & layout);
+
+        void Invalidate(const Rect & r);
+
+        void Invalidate() {
+            Invalidate(Rect(Point(0,0), extents));
+        }
 
         virtual void UpdateLayoutPre(Graphics & g, Rect & layout);
 
         virtual void UpdateLayoutPost(Graphics & g, const Rect & layout);
 
-        void Invalidate(const Rect & r);
-
-        void Invalidate() { Invalidate(Rect(Point(0,0), extents)); }
-
         virtual void Expand(bool expand = true);
 
-        virtual void Show(bool show = true) {
-            if (visible == show)
-                return; 
-            visible = show; 
-            MarkForExtentUpdate(); 
-            Invalidate(); 
-        }
+        virtual void Show(bool show = true);
+
+        virtual void Select(bool _select = true);
+
+        void OnPaint(Graphics& g, const Rect& bounds);
 
         virtual void PaintSelf(Graphics &g, const Rect& bounds) { }
 
@@ -439,6 +444,7 @@ namespace nim {
     public:
         DisplayContainer() {
             dbuffer = 0; show_header = false; hwnd_header = NULL;
+            header_height = 0;
             mouse_element = NULL; mouse_dblclk = false;
             owner = this;
         }
@@ -467,9 +473,11 @@ namespace nim {
 
         virtual void OnPosChanged(LPWINDOWPOS lp);
 
-        using DisplayElement::Invalidate;
-
         virtual void Invalidate(const Rect & r);
+
+        void Invalidate() {
+            ::InvalidateRect(hwnd, NULL, TRUE);
+        }
 
         virtual Point MapToScreen(const Point & p);
 
@@ -819,18 +827,10 @@ namespace nim {
         }
 
         static void SelectAllIn(DisplayElement * e, bool select) {
-            SelectElement(e, select);
+            e->Select(select);
             for (DisplayElement * c = TQFIRSTCHILD(e); c; c = TQNEXTSIBLING(c)) {
                 SelectAllIn(c, select);
             }
-        }
-
-        static void SelectElement(DisplayElement * e, bool select) {
-            if (e->selected == select)
-                return;
-
-            e->selected = select;
-            e->Invalidate();
         }
 
     public:
@@ -849,13 +849,13 @@ namespace nim {
 
             switch (action) {
             case FocusAddToggle:
-                SelectElement(e, !e->selected);
+                e->Select(!e->selected);
                 anchor = e;
                 break;
 
             case FocusExclusive:
                 SelectAllIn(this, false);
-                SelectElement(e, true);
+                e->Select(true);
                 anchor = e;
                 break;
 
@@ -868,7 +868,7 @@ namespace nim {
                 if (c != NULL) {
                     SelectAllIn(this, false);
                     for (c = e; c; c = NextTabStop(c)) {
-                        SelectElement(c, true);
+                        c->Select();
                         if (c == anchor)
                             break;
                     }
@@ -881,13 +881,13 @@ namespace nim {
                 if (c != NULL) {
                     SelectAllIn(this, false);
                     for (c = e; c; c = PrevTabStop(c)) {
-                        SelectElement(c, true);
+                        c->Select();
                         if (c == anchor)
                             break;
                     }
                     break;
                 }
-                SelectElement(e, true);
+                e->Select();
                 anchor = e;
                 break;
             }
@@ -915,7 +915,7 @@ namespace nim {
             case KHUI_PACTION_LEFT:
                 if (focus && focus->expandable && focus->expanded) {
                     focus->Expand(false);
-                    DisplayElement::Invalidate();
+                    Invalidate();
                     break;
                 }
                 // fallthrough
@@ -949,7 +949,7 @@ namespace nim {
             case KHUI_PACTION_RIGHT:
                 if (focus && focus->expandable && !focus->expanded) {
                     focus->Expand(true);
-                    DisplayElement::Invalidate();
+                    Invalidate();
                     break;
                 }
                 // fallthrough
