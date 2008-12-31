@@ -45,58 +45,58 @@ typedef struct tag_notif_data {
 
 static void 
 read_params(notif_data * d) {
-    khm_handle csp_cw;
+    khm_handle csp_idsc;
     khm_int32 rv;
     khm_int32 t;
 
-    rv = khc_open_space(NULL, L"CredWindow", KHM_PERM_READ, &csp_cw);
+    rv = khc_open_space(NULL, L"KCDB\\Identity\\_Schema", KHM_PERM_READ, &csp_idsc);
     assert(KHM_SUCCEEDED(rv));
 
-    rv = khc_read_int32(csp_cw, L"Monitor", &t);
+    rv = khc_read_int32(csp_idsc, L"Monitor", &t);
     assert(KHM_SUCCEEDED(rv));
     d->monitor = !!t;
 
-    rv = khc_read_int32(csp_cw, L"AllowAutoRenew", &t);
+    rv = khc_read_int32(csp_idsc, L"AllowAutoRenew", &t);
     assert(KHM_SUCCEEDED(rv));
     d->renew = !!t;
 
-    rv = khc_read_int32(csp_cw, L"RenewAtHalfLife", &t);
+    rv = khc_read_int32(csp_idsc, L"RenewAtHalfLife", &t);
     assert(KHM_SUCCEEDED(rv));
     d->halflife = !!t;
 
-    rv = khc_read_int32(csp_cw, L"AllowWarn", &t);
+    rv = khc_read_int32(csp_idsc, L"AllowWarn", &t);
     assert(KHM_SUCCEEDED(rv));
     d->warn1 = !!t;
 
-    rv = khc_read_int32(csp_cw, L"AllowCritical", &t);
+    rv = khc_read_int32(csp_idsc, L"AllowCritical", &t);
     assert(KHM_SUCCEEDED(rv));
     d->warn2 = !!t;
 
-    rv = khc_read_int32(csp_cw, L"AutoRenewThreshold", &t);
+    rv = khc_read_int32(csp_idsc, L"AutoRenewThreshold", &t);
     assert(KHM_SUCCEEDED(rv));
     d->tc_renew.current = t;
 
-    rv = khc_read_int32(csp_cw, L"WarnThreshold", &t);
+    rv = khc_read_int32(csp_idsc, L"WarnThreshold", &t);
     assert(KHM_SUCCEEDED(rv));
     d->tc_warn1.current = t;
 
-    rv = khc_read_int32(csp_cw, L"CriticalThreshold", &t);
+    rv = khc_read_int32(csp_idsc, L"CriticalThreshold", &t);
     assert(KHM_SUCCEEDED(rv));
     d->tc_warn2.current = t;
 
-    rv = khc_read_int32(csp_cw, L"MaxThreshold", &t);
+    rv = khc_read_int32(NULL, L"KCDB\\MaxThreshold", &t);
     assert(KHM_SUCCEEDED(rv));
     d->tc_renew.max = t;
     d->tc_warn1.max = t;
     d->tc_warn2.max = t;
 
-    rv = khc_read_int32(csp_cw, L"MinThreshold", &t);
+    rv = khc_read_int32(NULL, L"KCDB\\MinThreshold", &t);
     assert(KHM_SUCCEEDED(rv));
     d->tc_renew.min = t;
     d->tc_warn1.min = t;
     d->tc_warn2.min = t;
 
-    khc_close_space(csp_cw);
+    khc_close_space(csp_idsc);
 
     d->modified = FALSE;
 }
@@ -141,7 +141,9 @@ write_params(notif_data * d) {
     if (!d->modified)
         return;
 
-    rv = khc_open_space(NULL, L"CredWindow", KHM_PERM_WRITE, &csp_cw);
+    rv = khc_open_space(NULL, L"KCDB\\Identity\\_Schema",
+                        KHM_PERM_WRITE |
+                        KCONF_FLAG_WRITEIFMOD, &csp_cw);
     assert(KHM_SUCCEEDED(rv));
 
     rv = khc_write_int32(csp_cw, L"Monitor", d->monitor);

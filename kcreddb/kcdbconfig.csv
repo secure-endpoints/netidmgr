@@ -4,6 +4,11 @@ Name,Type,Value,Description
 KCDB,KC_SPACE,0,Khimaira Credentials DB
   IdentityProviderOrder,KC_STRING,"Krb5Ident",Order of identity providers.
   IdentSerial,KC_INT64,0,Identity Serial Number.
+  DefaultMonitor,KC_INT32,1,"Boolean. This is the default Monitor value that is assigned for new identities."
+  DefaultAllowAutoRenew,KC_INT32,1,Default AllowAutoRenew value for new identities
+  DefaultSticky,KC_INT32,0,Default Sticky value for new identities
+  MaxThreshold,KC_INT32,86400,Max value for a threshold (1 day)
+  MinThreshold,KC_INT32,10,Min value for a threshold (0)
   Identity,KC_SPACE,0,Configuration space for identities
     _Schema,KC_SPACE,0,Schema for identities
       Name,KC_STRING,,The name of the identity.
@@ -16,6 +21,7 @@ KCDB,KC_SPACE,0,Khimaira Credentials DB
       AllowCritical,KC_INT32,1,Boolean. Allow critical.
       AutoRenewThreshold,KC_INT32,60,In seconds
       AllowAutoRenew,KC_INT32,1,Boolean.
+      RenewAtHalfLife,KC_INT32,1,Attempt to renew at half life intervals.
       IconNormal,KC_STRING,,Resource path for the icon representing the identity.  This path may contain unexpanded environment strings.
       IdentSerial,KC_INT64,0,Identity serial number.
     _Schema,KC_ENDSPACE,0,

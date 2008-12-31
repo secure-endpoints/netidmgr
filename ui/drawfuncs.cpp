@@ -52,6 +52,7 @@ namespace nim
 
         c_selection    .SetFromCOLORREF(khm_get_element_color(KHM_CLR_SELECTION));
         c_background   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_BACKGROUND));
+        c_header       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER));
         c_warning      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_WARN));
         c_critical     .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_CRIT));
         c_expired      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_EXP));
@@ -188,15 +189,28 @@ namespace nim
             lower += sel;
         }
 
-        LinearGradientBrush bb(Point(0, extents.GetTop()), Point(0,extents.GetBottom()), upper, lower);
-        LinearGradientBrush pb(Point(extents.GetLeft(), extents.GetTop()),
-                               Point(extents.GetRight(), extents.GetBottom()),
-                               tl, br);
+        {
+            LinearGradientBrush bb(Point(0, extents.GetTop()), Point(0,extents.GetBottom()), upper, lower);
+            LinearGradientBrush pb(Point(extents.GetLeft(), extents.GetTop()),
+                                   Point(extents.GetRight(), extents.GetBottom()),
+                                   tl, br);
 
-        Pen p(&pb,2);
+            Pen p(&pb,2);
 
-        g.FillPath(&bb, &outline);
-        g.DrawPath(&p, &outline);
+            g.FillPath(&bb, &outline);
+            g.DrawPath(&p, &outline);
+        }
+
+        if (state & DrawStateFocusRect) {
+            Color c = c_text_selected * 128;
+            Pen p(c);
+
+            p.SetDashStyle(DashStyleDash);
+
+            Rect r = extents;
+            r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
+            g.DrawRectangle(&p, r);
+        }
     }
 
     void 
@@ -246,8 +260,11 @@ namespace nim
         switch (style) {
         case DrawTextCredWndIdentity:
             {
-                Font f(g->GetHDC(), d->hf_header);
+                HDC hdc = g->GetHDC();
+                Font f(hdc, d->hf_header);
                 StringFormat fmt(StringFormatFlagsNoWrap);
+
+                g->ReleaseHDC(hdc);
 
                 fmt.SetTrimming(StringTrimmingEllipsisCharacter);
 
@@ -268,6 +285,29 @@ namespace nim
 
         case DrawTextCredWndType:
             {
+                HDC hdc = g->GetHDC();
+                Font f(hdc, d->hf_normal);
+                StringFormat fmt(StringFormatFlagsNoWrap);
+
+                g->ReleaseHDC(hdc);
+
+                fmt.SetTrimming(StringTrimmingEllipsisCharacter);
+                fmt.SetAlignment(StringAlignmentFar);
+
+                RectF e = extents;
+                RectF b;
+                e.Width -= cursor - e.X;
+                e.X = cursor;
+
+                g->MeasureString(text.c_str(), -1, &f, e, &fmt, &b);
+                baseline = __max(baseline, b.GetBottom());
+                cursor = b.GetRight();
+
+                SolidBrush br((state & DrawStateSelected)? d->c_text_selected: d->c_text);
+
+                g->DrawString(text.c_str(), -1, &f, e, &fmt, &br);
+
+                LineBreak();
             }
             break;
 

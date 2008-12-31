@@ -397,7 +397,6 @@ khm_get_identity_timer_info(khm_handle identity, khui_timer_info * pinfo, khm_in
 
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    khm_handle csp_cw = NULL;
     khm_handle csp_id = NULL;
     khm_size cb;
 
@@ -413,16 +412,7 @@ khm_get_identity_timer_info(khm_handle identity, khui_timer_info * pinfo, khm_in
     pinfo->expire = FtToInt(&id_expire);
     pinfo->issue = FtToInt(&id_issue);
 
-    khc_open_space(NULL, L"CredWindow", KHM_PERM_READ, &csp_cw);
-    kcdb_identity_get_config(identity, KHM_PERM_READ, &csp_id);
-
-    if (csp_id && csp_cw)
-        khc_shadow_space(csp_id, csp_cw);
-    else if (csp_id == NULL) {
-        csp_id = csp_cw;
-        csp_cw = NULL;
-    } else
-        goto done;
+    kcdb_identity_get_config(identity, KHM_PERM_READ | KCONF_FLAG_SHADOW, &csp_id);
 
     khc_read_int32(csp_id, L"Monitor", &monitor);
     khc_read_int32(csp_id, L"AllowWarn", &do_warning);
@@ -452,7 +442,6 @@ khm_get_identity_timer_info(khm_handle identity, khui_timer_info * pinfo, khm_in
         pinfo->critical = pinfo->expire - SECONDS_TO_FT(to_critical);
 
  done:
-    if (csp_cw) khc_close_space(csp_cw);
     if (csp_id) khc_close_space(csp_id);
 
     return rv;

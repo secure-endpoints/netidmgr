@@ -67,6 +67,7 @@ namespace nim {
 
         Color   c_selection;        // Selection color
         Color   c_background;       // Background color
+        Color   c_header;           // Header color
 
         Color   c_warning;          // Warning color
         Color   c_critical;         // Critical color
@@ -152,8 +153,10 @@ namespace nim {
         KhmTextLayout(Graphics& _g, const Rect& _extents, KhmDraw * theme) {
             d = theme;
             g = &_g;
-            extents = RectF((REAL)_extents.X, (REAL)_extents.Y,
-                            (REAL)_extents.Width, (REAL)_extents.Height);
+            extents = RectF((REAL)_extents.X + d->sz_margin.Width,
+                            (REAL)_extents.Y + d->sz_margin.Height,
+                            (REAL)_extents.Width - d->sz_margin.Width*2,
+                            (REAL)_extents.Height - d->sz_margin.Height*2);
             cursor = extents.X;
             baseline = extents.Y;
         }

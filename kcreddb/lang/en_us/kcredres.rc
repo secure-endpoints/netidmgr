@@ -137,6 +137,9 @@ STRINGTABLE
 BEGIN
     IDS_FTS_REL_TOD         "at %s"
     IDS_FTS_TS              "%1 %2"
+    IDS_THR_RENEW           "Renewal threshold"
+    IDS_THR_WARN            "Warning threshold"
+    IDS_THR_CRIT            "Critical threshold"
 END
 
 #endif    // English (U.S.) resources

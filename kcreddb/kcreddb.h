@@ -3149,6 +3149,27 @@ FtIntervalToString(const FILETIME * data,
                    wchar_t * buffer, 
                    khm_size * cb_buf);
 
+
+/* the max difference between two timers (in seconds) that can exist
+   where we consider them to be equivalent. */
+#define TT_TIMEEQ_ERROR_SMALL 1
+
+/* The minimum half time interval is 60 seconds*/
+#define TT_MIN_HALFLIFE_INTERVAL 60
+
+/* The maximum lifetime at which we consider a credential is as good
+   as dead as far as notifications are concerned in seconds*/
+#define TT_EXPIRED_THRESHOLD 60
+
+#define SECONDS_TO_FT(s) ((s) * 10000000i64)
+#define FT_TO_MS(ft) ((ft) / 10000i64)
+
+/* as above, in FILETIME units of 100ns */
+#define FT_MIN_HALFLIFE_INTERVAL SECONDS_TO_FT(TT_MIN_HALFLIFE_INTERVAL)
+
+#define FT_EXPIRED_THRESHOLD SECONDS_TO_FT(TT_EXPIRED_THRESHOLD)
+
+
 #define FTSE_INTERVAL      0x00010000
 #define FTSE_RELATIVE      0x00020000
 #define FTSE_RELATIVE_DAY  0x00040000
@@ -3808,6 +3829,40 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
  */
 #define KCDB_ATTR_PARAM         (KCDB_ATTR_MIN_PROP_ID + 3)
 
+/*! \brief Renewal threshold
+
+  This is set to the renewal threshold of the identity as a FILETIME
+  interval.  If renewals are disabled for this identity, the value
+  would be 0.  If renewals should be performed using the half-life
+  algorithm, the value would be 1.
+
+    - \b Type: INTERVAL
+    - \b Flags: SYSTEM, PROPERTY, HIDDEN, COMPUTED
+ */
+#define KCDB_ATTR_THR_RENEW     (KCDB_ATTR_MIN_PROP_ID + 4)
+
+/*! \brief Warning threshold
+
+  This is set to the warning threshold of the identity as a FILETIME
+  interval.  If warnings are disabled for this identity, the value
+  would be 0.
+
+    - \b Type: INTERVAL
+    - \b Flags: SYSTEM, PROPERTY, HIDDEN, COMPUTED
+ */
+#define KCDB_ATTR_THR_WARN      (KCDB_ATTR_MIN_PROP_ID + 5)
+
+/*! \brief Critical threshold
+
+  This is set to the critical threshold of the identity as a FILETIME
+  interval.  If warnings are disabled for this identity, the value
+  would be 0.
+
+    - \b Type: INTERVAL
+    - \b Flags: SYSTEM, PROPERTY, HIDDEN, COMPUTED
+ */
+#define KCDB_ATTR_THR_CRIT      (KCDB_ATTR_MIN_PROP_ID + 6)
+
 /*@}*/
 
 /*!\name Attribute names */
@@ -3837,6 +3892,9 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 #define KCDB_ATTRNAME_N_IDCREDS     L"NIDCredentials"
 #define KCDB_ATTRNAME_N_INITCREDS   L"NInitCredentials"
 #define KCDB_ATTRNAME_PARAM         L"ExtendedParameter"
+#define KCDB_ATTRNAME_THR_RENEW     L"IdentityRenewalThreshold"
+#define KCDB_ATTRNAME_THR_WARN      L"IdentityWarningThreshold"
+#define KCDB_ATTRNAME_THR_CRIT      L"IdentityCriticalThreshold"
 
 /*@}*/
 
@@ -4312,6 +4370,15 @@ namespace nim {
         template<class U> khm_int32 SetObject(khm_int32 attr_id, const U& target) {
             T *pT = static_cast<T*>(this);
             return pT->SetAttrib(attr_id, &target, sizeof(target));
+        }
+
+        khm_int64 GetAttribFileTimeAsInt(khm_int32 attr_id) const {
+            FILETIME ft;
+
+            if (KHM_FAILED(GetObject(attr_id, ft)))
+                return 0;
+            else
+                return FtToInt(&ft);
         }
 
         bool Exists(const wchar_t * attr_name) const {

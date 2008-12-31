@@ -31,6 +31,8 @@
 namespace nim
 {
 
+#define CW_CANAME_FLAGS L"_CWFlags"
+
     /* The expiration states */
 #define CW_EXPSTATE_NONE        0x00000000
 #define CW_EXPSTATE_WARN        0x00000400
@@ -187,7 +189,6 @@ namespace nim
 
         virtual bool Represents(Credential& credential) { return false; }
         virtual bool Represents(Identity& identity) { return false; }
-        virtual void OnTimer() { }
 
         virtual void UpdateLayoutPre(Graphics& g, Rect& layout);
         virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
@@ -237,6 +238,8 @@ namespace nim
         virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
 
         virtual void PaintSelf(Graphics& g, const Rect& bounds);
+
+        virtual DrawState GetExpirationState();
     };
 
 
@@ -558,11 +561,39 @@ namespace nim
         KhmTextLayout t(g, bounds, g_theme);
         DrawState s = GetDrawState();
 
-        t.SetLeftMargin(g_theme->sz_margin.Width * 2 +
+        t.SetLeftMargin(g_theme->sz_margin.Width +
                         ((expandable)? g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width : 0) +
                         g_theme->sz_icon.Width);
         t.DrawText(identity.GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndIdentity, s);
-        //t.DrawText(identity.GetType().GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndType, s);
+        t.DrawText(identity.GetType().GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndType, s);
+    }
+
+    DrawState CwIdentityOutline::GetExpirationState()
+    {
+        if (identity.Exists(KCDB_ATTR_EXPIRE)) {
+            khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
+            khm_int64 now;
+
+            FILETIME ft;
+
+            GetSystemTimeAsFileTime(&ft);
+            now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+
+            if (now > expire)
+                return DrawStateExpired;
+
+            khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
+
+            if (thr_crit != 0 && now > expire - thr_crit)
+                return DrawStateCritial;
+            
+            khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
+
+            if (thr_warn != 0 && now > expire - thr_warn)
+                return DrawStateWarning;
+        }
+
+        return DrawStateNone;
     }
 
     void CwCredTypeOutline::UpdateLayoutPre(Graphics& g, Rect& layout)

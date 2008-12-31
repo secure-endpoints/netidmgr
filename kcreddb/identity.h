@@ -55,6 +55,17 @@ typedef struct tag_kcdb_identity {
     FILETIME  ft_lastupdate;    /*!< Time at which credentials were
                                    last updated for this identity. */
 
+    FILETIME  ft_thr_last_update;
+                                /*!< The timestamp for configuration
+                                   space from which the threshold
+                                   values were read from. */
+
+    FILETIME  ft_thr_renew;     /*!< Renewal threshold */
+
+    FILETIME  ft_thr_warn;      /*!< Warning threshold */
+
+    FILETIME  ft_thr_crit;      /*!< Critical threshold */
+
     struct tag_kcdb_identity * parent;
                                 /*!< Parent identity, if there is one. */
 

@@ -146,6 +146,65 @@ kcdb_identity_is_valid_name(const wchar_t * name)
 
 #pragma warning(pop)
 
+/* Called with cs_ident held */
+static void
+kcdbint_refresh_identity_timer_thresholds(kcdb_identity * id, khm_handle csp_id)
+{
+    khm_int32 t;
+    FILETIME ft;
+
+    if ((id->ft_thr_last_update.dwHighDateTime != 0 ||
+         id->ft_thr_last_update.dwLowDateTime != 0) &&
+
+        KHM_SUCCEEDED(khc_get_last_write_time(csp_id, 0, &ft)) &&
+
+        CompareFileTime(&ft, &id->ft_thr_last_update) <= 0)
+
+        return;
+
+    if ((khc_value_exists(csp_id, L"Name") & (KCONF_FLAG_USER | KCONF_FLAG_SCHEMA))
+        != (KCONF_FLAG_SCHEMA | KCONF_FLAG_USER))
+        return;
+
+    id->ft_thr_last_update = ft;
+
+    if (KHM_FAILED(khc_read_int32(csp_id, L"Monitor", &t)) || t == 0) {
+        id->ft_thr_renew = IntToFt(0);
+        id->ft_thr_warn = id->ft_thr_renew;
+        id->ft_thr_crit = id->ft_thr_renew;
+        return;
+    }
+
+    if (KHM_SUCCEEDED(khc_read_int32(csp_id, L"AllowAutoRenew", &t)) && t != 0) {
+        if (KHM_SUCCEEDED(khc_read_int32(csp_id, L"RenewAtHalfLife", &t)) && t != 0) {
+            id->ft_thr_renew.dwHighDateTime = 0;
+            id->ft_thr_renew.dwLowDateTime = 1;
+        } else {
+            t = 0;
+            khc_read_int32(csp_id, L"AutoRenewThreshold", &t);
+            TimetToFileTimeInterval(t, &id->ft_thr_renew);
+        }
+    } else {
+        id->ft_thr_renew = IntToFt(0);
+    }
+
+    if (KHM_SUCCEEDED(khc_read_int32(csp_id, L"AllowWarn", &t)) && t != 0) {
+        t = 0;
+        khc_read_int32(csp_id, L"WarnThreshold", &t);
+        TimetToFileTimeInterval(t, &id->ft_thr_warn);
+    } else {
+        id->ft_thr_warn = IntToFt(0);
+    }
+
+    if (KHM_SUCCEEDED(khc_read_int32(csp_id, L"AllowCritical", &t)) && t != 0) {
+        t = 0;
+        khc_read_int32(csp_id, L"CriticalThreshold", &t);
+        TimetToFileTimeInterval(t, &id->ft_thr_crit);
+    } else {
+        id->ft_thr_crit = IntToFt(0);
+    }
+}
+
 KHMEXP khm_int32 KHMAPI
 kcdb_identity_create_ex(khm_handle vidpro,
                         const wchar_t * name,
@@ -249,7 +308,7 @@ kcdb_identity_create_ex(khm_handle vidpro,
         LPUSH(&kcdb_identities, id);
         kcdb_identity_hold((khm_handle) id);
 
-        if(KHM_SUCCEEDED(kcdb_identity_get_config((khm_handle) id, 0, &h_cfg))) {
+        if(KHM_SUCCEEDED(kcdb_identity_get_config((khm_handle) id, KCONF_FLAG_SHADOW, &h_cfg))) {
             /* don't need to set the KCDB_IDENT_FLAG_CONFIG flags
                since kcdb_identity_get_config() sets it for us. */
             khm_int32 sticky;
@@ -258,6 +317,8 @@ kcdb_identity_create_ex(khm_handle vidpro,
                 sticky) {
                 id->flags |= KCDB_IDENT_FLAG_STICKY;
             }
+
+            kcdbint_refresh_identity_timer_thresholds(id, h_cfg);
 
             khc_close_space(h_cfg);
         }
@@ -893,6 +954,10 @@ kcdb_identity_get_config(khm_handle vid,
     if (KHM_FAILED(rv = kcdb_identity_get_short_name(vid, TRUE, cfname, &cb)))
         return rv;
 
+    if (flags & KHM_FLAG_CREATE) {
+        flags |= KCONF_FLAG_USER | KCONF_FLAG_SCHEMA;
+    }
+
     EnterCriticalSection(&cs_ident);
 
     hkcdb = kcdb_get_config();
@@ -901,35 +966,27 @@ kcdb_identity_get_config(khm_handle vid,
         if(KHM_FAILED(rv))
             goto _exit;
 
-        rv = khc_open_space(hidents,
-                            cfname,
-                            flags | KCONF_FLAG_NOPARSENAME,
-                            &hident);
+        rv = khc_open_space(hidents, cfname, flags, &hident);
 
         if(KHM_FAILED(rv)) {
-            khm_int32 oldflags;
-            oldflags = id->flags;
-            id->flags &= ~KCDB_IDENT_FLAG_CONFIG;
-            if (oldflags & KCDB_IDENT_FLAG_CONFIG)
+            if (id->flags & KCDB_IDENT_FLAG_CONFIG) {
+                id->flags &= ~KCDB_IDENT_FLAG_CONFIG;
                 kcdbint_ident_post_message(KCDB_OP_DELCONFIG, id);
+            }
             goto _exit;
         }
-
-        id->flags |= KCDB_IDENT_FLAG_CONFIG;
 
         if (flags & KHM_FLAG_CREATE) {
             khm_size cb;
 
-            if (khc_value_exists(hident, L"Name")) {
+            if (khc_value_exists(hident, L"Name") & KCONF_FLAG_USER) {
                 cb = sizeof(cfname);
                 if (KHM_FAILED(khc_read_string(hident, L"Name", cfname, &cb)) ||
                     wcscmp(cfname, id->name)) {
                     /* For some reason, there's a mismatch between the
                        name of identity and the name specified in the
                        configuration.  We should abort. */
-#ifdef DEBUG
                     assert(FALSE);
-#endif
                     khc_close_space(hident);
                     hident = NULL;
                     rv = KHM_ERROR_UNKNOWN;
@@ -940,16 +997,14 @@ kcdb_identity_get_config(khm_handle vid,
                 khc_write_string(hident, L"Name", id->name);
             }
 
-            if (khc_value_exists(hident, L"IDProvider")) {
+            if (khc_value_exists(hident, L"IDProvider") & KCONF_FLAG_USER) {
                 cb = sizeof(cfname);
                 if (KHM_FAILED(khc_read_string(hident, L"IDProvider", cfname, &cb)) ||
                     wcscmp(cfname, id->id_pro->name)) {
                     /* Mismatch between provider of this identity and
                        the provider specified in the configuration.
                        Abort. */
-#ifdef DEBUG
                     assert(FALSE);
-#endif
                     khc_close_space(hident);
                     hident = NULL;
                     rv = KHM_ERROR_UNKNOWN;
@@ -972,6 +1027,13 @@ kcdb_identity_get_config(khm_handle vid,
                 khc_write_int64(hident, L"IdentSerial", id->serial);
             }
         } /* flags & KHM_FLAG_CREATE */
+
+        if (khc_value_exists(hident, L"Name") & KCONF_FLAG_USER) {
+            id->flags |= KCDB_IDENT_FLAG_CONFIG;
+
+            if (flags & KCONF_FLAG_SHADOW)
+                kcdbint_refresh_identity_timer_thresholds(id, hident);
+        }
 
         *result = hident;
         rv = KHM_ERROR_SUCCESS;
@@ -1376,6 +1438,48 @@ khm_int32 kcdbint_ident_attr_cb(khm_handle h,
             return KHM_ERROR_SUCCESS;
         } else {
             *pcb_buf = sizeof(khm_int32);
+            return KHM_ERROR_TOO_LONG;
+        }
+
+    case KCDB_ATTR_THR_RENEW:
+        if (buf && *pcb_buf >= sizeof(FILETIME)) {
+
+            *pcb_buf = sizeof(FILETIME);
+            EnterCriticalSection(&cs_ident);
+            *((FILETIME *) buf) = id->ft_thr_renew;
+            LeaveCriticalSection(&cs_ident);
+
+            return KHM_ERROR_SUCCESS;
+        } else {
+            *pcb_buf = sizeof(FILETIME);
+            return KHM_ERROR_TOO_LONG;
+        }
+
+    case KCDB_ATTR_THR_WARN:
+        if (buf && *pcb_buf >= sizeof(FILETIME)) {
+
+            *pcb_buf = sizeof(FILETIME);
+            EnterCriticalSection(&cs_ident);
+            *((FILETIME *) buf) = id->ft_thr_warn;
+            LeaveCriticalSection(&cs_ident);
+
+            return KHM_ERROR_SUCCESS;
+        } else {
+            *pcb_buf = sizeof(FILETIME);
+            return KHM_ERROR_TOO_LONG;
+        }
+
+    case KCDB_ATTR_THR_CRIT:
+        if (buf && *pcb_buf >= sizeof(FILETIME)) {
+
+            *pcb_buf = sizeof(FILETIME);
+            EnterCriticalSection(&cs_ident);
+            *((FILETIME *) buf) = id->ft_thr_crit;
+            LeaveCriticalSection(&cs_ident);
+
+            return KHM_ERROR_SUCCESS;
+        } else {
+            *pcb_buf = sizeof(FILETIME);
             return KHM_ERROR_TOO_LONG;
         }
 

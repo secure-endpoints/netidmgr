@@ -49,6 +49,9 @@
 #define IDS_STATUS                      143
 #define IDS_FTS_REL_TOD                 144
 #define IDS_FTS_TS                      145
+#define IDS_THR_RENEW                   146
+#define IDS_THR_WARN                    147
+#define IDS_THR_CRIT                    148
 
 // Next default values for new objects
 // 

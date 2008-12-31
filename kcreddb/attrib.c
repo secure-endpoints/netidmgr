@@ -130,31 +130,31 @@ kcdb_attrib_init(void)
     /* register standard attributes */
 
     /* Name */
-    attrib.id = KCDB_ATTR_NAME;
-    attrib.name = KCDB_ATTRNAME_NAME;
-    attrib.type = KCDB_TYPE_STRING;
-    LoadString(hinst_kcreddb, IDS_NAME, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = 
+    attrib.id          = KCDB_ATTR_NAME;
+    attrib.name        = KCDB_ATTRNAME_NAME;
+    attrib.type        = KCDB_TYPE_STRING;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = 
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED | 
         KCDB_ATTR_FLAG_SYSTEM |
         KCDB_ATTR_FLAG_HIDDEN;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(wchar_t);
     attrib.compute_max_cbsize = KCDB_MAXCB_NAME;
+    LoadString(hinst_kcreddb, IDS_NAME, sbuf, ARRAYLENGTH(sbuf));
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* ID */
-    attrib.id = KCDB_ATTR_ID;
-    attrib.name = KCDB_ATTRNAME_ID;
-    attrib.type = KCDB_TYPE_INT64;
+    attrib.id          = KCDB_ATTR_ID;
+    attrib.name        = KCDB_ATTRNAME_ID;
+    attrib.type        = KCDB_TYPE_INT64;
     LoadString(hinst_kcreddb, IDS_IDENTITY, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = 
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = 
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED | 
         KCDB_ATTR_FLAG_SYSTEM |
@@ -166,14 +166,14 @@ kcdb_attrib_init(void)
     kcdb_attrib_register(&attrib, NULL);
 
     /* ID Name */
-    attrib.id = KCDB_ATTR_ID_NAME;
-    attrib.alt_id = KCDB_ATTR_ID;
-    attrib.name = KCDB_ATTRNAME_ID_NAME;
-    attrib.type = KCDB_TYPE_STRING;
+    attrib.id          = KCDB_ATTR_ID_NAME;
+    attrib.alt_id      = KCDB_ATTR_ID;
+    attrib.name        = KCDB_ATTRNAME_ID_NAME;
+    attrib.type        = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_IDENTITY, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = 
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = 
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED | 
         KCDB_ATTR_FLAG_ALTVIEW |
@@ -186,14 +186,14 @@ kcdb_attrib_init(void)
     kcdb_attrib_register(&attrib, NULL);
 
     /* ID Display Name */
-    attrib.id = KCDB_ATTR_ID_DISPLAY_NAME;
-    attrib.alt_id = KCDB_ATTR_ID;
-    attrib.name = KCDB_ATTRNAME_ID_DISPLAY_NAME;
-    attrib.type = KCDB_TYPE_STRING;
+    attrib.id          = KCDB_ATTR_ID_DISPLAY_NAME;
+    attrib.alt_id      = KCDB_ATTR_ID;
+    attrib.name        = KCDB_ATTRNAME_ID_DISPLAY_NAME;
+    attrib.type        = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_IDENTITY, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = 
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED | 
         KCDB_ATTR_FLAG_ALTVIEW |
@@ -205,247 +205,253 @@ kcdb_attrib_init(void)
     kcdb_attrib_register(&attrib, NULL);
 
     /* Type */
-    attrib.id = KCDB_ATTR_TYPE;
-    attrib.name = KCDB_ATTRNAME_TYPE;
-    attrib.type = KCDB_TYPE_INT32;
+    attrib.id          = KCDB_ATTR_TYPE;
+    attrib.name        = KCDB_ATTRNAME_TYPE;
+    attrib.type        = KCDB_TYPE_INT32;
     LoadString(hinst_kcreddb, IDS_TYPE, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = 
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED | 
         KCDB_ATTR_FLAG_SYSTEM |
         KCDB_ATTR_FLAG_HIDDEN;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(khm_int32);
     attrib.compute_max_cbsize = sizeof(khm_int32);
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Type Name */
-    attrib.id = KCDB_ATTR_TYPE_NAME;
-    attrib.alt_id = KCDB_ATTR_TYPE;
-    attrib.name = KCDB_ATTRNAME_TYPE_NAME;
-    attrib.type = KCDB_TYPE_STRING;
+    attrib.id          = KCDB_ATTR_TYPE_NAME;
+    attrib.alt_id      = KCDB_ATTR_TYPE;
+    attrib.name        = KCDB_ATTRNAME_TYPE_NAME;
+    attrib.type        = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_TYPE, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = 
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = 
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED |
         KCDB_ATTR_FLAG_ALTVIEW |
         KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(wchar_t);
     attrib.compute_max_cbsize = KCDB_MAXCB_NAME;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Parent Name */
-    attrib.id = KCDB_ATTR_PARENT_NAME;
-    attrib.name = KCDB_ATTRNAME_PARENT_NAME;
-    attrib.type = KCDB_TYPE_STRING;
+    attrib.id          = KCDB_ATTR_PARENT_NAME;
+    attrib.name        = KCDB_ATTRNAME_PARENT_NAME;
+    attrib.type        = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_PARENT, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_HIDDEN;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
+        KCDB_ATTR_FLAG_SYSTEM |
+        KCDB_ATTR_FLAG_HIDDEN;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Issed On */
-    attrib.id = KCDB_ATTR_ISSUE;
-    attrib.name = KCDB_ATTRNAME_ISSUE;
-    attrib.type = KCDB_TYPE_DATE;
+    attrib.id          = KCDB_ATTR_ISSUE;
+    attrib.name        = KCDB_ATTRNAME_ISSUE;
+    attrib.type        = KCDB_TYPE_DATE;
     LoadString(hinst_kcreddb, IDS_ISSUED, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Expires On */
-    attrib.id = KCDB_ATTR_EXPIRE;
-    attrib.name = KCDB_ATTRNAME_EXPIRE;
-    attrib.type = KCDB_TYPE_DATE;
+    attrib.id          = KCDB_ATTR_EXPIRE;
+    attrib.name        = KCDB_ATTRNAME_EXPIRE;
+    attrib.type        = KCDB_TYPE_DATE;
     LoadString(hinst_kcreddb, IDS_EXPIRES, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Renewable Time Expires On */
-    attrib.id = KCDB_ATTR_RENEW_EXPIRE;
-    attrib.name = KCDB_ATTRNAME_RENEW_EXPIRE;
-    attrib.type = KCDB_TYPE_DATE;
+    attrib.id          = KCDB_ATTR_RENEW_EXPIRE;
+    attrib.name        = KCDB_ATTRNAME_RENEW_EXPIRE;
+    attrib.type        = KCDB_TYPE_DATE;
     LoadString(hinst_kcreddb, IDS_RENEW_EXPIRES, 
                sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Time Left */
-    attrib.id = KCDB_ATTR_TIMELEFT;
-    attrib.alt_id = KCDB_ATTR_EXPIRE;
-    attrib.name = KCDB_ATTRNAME_TIMELEFT;
-    attrib.type = KCDB_TYPE_INTERVAL;
+    attrib.id          = KCDB_ATTR_TIMELEFT;
+    attrib.alt_id      = KCDB_ATTR_EXPIRE;
+    attrib.name        = KCDB_ATTRNAME_TIMELEFT;
+    attrib.type        = KCDB_TYPE_INTERVAL;
     LoadString(hinst_kcreddb, IDS_TIMELEFT, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM |
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
+        KCDB_ATTR_FLAG_SYSTEM |
         KCDB_ATTR_FLAG_COMPUTED |
         KCDB_ATTR_FLAG_ALTVIEW |
         KCDB_ATTR_FLAG_VOLATILE;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(FILETIME);
     attrib.compute_max_cbsize = sizeof(FILETIME);
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Renewable Time Left */
-    attrib.id = KCDB_ATTR_RENEW_TIMELEFT;
-    attrib.alt_id = KCDB_ATTR_RENEW_EXPIRE;
-    attrib.name = KCDB_ATTRNAME_RENEW_TIMELEFT;
-    attrib.type = KCDB_TYPE_INTERVAL;
+    attrib.id          = KCDB_ATTR_RENEW_TIMELEFT;
+    attrib.alt_id      = KCDB_ATTR_RENEW_EXPIRE;
+    attrib.name        = KCDB_ATTRNAME_RENEW_TIMELEFT;
+    attrib.type        = KCDB_TYPE_INTERVAL;
     LoadString(hinst_kcreddb, 
                IDS_RENEW_TIMELEFT, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM |
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
+        KCDB_ATTR_FLAG_SYSTEM |
         KCDB_ATTR_FLAG_COMPUTED |
         KCDB_ATTR_FLAG_ALTVIEW |
         KCDB_ATTR_FLAG_VOLATILE;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(FILETIME);
     attrib.compute_max_cbsize = sizeof(FILETIME);
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Location of Credential */
-    attrib.id = KCDB_ATTR_LOCATION;
-    attrib.name = KCDB_ATTRNAME_LOCATION;
-    attrib.type = KCDB_TYPE_STRING;
+    attrib.id          = KCDB_ATTR_LOCATION;
+    attrib.name        = KCDB_ATTRNAME_LOCATION;
+    attrib.type        = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_LOCATION, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Lifetime */
-    attrib.id = KCDB_ATTR_LIFETIME;
-    attrib.name = KCDB_ATTRNAME_LIFETIME;
-    attrib.type = KCDB_TYPE_INTERVAL;
+    attrib.id          = KCDB_ATTR_LIFETIME;
+    attrib.name        = KCDB_ATTRNAME_LIFETIME;
+    attrib.type        = KCDB_TYPE_INTERVAL;
     LoadString(hinst_kcreddb, IDS_LIFETIME, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Renewable Lifetime */
-    attrib.id = KCDB_ATTR_RENEW_LIFETIME;
-    attrib.name = KCDB_ATTRNAME_RENEW_LIFETIME;
-    attrib.type = KCDB_TYPE_INTERVAL;
+    attrib.id          = KCDB_ATTR_RENEW_LIFETIME;
+    attrib.name        = KCDB_ATTRNAME_RENEW_LIFETIME;
+    attrib.type        = KCDB_TYPE_INTERVAL;
     LoadString(hinst_kcreddb, 
                IDS_RENEW_LIFETIME, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Flags */
-    attrib.id = KCDB_ATTR_FLAGS;
-    attrib.name = KCDB_ATTRNAME_FLAGS;
-    attrib.type = KCDB_TYPE_INT32;
+    attrib.id          = KCDB_ATTR_FLAGS;
+    attrib.name        = KCDB_ATTRNAME_FLAGS;
+    attrib.type        = KCDB_TYPE_INT32;
     LoadString(hinst_kcreddb, IDS_FLAGS, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = 
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = 
         KCDB_ATTR_FLAG_REQUIRED | 
         KCDB_ATTR_FLAG_COMPUTED | 
         KCDB_ATTR_FLAG_SYSTEM |
         KCDB_ATTR_FLAG_HIDDEN;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(khm_int32);
     attrib.compute_max_cbsize = sizeof(khm_int32);
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Display Name */
-    attrib.id = KCDB_ATTR_DISPLAY_NAME;
-    attrib.name = KCDB_ATTRNAME_DISPLAY_NAME;
-    attrib.type = KCDB_TYPE_STRING;
+    attrib.id          = KCDB_ATTR_DISPLAY_NAME;
+    attrib.name        = KCDB_ATTRNAME_DISPLAY_NAME;
+    attrib.type        = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_DISPLAY_NAME, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Status */
-    attrib.id = KCDB_ATTR_STATUS;
-    attrib.name = KCDB_ATTRNAME_STATUS;
-    attrib.type = KCDB_TYPE_STRING;
+    attrib.id          = KCDB_ATTR_STATUS;
+    attrib.name        = KCDB_ATTRNAME_STATUS;
+    attrib.type        = KCDB_TYPE_STRING;
     LoadString(hinst_kcreddb, IDS_STATUS, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM;
-    attrib.compute_cb = NULL;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Last Update */
-    attrib.id = KCDB_ATTR_LAST_UPDATE;
-    attrib.name = KCDB_ATTRNAME_LAST_UPDATE;
-    attrib.type = KCDB_TYPE_DATE;
+    attrib.id          = KCDB_ATTR_LAST_UPDATE;
+    attrib.name        = KCDB_ATTRNAME_LAST_UPDATE;
+    attrib.type        = KCDB_TYPE_DATE;
     LoadString(hinst_kcreddb, IDS_LAST_UPDATE, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(FILETIME);
     attrib.compute_max_cbsize = sizeof(FILETIME);
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Number of credentials */
-    attrib.id = KCDB_ATTR_N_CREDS;
-    attrib.name = KCDB_ATTRNAME_N_CREDS;
-    attrib.type = KCDB_TYPE_INT32;
+    attrib.id          = KCDB_ATTR_N_CREDS;
+    attrib.name        = KCDB_ATTRNAME_N_CREDS;
+    attrib.type        = KCDB_TYPE_INT32;
     LoadString(hinst_kcreddb, IDS_N_CREDS, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED |
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
+        KCDB_ATTR_FLAG_SYSTEM |
+        KCDB_ATTR_FLAG_COMPUTED |
         KCDB_ATTR_FLAG_PROPERTY;
     attrib.compute_cb = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(khm_int32);
@@ -454,50 +460,98 @@ kcdb_attrib_init(void)
     kcdb_attrib_register(&attrib, NULL);
 
     /* Number of identity credentials */
-    attrib.id = KCDB_ATTR_N_IDCREDS;
-    attrib.name = KCDB_ATTRNAME_N_IDCREDS;
-    attrib.type = KCDB_TYPE_INT32;
+    attrib.id          = KCDB_ATTR_N_IDCREDS;
+    attrib.name        = KCDB_ATTRNAME_N_IDCREDS;
+    attrib.type        = KCDB_TYPE_INT32;
     LoadString(hinst_kcreddb, IDS_N_IDCREDS, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED |
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
+        KCDB_ATTR_FLAG_SYSTEM |
+        KCDB_ATTR_FLAG_COMPUTED |
         KCDB_ATTR_FLAG_PROPERTY;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(khm_int32);
     attrib.compute_max_cbsize = sizeof(khm_int32);
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Number of initial credentials */
-    attrib.id = KCDB_ATTR_N_INITCREDS;
-    attrib.name = KCDB_ATTRNAME_N_INITCREDS;
-    attrib.type = KCDB_TYPE_INT32;
+    attrib.id          = KCDB_ATTR_N_INITCREDS;
+    attrib.name        = KCDB_ATTRNAME_N_INITCREDS;
+    attrib.type        = KCDB_TYPE_INT32;
     LoadString(hinst_kcreddb, IDS_N_INITCREDS, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED |
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       =
+        KCDB_ATTR_FLAG_SYSTEM |
+        KCDB_ATTR_FLAG_COMPUTED |
         KCDB_ATTR_FLAG_PROPERTY;
-    attrib.compute_cb = kcdb_attr_sys_cb;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(khm_int32);
     attrib.compute_max_cbsize = sizeof(khm_int32);
 
     kcdb_attrib_register(&attrib, NULL);
 
     /* Extended parameter */
-    attrib.id = KCDB_ATTR_PARAM;
-    attrib.name = KCDB_ATTRNAME_PARAM;
-    attrib.type = KCDB_TYPE_DATA;
+    attrib.id          = KCDB_ATTR_PARAM;
+    attrib.name        = KCDB_ATTRNAME_PARAM;
+    attrib.type        = KCDB_TYPE_DATA;
     LoadString(hinst_kcreddb, IDS_PARAM, sbuf, ARRAYLENGTH(sbuf));
-    attrib.short_desc = sbuf;
-    attrib.long_desc = NULL;
-    attrib.flags = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY |
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY |
         KCDB_ATTR_FLAG_HIDDEN;
-    attrib.compute_cb = NULL;
+    attrib.compute_cb  = NULL;
     attrib.compute_min_cbsize = 0;
     attrib.compute_max_cbsize = 0;
 
     kcdb_attrib_register(&attrib, NULL);
 
+    /* Renewal threshold */
+    attrib.id          = KCDB_ATTR_THR_RENEW;
+    attrib.name        = KCDB_ATTRNAME_THR_RENEW;
+    attrib.type        = KCDB_TYPE_INTERVAL;
+    LoadString(hinst_kcreddb, IDS_THR_RENEW, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY |
+        KCDB_ATTR_FLAG_HIDDEN | KCDB_ATTR_FLAG_COMPUTED;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(FILETIME);
+    attrib.compute_max_cbsize = sizeof(FILETIME);
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Warning threshold */
+    attrib.id          = KCDB_ATTR_THR_WARN;
+    attrib.name        = KCDB_ATTRNAME_THR_WARN;
+    attrib.type        = KCDB_TYPE_INTERVAL;
+    LoadString(hinst_kcreddb, IDS_THR_WARN, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY |
+        KCDB_ATTR_FLAG_HIDDEN | KCDB_ATTR_FLAG_COMPUTED;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(FILETIME);
+    attrib.compute_max_cbsize = sizeof(FILETIME);
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Critical threshold */
+    attrib.id          = KCDB_ATTR_THR_CRIT;
+    attrib.name        = KCDB_ATTRNAME_THR_CRIT;
+    attrib.type        = KCDB_TYPE_INTERVAL;
+    LoadString(hinst_kcreddb, IDS_THR_CRIT, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY |
+        KCDB_ATTR_FLAG_HIDDEN | KCDB_ATTR_FLAG_COMPUTED;
+    attrib.compute_cb  = kcdb_attr_sys_cb;
+    attrib.compute_min_cbsize = sizeof(FILETIME);
+    attrib.compute_max_cbsize = sizeof(FILETIME);
+
+    kcdb_attrib_register(&attrib, NULL);
 }
 
 void 

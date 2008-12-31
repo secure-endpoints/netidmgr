@@ -755,6 +755,27 @@ khcint_space_open_key(kconf_conf_space * s, khm_int32 flags) {
     }
 }
 
+KHMEXP khm_int32 KHMAPI
+khc_dup_space(khm_handle vh, khm_handle * pvh)
+{
+    kconf_handle * h;
+    kconf_handle *h2;
+
+    if (!khc_is_config_running())
+        return KHM_ERROR_NOT_READY;
+
+    if (!khc_is_handle(vh) || pvh == NULL) {
+        return KHM_ERROR_INVALID_PARAM;
+    }
+
+    h = (kconf_handle *) vh;
+    h2 = khcint_handle_dup(h);
+
+    *pvh = (khm_handle) h2;
+
+    return KHM_ERROR_SUCCESS;
+}
+
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
 khc_shadow_space(khm_handle upper, khm_handle lower)
@@ -836,7 +857,7 @@ khcint_free_space(kconf_conf_space * r) {
 }
 
 /* obtains cs_conf_global */
-khm_int32 
+khm_int32
 khcint_open_space(kconf_conf_space * parent, 
                   const wchar_t * sname, size_t n_sname, 
                   khm_int32 flags, kconf_conf_space **result) {
@@ -890,9 +911,9 @@ khcint_open_space(kconf_conf_space * parent,
 
     if(!(flags & KHM_FLAG_CREATE)) {
 
-        /* we are not creating the space, so it must exist in the form of a
-        registry key in HKLM or HKCU.  If it existed as a schema, we
-        would have already retured it above. */
+        /* we are not creating the space, so it must exist in the form
+           of a registry key in HKLM or HKCU.  If it existed as a
+           schema, we would have already retured it above. */
         
         if (flags & KCONF_FLAG_USER)
             pkey = khcint_space_open_key(p, KHM_PERM_READ | KCONF_FLAG_USER);
@@ -953,7 +974,6 @@ khcint_open_space(kconf_conf_space * parent,
 KHMEXP khm_int32 KHMAPI 
 khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags, 
                khm_handle * result) {
-    kconf_handle * h;
     kconf_conf_space * p;
     kconf_conf_space * c = NULL;
     size_t cbsize;
@@ -965,20 +985,8 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
     }
 
     if(!result || (parent && !khc_is_handle(parent))) {
-#ifdef DEBUG
-        DebugBreak();
-#endif
         return KHM_ERROR_INVALID_PARAM;
     }
-
-    if(!parent)
-        p = conf_root;
-    else {
-        h = (kconf_handle *) parent;
-        p = khc_space_from_handle(parent);
-    }
-
-    khcint_space_hold(p);
 
     /* if none of these flags are specified, make it seem like all of
        them were */
@@ -986,6 +994,14 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
         !(flags & KCONF_FLAG_MACHINE) &&
         !(flags & KCONF_FLAG_SCHEMA))
         flags |= KCONF_FLAG_USER | KCONF_FLAG_MACHINE | KCONF_FLAG_SCHEMA;
+
+    if(!parent)
+        p = conf_root;
+    else {
+        p = khc_space_from_handle(parent);
+    }
+
+    khcint_space_hold(p);
 
     if(cspace == NULL) {
         *result = (khm_handle) khcint_handle_from_space(p, flags);
@@ -1002,40 +1018,91 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
     str = cspace;
     while(TRUE) {
         const wchar_t * end = NULL;
+        khm_boolean last = FALSE;
 
-        if (!(flags & KCONF_FLAG_NOPARSENAME)) {
+        if (flags & KCONF_FLAG_NOPARSENAME) {
+            end = str + wcslen(str);
+            last = TRUE;
+        } else {
+            end = wcschr(str, L'\\');
 
-            end = wcschr(str, L'\\'); /* safe because cspace was
-                                         validated above */
-        }
-
-        if(!end) {
-            if(flags & KCONF_FLAG_TRAILINGVALUE) {
-                /* we are at the value component */
-                c = p;
-                khcint_space_hold(c);
-                break;
-            } else
-                end = str + wcslen(str);  /* safe because cspace was
-                                             validated above */
+            if (end == NULL) {
+                if (flags & KCONF_FLAG_TRAILINGVALUE) {
+                    c = p;
+                    p = NULL;
+                    break;
+                } else {
+                    end = str + wcslen(str);
+                    last = TRUE;
+                }
+            } else {
+                if (flags & KCONF_FLAG_TRAILINGVALUE) {
+                    if (wcschr(end + 1, L'\\') == NULL)
+                        last = TRUE;
+                }
+            }
         }
 
         rv = khcint_open_space(p, str, end - str, flags, &c);
 
-        if(KHM_SUCCEEDED(rv) && (*end == L'\\')) {
+        if (KHM_SUCCEEDED(rv) && !last) {
             khcint_space_release(p);
             p = c;
             c = NULL;
-            str = end+1;
-        } else
+            str = end + 1;
+        } else if (last && rv == KHM_ERROR_NOT_FOUND &&
+                   (flags & KCONF_FLAG_SHADOW)) {
+            
+            rv = khcint_open_space(p, L"_Schema", 7, flags, &c);
+            flags &= ~KCONF_FLAG_SHADOW;
+            khcint_space_release(p);
+            p = NULL;
             break;
+
+        } else {
+
+            break;
+
+        }
     }
 
-    khcint_space_release(p);
+    if (p)
+        khcint_space_release(p);
+
     if(KHM_SUCCEEDED(rv)) {
         *result = khcint_handle_from_space(c, flags);
-    } else
+
+        if (*result && (flags & KCONF_FLAG_SHADOW)) {
+            p = TPARENT(c);
+            if (p) {
+
+                kconf_conf_space * shadow;
+
+                khcint_space_hold(p);
+
+                flags &= ~KHM_FLAG_CREATE;
+                rv = khcint_open_space(p, L"_Schema", 7, flags, &shadow);
+
+                if (KHM_SUCCEEDED(rv)) {
+                    khm_handle tshadow = NULL;
+
+                    tshadow = khcint_handle_from_space(shadow, flags);
+
+                    khc_shadow_space(*result, tshadow);
+
+                    khc_close_space(tshadow);
+
+                    khcint_space_release(shadow);
+                }
+
+                khcint_space_release(p);
+
+                rv = KHM_ERROR_SUCCESS;
+            }
+        }
+    } else {
         *result = NULL;
+    }
 
     if (c)
         khcint_space_release(c);
@@ -2003,6 +2070,74 @@ khc_get_type(khm_handle conf, const wchar_t * value) {
     return rv;
 }
 
+KHMEXP khm_int32 KHMAPI
+khc_get_last_write_time(khm_handle conf, khm_int32 flags, FILETIME * last_w_time)
+{
+    kconf_conf_space * c;
+    HKEY hku = NULL;
+    HKEY hkm = NULL;
+    FILETIME ftr = {0,0};
+
+    if (!khc_is_config_running() || !khc_is_handle(conf) || last_w_time == NULL)
+        return KHM_ERROR_INVALID_PARAM;
+
+    if (flags == 0)
+        flags = KCONF_FLAG_MACHINE | KCONF_FLAG_USER;
+
+    do {
+        FILETIME ft = {0,0};
+
+        hku = NULL;
+        hkm = NULL;
+        c = khc_space_from_handle(conf);
+
+        if (khc_is_user_handle(conf) &&
+
+            (flags & KCONF_FLAG_USER) &&
+
+            (hku = khcint_space_open_key(c, KHM_PERM_READ)) != NULL &&
+
+            (RegQueryInfoKey(hku, NULL, NULL, NULL,
+                             NULL, NULL, NULL, NULL,
+                             NULL, NULL, NULL, &ft) == ERROR_SUCCESS) &&
+
+            ((ftr.dwLowDateTime == 0 && ftr.dwHighDateTime == 0) ||
+             CompareFileTime(&ftr, &ft) < 0)) {
+
+            ftr = ft;
+        }
+
+        if (khc_is_machine_handle(conf) &&
+
+            (flags & KCONF_FLAG_MACHINE) &&
+
+            (hkm = khcint_space_open_key(c, KHM_PERM_READ | KCONF_FLAG_MACHINE)) != NULL &&
+
+            (RegQueryInfoKey(hkm, NULL, NULL, NULL,
+                             NULL, NULL, NULL, NULL,
+                             NULL, NULL, NULL, &ft) == ERROR_SUCCESS) &&
+
+            ((ftr.dwLowDateTime == 0 && ftr.dwHighDateTime == 0) ||
+             CompareFileTime(&ftr, &ft) < 0)) {
+
+            ftr = ft;
+        }
+
+        if (khc_is_shadowed(conf))
+            conf = khc_shadow(conf);
+        else
+            break;
+
+    } while(conf);
+
+    if (ftr.dwLowDateTime == 0 && ftr.dwHighDateTime == 0)
+        return KHM_ERROR_NOT_FOUND;
+    else {
+        *last_w_time = ftr;
+        return KHM_ERROR_SUCCESS;
+    }
+}
+
 /* obtains cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
 khc_value_exists(khm_handle conf, const wchar_t * value) {
@@ -2017,6 +2152,8 @@ khc_value_exists(khm_handle conf, const wchar_t * value) {
         return 0;
 
     do {
+        hku = NULL;
+        hkm = NULL;
         c = khc_space_from_handle(conf);
 
         if (khc_is_user_handle(conf))

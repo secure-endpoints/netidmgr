@@ -916,7 +916,7 @@ khm_refresh_identity_menus(void) {
     khm_handle identity = NULL;
 
     if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow", 0, &csp_cw))) {
-        khc_read_int32(csp_cw, L"DefaultSticky", &def_sticky);
+        khc_read_int32(NULL, L"KCDB\\DefaultSticky", &def_sticky);
         khc_read_int32(csp_cw, L"ViewAllIdents", &all_identities);
         khc_close_space(csp_cw);
         csp_cw = NULL;

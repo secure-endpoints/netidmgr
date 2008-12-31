@@ -27,6 +27,7 @@
 #ifndef __KHIMAIRA_KCONFIG_H
 #define __KHIMAIRA_KCONFIG_H
 
+#include<windows.h>
 #include "khdefs.h"
 #include "mstring.h"
 
@@ -170,7 +171,7 @@ typedef struct tag_kconf_schema {
     written will be case insensitive.  If this flag is not set, the
     comparison will be case sensitive.
  */
-#define KCONF_FLAG_IFMODCI     0x00000080
+#define KCONF_FLAG_IFMODCI       0x00000080
 
 /*! \brief Do not parse the configuration space name
 
@@ -189,7 +190,16 @@ typedef struct tag_kconf_schema {
     subspace of \a foo.  If ::KCONF_FLAG_NOPARSENAME is set, then this
     is taken to mean configuration space \a foo\\bar.
  */
-#define KCONF_FLAG_NOPARSENAME   0x00000040
+#define KCONF_FLAG_NOPARSENAME   0x00000100
+
+/*! \brief Shadow configuration
+
+     When passed into khc_open_space(), checks whether there is a
+     configuration space named _Schema that is a sibling of the
+     configuration space being opened.  If so, the _Schema space is
+     opened as a shadow.
+ */
+#define KCONF_FLAG_SHADOW        0x00000200
 
 /*! \brief Maximum number of allowed characters (including terminating NULL) in a name 
 
@@ -288,6 +298,11 @@ khc_shadow_space(khm_handle upper, khm_handle lower);
 */
 KHMEXP khm_int32 KHMAPI 
 khc_close_space(khm_handle conf);
+
+/*! \brief Duplicate a handle
+ */
+KHMEXP khm_int32 KHMAPI
+khc_dup_space(khm_handle vh, khm_handle * pvh);
 
 /*! \brief Read a string value from a configuration space
 
@@ -850,6 +865,41 @@ khc_value_exists(khm_handle conf, const wchar_t * value);
 KHMEXP khm_int32 KHMAPI
 khc_remove_value(khm_handle conf, const wchar_t * value_name, khm_int32 flags);
 
+/*! \brief Retrieves the last write time for a configuration space
+
+    The last write time is based on the visible configuration stores.
+    The visibility can be further narrowed down using the \a flags
+    parameter.
+
+    \param[in] conf Handle to configuration space to query.
+
+    \param[in] flags Narrow down the visibility.  If the \a flags
+        parameter is 0, then all configuration stores accessible
+        through \a conf are visible.  If not, then only the
+        configuration stores specified in \a flags and visible from \a
+        conf are visible for the query.
+
+    \param[out] last_w_time Receives the last write time as a \a
+        FILETIME value.  If more than one configuration store is
+        visible, then the returned value will be the most recent last
+        write time.
+
+    \note The schema store does not have last write times.  Therefore
+        this function call will only succeed if the user or machine
+        configuration stores are visible and the configuration space
+        is defined in one of these stores.
+
+    \retval KHM_ERROR_SUCCESS The query was successful.
+
+    \retval KHM_ERROR_NOT_FOUND The configuration space name was not
+        found in the visible configuration stores.
+
+    \retval KHM_ERROR_INVALID_PARAM One or more parameters were
+        invalid.
+  */
+KHMEXP khm_int32 KHMAPI
+khc_get_last_write_time(khm_handle conf, khm_int32 flags, FILETIME * last_w_time);
+
 /*! \brief Get the name of a configuration space
 
     \param[in] conf Handle to a configuration space
@@ -997,8 +1047,16 @@ namespace nim {
             last_error = khc_open_space(parent.csp, name, flags, &csp);
         }
 
+        ConfigSpace(const ConfigSpace& that) {
+            last_error = khc_dup_space(that.csp, &csp);
+        }
+
         ~ConfigSpace() {
             Close();
+        }
+
+        operator khm_handle () const {
+            return csp;
         }
 
         khm_int32 Close() {
@@ -1021,7 +1079,13 @@ namespace nim {
             return last_error = khc_open_space(parent.csp, name, flags, &csp);
         }
 
-        khm_int32 GetLastError() { return last_error; }
+        khm_int32 GetLastError() const { return last_error; }
+
+        FILETIME GetLastWriteTime(khm_int32 flags = 0) {
+            FILETIME rv = {0,0};
+            last_error = khc_get_last_write_time(csp, flags, &rv);
+            return rv;
+        }
 
         khm_int32 GetInt32(const wchar_t * name, khm_int32 def = 0) {
             khm_int32 val = def;
@@ -1053,9 +1117,7 @@ namespace nim {
                 PFREE(wbuffer);
             }
 
-            std::wstring val(def);
-
-            return val;
+            return std::wstring(def);
         }
 
         void * GetBinary(const wchar_t * name, void * buffer, khm_size & cb) {
@@ -1134,7 +1196,7 @@ namespace nim {
             Set(name, &t, sizeof(t));
         }
 
-        khm_int32 Exists(const wchar_t * name) {
+        khm_int32 Exists(const wchar_t * name) const {
             return khc_value_exists(csp, name);
         }
     };

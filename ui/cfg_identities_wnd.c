@@ -365,53 +365,23 @@ static idents_data cfg_idents = {FALSE, NULL, 0, 0,
 static void
 read_params_ident(ident_data * d) {
     khm_handle csp_ident;
-    khm_handle csp_cw;
     khm_int32 t;
 
     if (KHM_FAILED(kcdb_identity_get_config(d->ident,
-                                            KHM_PERM_READ,
+                                            KHM_PERM_READ | KCONF_FLAG_SHADOW,
                                             &csp_ident))) {
         csp_ident = NULL;
     }
 
-    if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow", KHM_PERM_READ,
-                                     &csp_cw))) {
-        if (csp_ident) {
-            khc_shadow_space(csp_ident,
-                             csp_cw);
-            khc_close_space(csp_cw);
-        } else {
-            csp_ident = csp_cw;
-        }
-        csp_cw = NULL;
-    } else {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
-        d->saved.monitor = TRUE;
-        d->saved.auto_renew = TRUE;
-        d->saved.sticky = FALSE;
-        d->work = d->saved;
-
-        if (csp_ident)
-            khc_close_space(csp_ident);
-
-        return;
-    }
-
     if (KHM_FAILED(khc_read_int32(csp_ident, L"Monitor", &t))) {
-#ifdef DEBUG
         assert(FALSE);
-#endif
         d->saved.monitor = TRUE;
     } else {
         d->saved.monitor = !!t;
     }
 
     if (KHM_FAILED(khc_read_int32(csp_ident, L"AllowAutoRenew", &t))) {
-#ifdef DEBUG
         assert(FALSE);
-#endif
         d->saved.auto_renew = TRUE;
     } else {
         d->saved.auto_renew = !!t;
@@ -439,11 +409,13 @@ write_params_ident(ident_data * d) {
         !d->removed)
         return;
 
-    if (KHM_FAILED(kcdb_identity_get_config(d->ident, KHM_PERM_WRITE,
+    if (KHM_FAILED(kcdb_identity_get_config(d->ident,
+                                            KHM_PERM_WRITE |
+                                            ((!d->removed)? (KHM_FLAG_CREATE |
+                                                             KCONF_FLAG_SHADOW |
+                                                             KCONF_FLAG_WRITEIFMOD) : 0),
                                             &csp_ident))) {
-#ifdef DEBUG
         assert(FALSE);
-#endif
         return;
     }
 
@@ -459,26 +431,19 @@ write_params_ident(ident_data * d) {
         kcdb_identity_get_config(d->ident, 0, &h);
         if (h) {
             /* what the ? */
-#ifdef DEBUG
             assert(FALSE);
-#endif
             khc_close_space(h);
         }
-#ifdef DEBUG
         kcdb_identity_get_flags(d->ident, &flags);
         assert(!(flags & KCDB_IDENT_FLAG_CONFIG));
-#endif
 
         d->purged = TRUE;
 
     } else {
 
-        if (d->saved.monitor != d->work.monitor)
-            khc_write_int32(csp_ident, L"Monitor", !!d->work.monitor);
-
-        if (d->saved.auto_renew != d->work.auto_renew)
-            khc_write_int32(csp_ident, L"AllowAutoRenew",
-                            !!d->work.auto_renew);
+        khc_write_int32(csp_ident, L"Monitor", !!d->work.monitor);
+        khc_write_int32(csp_ident, L"AllowAutoRenew",
+                        !!d->work.auto_renew);
 
         if (d->saved.sticky != d->work.sticky) {
             kcdb_identity_set_flags(d->ident,
@@ -502,31 +467,31 @@ write_params_ident(ident_data * d) {
 
 static void
 write_params_idents(void) {
-    khm_handle csp_cw = NULL;
+    khm_handle csp_kcdb = NULL;
 
-    if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow",
-                                     KHM_FLAG_CREATE, &csp_cw))) {
+    if (KHM_SUCCEEDED(khc_open_space(NULL, L"KCDB",
+                                     KHM_FLAG_CREATE, &csp_kcdb))) {
         if (cfg_idents.work.monitor != cfg_idents.saved.monitor) {
-            khc_write_int32(csp_cw, L"DefaultMonitor",
+            khc_write_int32(csp_kcdb, L"DefaultMonitor",
                             !!cfg_idents.work.monitor);
             cfg_idents.saved.monitor = cfg_idents.work.monitor;
             cfg_idents.applied = TRUE;
         }
         if (cfg_idents.work.auto_renew != cfg_idents.saved.auto_renew) {
-            khc_write_int32(csp_cw, L"DefaultAllowAutoRenew",
+            khc_write_int32(csp_kcdb, L"DefaultAllowAutoRenew",
                             !!cfg_idents.work.auto_renew);
             cfg_idents.saved.auto_renew = cfg_idents.work.auto_renew;
             cfg_idents.applied = TRUE;
         }
         if (cfg_idents.work.sticky != cfg_idents.saved.sticky) {
-            khc_write_int32(csp_cw, L"DefaultSticky",
+            khc_write_int32(csp_kcdb, L"DefaultSticky",
                             !!cfg_idents.work.sticky);
             cfg_idents.saved.sticky = cfg_idents.work.sticky;
             cfg_idents.applied = TRUE;
         }
 
-        khc_close_space(csp_cw);
-        csp_cw = NULL;
+        khc_close_space(csp_kcdb);
+        csp_kcdb = NULL;
     }
 
     if (cfg_idents.hwnd)
@@ -541,7 +506,7 @@ init_idents_data(void) {
     khm_int32 rv;
     int n_tries = 0;
     int i;
-    khm_handle csp_cw = NULL;
+    khm_handle csp_kcdb = NULL;
 
     if (cfg_idents.valid)
         return;
@@ -552,26 +517,26 @@ init_idents_data(void) {
     assert(cfg_idents.nc_idents == 0);
 #endif
 
-    if (KHM_SUCCEEDED(khc_open_space(NULL, L"CredWindow", 0, &csp_cw))) {
+    if (KHM_SUCCEEDED(khc_open_space(NULL, L"KCDB", 0, &csp_kcdb))) {
         khm_int32 t;
 
-        if (KHM_SUCCEEDED(khc_read_int32(csp_cw, L"DefaultMonitor", &t)))
+        if (KHM_SUCCEEDED(khc_read_int32(csp_kcdb, L"DefaultMonitor", &t)))
             cfg_idents.saved.monitor = !!t;
         else
             cfg_idents.saved.monitor = TRUE;
 
-        if (KHM_SUCCEEDED(khc_read_int32(csp_cw, L"DefaultAllowAutoRenew", &t)))
+        if (KHM_SUCCEEDED(khc_read_int32(csp_kcdb, L"DefaultAllowAutoRenew", &t)))
             cfg_idents.saved.auto_renew = !!t;
         else
             cfg_idents.saved.auto_renew = TRUE;
 
-        if (KHM_SUCCEEDED(khc_read_int32(csp_cw, L"DefaultSticky", &t)))
+        if (KHM_SUCCEEDED(khc_read_int32(csp_kcdb, L"DefaultSticky", &t)))
             cfg_idents.saved.sticky = !!t;
         else
             cfg_idents.saved.sticky = FALSE;
 
-        khc_close_space(csp_cw);
-        csp_cw = NULL;
+        khc_close_space(csp_kcdb);
+        csp_kcdb = NULL;
 
     } else {
 

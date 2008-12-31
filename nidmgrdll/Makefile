@@ -149,7 +149,8 @@ TESTOBJS= \
 	$(OBJ)\util_sync_test.obj	\
 	$(OBJ)\util_task_test.obj	\
 	$(OBJ)\uilib_res_test.obj	\
-	$(OBJ)\uilib_cfg_test.obj
+	$(OBJ)\uilib_cfg_test.obj	\
+	$(OBJ)\kconf_basic_test.obj
 
 TESTLIBS= \
 	user32.lib
