@@ -86,24 +86,23 @@ namespace nim
     };
 
 
-    class OutlineWidget : public WithFixedSizePos< DisplayElement > {
+    template<void (KhmDraw::*DF)(Graphics&, const Rect&, DrawState)>
+    class CwButtonT : public WithFixedSizePos< DisplayElement > {
     public:
-        OutlineWidget(const Point& _p) {
+        CwButtonT(const Point& _p) {
             SetPosition(_p);
             SetSize(g_theme->sz_icon_sm);
         }
 
-        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
-            g_theme->DrawCredWindowOutlineWidget(g, bounds,
-                                                 (DrawState)
-                                                 (((TQPARENT(this)->expanded)?
-                                                   DrawStateChecked : DrawStateNone) |
-                                                  ((highlight)?
-                                                   DrawStateHotTrack : DrawStateNone)));
-        }
+        virtual bool IsChecked() { return false; }
 
-        virtual void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
-            TQPARENT(this)->Expand(!TQPARENT(this)->expanded);
+        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
+            (g_theme->*DF)(g, bounds,
+                           (DrawState)
+                           (((IsChecked())?
+                             DrawStateChecked : DrawStateNone) |
+                            ((highlight)?
+                             DrawStateHotTrack : DrawStateNone)));
         }
 
         virtual void OnMouse(const Point& p, UINT keyflags) {
@@ -119,12 +118,25 @@ namespace nim
         }
     };
 
+    class CwOutlineWidget : public CwButtonT< &KhmDraw::DrawCredWindowOutlineWidget > {
+    public:
+        CwOutlineWidget(const Point& _p) : CwButtonT(_p) {}
 
-    class IconWidget : public WithFixedSizePos< DisplayElement > {
+        void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
+            TQPARENT(this)->Expand(!TQPARENT(this)->expanded);
+        }
+
+        bool IsChecked() {
+            return TQPARENT(this)->expanded;
+        }
+    };
+
+
+    class CwIconWidget : public WithFixedSizePos< DisplayElement > {
         Bitmap i;
         bool large;
     public:
-        IconWidget(const Point& _p, HICON _icon, bool _large) : i(_icon), large(_large) {
+        CwIconWidget(const Point& _p, HICON _icon, bool _large) : i(_icon), large(_large) {
             SetPosition(_p);
             SetSize((large)? g_theme->sz_icon : g_theme->sz_icon_sm);
         }
@@ -134,6 +146,17 @@ namespace nim
         }
     };
 
+    class CwDefaultIdentityWidget : public CwButton< &KhmDraw::DrawStarWidget > {
+        Identity * pidentity;
+
+    public:
+        CwDefaultIdentityWidget(Identity * _pidentity, const Point& _p) :
+            CwButtonT(_p), pidentity(_pidentity) {};
+
+        bool IsChecked() {
+            return (pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT);
+        }
+    };
 
     class CwOutline;
     class CwIdentityOutline;
@@ -195,13 +218,8 @@ namespace nim
 
         virtual void PaintSelf(Graphics& g, const Rect& bounds);
 
-        virtual DrawState GetExpirationState() {
-            return DrawStateNone;
-        }
-
         virtual DrawState GetDrawState() {
-            return (DrawState)(GetExpirationState() |
-                               ((expanded) ? DrawStateChecked : DrawStateNone) |
+            return (DrawState)(((expanded) ? DrawStateChecked : DrawStateNone) |
                                ((highlight) ? DrawStateHotTrack : DrawStateNone) |
                                ((selected) ? DrawStateSelected : DrawStateNone) |
                                ((focus) ? DrawStateFocusRect : DrawStateNone));
@@ -214,15 +232,18 @@ namespace nim
     public:
         Identity identity;
         DisplayElement * icon_widget;
+        DisplayElement * default_widget;
 
     public:
         CwIdentityOutline(Identity& _identity, int _column)
             : identity(_identity), CwOutline(_column) {
             icon_widget = NULL;
+            default_widget = NULL;
         }
 
         ~CwIdentityOutline() {
             icon_widget = NULL; // Will be deleted automatically
+            default_widget = NULL;
         }
 
         virtual bool Represents(Credential& credential) {
@@ -233,13 +254,87 @@ namespace nim
             return identity == _identity;
         }
 
-        virtual void UpdateLayoutPre(Graphics& g, Rect& layout);
+        virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
+            __super::UpdateLayoutPre(g, layout);
 
-        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
+            if (icon_widget == NULL) {
+                InsertChildAfter(icon_widget =
+                                 new CwIconWidget(Point(0,0),
+                                                  identity.GetIcon(KCDB_RES_ICON_NORMAL),
+                                                  true));
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds);
+                InsertChildAfter(default_widget =
+                                 new CwDefaultIdentityWidget(&identity, Point(0,16)));
+            }
 
-        virtual DrawState GetExpirationState();
+            layout.Y = g_theme->sz_icon.Height + g_theme->sz_margin.Height * 2;
+        }
+
+        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
+            icon_widget->origin =
+                g_theme->pt_margin_cx +
+                g_theme->pt_margin_cy +
+                ((expandable)? g_theme->pt_icon_sm_cx + g_theme->pt_margin_cx : Point(0,0));
+
+            default_widget->origin =
+                icon_widget->origin + g_theme->pt_icon_cx + g_theme->pt_margin_cx;
+
+            __super::UpdateLayoutPost(g, layout);
+        }
+
+        virtual void PaintSelf(Graphics& g, const Rect& bounds) {
+            __super::PaintSelf(g, bounds);
+
+            KhmTextLayout t(g, bounds, g_theme);
+            DrawState s = GetDrawState();
+
+            t.SetLeftMargin(g_theme->sz_margin.Width +
+                            ((expandable)? g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width : 0) +
+                            g_theme->sz_icon.Width);
+            t.DrawText(identity.GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndIdentity, s);
+            t.DrawText(identity.GetType().GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndType, s);
+        }
+
+        virtual DrawState GetDrawState() {
+            DrawState ds = DrawStateNone;
+
+            do {
+                if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0) {
+
+                    ds = DrawStateDisabled;
+
+                } else if (identity.Exists(KCDB_ATTR_EXPIRE)) {
+                    khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
+                    khm_int64 now;
+
+                    FILETIME ft;
+
+                    GetSystemTimeAsFileTime(&ft);
+                    now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+
+                    if (now > expire) {
+                        ds = DrawStateExpired;
+                        break;
+                    }
+
+                    khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
+
+                    if (thr_crit != 0 && now > expire - thr_crit) {
+                        ds = DrawStateCritial;
+                        break;
+                    }
+
+                    khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
+
+                    if (thr_warn != 0 && now > expire - thr_warn) {
+                        ds = DrawStateWarning;
+                        break;
+                    }
+                }
+            } while (false);
+
+            return (DrawState)(ds | __super::GetDrawState());
+        }
     };
 
 
@@ -334,7 +429,8 @@ namespace nim
 #pragma warning(disable: 4250)
 
     class CwTable : public WithVerticalLayout< WithNavigation< WithTooltips< DisplayContainer > > >,
-                    public CwOutlineBase
+                    public CwOutlineBase,
+                    public TimerQueueHost
     {
     public:
         // Credentials selection
@@ -498,7 +594,7 @@ namespace nim
         __super::UpdateLayoutPre(g, layout);
 
         if (expandable && outline_widget == NULL) {
-            outline_widget = new OutlineWidget(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
+            outline_widget = new CwOutlineWidget(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
             InsertChildAfter(outline_widget);
         }
 
@@ -528,72 +624,6 @@ namespace nim
     void CwOutline::PaintSelf(Graphics& g, const Rect& bounds)
     {
         g_theme->DrawCredWindowOutline(g, bounds, GetDrawState());
-    }
-
-    void CwIdentityOutline::UpdateLayoutPre(Graphics& g, Rect& layout)
-    {
-        __super::UpdateLayoutPre(g, layout);
-
-        if (icon_widget == NULL) {
-            InsertChildAfter(icon_widget =
-                             new IconWidget(Point(0,0),
-                                            identity.GetIcon(KCDB_RES_ICON_NORMAL),
-                                            true));
-        }
-
-        layout.Y = g_theme->sz_icon.Height + g_theme->sz_margin.Height * 2;
-    }
-
-    void CwIdentityOutline::UpdateLayoutPost(Graphics& g, const Rect& layout)
-    {
-        icon_widget->origin =
-            g_theme->pt_margin_cx +
-            g_theme->pt_margin_cy +
-            ((expandable)? g_theme->pt_icon_sm_cx + g_theme->pt_margin_cx : Point(0,0));
-
-        __super::UpdateLayoutPost(g, layout);
-    }
-
-    void CwIdentityOutline::PaintSelf(Graphics& g, const Rect& bounds)
-    {
-        __super::PaintSelf(g, bounds);
-
-        KhmTextLayout t(g, bounds, g_theme);
-        DrawState s = GetDrawState();
-
-        t.SetLeftMargin(g_theme->sz_margin.Width +
-                        ((expandable)? g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width : 0) +
-                        g_theme->sz_icon.Width);
-        t.DrawText(identity.GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndIdentity, s);
-        t.DrawText(identity.GetType().GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndType, s);
-    }
-
-    DrawState CwIdentityOutline::GetExpirationState()
-    {
-        if (identity.Exists(KCDB_ATTR_EXPIRE)) {
-            khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
-            khm_int64 now;
-
-            FILETIME ft;
-
-            GetSystemTimeAsFileTime(&ft);
-            now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
-
-            if (now > expire)
-                return DrawStateExpired;
-
-            khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
-
-            if (thr_crit != 0 && now > expire - thr_crit)
-                return DrawStateCritial;
-            
-            khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
-
-            if (thr_warn != 0 && now > expire - thr_warn)
-                return DrawStateWarning;
-        }
-
-        return DrawStateNone;
     }
 
     void CwCredTypeOutline::UpdateLayoutPre(Graphics& g, Rect& layout)

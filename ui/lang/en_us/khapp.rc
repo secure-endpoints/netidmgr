@@ -140,7 +140,6 @@ IDB_WDG_STICK           BITMAP                  "..\\..\\images\\wdg_stick.bmp"
 IDB_WDG_STICK_HI        BITMAP                  "..\\..\\images\\wdg_stick_hi.bmp"
 IDB_WDG_STUCK           BITMAP                  "..\\..\\images\\wdg_stuck.bmp"
 IDB_FLAG_RENEW          BITMAP                  "..\\..\\images\\flag_renewable.bmp"
-IDB_CREDWND_IMAGELIST   BITMAP                  "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\ui\\images\\credwnd-images.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -712,6 +711,16 @@ END
 //
 
 IDR_CMDLINERTF          KHMRTFRESOURCE          "cmdline.rtf"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// PNG
+//
+
+IDB_STARS16             PNG                     "..\\..\\images\\stars-16.png"
+IDB_STARS32             PNG                     "..\\..\\images\\stars-32.png"
+IDB_STARS24             PNG                     "..\\..\\images\\stars-24.png"
+IDB_CREDWND_IMAGELIST   PNG                     "..\\..\\images\\credwnd-images.png"
 
 /////////////////////////////////////////////////////////////////////////////
 //

@@ -59,7 +59,7 @@ namespace nim
         c_text         .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT));
         c_text_selected.SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_SEL));
 
-        b_credwnd =   Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST));
+        b_credwnd =   LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST), L"PNG");
         b_watermark = Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_LOGO_SHADE));
 
         sz_icon.Width     = GetSystemMetrics(SM_CXICON);
@@ -149,60 +149,30 @@ namespace nim
     void 
     KhmDraw::DrawCredWindowOutline(Graphics& g, const Rect& extents, DrawState state)
     {
-        GraphicsPath outline;
-        int dx = sz_margin.Width;
-        int dy = sz_margin.Height;
-        int width = extents.Width - line_thickness * 2;
-        int height = extents.Height - line_thickness * 2;
-
-        outline.AddArc(0, 0, dx*2, dy*2, 180.0, 90.0);
-        outline.AddLine(dx, 0, width - dx, 0);
-        outline.AddArc(width - dx*2, 0, dx*2, dy*2, 270.0, 90.0);
-        outline.AddLine(width, dy, width, height - dy);
-        outline.AddArc(width - dx*2, height - dy*2, dx*2, dy*2, 0, 90.0);
-        outline.AddLine(width - dx, height, dx, height);
-        outline.AddArc(0, height - 2*dy, dx*2, dy*2, 90.0, 90.0);
-        outline.AddLine(0, height - dy, 0, dy);
-
-        Matrix m;
-
-        m.Reset();
-        m.Translate((REAL) extents.X + line_thickness, (REAL) extents.Y + line_thickness);
-        outline.Transform(&m);
-
-        Color tl(Color::White);
-        Color br(Color::Coral);
-        Color upper(Color::Coral);
-        Color lower(Color::White);
-
-        tl = tl * 200;
-        br = br * 128;
-        upper = upper * 128;
-        lower = lower * 128;
+        Color c1;
+        Color c2 = c_background;
+        Rect r = extents;
 
         if (state & DrawStateSelected) {
-            Color sel = c_selection * 128;
-
-            tl += sel;
-            br += sel;
-            upper += sel;
-            lower += sel;
+            c1 = c_selection;
+        } else if (state & DrawStateExpired) {
+            c1 = c_expired;
+        } else if (state & DrawStateCritial) {
+            c1 = c_critical;
+        } else if (state & DrawStateWarning) {
+            c1 = c_warning;
+        } else {
+            c1 = c_header;
         }
 
-        {
-            LinearGradientBrush bb(Point(0, extents.GetTop()), Point(0,extents.GetBottom()), upper, lower);
-            LinearGradientBrush pb(Point(extents.GetLeft(), extents.GetTop()),
-                                   Point(extents.GetRight(), extents.GetBottom()),
-                                   tl, br);
+        LinearGradientBrush br(extents, c1, c2, 0, FALSE);
 
-            Pen p(&pb,2);
+        r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
 
-            g.FillPath(&bb, &outline);
-            g.DrawPath(&p, &outline);
-        }
+        g.FillRectangle(&br, r);
 
         if (state & DrawStateFocusRect) {
-            Color c = c_text_selected * 128;
+            Color c = c_text_selected;
             Pen p(c);
 
             p.SetDashStyle(DashStyleDash);
@@ -221,6 +191,18 @@ namespace nim
         image = ((state & DrawStateChecked)?
                  ((state & DrawStateHotTrack)? ImgExpandHi : ImgExpand) :
                  ((state & DrawStateHotTrack)? ImgCollapseHi : ImgCollapse));
+
+        DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
+    }
+    
+    void
+    KhmDraw::DrawStarWidget(Graphics& g, const Rect& extents, DrawState state)
+    {
+        CredWndImages image;
+
+        image = ((state & DrawStateChecked)?
+                 ((state & DrawStateHotTrack)? ImgStarHi : ImgStar) :
+                 ((state & DrawStateHotTrack)? ImgStarEmptyHi : ImgStarEmpty));
 
         DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
     }
@@ -253,6 +235,59 @@ namespace nim
         return (HBITMAP) LoadImage(inst, MAKEINTRESOURCE(res_id), IMAGE_BITMAP,
                                    0, 0,
                                    LR_DEFAULTCOLOR | LR_DEFAULTSIZE | ((shared)? LR_SHARED : 0));
+    }
+
+    Image* LoadImageResourceAsStream(LPCTSTR name, LPCTSTR type, HINSTANCE inst)
+    {
+        Image * rimage = NULL;
+        HRSRC   hres = 0;
+        HGLOBAL hgres = NULL;
+        HGLOBAL hgmem = NULL;
+        IStream * istr = NULL;
+        DWORD cb;
+
+        hres = FindResource(inst, name, type);
+        if (hres == NULL)
+            goto done;
+
+        cb = SizeofResource(inst, hres);
+        if (cb == 0)
+            goto done;
+
+        hgres = LoadResource(inst, hres);
+        if (hgres == NULL)
+            goto done;
+
+        void *  pv_img;
+        pv_img = LockResource(hgres);
+        if (pv_img == NULL)
+            goto done;
+
+        hgmem = GlobalAlloc(GMEM_MOVEABLE, cb);
+        if (hgmem == NULL)
+            goto done;
+
+        void * pv_mem = GlobalLock(hgmem);
+        if (pv_mem == NULL)
+            goto done;
+
+        memcpy(pv_mem, pv_img, cb);
+
+        GlobalUnlock(hgmem);
+
+        if (S_OK != CreateStreamOnHGlobal(hgmem, TRUE, &istr))
+            goto done;
+
+        rimage = Image::FromStream(istr);
+
+    done:
+        if (istr != NULL)
+            istr->Release();
+
+        if (rimage == NULL && hgmem != NULL)
+            GlobalFree(hgmem);
+
+        return rimage;
     }
 
     void KhmTextLayout::DrawText(std::wstring& text, DrawTextStyle style, DrawState state)

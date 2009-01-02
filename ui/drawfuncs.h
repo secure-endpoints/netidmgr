@@ -76,8 +76,8 @@ namespace nim {
         Color   c_text;             // Normal text color
         Color   c_text_selected;    // Selected text color
 
-        Bitmap *b_credwnd;          // Credentials window widget images
-        Bitmap *b_watermark;        // Credentials window watermark
+        Image  *b_credwnd;          // Credentials window widget images
+        Image  *b_watermark;        // Credentials window watermark
 
         bool    isThemeLoaded;      // TRUE if a theme was loaded
 
@@ -112,6 +112,10 @@ namespace nim {
             Img_Reserved,       // currently for the flag icon, though we don't want that
             ImgIdentity,
             ImgIdentityDisabled,
+            ImgStarHi,
+            ImgStar,
+            ImgStarEmptyHi,
+            ImgStarEmpty
         } CredWndImages;
 
     protected:
@@ -132,6 +136,8 @@ namespace nim {
 
         void DrawCredWindowOutlineWidget(Graphics& g, const Rect& extents, DrawState state);
 
+        void DrawStarWidget(Graphics& g, const Rect& extents, DrawState state);
+
         void DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state);
     };
 
@@ -140,6 +146,40 @@ namespace nim {
         DrawTextCredWndType,
         DrawTextCredWndStatus,
         DrawTextCredWndNormal
+    };
+
+    // Applies to WithTextDisplay<>
+    template <class T>
+    class CredWndIdentityText : public WithCachedFont< T > {
+        virtual void GetStringFormat(StringFormat& sf) {
+            sf.SetFormatFlags(StringFormatFlagsNoWrap);
+            sf.SetTrimming(StringTrimmingEllipsisCharacter);
+        }
+
+        Font * GetFontCreate(HDC hdc) {
+            return new Font(hdc, g_theme->hf_header);
+        }
+
+        Color GetForegroundColor() {
+            return (selected)? g_theme->c_text_selected : g_theme->c_text;
+        }
+    };
+
+    // Applies to WithTextDisplay
+    template <class T>
+    class CredWndTypeText : public WithCachedFont< T > {
+        virtual void GetStringFormat(StringFormat& sf) {
+            sf.SetFormatFlags(StringFormatFlagsNoWrap);
+            sf.SetTrimming(StringTrimmingEllipsisCharacter);
+        }
+
+        Font * GetFontCreate(HDC hdc) {
+            return new Font(hdc, g_theme->hf_normal);
+        }
+
+        Color GetForegroundColor() {
+            return (selected)? g_theme->c_text_selected : g_theme->c_text;
+        }
     };
 
     class KhmTextLayout {
@@ -216,15 +256,18 @@ namespace nim {
     }
 
     std::wstring
-        LoadStringResource(UINT res_id, HINSTANCE inst = khm_hInstance);
+    LoadStringResource(UINT res_id, HINSTANCE inst = khm_hInstance);
 
     HICON
-        LoadIconResource(UINT res_id, bool small_icon,
-                         bool shared = true, HINSTANCE inst = khm_hInstance);
+    LoadIconResource(UINT res_id, bool small_icon,
+                     bool shared = true, HINSTANCE inst = khm_hInstance);
 
     HBITMAP
-        LoadImageResource(UINT res_id, bool shared = true,
-                          HINSTANCE inst = khm_hInstance);
+    LoadImageResource(UINT res_id, bool shared = true,
+                      HINSTANCE inst = khm_hInstance);
+
+    Image*
+    LoadImageResourceAsStream(LPCTSTR name, LPCTSTR type, HINSTANCE inst = khm_hInstance);
 
 } /* namespace nim */
 #else  /* not __cplusplus */

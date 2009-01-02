@@ -234,13 +234,17 @@
 #define IDS_NC_REN_FAILED_TITLE         226
 #define IDD_NC_PERSIST                  226
 #define IDS_CW_DEFAULT                  227
-#define IDB_CREDWND_IMAGELIST           227
 #define IDS_ACTION_OPT_PLUGINS          228
 #define IDS_NC_SETDEF                   229
 #define IDS_WT_ACQ_PRIV_ID              230
+#define IDB_STARS16                     230
 #define IDS_WARN_EXP_CRED               231
+#define IDB_STARS32                     231
 #define IDS_IDACTION_CONFIG             232
+#define IDB_STARS24                     232
 #define IDS_PACTION_YES                 233
+#define IDB_PNG1                        233
+#define IDB_CREDWND_IMAGELIST           233
 #define IDS_PACTION_NO                  234
 #define IDS_PACTION_YESALL              235
 #define IDS_PACTION_NOALL               236
@@ -448,7 +452,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        229
+#define _APS_NEXT_RESOURCE_VALUE        234
 #define _APS_NEXT_COMMAND_VALUE         40010
 #define _APS_NEXT_CONTROL_VALUE         1189
 #define _APS_NEXT_SYMED_VALUE           101

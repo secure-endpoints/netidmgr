@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#define NIM_NOVTABLE __declspec(novtable)
+
 using namespace Gdiplus;
 
 namespace nim {
@@ -421,7 +423,7 @@ namespace nim {
 
         virtual Font *GetFont(Graphics& g) { return NULL; }
 
-        virtual Brush *GetForegroundBrush() { return NULL; }
+        virtual Color GetForegroundColor() { return Color(Color::Black); }
     };
 
     class DisplayContainer : virtual public DisplayElement, public ControlWindow {
@@ -689,22 +691,38 @@ namespace nim {
     // Applies to DisplayElement
     template<class T = DisplayElement>
     class WithTextDisplay : public T {
-        std::wstring caption;
+    protected:
         Point caption_pos;
         bool  truncated;
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds) {
+        virtual void UpdateLayoutPost(Graphics& g, const Rect& bounds) {
+            std::wstring caption = GetCaption();
 
-            StringFormat sf(StringFormatFlagsNoWrap, LANG_NEUTRAL);
-            sf.SetTrimming(StringTrimmingEllipsisCharacter);
-            sf.SetLineAlignment(StringAlignmentCenter);
+            StringFormat sf;
+            GetStringFormat(sf);
+
+            SizeF sz((REAL) bounds.Width, (REAL) bounds.Height);
+            SizeF szr;
+
+            g.MeasureString(caption.c_str(), caption.length(), GetFont(g), sz, &sf, &szr);
+
+            extents.Width = szr.Width;
+            extents.Height = szr.Height;
+        }
+
+        virtual void PaintSelf(Graphics& g, const Rect& bounds) {
+            std::wstring caption = GetCaption();
+
+            StringFormat sf;
+            GetStringFormat(sf);
 
             RectF rf((REAL) bounds.X, (REAL) bounds.Y, (REAL) bounds.Width, (REAL) bounds.Height);
-            g.DrawString(caption.c_str(), -1, GetFont(g), rf, &sf, GetForegroundBrush());
+            Brush br(GetForegroundColor());
+            g.DrawString(caption.c_str(), caption.length(), GetFont(g), rf, &sf, &br);
 
             RectF bb(0,0,0,0);
             INT   chars;
-            g.MeasureString(caption.c_str(), -1, GetFont(g), rf, &sf, &bb, &chars);
+            g.MeasureString(caption.c_str(), caption.length(), GetFont(g), rf, &sf, &bb, &chars);
             caption_pos.X = (INT) bb.X - bounds.X;
             caption_pos.Y = (INT) bb.Y - bounds.Y;
             truncated = ((unsigned int) chars != caption.length());
@@ -717,14 +735,24 @@ namespace nim {
             Point pto = MapToScreen(caption_pos);
             align_rect.X = pto.X; align_rect.Y = pto.Y;
             align_rect.Width = extents.Width; align_rect.Height = extents.Height;
-            _caption = caption;
+            _caption = GetCaption();
             return true;
         }
 
     public:
-        WithTextDisplay() : caption() { }
-        WithTextDisplay(const std::wstring& _caption) : caption(_caption) { }
-        void SetText(const std::wstring& _caption) { caption = _caption; Invalidate(); }
+        WithTextDisplay() : caption() {
+            truncated = false;
+        }
+
+        virtual std::wstring GetCaption() {
+            return std::wstring(L"");
+        }
+
+        virtual void GetStringFormat(StringFormat& sf) {
+            sf.SetFormatFlags(StringFormatFlagsNoWrap);
+            sf.SetTrimming(StringTrimmingEllipsisCharacter);
+            sf.SetLineAlignment(StringAlignmentCenter);
+        }
     };
 
     // Applies to DisplayElement
@@ -1047,6 +1075,104 @@ namespace nim {
         virtual void UpdateLayoutPost(Graphics & g, const Rect & layout) {
             origin = fixed_origin;
             extents = fixed_extents;
+        }
+    };
+
+    template <class T>
+    class NIM_NOVTABLE WithCachedFont : public T {
+        Font *cached_font;
+
+        WithCachedFont() {
+            cached_font = NULL;
+        }
+
+        ~WithCachedFont() {
+            if (cached_font)
+                delete cached_font;
+            cached_font = NULL;
+        }
+
+        // Font * GetFontCreate(HDC hdc) needs to be implemented by the base class
+
+    public:
+        virtual Font* GetFont(Graphics& g) {
+            if (cached_font == NULL) {
+                HDC hdc = g.GetHDC();
+                cached_font = GetFontCreate(hdc);
+                g.ReleaseHDC(hdc);
+            }
+
+            return cached_font;
+        }
+    };
+
+    class FlowLayout {
+        Rect bounds;
+        INT  top;
+        INT  baseline;
+        INT  left;
+        Size margin;
+
+        void ExtendBaseline(INT nb) {
+            if (nb + top > baseline) {
+                baseline = nb + top;
+                if (bounds.Height < baseline)
+                    bounds.Height = baseline;
+            }
+        }
+
+    public:
+        FlowLayout(const Rect& _bounds, const Size& _margin) {
+            bounds = _bounds;
+            top = 0;
+            baseline = top;
+            left = 0;
+            margin = _margin;
+        }
+
+        Rect GetBounds() {
+            return bounds;
+        }
+
+        Size GetSize() {
+            return Size(bounds.Width, bounds.Height);
+        }
+
+        void AddSquishLeft(DisplayElement * e) {
+            if (left != 0)
+                left += margin.Width;
+            e->origin.X = left + bounds.X;
+            e->origin.Y = top + bounds.Y;
+            e->extents.Width = __max(bounds.Width - left, e->extents.Width);
+            left += e->extents.Width;
+
+            ExtendBaseline(e->extents.Height);
+        }
+
+        void AddSquishRight(DisplayElement * e) {
+            if (left != 0)
+                left += margin.Width;
+            e->origin.Y = top + bounds.Y;
+            e->extents.Width = __max(bounds.Width - left, e->extents.Width);
+            e->origin.X = (bounds.Width - e->extents.Width) + bounds.X;
+            left = bounds.Width;
+
+            ExtendBaseline(e->extents.Height);
+        }
+
+        void AddFixed(DisplayElement * e) {
+            if (left != 0
+                left += margin.Width;
+            e->origin.X = left + bounds.X;
+            e->origin.Y = top + bounds.Y;
+            left += e->extents.Width;
+
+            ExtendBaseline(e->extents.Height);
+        }
+
+        void LineBreak() {
+            left = 0;
+            top = baseline + margin.Height;
         }
     };
 }

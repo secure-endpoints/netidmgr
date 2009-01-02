@@ -4252,14 +4252,22 @@ namespace nim {
     public:
 
         khm_int32 Sort(Comparator f, void * param = NULL) {
+            khm_int32 rv;
             ComparatorData d;
+
             d.f = f;
             d.param = param;
-            return kcdb_enum_sort(e, InternalComparator, &d);
+            rv = kcdb_enum_sort(e, InternalComparator, &d);
+            Reset();
+            return rv;
         }
 
         khm_int32 Sort(kcdb_comp_func f, void * param = NULL) {
-            return kcdb_enum_sort(e, f, param);
+            khm_int32 rv;
+
+            rv = kcdb_enum_sort(e, f, param);
+            Reset();
+            return rv;
         }
     };
 
@@ -4350,6 +4358,24 @@ namespace nim {
             return ret;
         }
 
+        khm_int32 GetAttribInt32(khm_int32 attr_id) const {
+            khm_int32 t = 0;
+
+            if (KHM_FAILED(GetObject(attr_id, t)))
+                return 0;
+            else
+                return t;
+        }
+
+        khm_int64 GetAttribFileTimeAsInt(khm_int32 attr_id) const {
+            FILETIME ft;
+
+            if (KHM_FAILED(GetObject(attr_id, ft)))
+                return 0;
+            else
+                return FtToInt(&ft);
+        }
+
         template<class U> khm_int32 GetObject(const wchar_t * attr_name, U& target) const {
             const T *pT = static_cast<const T*>(this);
             khm_size cb = sizeof(target);
@@ -4370,15 +4396,6 @@ namespace nim {
         template<class U> khm_int32 SetObject(khm_int32 attr_id, const U& target) {
             T *pT = static_cast<T*>(this);
             return pT->SetAttrib(attr_id, &target, sizeof(target));
-        }
-
-        khm_int64 GetAttribFileTimeAsInt(khm_int32 attr_id) const {
-            FILETIME ft;
-
-            if (KHM_FAILED(GetObject(attr_id, ft)))
-                return 0;
-            else
-                return FtToInt(&ft);
         }
 
         bool Exists(const wchar_t * attr_name) const {
