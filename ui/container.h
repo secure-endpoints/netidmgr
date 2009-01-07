@@ -408,6 +408,8 @@ namespace nim {
 
         virtual void Focus(bool _focus = true);
 
+        bool IsVisible();
+
         void OnPaint(Graphics& g, const Rect& bounds, const Rect& clip);
 
         virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) { }
@@ -907,7 +909,7 @@ namespace nim {
         DisplayElement * PrevTabStop(DisplayElement * c) {
             do {
                 c = PrevElement(c);
-            } while (c != NULL && c->visible && !c->IsTabStop());
+            } while (c != NULL && (!c->IsVisible() || !c->IsTabStop()));
             return c;
         }
 
@@ -931,7 +933,7 @@ namespace nim {
         DisplayElement * NextTabStop(DisplayElement * c) {
             do {
                 c = NextElement(c);
-            } while (c != NULL && c->visible && !c->IsTabStop());
+            } while (c != NULL && (!c->IsVisible() || !c->IsTabStop()));
             return c;
         }
 

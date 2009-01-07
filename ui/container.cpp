@@ -220,6 +220,15 @@ namespace nim {
         Invalidate();
     }
 
+    bool DisplayElement::IsVisible()
+    {
+        for (DisplayElement * p = this; p; p = TQPARENT(p)) {
+            if (!p->visible)
+                return false;
+        }
+        return true;
+    }
+
     void DisplayElement::Select(bool _select)
     {
         if (selected == _select)

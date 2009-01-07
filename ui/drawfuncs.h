@@ -213,6 +213,24 @@ namespace nim {
     };
 
     template <class T>
+    class ColumnCellTextT : public WithCachedFont< T > {
+        void GetStringFormat(StringFormat& sf) {
+            sf.SetFormatFlags(StringFormatFlagsNoWrap);
+            sf.SetAlignment(StringAlignmentNear);
+            sf.SetLineAlignment(StringAlignmentCenter);
+            sf.SetTrimming(StringTrimmingEllipsisCharacter);
+        }
+
+        Font * GetFontCreate(HDC hdc) {
+            return new Font(hdc, g_theme->hf_normal);
+        }
+
+        Color GetForegroundColor() {
+            return (selected)? g_theme->c_text_selected : g_theme->c_text;
+        }
+    };
+
+    template <class T>
     class GenericTextT : public WithCachedFont< T > {
         void GetStringFormat(StringFormat& sf) {
             sf.SetFormatFlags(0);

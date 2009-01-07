@@ -696,11 +696,18 @@ namespace nim
 
 
     class CwStaticCellElement :
-        public WithColumnAlignment< GenericTextT < WithStaticCaption < WithTextDisplay <> > > > {
+        public WithColumnAlignment< ColumnCellTextT < WithStaticCaption < WithTextDisplay <> > > > {
     public:
         CwStaticCellElement(const std::wstring& _caption, int _column, int _span = 1) :
-            WithColumnAlignment(_column, _span) {
+          WithColumnAlignment(_column, _span) {
             SetCaption(_caption);
+        }
+
+        void UpdateLayoutPost(Graphics& g, const Rect& bounds) {
+            INT width = extents.Width;
+            WithTextDisplay::UpdateLayoutPost(g, bounds);
+            extents.Width = width;
+            extents.Height += g_theme->sz_margin.Height;
         }
     };
 
