@@ -48,6 +48,8 @@ namespace nim {
         DrawStateExpired      = (1L << 16),
         DrawStateCritial      = (1L << 17),
         DrawStateWarning      = (1L << 18),
+        DrawStateBusy         = (1L << 19),
+        DrawStatePostDated    = (1L << 20),
     } DrawState;
 
     typedef enum DrawElement {
@@ -76,14 +78,18 @@ namespace nim {
         Color   c_text;             // Normal text color
         Color   c_text_selected;    // Selected text color
 
-        Image  *b_credwnd;          // Credentials window widget images
+        Image  *b_credwnd;          // Credentials window widget images (small icon size)
         Image  *b_watermark;        // Credentials window watermark
+        Image  *b_meter_state;      // Life meter state images
+        Image  *b_meter_life;       // Life meter remainder images
+        Image  *b_meter_renew;      // Life meter renewal animation images
 
         bool    isThemeLoaded;      // TRUE if a theme was loaded
 
         Size    sz_icon;        // Size of large icon
         Size    sz_icon_sm;     // Size of small icon
         Size    sz_margin;      // Size of small margin
+        Size    sz_meter;       // Size of meter images
 
         int     line_thickness;
 
@@ -119,7 +125,7 @@ namespace nim {
         } CredWndImages;
 
     protected:
-        void DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx);
+        void DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx, const Size& sz);
         void DrawCredWindowImage(Graphics & g, CredWndImages img, const Point& p);
 
     public:
@@ -139,6 +145,13 @@ namespace nim {
         void DrawStarWidget(Graphics& g, const Rect& extents, DrawState state);
 
         void DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state);
+
+        void DrawCredMeterState(Graphics& g, const Rect& extents, DrawState state, DWORD *ms_to_next);
+
+        // index is from 0 ... 255
+        void DrawCredMeterLife(Graphics& g, const Rect& extents, unsigned int index);
+
+        void DrawCredMeterBusy(Graphics& g, const Rect& extents, DWORD *ms_to_next);
     };
 
     typedef enum DrawTextStyle {
@@ -150,8 +163,8 @@ namespace nim {
 
     // Applies to WithTextDisplay<>
     template <class T>
-    class CredWndIdentityText : public WithCachedFont< T > {
-        virtual void GetStringFormat(StringFormat& sf) {
+    class HeaderTextBoxT : public WithCachedFont< T > {
+        void GetStringFormat(StringFormat& sf) {
             sf.SetFormatFlags(StringFormatFlagsNoWrap);
             sf.SetTrimming(StringTrimmingEllipsisCharacter);
         }
@@ -167,8 +180,8 @@ namespace nim {
 
     // Applies to WithTextDisplay
     template <class T>
-    class CredWndTypeText : public WithCachedFont< T > {
-        virtual void GetStringFormat(StringFormat& sf) {
+    class SubheaderTextBoxT : public WithCachedFont< T > {
+        void GetStringFormat(StringFormat& sf) {
             sf.SetFormatFlags(StringFormatFlagsNoWrap);
             sf.SetTrimming(StringTrimmingEllipsisCharacter);
         }
@@ -182,42 +195,37 @@ namespace nim {
         }
     };
 
-    class KhmTextLayout {
-        KhmDraw  * d; 
-        Graphics * g;
-        RectF      extents;
-        REAL       cursor;
-        REAL       baseline;
-
-    public:
-        KhmTextLayout(Graphics& _g, const Rect& _extents, KhmDraw * theme) {
-            d = theme;
-            g = &_g;
-            extents = RectF((REAL)_extents.X + d->sz_margin.Width,
-                            (REAL)_extents.Y + d->sz_margin.Height,
-                            (REAL)_extents.Width - d->sz_margin.Width*2,
-                            (REAL)_extents.Height - d->sz_margin.Height*2);
-            cursor = extents.X;
-            baseline = extents.Y;
+    // Applies to WithTextDisplay
+    template <class T>
+    class IdentityStatusTextT : public WithCachedFont< T > {
+        void GetStringFormat(StringFormat& sf) {
+            sf.SetFormatFlags(0);
+            sf.SetAlignment(StringAlignmentNear);
         }
 
-        void SetLeftMargin(INT x1) {
-            extents.X += x1;
-            extents.Width -= x1;
-            cursor = __max(cursor, extents.X);
+        Font * GetFontCreate(HDC hdc) {
+            return new Font(hdc, g_theme->hf_normal);
         }
 
-        void SetRightMargin(INT x2) {
-            extents.Width -= x2;
+        Color GetForegroundColor() {
+            return (selected)? g_theme->c_text_selected : g_theme->c_text;
+        }
+    };
+
+    template <class T>
+    class GenericTextT : public WithCachedFont< T > {
+        void GetStringFormat(StringFormat& sf) {
+            sf.SetFormatFlags(0);
+            sf.SetAlignment(StringAlignmentNear);
         }
 
-        void LineBreak() {
-            cursor = extents.X;
-            extents.Height = extents.GetBottom() - baseline;
-            extents.Y = baseline;
+        Font * GetFontCreate(HDC hdc) {
+            return new Font(hdc, g_theme->hf_normal);
         }
 
-        void DrawText(std::wstring& text, DrawTextStyle style, DrawState state);
+        Color GetForegroundColor() {
+            return (selected)? g_theme->c_text_selected : g_theme->c_text;
+        }
     };
 
     extern KhmDraw * g_theme;

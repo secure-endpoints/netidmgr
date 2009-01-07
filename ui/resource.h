@@ -243,11 +243,14 @@
 #define IDS_IDACTION_CONFIG             232
 #define IDB_STARS24                     232
 #define IDS_PACTION_YES                 233
-#define IDB_PNG1                        233
 #define IDB_CREDWND_IMAGELIST           233
 #define IDS_PACTION_NO                  234
+#define IDB_BATT_STATE                  234
 #define IDS_PACTION_YESALL              235
+#define IDB_BATT_LIFE                   235
 #define IDS_PACTION_NOALL               236
+#define IDB_PNG3                        236
+#define IDB_BATT_RENEW                  236
 #define IDS_PACTION_KEEP                237
 #define IDS_PACTION_REMOVE              238
 #define IDS_PACTION_DISCARD             239
@@ -452,7 +455,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        234
+#define _APS_NEXT_RESOURCE_VALUE        237
 #define _APS_NEXT_COMMAND_VALUE         40010
 #define _APS_NEXT_CONTROL_VALUE         1189
 #define _APS_NEXT_SYMED_VALUE           101

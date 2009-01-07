@@ -33,14 +33,6 @@ namespace nim
 
 #define CW_CANAME_FLAGS L"_CWFlags"
 
-    /* The expiration states */
-#define CW_EXPSTATE_NONE        0x00000000
-#define CW_EXPSTATE_WARN        0x00000400
-#define CW_EXPSTATE_CRITICAL    0x00000800
-#define CW_EXPSTATE_EXPIRED     0x00000c00
-
-#define CW_EXPSTATE_MASK        0x00000c00
-
     class CwColumn : public DisplayColumn
     {
         // Legacy flags
@@ -96,7 +88,7 @@ namespace nim
 
         virtual bool IsChecked() { return false; }
 
-        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
+        virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) {
             (g_theme->*DF)(g, bounds,
                            (DrawState)
                            (((IsChecked())?
@@ -118,12 +110,14 @@ namespace nim
         }
     };
 
-    class CwOutlineWidget : public CwButtonT< &KhmDraw::DrawCredWindowOutlineWidget > {
+
+    class CwExposeControlElement : public CwButtonT< &KhmDraw::DrawCredWindowOutlineWidget > {
     public:
-        CwOutlineWidget(const Point& _p) : CwButtonT(_p) {}
+        CwExposeControlElement(const Point& _p) : CwButtonT(_p) {}
 
         void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
             TQPARENT(this)->Expand(!TQPARENT(this)->expanded);
+            owner->Invalidate();
         }
 
         bool IsChecked() {
@@ -131,26 +125,25 @@ namespace nim
         }
     };
 
-
-    class CwIconWidget : public WithFixedSizePos< DisplayElement > {
+    class CwIconDisplayElement : public WithFixedSizePos< DisplayElement > {
         Bitmap i;
         bool large;
     public:
-        CwIconWidget(const Point& _p, HICON _icon, bool _large) : i(_icon), large(_large) {
+        CwIconDisplayElement(const Point& _p, HICON _icon, bool _large) : i(_icon), large(_large) {
             SetPosition(_p);
             SetSize((large)? g_theme->sz_icon : g_theme->sz_icon_sm);
         }
 
-        virtual void PaintSelf(Graphics &g, const Rect& bounds) {
+        virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) {
             g.DrawImage(&i, bounds);
         }
     };
 
-    class CwDefaultIdentityWidget : public CwButton< &KhmDraw::DrawStarWidget > {
+    class CwDefaultIdentityElement : public CwButtonT< &KhmDraw::DrawStarWidget > {
         Identity * pidentity;
 
     public:
-        CwDefaultIdentityWidget(Identity * _pidentity, const Point& _p) :
+        CwDefaultIdentityElement(Identity * _pidentity, const Point& _p) :
             CwButtonT(_p), pidentity(_pidentity) {};
 
         bool IsChecked() {
@@ -171,8 +164,13 @@ namespace nim
     template < class T >
     bool AllowRecursiveInsert(DisplayColumnList& columns, int column);
 
+    class CwOutlineElement :
+        virtual public DisplayElement {};
 
-    class CwOutlineBase : virtual public DisplayElement, public TimerQueueClient {
+    class CwOutlineBase :
+        public WithOutline< CwOutlineElement >,
+        public TimerQueueClient {
+
     public:
         CwOutlineBase *insertion_point;
         int indent;
@@ -192,7 +190,7 @@ namespace nim
     };
 
     class CwOutline :
-        public WithOutline< WithTabStop< WithColumnAlignment< CwOutlineBase > > > {
+        public WithTabStop< WithColumnAlignment< CwOutlineBase > > {
     public:
         DisplayElement *outline_widget;
 
@@ -213,10 +211,7 @@ namespace nim
         virtual bool Represents(Credential& credential) { return false; }
         virtual bool Represents(Identity& identity) { return false; }
 
-        virtual void UpdateLayoutPre(Graphics& g, Rect& layout);
-        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
-
-        virtual void PaintSelf(Graphics& g, const Rect& bounds);
+        virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip);
 
         virtual DrawState GetDrawState() {
             return (DrawState)(((expanded) ? DrawStateChecked : DrawStateNone) |
@@ -224,26 +219,277 @@ namespace nim
                                ((selected) ? DrawStateSelected : DrawStateNone) |
                                ((focus) ? DrawStateFocusRect : DrawStateNone));
         }
+
+        void LayoutOutlineSetup(Graphics& g, Rect& layout);
+        void LayoutOutlineChildren(Graphics& g, Rect& layout);
+
+        void UpdateLayoutPre(Graphics& g, Rect& layout) {
+            LayoutOutlineSetup(g, layout);
+        }
+
+        void UpdateLayoutPost(Graphics& g, const Rect& layout) {
+            Rect r = layout;
+            LayoutOutlineChildren(g, r);
+        }
+    };
+
+    inline CwOutline * NextOutline(DisplayElement * e) {
+        for (DisplayElement * i = e; i != NULL; i = TQNEXTSIBLING(i)) {
+            CwOutline * t = dynamic_cast< CwOutline * >(i);
+            if (t)
+                return t;
+        }
+        return static_cast< CwOutline * >(NULL);
+    }
+
+    class CwIdentityTitleElement :
+        public HeaderTextBoxT< WithStaticCaption < WithTextDisplay <> > > {
+    public:
+        CwIdentityTitleElement(Identity& identity) {
+            SetCaption(identity.GetResourceString(KCDB_RES_DISPLAYNAME));
+        }
+    };
+
+    class CwIdentityTypeElement :
+        public SubheaderTextBoxT< WithStaticCaption < WithTextDisplay <> > > {
+    public:
+        CwIdentityTypeElement(Identity& identity) {
+            SetCaption(identity.GetProvider().GetResourceString(KCDB_RES_INSTANCE));
+        }
+    };
+
+    class CwIdentityMeterElement :
+        public WithFixedSizePos<>, public TimerQueueClient {
+
+        Identity     identity;
+        DrawState    state;
+        std::wstring caption;
+
+    public:
+        enum State {
+            StateNormal = 0,
+            StateWarning,
+            StateCritical,
+            StateBusy
+        };
+
+    public:
+        CwIdentityMeterElement(Identity& _identity) :
+            WithFixedSizePos(Point(0,0), g_theme->sz_meter),
+            identity(_identity) {
+
+            state = DrawStateNone;
+
+        }
+
+        void OnTimer() {
+            Invalidate();
+        }
+
+        void SetStatus(State _state, const wchar_t * _caption = NULL) {
+            if (_caption)
+                caption = _caption;
+            else
+                caption = L"";
+
+            switch (_state) {
+            case StateNormal:
+                state = DrawStateNone;
+                break;
+
+            case StateWarning:
+                state = DrawStateWarning;
+                break;
+
+            case StateCritical:
+                state = DrawStateCritial;
+                break;
+
+            case StateBusy:
+                state = DrawStateBusy;
+                break;
+            }
+
+            Invalidate();
+        }
+
+        void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
+            CancelTimer();
+
+            switch (state) {
+            case DrawStateCritial:
+            case DrawStateWarning:
+            case DrawStateBusy:
+                {
+                    DWORD ms = 0;
+
+                    if (state == DrawStateBusy)
+                        g_theme->DrawCredMeterBusy(g, bounds, &ms);
+                    else
+                        g_theme->DrawCredMeterState(g, bounds, state, &ms);
+
+                    if (ms != 0) {
+                        TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
+                        host->SetTimer(this, ms);
+                    }
+                }
+                break;
+
+            default:
+                {
+                    FILETIME ftnow;
+                    khm_int64 now;
+                    khm_int64 expire;
+                    DWORD ms = 0;
+
+                    GetSystemTimeAsFileTime(&ftnow);
+
+                    now = FtToInt(&ftnow) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+
+                    expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
+
+                    if (expire < now) {
+
+                        g_theme->DrawCredMeterState(g, bounds, DrawStateExpired, &ms);
+                    } else {
+                        khm_int64 lifetime;
+
+                        lifetime = identity.GetAttribFileTimeAsInt(KCDB_ATTR_LIFETIME);
+
+                        if (lifetime == 0) {
+                            g_theme->DrawCredMeterState(g, bounds, DrawStateExpired, &ms);
+                        } else if (expire - lifetime > now) {
+                            g_theme->DrawCredMeterState(g, bounds, DrawStatePostDated, &ms);
+                        } else {
+                            khm_int64 remainder;
+
+                            remainder = expire - now;
+
+                            g_theme->DrawCredMeterLife(g, bounds,
+                                                       (unsigned int) ((remainder * 256) / lifetime));
+                            remainder = FT_TO_MS(remainder);
+                            lifetime = FT_TO_MS(lifetime);
+
+                            khm_int64 q = lifetime / 256;
+
+                            if (q != 0) {
+                                ms = (DWORD) (remainder % q);
+
+                                if (ms < 100) {
+                                    ms += (DWORD) q;
+                                }
+                            }
+
+                            if (ms > 0) {
+                                TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
+                                host->SetTimer(this, ms);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+
+    class CwIdentityStatusElement :
+        public IdentityStatusTextT< WithTextDisplay <> >,
+        public TimerQueueClient {
+
+        Identity identity;
+        long     ms_to_next_change;
+
+    public:
+        CwIdentityStatusElement(Identity& _identity) : identity(_identity) {
+            ms_to_next_change = 0;
+        }
+
+        std::wstring GetCaption() {
+            if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0 ||
+                !identity.Exists(KCDB_ATTR_EXPIRE)) {
+
+                return std::wstring(L"");
+
+            } else {
+                FILETIME ft_exp;
+                FILETIME ft_now;
+
+                identity.GetObject(KCDB_ATTR_EXPIRE, ft_exp);
+                GetSystemTimeAsFileTime(&ft_now);
+
+                if (CompareFileTime(&ft_now, &ft_exp) >= 0) {
+                    return LoadStringResource(IDS_CW_EXPIRED); // "(Expired)"
+                } else {
+                    wchar_t fmt[32];
+
+                    // "Valid for %s"
+                    LoadString(khm_hInstance, IDS_CW_EXPIREF, fmt, ARRAYLENGTH(fmt));
+
+                    FILETIME ft_timeleft;
+                    wchar_t timeref[128];
+                    khm_size cb;
+
+                    ft_timeleft = FtSub(&ft_exp, &ft_now);
+                    cb = sizeof(timeref);
+                    FtToStringEx(&ft_timeleft, FTSE_INTERVAL, &ms_to_next_change,
+                                 timeref, &cb);
+
+                    wchar_t status_msg[160];
+                    StringCbPrintf(status_msg, sizeof(status_msg), fmt, timeref);
+
+                    return std::wstring(status_msg);
+                }
+            }
+        }
+
+        void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
+
+            CancelTimer();
+            ms_to_next_change = 0;
+
+            __super::PaintSelf(g, bounds, clip);
+
+            if (ms_to_next_change != 0) {
+                TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
+                host->SetTimer(this, ms_to_next_change);
+            }
+        }
+
+        void OnTimer() {
+            Invalidate();
+        }
     };
 
 
     class CwIdentityOutline : public CwOutline
     {
     public:
-        Identity identity;
-        DisplayElement * icon_widget;
-        DisplayElement * default_widget;
+        Identity                  identity;
+        CwIconDisplayElement     *el_icon;
+        CwDefaultIdentityElement *el_default_id;
+        CwIdentityTitleElement   *el_display_name;
+        CwIdentityTypeElement    *el_type_name;
+        CwIdentityStatusElement  *el_status;
+        CwIdentityMeterElement   *el_meter;
 
     public:
         CwIdentityOutline(Identity& _identity, int _column)
             : identity(_identity), CwOutline(_column) {
-            icon_widget = NULL;
-            default_widget = NULL;
+            el_icon          = NULL;
+            el_default_id       = NULL;
+            el_display_name = NULL;
+            el_type_name = NULL;
+            el_status = NULL;
+            el_meter         = NULL;
         }
 
         ~CwIdentityOutline() {
-            icon_widget = NULL; // Will be deleted automatically
-            default_widget = NULL;
+            el_icon = NULL;
+            el_default_id = NULL;
+            el_display_name = NULL;
+            el_type_name = NULL;
+            el_status = NULL;
+            el_meter         = NULL;
         }
 
         virtual bool Represents(Credential& credential) {
@@ -255,44 +501,63 @@ namespace nim
         }
 
         virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
-            __super::UpdateLayoutPre(g, layout);
+            LayoutOutlineSetup(g, layout);
 
-            if (icon_widget == NULL) {
-                InsertChildAfter(icon_widget =
-                                 new CwIconWidget(Point(0,0),
-                                                  identity.GetIcon(KCDB_RES_ICON_NORMAL),
-                                                  true));
+            if (el_icon == NULL) {
+                InsertChildAfter(el_icon =
+                                 new CwIconDisplayElement(Point(0,0),
+                                                          identity.GetResourceIcon(KCDB_RES_ICON_NORMAL),
+                                                          true));
 
-                InsertChildAfter(default_widget =
-                                 new CwDefaultIdentityWidget(&identity, Point(0,16)));
+                InsertChildAfter(el_default_id =
+                                 new CwDefaultIdentityElement(&identity, Point(0,16)));
+
+                InsertChildAfter(el_display_name =
+                                 new CwIdentityTitleElement(identity));
+
+                InsertChildAfter(el_type_name =
+                                 new CwIdentityTypeElement(identity));
+
+                InsertChildAfter(el_meter =
+                                 new CwIdentityMeterElement(identity));
+
+                InsertChildAfter(el_status =
+                                 new CwIdentityStatusElement(identity));
             }
-
-            layout.Y = g_theme->sz_icon.Height + g_theme->sz_margin.Height * 2;
         }
 
         virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
-            icon_widget->origin =
-                g_theme->pt_margin_cx +
-                g_theme->pt_margin_cy +
-                ((expandable)? g_theme->pt_icon_sm_cx + g_theme->pt_margin_cx : Point(0,0));
+            bool has_creds = false;
 
-            default_widget->origin =
-                icon_widget->origin + g_theme->pt_icon_cx + g_theme->pt_margin_cx;
+            FlowLayout l(layout, g_theme->sz_margin);
 
-            __super::UpdateLayoutPost(g, layout);
-        }
+            FlowLayout ll = l.InsertFixedColumn(g_theme->sz_icon.Width);
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds) {
-            __super::PaintSelf(g, bounds);
+            ll
+                .Add(el_icon, FlowLayout::Center)
+                .LineBreak()
+                .Add(el_meter, FlowLayout::Center, FlowLayout::Fixed,
+                     has_creds = (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0));
 
-            KhmTextLayout t(g, bounds, g_theme);
-            DrawState s = GetDrawState();
+            FlowLayout lr = l.InsertFillerColumn();
 
-            t.SetLeftMargin(g_theme->sz_margin.Width +
-                            ((expandable)? g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width : 0) +
-                            g_theme->sz_icon.Width);
-            t.DrawText(identity.GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndIdentity, s);
-            t.DrawText(identity.GetType().GetString(KCDB_RES_DISPLAYNAME), DrawTextCredWndType, s);
+            lr
+                .Add(el_default_id, FlowLayout::Left)
+                .Add(el_display_name, FlowLayout::Left, FlowLayout::Squish)
+                .Add(el_type_name, FlowLayout::Right, FlowLayout::Squish)
+                .LineBreak()
+                .Add(el_status, FlowLayout::Left, FlowLayout::Squish, has_creds);
+            ;
+
+            Rect r;
+
+            r = lr.GetInsertRect();
+            LayoutOutlineChildren(g, r);
+            lr.InsertRect(r);
+
+            r = l.GetBounds();
+            extents.Width = r.GetRight();
+            extents.Height = r.GetBottom();
         }
 
         virtual DrawState GetDrawState() {
@@ -338,26 +603,55 @@ namespace nim
     };
 
 
+    class CwCredentialTypeElement :
+        public SubheaderTextBoxT< WithStaticCaption < WithTextDisplay <> > > {
+    public:
+        CwCredentialTypeElement(CredentialType& credtype) {
+            SetCaption(credtype.GetResourceString(KCDB_RES_DISPLAYNAME));
+        }
+    };
+
+    class CwStaticTextElement :
+        public GenericTextT< WithStaticCaption < WithTextDisplay <> > > {
+    public:
+        CwStaticTextElement(const std::wstring& _caption) {
+            SetCaption(_caption);
+        }
+    };
+
     class CwCredTypeOutline : public CwOutline
     {
     public:
         CredentialType credtype;
+        CwCredentialTypeElement * el_typename;
 
     public:
         CwCredTypeOutline(CredentialType& _credtype, int _column) :
             credtype(_credtype),
             CwOutline(_column) {
+
+            InsertChildAfter(el_typename =
+                             new CwCredentialTypeElement(_credtype));
         }
 
         virtual bool Represents(Credential& credential) {
             return credtype == credential.GetType();
         }
 
-        virtual void UpdateLayoutPre(Graphics& g, Rect& layout);
+        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
+            FlowLayout l(layout, g_theme->sz_margin);
 
-        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
+            l.Add(el_typename, FlowLayout::Left)
+                .LineBreak();
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds);
+            Rect r = l.GetInsertRect();
+            LayoutOutlineChildren(g, r);
+            l.InsertRect(r);
+
+            r = l.GetBounds();
+            extents.Width = r.GetRight();
+            extents.Height = r.GetBottom();
+        }
     };
 
 
@@ -366,12 +660,16 @@ namespace nim
     public:
         Credential credential;
         khm_int32  attr_id;
+        CwStaticTextElement * el_text;
 
     public:
         CwGenericOutline(Credential& _credential, khm_int32 _attr_id, int _column) :
             credential(_credential),
             attr_id(_attr_id),
             CwOutline(_column) {
+
+            InsertChildAfter(el_text =
+                             new CwStaticTextElement(credential.GetAttribStringObj(attr_id)));
         }
 
         ~CwGenericOutline() {}
@@ -380,11 +678,30 @@ namespace nim
             return credential.CompareAttrib(_credential, attr_id) == 0;
         }
 
-        virtual void UpdateLayoutPre(Graphics& g, Rect& layout);
+        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
+            FlowLayout l(layout, g_theme->sz_margin);
 
-        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
+            l.Add(el_text, FlowLayout::Left)
+                .LineBreak();
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds);
+            Rect r = l.GetInsertRect();
+            LayoutOutlineChildren(g, r);
+            l.InsertRect(r);
+
+            r = l.GetBounds();
+            extents.Width = r.GetRight();
+            extents.Height = r.GetBottom();
+        }
+    };
+
+
+    class CwStaticCellElement :
+        public WithColumnAlignment< GenericTextT < WithStaticCaption < WithTextDisplay <> > > > {
+    public:
+        CwStaticCellElement(const std::wstring& _caption, int _column, int _span = 1) :
+            WithColumnAlignment(_column, _span) {
+            SetCaption(_caption);
+        }
     };
 
 
@@ -392,6 +709,7 @@ namespace nim
     {
     public:
         Credential  credential;
+        std::vector<DisplayElement *> el_list;
 
     public:
         CwCredentialRow(Credential& _credential, int _column) :
@@ -405,11 +723,30 @@ namespace nim
             return credential == _credential;
         }
 
-        virtual void UpdateLayoutPre(Graphics& g, Rect& layout);
+        virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
 
-        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
+            __super::UpdateLayoutPre(g, layout);
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds);
+            if (el_list.size() == 0) {
+                for (int i = col_idx;
+                     (col_span > 0 && i < col_idx + col_span) ||
+                         (col_span <= 0 && (unsigned int) i < owner->columns.size()); i++) {
+                    CwColumn * cwc = dynamic_cast<CwColumn *>(owner->columns[i]);
+                    DisplayElement * e =
+                        new CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
+                    InsertChildAfter(e);
+                    el_list.push_back(e);
+                }
+            }
+        }
+
+        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
+            DisplayElement::UpdateLayoutPost(g, layout);
+        }
+
+        virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
+            g_theme->DrawCredWindowNormalBackground(g, bounds, GetDrawState());
+        }
     };
 
 #define DCL_KMSG(T,ST) \
@@ -444,7 +781,6 @@ namespace nim
         bool   is_identity_view: 1; // Is this a compact identity view?
         bool   is_primary_view : 1; // Is this the primary credentials view?
         bool   is_custom_view  : 1; // Has this view been customized?
-        bool   has_no_header   : 1; // No header control?
         bool   view_all_idents : 1; // View all identities? (only valid if is_identity_view)
         bool   columns_dirty   : 1; // Have the columns changed?
         bool   skipped_columns : 1; // Have any columns been skipped?
@@ -477,7 +813,7 @@ namespace nim
         virtual DWORD GetStyle();
         virtual DWORD GetStyleEx();
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds);
+        virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip);
 
     public:                     // Handlers for KMSG_*
         DCL_KMSG(CRED, ROOTDELTA);
@@ -502,15 +838,6 @@ namespace nim
 
     khm_int32 CwTable::attrib_to_action[KCDB_ATTR_MAX_ID + 1] = {0};
 
-    inline CwOutline * NextOutline(DisplayElement * e) {
-        for (DisplayElement * i = e; i != NULL; i = TQNEXTSIBLING(i)) {
-            CwOutline * t = dynamic_cast< CwOutline * >(i);
-            if (t)
-                return t;
-        }
-        return static_cast< CwOutline * >(NULL);
-    }
-
     template <class T>
     bool AllowRecursiveInsert(DisplayColumnList& columns, int column)
     {
@@ -518,9 +845,9 @@ namespace nim
     }
 
     template <>
-    bool AllowRecursiveInsert<Credential&>(DisplayColumnList& columns, int column)
+    bool AllowRecursiveInsert<Credential>(DisplayColumnList& columns, int column)
     {
-        return (column > 0 && (unsigned) column < columns.size() && columns[column]->group);
+        return (column >= 0 && (unsigned) column < columns.size() && columns[column]->group);
     }
 
 #define for_each_child(c)                                               \
@@ -554,7 +881,7 @@ namespace nim
 
         if (target == NULL) {
             target = CreateOutlineNode(obj, columns, column);
-            InsertChildBefore(target, insertion_point);
+            InsertOutlineBefore(target, insertion_point);
             // TODO: set the indent
         }
 
@@ -589,86 +916,56 @@ namespace nim
             c->EndUpdate();
     }
 
-    void CwOutline::UpdateLayoutPre(Graphics& g, Rect& layout)
+    void CwOutline::LayoutOutlineSetup(Graphics& g, Rect& layout)
     {
         __super::UpdateLayoutPre(g, layout);
 
+        expandable = !!(NextOutline(TQFIRSTCHILD(this)));
+
         if (expandable && outline_widget == NULL) {
-            outline_widget = new CwOutlineWidget(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
+            outline_widget = new CwExposeControlElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
             InsertChildAfter(outline_widget);
         }
 
-        if (expandable)
-            outline_widget->visible = true;
-        else if (outline_widget != NULL)
-            outline_widget->visible = false;
+        layout.Width = extents.Width;
 
-        extents.Width = layout.Width;
-        layout.Y = 0;
+        if (expandable) {
+            outline_widget->visible = true;
+            layout.X = g_theme->sz_margin.Width * 2 + g_theme->sz_icon_sm.Width;
+            layout.Width -= layout.X;
+        } else {
+            if (outline_widget != NULL)
+                outline_widget->visible = false;
+            layout.X = g_theme->sz_margin.Width;
+            layout.Width -= layout.X;
+        }
+
+        layout.Y = g_theme->sz_margin.Height;
     }
 
-    void CwOutline::UpdateLayoutPost(Graphics& g, const Rect& layout)
+    void CwOutline::LayoutOutlineChildren(Graphics& g, Rect& layout)
     {
         Point p;
 
         layout.GetLocation(&p);
-        extents.Height = p.Y;
+        layout.Height = 0;
 
         for_each_child(c) {
-            c->origin = p;
+            c->visible = expanded;
+            if (!c->visible)
+                continue;
+
+            c->origin.Y = p.Y;
             p.Y += c->extents.Height;
-            extents.Height = p.Y;
+            layout.Height += c->extents.Height;
+            if (c->extents.Width > layout.Width)
+                layout.Width = c->extents.Width;
         }
     }
 
-    void CwOutline::PaintSelf(Graphics& g, const Rect& bounds)
+    void CwOutline::PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip)
     {
         g_theme->DrawCredWindowOutline(g, bounds, GetDrawState());
-    }
-
-    void CwCredTypeOutline::UpdateLayoutPre(Graphics& g, Rect& layout)
-    {
-        __super::UpdateLayoutPre(g, layout);
-    }
-
-    void CwCredTypeOutline::UpdateLayoutPost(Graphics& g, const Rect& layout)
-    {
-        __super::UpdateLayoutPost(g, layout);
-    }
-
-    void CwCredTypeOutline::PaintSelf(Graphics& g, const Rect& bounds)
-    {
-        __super::PaintSelf(g, bounds);
-    }
-
-    void CwGenericOutline::UpdateLayoutPre(Graphics& g, Rect& layout)
-    {
-        __super::UpdateLayoutPre(g, layout);
-    }
-
-    void CwGenericOutline::UpdateLayoutPost(Graphics& g, const Rect& layout)
-    {
-        __super::UpdateLayoutPost(g, layout);
-    }
-
-    void CwGenericOutline::PaintSelf(Graphics& g, const Rect& bounds)
-    {
-        __super::PaintSelf(g, bounds);
-    }
-
-    void CwCredentialRow::UpdateLayoutPre(Graphics& g, Rect& layout)
-    {
-        __super::UpdateLayoutPre(g, layout);
-    }
-
-    void CwCredentialRow::UpdateLayoutPost(Graphics& g, const Rect& layout)
-    {
-        __super::UpdateLayoutPost(g, layout);
-    }
-
-    void CwCredentialRow::PaintSelf(Graphics& g, const Rect& bounds)
-    {
-        __super::PaintSelf(g, bounds);
     }
 
     CwOutline * CreateOutlineNode(Identity & identity, DisplayColumnList& columns, int column)
@@ -700,17 +997,8 @@ namespace nim
         }
     }
 
-    void CwTable::PaintSelf(Graphics& g, const Rect& bounds)
+    void CwTable::PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip)
     {
-        Rect clip;
-        Region rgn;
-
-        if (g.GetClip(&rgn) == Ok) {
-            rgn.GetBounds(&clip, &g);
-        } else {
-            bounds.GetBounds(&clip);
-        }
-
         g_theme->DrawCredWindowBackground(g, bounds, clip);
     }
 
@@ -758,7 +1046,7 @@ namespace nim
                                              (void *)(UINT_PTR) i,
                                              KHUI_ACTIONTYPE_TOGGLE,
                                              sub);
-
+                    
                     attrib_to_action[i] = act;
 
                     khui_menu_insert_action(column_menu, 5000, act, 0);
@@ -797,7 +1085,7 @@ namespace nim
         cs_columns.Open(cs_view, L"Columns", KHM_PERM_WRITE | KHM_FLAG_CREATE);
 
         cs_view.Set(L"ExpandedIdentity", static_cast<khm_int32>(!!is_identity_view));
-        cs_view.Set(L"NoHeader", static_cast<khm_int32>(!!has_no_header));
+        cs_view.Set(L"NoHeader", static_cast<khm_int32>(!!show_header));
 
         for (DisplayColumnList::iterator column = columns.begin();
              column != columns.end();
@@ -850,7 +1138,7 @@ namespace nim
             cs_view.Open(cs_views, view_name.c_str(), KHM_PERM_READ);
 
             /* view data is very sensitive to version changes.  We
-               need to check if this configuration data was created
+               need to check if this configuration data was created 
                with this version of NetIDMgr.  If not, we switch to
                using a schema handle. */
             {
@@ -863,7 +1151,7 @@ namespace nim
                     std::wstring base = ((is_identity_view)? L"CompactIdentity" : L"ByIdentity");
 
                     cs_view.Close();
-
+                    
                     if (KHM_FAILED(cs_view.Open(cs_views, view_name.c_str(), KCONF_FLAG_SCHEMA))) {
                         cs_view.Open(cs_views, base.c_str(), KCONF_FLAG_SCHEMA);
                         view_name = base;
@@ -905,11 +1193,11 @@ namespace nim
         columns.Clear();
         columns.reserve(column_list.size());
 
-        is_custom_view  = false;
-        has_no_header   = !!cs_view.GetInt32(L"NoHeader");
-        view_all_idents = !!cs_cw.GetInt32(L"ViewAllIdents");
-        is_identity_view= !!cs_view.GetInt32(L"ExpandedIdentity");
-        skipped_columns = false;
+        is_custom_view   = false;
+        show_header      = !cs_view.GetInt32(L"NoHeader");
+        view_all_idents  = !!cs_cw.GetInt32(L"ViewAllIdents");
+        is_identity_view = !!cs_view.GetInt32(L"ExpandedIdentity");
+        skipped_columns  = false;
 
         if (is_primary_view) {
             khui_check_action(KHUI_ACTION_VIEW_ALL_IDS, view_all_idents);
@@ -1039,8 +1327,8 @@ namespace nim
     static khm_int32 KHMAPI IdentityNameComparator(const Identity& i1, const Identity& i2,
                                                    void * param)
     {
-        std::wstring dn1(i1.GetString(KCDB_RES_DISPLAYNAME));
-        std::wstring dn2(i2.GetString(KCDB_RES_DISPLAYNAME));
+        std::wstring dn1(i1.GetResourceString(KCDB_RES_DISPLAYNAME));
+        std::wstring dn2(i2.GetResourceString(KCDB_RES_DISPLAYNAME));
 
         if (dn1 < dn2)
             return -1;
@@ -1204,7 +1492,7 @@ namespace nim
                 if (static_cast<khm_handle>(identity) == NULL) {
                     khm_notify_icon_tooltip(LoadStringResource(IDS_NOTIFY_READY).c_str());
                 } else {
-                    khm_notify_icon_tooltip(identity.GetString(KCDB_RES_DISPLAYNAME).c_str());
+                    khm_notify_icon_tooltip(identity.GetResourceString(KCDB_RES_DISPLAYNAME).c_str());
                 }
             }
             break;
@@ -1387,14 +1675,15 @@ namespace nim
 
         case KHUI_ACTION_VIEW_ALL_IDS:
             {
-                ConfigSpace cs_cw(L"CredWindow", KHM_PERM_READ|KHM_PERM_WRITE);
-
                 view_all_idents = !view_all_idents;
 
                 UpdateOutline();
                 Invalidate();
 
-                cs_cw.Set(L"ViewAllIdents", view_all_idents);
+                if (is_primary_view) {
+                    ConfigSpace cs_cw(L"CredWindow", KHM_PERM_READ|KHM_PERM_WRITE);
+                    cs_cw.Set(L"ViewAllIdents", view_all_idents);
+                }
             }
             return;
         }

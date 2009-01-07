@@ -59,8 +59,11 @@ namespace nim
         c_text         .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT));
         c_text_selected.SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_SEL));
 
-        b_credwnd =   LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST), L"PNG");
-        b_watermark = Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_LOGO_SHADE));
+        b_watermark =   Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_LOGO_SHADE));
+        b_credwnd =     LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST), L"PNG");
+        b_meter_state = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_STATE), L"PNG");
+        b_meter_life  = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_LIFE),  L"PNG");
+        b_meter_renew = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_RENEW), L"PNG");
 
         sz_icon.Width     = GetSystemMetrics(SM_CXICON);
         sz_icon.Height    = GetSystemMetrics(SM_CYICON);
@@ -68,6 +71,9 @@ namespace nim
         sz_icon_sm.Height = GetSystemMetrics(SM_CYSMICON);
         sz_margin.Width   = sz_icon_sm.Width / 4;
         sz_margin.Height  = sz_icon_sm.Height / 4;
+
+        sz_meter.Width = 32;
+        sz_meter.Height = 16;
 
         line_thickness = 1;
 
@@ -101,14 +107,14 @@ namespace nim
         isThemeLoaded = FALSE;
     }
 
-    void KhmDraw::DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx)
+    void KhmDraw::DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx, const Size& sz)
     {
         if (idx < 0 || idx * img->GetHeight() > img->GetWidth())
             return;
 
         g.DrawImage(img, p.X, p.Y,
-                    img->GetHeight() * idx, 0,
-                    img->GetHeight(), img->GetHeight(),
+                    sz.Width * idx, 0,
+                    sz.Width, sz.Height,
                     UnitPixel);
     }
 
@@ -117,7 +123,7 @@ namespace nim
     {
         int idx = static_cast<int>(img);
 
-        DrawImageByIndex(g, b_credwnd, p, idx - 1);
+        DrawImageByIndex(g, b_credwnd, p, idx - 1, sz_icon_sm);
     }
 
     void
@@ -153,17 +159,16 @@ namespace nim
         Color c2 = c_background;
         Rect r = extents;
 
-        if (state & DrawStateSelected) {
+        if (state & DrawStateSelected)
             c1 = c_selection;
-        } else if (state & DrawStateExpired) {
+        else if (state & DrawStateExpired)
             c1 = c_expired;
-        } else if (state & DrawStateCritial) {
+        else if (state & DrawStateCritial)
             c1 = c_critical;
-        } else if (state & DrawStateWarning) {
+        else if (state & DrawStateWarning)
             c1 = c_warning;
-        } else {
+        else
             c1 = c_header;
-        }
 
         LinearGradientBrush br(extents, c1, c2, 0, FALSE);
 
@@ -172,7 +177,7 @@ namespace nim
         g.FillRectangle(&br, r);
 
         if (state & DrawStateFocusRect) {
-            Color c = c_text_selected;
+            Color c = c_text;
             Pen p(c);
 
             p.SetDashStyle(DashStyleDash);
@@ -189,8 +194,8 @@ namespace nim
         CredWndImages image;
 
         image = ((state & DrawStateChecked)?
-                 ((state & DrawStateHotTrack)? ImgExpandHi : ImgExpand) :
-                 ((state & DrawStateHotTrack)? ImgCollapseHi : ImgCollapse));
+            ((state & DrawStateHotTrack)? ImgCollapseHi : ImgCollapse) :
+            ((state & DrawStateHotTrack)? ImgExpandHi : ImgExpand));
 
         DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
     }
@@ -210,6 +215,106 @@ namespace nim
     void 
     KhmDraw::DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state)
     {
+        Color c1;
+        Color c2 = c_background;
+        Rect r = extents;
+
+        if (state & DrawStateSelected)
+            c1 = c_selection;
+        else
+            c1 = c_background;
+
+        LinearGradientBrush br(extents, c1, c2, 0, FALSE);
+
+        g.FillRectangle(&br, r);
+
+        if (state & DrawStateFocusRect) {
+            Color c = c_text;
+            Pen p(c);
+
+            p.SetDashStyle(DashStyleDash);
+
+            Rect r = extents;
+            r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
+            g.DrawRectangle(&p, r);
+        }
+    }
+
+    inline void NEXT_FRAME_AND_REFRESH(int ANIMATION_DELAY, unsigned int NEXT_THRESHOLD,
+                                       int ANIMATION_FRAMES,
+                                       int& frame, DWORD& refresh)
+    {
+        DWORD ticks = GetTickCount();
+        int   fidx = (ticks / ANIMATION_DELAY);
+        DWORD nextin = ANIMATION_DELAY - (ticks % ANIMATION_DELAY);
+
+        if (nextin < NEXT_THRESHOLD) {
+            nextin += ANIMATION_DELAY;
+            fidx++;
+        }
+
+        fidx %= ANIMATION_FRAMES;
+
+        frame += fidx;
+        refresh = ANIMATION_DELAY;
+    }
+
+    void
+    KhmDraw::DrawCredMeterState(Graphics& g, const Rect& extents, DrawState state, DWORD *ms_to_next)
+    {
+        static const int ANIMATION_DELAY  = 500;
+        static const int NEXT_THRESHOLD   = 100;
+        static const int ANIMATION_FRAMES = 2;
+
+        static const int FRAME_DISABLED   = 0;
+        static const int FRAME_CRIT_BEGIN = 3;
+        static const int FRAME_WARN_BEGIN = 1;
+
+        int frame;
+
+        if (state & DrawStateWarning) {
+            frame = FRAME_WARN_BEGIN;
+            NEXT_FRAME_AND_REFRESH(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+                                   frame, *ms_to_next);
+        } else if (state & DrawStateCritial) {
+            frame = FRAME_CRIT_BEGIN;
+            NEXT_FRAME_AND_REFRESH(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+                                   frame, *ms_to_next);
+        } else {
+            frame = FRAME_DISABLED;
+            *ms_to_next = 0;
+        }
+
+        DrawImageByIndex(g, b_meter_state, Point(extents.X, extents.Y), frame, sz_meter);
+    }
+
+    void
+    KhmDraw::DrawCredMeterLife(Graphics& g, const Rect& extents, unsigned int index)
+    {
+        index /= 32;
+
+        if (index < 0)
+            index = 0;
+
+        if (index >= 8)
+            index = 7;
+
+        DrawImageByIndex(g, b_meter_life, Point(extents.X, extents.Y), index, sz_meter);
+    }
+
+    void
+    KhmDraw::DrawCredMeterBusy(Graphics& g, const Rect& extents, DWORD *ms_to_next)
+    {
+        static const int ANIMATION_DELAY = 1000;
+        static const int NEXT_THRESHOLD  = 100;
+        static const int ANIMATION_FRAMES = 8;
+
+        int frame = 0;
+
+        NEXT_FRAME_AND_REFRESH(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+                               frame, *ms_to_next);
+
+        DrawImageByIndex(g, b_meter_renew, Point(extents.X, extents.Y), frame, sz_meter);
     }
 
     std::wstring LoadStringResource(UINT res_id, HINSTANCE inst)
@@ -288,74 +393,6 @@ namespace nim
             GlobalFree(hgmem);
 
         return rimage;
-    }
-
-    void KhmTextLayout::DrawText(std::wstring& text, DrawTextStyle style, DrawState state)
-    {
-        switch (style) {
-        case DrawTextCredWndIdentity:
-            {
-                HDC hdc = g->GetHDC();
-                Font f(hdc, d->hf_header);
-                StringFormat fmt(StringFormatFlagsNoWrap);
-
-                g->ReleaseHDC(hdc);
-
-                fmt.SetTrimming(StringTrimmingEllipsisCharacter);
-
-                if (cursor > extents.X)
-                    LineBreak();
-
-                RectF b;
-
-                g->MeasureString(text.c_str(), -1, &f, extents, &fmt, &b);
-                baseline = __max(baseline, b.GetBottom());
-                cursor = b.GetRight();
-
-                SolidBrush br((state & DrawStateSelected)? d->c_text_selected: d->c_text);
-
-                g->DrawString(text.c_str(), -1, &f, extents, &fmt, &br);
-            }
-            break;
-
-        case DrawTextCredWndType:
-            {
-                HDC hdc = g->GetHDC();
-                Font f(hdc, d->hf_normal);
-                StringFormat fmt(StringFormatFlagsNoWrap);
-
-                g->ReleaseHDC(hdc);
-
-                fmt.SetTrimming(StringTrimmingEllipsisCharacter);
-                fmt.SetAlignment(StringAlignmentFar);
-
-                RectF e = extents;
-                RectF b;
-                e.Width -= cursor - e.X;
-                e.X = cursor;
-
-                g->MeasureString(text.c_str(), -1, &f, e, &fmt, &b);
-                baseline = __max(baseline, b.GetBottom());
-                cursor = b.GetRight();
-
-                SolidBrush br((state & DrawStateSelected)? d->c_text_selected: d->c_text);
-
-                g->DrawString(text.c_str(), -1, &f, e, &fmt, &br);
-
-                LineBreak();
-            }
-            break;
-
-        case DrawTextCredWndStatus:
-            {
-            }
-            break;
-
-        case DrawTextCredWndNormal:
-            {
-            }
-            break;
-        }
     }
 
     KhmDraw * g_theme = NULL;

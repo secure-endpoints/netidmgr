@@ -495,6 +495,9 @@ FtToStringEx(const FILETIME * pft, khm_int32 flags,
     khm_size cb;
     int i;
 
+    if (ms_to_change)
+        *ms_to_change = 0;
+
     GetSystemTimeAsFileTime(&ft_now);
 
     if (!(flags & FTSE_INTERVAL)) {
@@ -525,7 +528,7 @@ FtToStringEx(const FILETIME * pft, khm_int32 flags,
             if(GetTimeFormat(LOCALE_USER_DEFAULT,
                              TIME_NOSECONDS,
                              &stl_target, NULL,
-                             str, ARRAYLENGTH(str)) == 0) {
+                             str_time, ARRAYLENGTH(str_time)) == 0) {
                 rv = KHM_ERROR_UNKNOWN;
                 goto _done;
             }
@@ -576,6 +579,8 @@ FtToStringEx(const FILETIME * pft, khm_int32 flags,
 
             cb = sizeof(str_interval);
             FtIntervalToString(&ft_diff, str_interval, &cb);
+            if (ms_to_change)
+                *ms_to_change = FtIntervalMsToRepChange(&ft_diff);
 
             StringCbPrintf(str, sizeof(str), str_fmt, str_interval);
 
@@ -618,6 +623,8 @@ FtToStringEx(const FILETIME * pft, khm_int32 flags,
 
         cb = sizeof(str);
         FtIntervalToString(pft, str, &cb);
+        if (ms_to_change)
+            *ms_to_change = FtIntervalMsToRepChange(pft);
     }
 
  _done:

@@ -44,6 +44,8 @@ namespace nim {
 
     void DisplayElement::DeleteChild(DisplayElement * e)
     {
+        NotifyDeleteChild(e);
+        e->DeleteAllChildren();
         TQDELCHILD(this, e);
         delete e;
         MarkForExtentUpdate();
@@ -51,7 +53,9 @@ namespace nim {
 
     void DisplayElement::DeleteAllChildren()
     {
+        NotifyDeleteAllChildren();
         for (DisplayElement * e = TQFIRSTCHILD(this); e; e = TQFIRSTCHILD(this)) {
+            e->DeleteAllChildren();
             TQDELCHILD(this, e);
             delete e;
         }
@@ -176,16 +180,17 @@ namespace nim {
         return d;
     }
 
-    void DisplayElement::OnPaint(Graphics& g, const Rect& bounds)
+    void DisplayElement::OnPaint(Graphics& g, const Rect& bounds, const Rect& clip) 
     {
-        PaintSelf(g, bounds);
+        PaintSelf(g, bounds, clip);
 
         for (DisplayElement * c = TQFIRSTCHILD(this); c; c = TQNEXTSIBLING(c)) 
             if (c->visible) {
                 Rect cr(c->origin, c->extents);
                 cr.Offset(bounds.X, bounds.Y);
 
-                c->OnPaint(g, cr);
+                if (clip.IntersectsWith(cr))
+                    c->OnPaint(g, cr, clip);
             }
     }
 
@@ -201,7 +206,7 @@ namespace nim {
                 c->visible = expand;
             }
 
-        MarkForExtentUpdate(); 
+        MarkForExtentUpdate();
         Invalidate();
     }
 
@@ -221,6 +226,14 @@ namespace nim {
             return;
 
         selected = _select;
+        Invalidate();
+    }
+
+    void DisplayElement::Focus(bool _focus)
+    {
+        if (focus == _focus)
+            return;
+        focus = _focus;
         Invalidate();
     }
 
@@ -549,7 +562,6 @@ namespace nim {
     void DisplayContainer::UpdateExtents(Graphics &g)
     {
         Rect client;
-
         GetClientRectNoScroll(&client);
 
         if (!recalc_extents)
@@ -572,8 +584,11 @@ namespace nim {
         UpdateScrollBars(true);
     }
 
-    void DisplayContainer::OnPaint(Graphics& g)
+    void DisplayContainer::OnPaint(Graphics& g, const Rect& clip)
     {
+#ifdef DEBUG
+        kherr_debug_printf(L"OnPaint for %dx%d region at (%d,%d)\n", clip.Width, clip.Height, clip.X, clip.Y);
+#endif
         Rect b;
 
         if (recalc_extents)
@@ -582,8 +597,8 @@ namespace nim {
         GetClientRect(&b);
 
         if (dbuffer == NULL ||
-            dbuffer->GetWidth() != b.Width ||
-            dbuffer->GetHeight() != b.Height) {
+            dbuffer->GetWidth() < (unsigned) b.Width ||
+            dbuffer->GetHeight() < (unsigned) b.Height) {
             if (dbuffer)
                 delete dbuffer;
 
@@ -592,14 +607,15 @@ namespace nim {
 
         {
             Rect client_b(-scroll.X, -scroll.Y,
-                          max(extents.Width, b.Width + scroll.X),
-                          max(extents.Height, b.Height + scroll.Y));
+                          __max(extents.Width, b.Width + scroll.X),
+                          __max(extents.Height, b.Height + scroll.Y));
+            Rect client_clip = clip;
             Graphics ig(dbuffer);
-
-            DisplayElement::OnPaint(ig, client_b);
+            client_clip.Y -= header_height;
+            DisplayElement::OnPaint(ig, client_b, client_clip);
         }
 
-        g.DrawImage(dbuffer, b.X, b.Y);
+        g.DrawImage(dbuffer, b.X, b.Y, 0, 0, b.Width, b.Height, UnitPixel);
     }
 
     BOOL DisplayContainer::OnCreate(LPVOID createParams)
@@ -1008,20 +1024,22 @@ namespace nim {
 
     void ControlWindow::HandleOnPaint(HWND hwnd)
     {
-        RECT r;
+        RECT r = {0,0,0,0};
         HDC hdc;
         PAINTSTRUCT ps;
         bool has_update_rect = !!GetUpdateRect(hwnd, &r, FALSE);
 
         if (has_update_rect)
             hdc = BeginPaint(hwnd, &ps);
-        else
+        else {
             hdc = GetDC(hwnd);
+            ::GetClientRect(hwnd, &r);
+        }
 
         {
             Graphics g(hdc);
 
-            OnPaint(g);
+            OnPaint(g, Rect(r.left, r.top, r.right - r.left, r.bottom - r.top));
         }
 
         if (has_update_rect)

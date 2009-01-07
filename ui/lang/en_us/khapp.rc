@@ -721,6 +721,9 @@ IDB_STARS16             PNG                     "..\\..\\images\\stars-16.png"
 IDB_STARS32             PNG                     "..\\..\\images\\stars-32.png"
 IDB_STARS24             PNG                     "..\\..\\images\\stars-24.png"
 IDB_CREDWND_IMAGELIST   PNG                     "..\\..\\images\\credwnd-images.png"
+IDB_BATT_STATE          PNG                     "..\\..\\images\\battery-state.png"
+IDB_BATT_LIFE           PNG                     "..\\..\\images\\battery-life.png"
+IDB_BATT_RENEW          PNG                     "..\\..\\images\\battery-renew.png"
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -992,7 +995,7 @@ BEGIN
     IDS_IDEXPDISP_NCRED     "(This identity has %d credentials)"
     IDS_CW_DEFAULTTF        "(Default, %s)"
     IDS_CW_TYPEF            "(%s)"
-    IDS_CW_EXPIREF          "Expires in %s"
+    IDS_CW_EXPIREF          "Valid for %s"
     IDS_CW_EXPIRED          "(Expired)"
     IDS_IDACTIONT_SETDEF    "Set %s as default identity"
 END

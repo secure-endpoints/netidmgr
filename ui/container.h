@@ -8,8 +8,11 @@
 #include <khlist.h>
 #include <string>
 #include <vector>
+#include <stack>
 
-#define NIM_NOVTABLE __declspec(novtable)
+#ifndef NOINITVTABLE
+#define NOINITVTABLE __declspec(novtable)
+#endif
 
 using namespace Gdiplus;
 
@@ -37,7 +40,7 @@ namespace nim {
 
         virtual void OnDestroy(void) { }
 
-        virtual void OnPaint(Graphics& g) { }
+        virtual void OnPaint(Graphics& g, const Rect& clip) { }
 
         virtual BOOL OnPosChanging(LPWINDOWPOS lpos) { return FALSE; }
 
@@ -168,7 +171,7 @@ namespace nim {
         };
     };
 
-    class TimerQueueClient {
+    class NOINITVTABLE TimerQueueClient {
         friend class TimerQueueHost;
 
     private:
@@ -195,22 +198,27 @@ namespace nim {
         }
 
         void CancelTimer() {
-            if (timer && timerQueue) {
-                DeleteTimerQueueTimer(timerQueue, timer,
+            HANDLE p_timer;
+#pragma warning(push)
+#pragma warning(disable: 4312)
+            p_timer = InterlockedExchangePointer(&timer, NULL);
+#pragma warning(pop)
+            if (p_timer != NULL && timerQueue != NULL) {
+                DeleteTimerQueueTimer(timerQueue, p_timer,
                                       INVALID_HANDLE_VALUE);
-                timer = NULL;
                 timerQueue = NULL;
             }
         }
     };
 
-    class TimerQueueHost {
+    class NOINITVTABLE TimerQueueHost {
     protected:
         HANDLE timerQueue;
 
         static VOID CALLBACK TimerCallback(PVOID param, BOOLEAN waitOrTimer) {
             TimerQueueClient * cb = static_cast<TimerQueueClient *>(param);
-            cb->OnTimer();
+            if (cb->timer)
+                cb->OnTimer();
         }
 
     public:
@@ -354,6 +362,10 @@ namespace nim {
 
         void   DeleteAllChildren();
 
+        virtual void NotifyDeleteChild(DisplayElement * e) {}
+
+        virtual void NotifyDeleteAllChildren() {}
+
         void   MoveChildAfter(DisplayElement * e, DisplayElement * previous);
 
         void   MoveChildBefore(DisplayElement * e, DisplayElement * next);
@@ -388,15 +400,17 @@ namespace nim {
 
         virtual void UpdateLayoutPost(Graphics & g, const Rect & layout);
 
-        virtual void Expand(bool expand = true);
+        virtual void Expand(bool _expand = true);
 
-        virtual void Show(bool show = true);
+        virtual void Show(bool _show = true);
 
         virtual void Select(bool _select = true);
 
-        void OnPaint(Graphics& g, const Rect& bounds);
+        virtual void Focus(bool _focus = true);
 
-        virtual void PaintSelf(Graphics &g, const Rect& bounds) { }
+        void OnPaint(Graphics& g, const Rect& bounds, const Rect& clip);
+
+        virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) { }
 
         virtual void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
             if (TQPARENT(this))
@@ -453,6 +467,17 @@ namespace nim {
 
         virtual ~DisplayContainer() { if (dbuffer) delete dbuffer; }
 
+        virtual void NotifyDeleteChild(DisplayElement * e) {
+            if (mouse_element == e)
+                mouse_element = NULL;
+            __super::NotifyDeleteChild(e);
+        }
+
+        virtual void NotifyDeleteAllChildren() {
+            mouse_element = NULL;
+            __super::NotifyDeleteAllChildren();
+        }
+
         Point ClientToVirtual(const Point& p) { 
             return Point(p.X + scroll.X, p.Y + scroll.Y - header_height);
         }
@@ -483,7 +508,7 @@ namespace nim {
 
         virtual Point MapToScreen(const Point & p);
 
-        virtual void OnPaint(Graphics& g);
+        virtual void OnPaint(Graphics& g, const Rect& clip);
 
         virtual void OnHScroll(UINT code, int pos);
 
@@ -537,7 +562,8 @@ namespace nim {
 
     // Applies to DisplayElement
     template<class T = DisplayElement>
-    class WithColumnAlignment : public T {
+    class NOINITVTABLE WithColumnAlignment : public T {
+    protected:
         int col_idx;
         int col_span;
 
@@ -564,14 +590,16 @@ namespace nim {
             extents.Height = GetSystemMetrics(SM_CYICON);
 
             for (int i = col_idx;
-                 (col_span > 0 && i < col_idx + col_span) ||
-                     (col_span <= 0 && (unsigned int) i < owner->columns.size()); i++) {
-                extents.Width += owner->columns[i]->width;
+                (col_span > 0 && i < col_idx + col_span) ||
+                (col_span <= 0 && (unsigned int) i < owner->columns.size()); i++) {
+                    extents.Width += owner->columns[i]->width;
             }
 
             layout.Width = extents.Width;
             layout.X = origin.X;
         }
+
+        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {}
 
         void SetColumnAlignment(int idx, int span = 1) {
             col_idx = idx;
@@ -582,7 +610,7 @@ namespace nim {
 
     // Applies to DisplayContainer
     template<class T = DisplayContainer>
-    class WithTooltips : public T {
+    class NOINITVTABLE WithTooltips : public T {
         HWND hwnd_tooltip;
         std::wstring tt_text;
         Rect         tt_rect;
@@ -690,11 +718,12 @@ namespace nim {
 
     // Applies to DisplayElement
     template<class T = DisplayElement>
-    class WithTextDisplay : public T {
+    class NOINITVTABLE WithTextDisplay : public T {
     protected:
         Point caption_pos;
         bool  truncated;
 
+    protected:
         virtual void UpdateLayoutPost(Graphics& g, const Rect& bounds) {
             std::wstring caption = GetCaption();
 
@@ -704,25 +733,35 @@ namespace nim {
             SizeF sz((REAL) bounds.Width, (REAL) bounds.Height);
             SizeF szr;
 
-            g.MeasureString(caption.c_str(), caption.length(), GetFont(g), sz, &sf, &szr);
+            if (caption.length() == 0) {
+                extents.Width = 0;
+                extents.Height = 0;
+                return;
+            }
 
-            extents.Width = szr.Width;
-            extents.Height = szr.Height;
+            g.MeasureString(caption.c_str(), (int) caption.length(), GetFont(g), sz, &sf, &szr);
+
+            extents.Width = (INT) szr.Width + 1;
+            extents.Height = (INT) szr.Height + 1;
         }
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds) {
+        virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
             std::wstring caption = GetCaption();
+
+            if (caption.length() == 0)
+                return;
 
             StringFormat sf;
             GetStringFormat(sf);
 
             RectF rf((REAL) bounds.X, (REAL) bounds.Y, (REAL) bounds.Width, (REAL) bounds.Height);
-            Brush br(GetForegroundColor());
-            g.DrawString(caption.c_str(), caption.length(), GetFont(g), rf, &sf, &br);
+            Color fgc = GetForegroundColor();
+            SolidBrush br(fgc);
+            g.DrawString(caption.c_str(), (int) caption.length(), GetFont(g), rf, &sf, &br);
 
             RectF bb(0,0,0,0);
             INT   chars;
-            g.MeasureString(caption.c_str(), caption.length(), GetFont(g), rf, &sf, &bb, &chars);
+            g.MeasureString(caption.c_str(), (int) caption.length(), GetFont(g), rf, &sf, &bb, &chars);
             caption_pos.X = (INT) bb.X - bounds.X;
             caption_pos.Y = (INT) bb.Y - bounds.Y;
             truncated = ((unsigned int) chars != caption.length());
@@ -740,7 +779,7 @@ namespace nim {
         }
 
     public:
-        WithTextDisplay() : caption() {
+        WithTextDisplay() {
             truncated = false;
         }
 
@@ -755,9 +794,55 @@ namespace nim {
         }
     };
 
+    // Applies to WithTextDisplay<>
+    template<class T = WithTextDisplay<> >
+    class NOINITVTABLE WithStaticCaption : public T {
+        std::wstring static_caption;
+
+    public:
+        virtual std::wstring GetCaption() {
+            return static_caption;
+        }
+
+        void SetCaption(const std::wstring& _caption) {
+            static_caption = _caption;
+            MarkForExtentUpdate();
+            Invalidate();
+        }
+    };
+
+    template <class T>
+    class NOINITVTABLE WithCachedFont : public T {
+        Font *cached_font;
+
+    public:
+        WithCachedFont() {
+            cached_font = NULL;
+        }
+
+        ~WithCachedFont() {
+            if (cached_font)
+                delete cached_font;
+            cached_font = NULL;
+        }
+
+    public:
+        virtual Font* GetFont(Graphics& g) {
+            if (cached_font == NULL) {
+                HDC hdc = g.GetHDC();
+                cached_font = GetFontCreate(hdc);
+                g.ReleaseHDC(hdc);
+            }
+
+            return cached_font;
+        }
+
+        virtual Font* GetFontCreate(HDC hdc) = 0;
+    };
+
     // Applies to DisplayElement
     template<class T = DisplayElement>
-    class WithTabStop : public T {
+    class NOINITVTABLE WithTabStop : public T {
 
         virtual bool IsTabStop() {
             return true;
@@ -769,20 +854,16 @@ namespace nim {
                 return;
             }
 
-            DisplayElement * p;
-            for (p = TQPARENT(this); p; p = TQPARENT(p)) {
-                if (TQPARENT(p) == NULL)
-                    break;
-            }
-
-            if (p) p->OnChildClick(this, pt, keyflags, doubleClick);
-            T::OnClick(pt, keyflags, doubleClick);
+            if (owner)
+                owner->OnChildClick(this, pt, keyflags, doubleClick);
+            else
+                T::OnClick(pt, keyflags, doubleClick);
         }
     };
 
     // Applies to DisplayElement
     template<class T = DisplayElement>
-    class WithOutline : public T {
+    class NOINITVTABLE WithOutline : public T {
     public:
         WithOutline() { expandable = true; expanded = true; }
 
@@ -801,9 +882,9 @@ namespace nim {
 
     // Applies to DisplayContainer
     template<class T = DisplayContainer>
-    class WithNavigation : public T {
-        DisplayElement * focus;
-        DisplayElement * anchor;
+    class NOINITVTABLE WithNavigation : public T {
+        DisplayElement * el_focus;
+        DisplayElement * el_anchor;
 
         DisplayElement * PrevElement(DisplayElement * c) {
             if (c == NULL) {
@@ -826,7 +907,7 @@ namespace nim {
         DisplayElement * PrevTabStop(DisplayElement * c) {
             do {
                 c = PrevElement(c);
-            } while (c != NULL && !c->IsTabStop());
+            } while (c != NULL && c->visible && !c->IsTabStop());
             return c;
         }
 
@@ -850,7 +931,7 @@ namespace nim {
         DisplayElement * NextTabStop(DisplayElement * c) {
             do {
                 c = NextElement(c);
-            } while (c != NULL && !c->IsTabStop());
+            } while (c != NULL && c->visible && !c->IsTabStop());
             return c;
         }
 
@@ -862,8 +943,22 @@ namespace nim {
         }
 
     public:
-        WithNavigation() { focus = NULL; anchor = NULL; }
+        WithNavigation() { el_focus = NULL; el_anchor = NULL; }
         ~WithNavigation() { }
+
+        virtual void NotifyDeleteChild(DisplayElement * e) {
+            if (el_focus == e)
+                el_focus = NULL;
+            if (el_anchor == e)
+                el_anchor = NULL;
+            __super::NotifyDeleteChild(e);
+        }
+
+        virtual void NotifyDeleteAllChildren() {
+            el_focus = NULL;
+            el_anchor = NULL;
+            __super::NotifyDeleteAllChildren();
+        }
 
         typedef enum FocusAction {
             FocusExclusive,
@@ -872,56 +967,59 @@ namespace nim {
         } FocusAction;
 
         void SetFocusElement(DisplayElement * e, FocusAction action) {
+            DisplayElement * oldFocus = el_focus;
+
             if (e == NULL)
                 return;
 
             switch (action) {
             case FocusAddToggle:
                 e->Select(!e->selected);
-                anchor = e;
+                el_anchor = e;
                 break;
 
             case FocusExclusive:
                 SelectAllIn(this, false);
                 e->Select(true);
-                anchor = e;
+                el_anchor = e;
                 break;
 
             case FocusExtend:
                 DisplayElement * c;
                 for (c = e; c; c = NextTabStop(c)) {
-                    if (c == anchor)
+                    if (c == el_anchor)
                         break;
                 }
                 if (c != NULL) {
                     SelectAllIn(this, false);
                     for (c = e; c; c = NextTabStop(c)) {
                         c->Select();
-                        if (c == anchor)
+                        if (c == el_anchor)
                             break;
                     }
                     break;
                 }
                 for (c = e; c; c = PrevTabStop(c)) {
-                    if (c == anchor)
+                    if (c == el_anchor)
                         break;
                 }
                 if (c != NULL) {
                     SelectAllIn(this, false);
                     for (c = e; c; c = PrevTabStop(c)) {
                         c->Select();
-                        if (c == anchor)
+                        if (c == el_anchor)
                             break;
                     }
                     break;
                 }
                 e->Select();
-                anchor = e;
+                el_anchor = e;
                 break;
             }
-            focus = e;
 
-            Rect focusRect(MapFromDescendant(focus, Point(0,0)), focus->extents);
+            el_focus = e;
+
+            Rect focusRect(MapFromDescendant(el_focus, Point(0,0)), el_focus->extents);
             if (!scroll.Contains(focusRect)) {
                 Rect oldScroll = scroll;
 
@@ -936,32 +1034,40 @@ namespace nim {
                     ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
                 }
             }
+
+            if (oldFocus != el_focus) {
+                if (oldFocus)
+                    oldFocus->Focus(false);
+
+                if (el_focus)
+                    el_focus->Focus(true);
+            }
         }
 
         virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify) {
             switch (id) {
             case KHUI_PACTION_LEFT:
-                if (focus && focus->expandable && focus->expanded) {
-                    focus->Expand(false);
+                if (el_focus && el_focus->expandable && el_focus->expanded) {
+                    el_focus->Expand(false);
                     Invalidate();
                     break;
                 }
                 // fallthrough
 
             case KHUI_PACTION_UP:
-                SetFocusElement(PrevTabStop(focus), FocusExclusive); break;
+                SetFocusElement(PrevTabStop(el_focus), FocusExclusive); break;
 
             case KHUI_PACTION_UP_EXTEND:
-                SetFocusElement(PrevTabStop(focus), FocusExtend); break;
+                SetFocusElement(PrevTabStop(el_focus), FocusExtend); break;
 
             case KHUI_PACTION_UP_TOGGLE:
-                SetFocusElement(PrevTabStop(focus), FocusAddToggle); break;
+                SetFocusElement(PrevTabStop(el_focus), FocusAddToggle); break;
 
             case KHUI_PACTION_PGUP_EXTEND:
             case KHUI_PACTION_PGUP:
-                if (focus) {
+                if (el_focus) {
                     Rect r;
-                    Point p = MapFromDescendant(focus, Point(0,focus->extents.Height));
+                    Point p = MapFromDescendant(el_focus, Point(0,el_focus->extents.Height));
                     p.Y -= GetClientRect(&r).Height;
                     DisplayElement * e = DescendantFromPoint(p);
                     if (e) e = PrevTabStop(e);
@@ -975,27 +1081,27 @@ namespace nim {
                 break;
 
             case KHUI_PACTION_RIGHT:
-                if (focus && focus->expandable && !focus->expanded) {
-                    focus->Expand(true);
+                if (el_focus && el_focus->expandable && !el_focus->expanded) {
+                    el_focus->Expand(true);
                     Invalidate();
                     break;
                 }
                 // fallthrough
 
             case KHUI_PACTION_DOWN:
-                SetFocusElement(NextTabStop(focus), FocusExclusive); break;
+                SetFocusElement(NextTabStop(el_focus), FocusExclusive); break;
 
             case KHUI_PACTION_DOWN_EXTEND:
-                SetFocusElement(NextTabStop(focus), FocusExtend); break;
+                SetFocusElement(NextTabStop(el_focus), FocusExtend); break;
 
             case KHUI_PACTION_DOWN_TOGGLE:
-                SetFocusElement(NextTabStop(focus), FocusAddToggle); break;
+                SetFocusElement(NextTabStop(el_focus), FocusAddToggle); break;
 
             case KHUI_PACTION_PGDN_EXTEND:
             case KHUI_PACTION_PGDN:
-                if (focus) {
+                if (el_focus) {
                     Rect r;
-                    Point p = MapFromDescendant(focus, Point(0,0));
+                    Point p = MapFromDescendant(el_focus, Point(0,0));
                     p.Y += GetClientRect(&r).Height;
                     DisplayElement * e = DescendantFromPoint(p);
                     if (e) e = PrevTabStop(e);
@@ -1032,7 +1138,7 @@ namespace nim {
 
     // Applies to DisplayElement
     template <class T = DisplayElement>
-    class WithVerticalLayout : public T {
+    class NOINITVTABLE WithVerticalLayout : public T {
         virtual void UpdateLayoutPost(Graphics & g, const Rect & layout) {
             DisplayElement * c;
             Point p(0,0);
@@ -1055,7 +1161,7 @@ namespace nim {
 
     // Applies to DisplayElement
     template <class T = DisplayElement>
-    class WithFixedSizePos : public T {
+    class NOINITVTABLE WithFixedSizePos : public T {
         Point fixed_origin;
         Size  fixed_extents;
     public:
@@ -1078,34 +1184,6 @@ namespace nim {
         }
     };
 
-    template <class T>
-    class NIM_NOVTABLE WithCachedFont : public T {
-        Font *cached_font;
-
-        WithCachedFont() {
-            cached_font = NULL;
-        }
-
-        ~WithCachedFont() {
-            if (cached_font)
-                delete cached_font;
-            cached_font = NULL;
-        }
-
-        // Font * GetFontCreate(HDC hdc) needs to be implemented by the base class
-
-    public:
-        virtual Font* GetFont(Graphics& g) {
-            if (cached_font == NULL) {
-                HDC hdc = g.GetHDC();
-                cached_font = GetFontCreate(hdc);
-                g.ReleaseHDC(hdc);
-            }
-
-            return cached_font;
-        }
-    };
-
     class FlowLayout {
         Rect bounds;
         INT  top;
@@ -1113,66 +1191,175 @@ namespace nim {
         INT  left;
         Size margin;
 
+        FlowLayout * parent;
+
+        std::stack<INT> indent;
+
         void ExtendBaseline(INT nb) {
             if (nb + top > baseline) {
                 baseline = nb + top;
                 if (bounds.Height < baseline)
                     bounds.Height = baseline;
             }
+
+            if (parent) {
+                parent->ExtendBaseline(bounds.Height);
+            }
+        }
+
+        FlowLayout(const Rect& _bounds, const Size& _margin, FlowLayout& _parent) {
+            parent = &_parent;
+            bounds = _bounds;
+            bounds.Height = 0;
+            top = 0;
+            baseline = top;
+            left = 0;
+            margin = _margin;
+            indent.push(0);
         }
 
     public:
         FlowLayout(const Rect& _bounds, const Size& _margin) {
             bounds = _bounds;
+            bounds.Height = 0;
             top = 0;
             baseline = top;
             left = 0;
             margin = _margin;
+            indent.push(0);
+            parent = NULL;
+        }
+
+        FlowLayout(const FlowLayout& that) :indent(that.indent) {
+            bounds = that.bounds;
+            bounds.Height = 0;
+            top = that.top;
+            baseline = that.baseline;
+            left = that.left;
+            margin = that.margin;
+            parent = that.parent;
         }
 
         Rect GetBounds() {
-            return bounds;
+            return Rect(bounds.X, bounds.Y, bounds.Width, bounds.Height + margin.Height);
         }
 
         Size GetSize() {
-            return Size(bounds.Width, bounds.Height);
+            return Size(bounds.Width, bounds.Height + margin.Height);
         }
 
-        void AddSquishLeft(DisplayElement * e) {
-            if (left != 0)
-                left += margin.Width;
-            e->origin.X = left + bounds.X;
-            e->origin.Y = top + bounds.Y;
-            e->extents.Width = __max(bounds.Width - left, e->extents.Width);
-            left += e->extents.Width;
+        Rect GetInsertRect() {
+            LineBreak();
 
-            ExtendBaseline(e->extents.Height);
+            return Rect(left + bounds.X, top + bounds.Y, bounds.Width - left, 0);
         }
 
-        void AddSquishRight(DisplayElement * e) {
-            if (left != 0)
-                left += margin.Width;
-            e->origin.Y = top + bounds.Y;
-            e->extents.Width = __max(bounds.Width - left, e->extents.Width);
-            e->origin.X = (bounds.Width - e->extents.Width) + bounds.X;
-            left = bounds.Width;
-
-            ExtendBaseline(e->extents.Height);
+        FlowLayout& InsertRect(const Rect& r) {
+            ExtendBaseline(r.Height);
+            LineBreak();
+            return *this;
         }
 
-        void AddFixed(DisplayElement * e) {
-            if (left != 0
-                left += margin.Width;
-            e->origin.X = left + bounds.X;
-            e->origin.Y = top + bounds.Y;
-            left += e->extents.Width;
-
-            ExtendBaseline(e->extents.Height);
+        FlowLayout& PadLeftByMargin() {
+            left += margin.Width;
+            return *this;
         }
 
-        void LineBreak() {
-            left = 0;
+        FlowLayout& LineBreak() {
+            left = indent.top();
             top = baseline + margin.Height;
+            return *this;
+        }
+
+        FlowLayout& PushIndent(INT v) {
+            indent.push(indent.top() + v);
+            return *this;
+        }
+
+        FlowLayout& PushThisIndent() {
+            indent.push(left);
+            return *this;
+        }
+
+        FlowLayout& PopIndent() {
+            indent.pop();
+            return *this;
+        }
+
+        FlowLayout InsertFillerColumn() {
+            if (left != 0)
+                left += margin.Width;
+            Rect nb(left + bounds.X, top + bounds.Y,
+                    bounds.Width - left, 0);
+            left = bounds.Width;
+            return FlowLayout(nb, margin, *this);
+        }
+
+        FlowLayout InsertFixedColumn(INT width) {
+            if (left != 0)
+                left += margin.Width;
+            Rect nb(left + bounds.X, top + bounds.Y,
+                    width, 0);
+            left = width;
+            return FlowLayout(nb, margin, *this);
+        }
+
+        enum Alignment {
+            Left = 1,
+            Right,
+            Center
+        };
+
+        enum Type {
+            Fixed = 0,
+            Squish
+        };
+
+        FlowLayout& Add(DisplayElement * e, Alignment opt = Left,
+                        Type etype = Fixed, bool condition = true) {
+
+            if (!condition) {
+                e->visible = false;
+                return *this;
+            }
+
+            e->visible = true;
+
+            switch (opt) {
+            case Left:
+                if (left != 0)
+                    left += margin.Width;
+                e->origin.X = left + bounds.X;
+                e->origin.Y = top + bounds.Y;
+                if (etype == Squish)
+                    e->extents.Width = __min(bounds.Width - left, e->extents.Width);
+                left += e->extents.Width;
+                break;
+
+            case Right:
+                if (left != 0)
+                    left += margin.Width;
+                e->origin.Y = top + bounds.Y;
+                if (etype == Squish)
+                    e->extents.Width = __min(bounds.Width - left, e->extents.Width);
+                e->origin.X = (bounds.Width - e->extents.Width) + bounds.X;
+                left = bounds.Width;
+                break;
+
+            case Center:
+                if (etype == Squish)
+                    e->extents.Width = __min(bounds.Width, e->extents.Width);
+                left = (bounds.Width - e->extents.Width) / 2;
+                if (left < 0)
+                    left = 0;
+                e->origin.X = left + bounds.X;
+                e->origin.Y = top + bounds.Y;
+                left += e->extents.Width;
+                break;
+            }
+
+            ExtendBaseline(e->extents.Height);
+            return *this;
         }
     };
 }

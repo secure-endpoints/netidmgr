@@ -1304,6 +1304,36 @@ khm_int32 kcdbint_ident_attr_cb(khm_handle h,
         return kcdb_credtype_describe(id->id_pro->cred_type, buf, 
                                       pcb_buf, KCDB_TS_SHORT);
 
+    case KCDB_ATTR_LIFETIME:
+        {
+            khm_int32 rv = KHM_ERROR_SUCCESS;
+            khm_size slot_issue;
+            khm_size slot_exp;
+
+            EnterCriticalSection(&cs_ident);
+
+            if((slot_issue = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) KCDB_ATTR_ISSUE))
+               == KCDB_BUF_INVALID_SLOT ||
+               !kcdb_buf_val_exist(&id->buf, slot_issue) ||
+               (slot_exp = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) KCDB_ATTR_EXPIRE))
+               == KCDB_BUF_INVALID_SLOT ||
+               !kcdb_buf_val_exist(&id->buf, slot_exp)) {
+
+                rv = KHM_ERROR_NOT_FOUND;
+            } else if (!buf || *pcb_buf < sizeof(FILETIME)) {
+                *pcb_buf = sizeof(FILETIME);
+                rv = KHM_ERROR_TOO_LONG;
+            } else {
+                *((FILETIME *) buf) =
+                    FtSub((FILETIME *) kcdb_buf_get(&id->buf,slot_exp),
+                          (FILETIME *) kcdb_buf_get(&id->buf,slot_issue));
+                *pcb_buf = sizeof(FILETIME);
+            }
+            LeaveCriticalSection(&cs_ident);
+
+            return rv;
+        }
+
     case KCDB_ATTR_TIMELEFT:
         {
             khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -1311,7 +1341,8 @@ khm_int32 kcdbint_ident_attr_cb(khm_handle h,
 
             EnterCriticalSection(&cs_ident);
 
-            if((slot = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) attr)) == KCDB_BUF_INVALID_SLOT ||
+            if((slot = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) KCDB_ATTR_EXPIRE))
+               == KCDB_BUF_INVALID_SLOT ||
                !kcdb_buf_val_exist(&id->buf, slot)) {
 
                 rv = KHM_ERROR_NOT_FOUND;
@@ -1342,7 +1373,8 @@ khm_int32 kcdbint_ident_attr_cb(khm_handle h,
             khm_size slot;
                 
             EnterCriticalSection(&cs_ident);
-            if((slot = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) attr)) == KCDB_BUF_INVALID_SLOT ||
+            if((slot = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) KCDB_ATTR_RENEW_EXPIRE))
+               == KCDB_BUF_INVALID_SLOT ||
                !kcdb_buf_val_exist(&id->buf, slot)) {
 
                 rv = KHM_ERROR_NOT_FOUND;

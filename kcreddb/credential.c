@@ -374,6 +374,27 @@ khm_int32 kcdbint_cred_attr_cb(khm_handle h,
         return kcdb_credtype_describe(c->type, buf, 
                                       pcb_buf, KCDB_TS_SHORT);
 
+    case KCDB_ATTR_LIFETIME:
+        {
+            khm_int32 rv = KHM_ERROR_SUCCESS;
+
+            if(!kcdb_cred_buf_exist(c, KCDB_ATTR_EXPIRE) ||
+               !kcdb_cred_buf_exist(c, KCDB_ATTR_ISSUE)) {
+
+                rv = KHM_ERROR_NOT_FOUND;
+            } else if (!buf || *pcb_buf < sizeof(FILETIME)) {
+                *pcb_buf = sizeof(FILETIME);
+                rv = KHM_ERROR_TOO_LONG;
+            } else {
+                *((FILETIME *) buf) =
+                    FtSub((FILETIME *) kcdb_cred_buf_get(c, KCDB_ATTR_EXPIRE),
+                          (FILETIME *) kcdb_cred_buf_get(c, KCDB_ATTR_ISSUE));
+                *pcb_buf = sizeof(FILETIME);
+            }
+
+            return rv;
+        }
+
     case KCDB_ATTR_TIMELEFT:
         {
             khm_int32 rv = KHM_ERROR_SUCCESS;

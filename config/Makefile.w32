@@ -185,6 +185,13 @@ khdefines=$(khdefines) -D_USE_32BIT_TIME_T
 ldebug=$(ldebug) /DEBUG
 cdebug=$(cdebug) -Os -Zi
 
+# C++ Run-time type info
+!ifndef NODEBUG
+cppdebug=/GR
+!else
+cppdebug=
+!endif
+
 # Additionally, suppress conflicting default library directives that we
 # might pull in from external libraries.
 
@@ -216,7 +223,7 @@ khldllconflags=$(khldllconflags) $(conlibsdll)
 
 C2OBJ=$(CC) $(khcflags) $(KH_AUXCFLAGS) /Fo"$@" /c $**
 
-CPP2OBJ=$(CC) $(khcflags) $(KH_AUXCFLAGS) /EHsc /Fo"$@" /c $**
+CPP2OBJ=$(CC) $(khcflags) $(KH_AUXCFLAGS) $(cppdebug) /EHsc /Fo"$@" /c $**
 
 EXECONLINK=$(LINK) /NOLOGO $(khlconflags) /OUT:$@ $**
 

@@ -3161,8 +3161,9 @@ FtIntervalToString(const FILETIME * data,
    as dead as far as notifications are concerned in seconds*/
 #define TT_EXPIRED_THRESHOLD 60
 
-#define SECONDS_TO_FT(s) ((s) * 10000000i64)
-#define FT_TO_MS(ft) ((ft) / 10000i64)
+#define SECONDS_TO_FT(s)  ((s) * 10000000i64)
+#define FT_TO_MS(ft)      ((ft) / 10000i64)
+#define FT_TO_SECONDS(ft) (FT_TO_MS(ft) / 1000i64)
 
 /* as above, in FILETIME units of 100ns */
 #define FT_MIN_HALFLIFE_INTERVAL SECONDS_TO_FT(TT_MIN_HALFLIFE_INTERVAL)
@@ -4316,7 +4317,7 @@ namespace nim {
             return pT->h;
         }
 
-        std::wstring GetAttribString(const wchar_t * attr_name, khm_int32 flags = 0) const {
+        std::wstring GetAttribStringObj(const wchar_t * attr_name, khm_int32 flags = 0) const {
             const T *pT = static_cast<const T*>(this);
             std::wstring ret;
             khm_size cb_buf;
@@ -4337,16 +4338,16 @@ namespace nim {
             return ret;
         }
 
-        std::wstring GetAttribString(khm_int32 attr_id, khm_int32 flags = 0) const {
+        std::wstring GetAttribStringObj(khm_int32 attr_id, khm_int32 flags = 0) const {
             const T *pT = static_cast<const T*>(this);
             std::wstring ret;
-            khm_size cb_buf;
+            khm_size cb_buf = 0;
             wchar_t * temp = NULL;
-            khm_int32 rv;
+            khm_int32 rv = KHM_ERROR_TOO_LONG;
 
-            rv = pT->GetAttribString(attr_id, NULL, &cb_buf, flags);
             while (rv == KHM_ERROR_TOO_LONG) {
-                temp = PREALLOC(temp, cb_buf);
+                if (cb_buf != 0)
+                    temp = reinterpret_cast<wchar_t *>(PREALLOC(temp, cb_buf));
                 rv = pT->GetAttribString(attr_id, temp, &cb_buf, flags);
             }
 
@@ -4358,22 +4359,29 @@ namespace nim {
             return ret;
         }
 
-        khm_int32 GetAttribInt32(khm_int32 attr_id) const {
+        khm_int32 GetAttribInt32(khm_int32 attr_id, khm_int32 def = 0) const {
             khm_int32 t = 0;
 
             if (KHM_FAILED(GetObject(attr_id, t)))
-                return 0;
+                return def;
             else
                 return t;
         }
 
-        khm_int64 GetAttribFileTimeAsInt(khm_int32 attr_id) const {
+        khm_int64 GetAttribFileTimeAsInt(khm_int32 attr_id, khm_int64 def = 0) const {
             FILETIME ft;
 
             if (KHM_FAILED(GetObject(attr_id, ft)))
-                return 0;
+                return def;
             else
                 return FtToInt(&ft);
+        }
+
+        FILETIME GetAttribFileTime(khm_int32 attr_id) const {
+            FILETIME ft = {0,0};
+
+            GetObject(attr_id, ft);
+            return ft;
         }
 
         template<class U> khm_int32 GetObject(const wchar_t * attr_name, U& target) const {
@@ -4414,7 +4422,7 @@ namespace nim {
             return kcdb_get_resource(pT->h, r_id, flags, prflags, vparam, buf, pcb_buf);
         }
 
-        std::wstring GetString(kcdb_resource_id r_id, khm_int32 flags = 0) const {
+        std::wstring GetResourceString(kcdb_resource_id r_id, khm_int32 flags = 0) const {
             const T *pT = static_cast<const T*>(this);
             std::wstring ret;
             wchar_t * temp = NULL;
@@ -4435,7 +4443,7 @@ namespace nim {
             return ret;
         }
 
-        HICON GetIcon(kcdb_resource_id r_id, khm_int32 flags = 0) const {
+        HICON GetResourceIcon(kcdb_resource_id r_id, khm_int32 flags = 0) const {
             const T *pT = static_cast<const T*>(this);
             HICON icon = NULL;
             khm_size cb = sizeof(icon);
