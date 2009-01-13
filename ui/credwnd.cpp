@@ -167,6 +167,27 @@ namespace nim
         bool IsChecked() {
             return (pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT);
         }
+
+        bool OnShowToolTip(std::wstring& caption, Rect& align_rect) {
+            if (pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT) {
+                caption = LoadStringResource(IDS_CWTT_DEFAULT_ID1);
+            } else {
+                caption = LoadStringResource(IDS_CWTT_DEFAULT_ID0);
+            }
+            Point pt = MapToScreen(Point(extents.Width, extents.Height));
+            align_rect.X = pt.X;
+            align_rect.Y = pt.Y;
+            align_rect.Width = extents.Width;
+            align_rect.Height = extents.Height;
+
+            return true;
+        }
+
+        void OnClick(const Point& pt, UINT keyflags, bool doubleClick) {
+            if (!(pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT)) {
+                pidentity->SetDefault();
+            }
+        }
     };
 
     class CwOutline;
@@ -371,14 +392,6 @@ namespace nim
         std::wstring caption;
 
     public:
-        enum State {
-            StateNormal = 0,
-            StateWarning,
-            StateCritical,
-            StateBusy
-        };
-
-    public:
         CwIdentityMeterElement(Identity& _identity) :
             WithFixedSizePos(Point(0,0), g_theme->sz_meter),
             identity(_identity) {
@@ -387,33 +400,21 @@ namespace nim
 
         }
 
+        void OnClick(const Point& pt, UINT keyflags, bool doubleClick) {
+            khm_cred_renew_identity(identity);
+        }
+
         void OnTimer() {
             Invalidate();
         }
 
-        void SetStatus(State _state, const wchar_t * _caption = NULL) {
+        void SetStatus(DrawState _state, const wchar_t * _caption = NULL) {
             if (_caption)
                 caption = _caption;
             else
                 caption = L"";
 
-            switch (_state) {
-            case StateNormal:
-                state = DrawStateNone;
-                break;
-
-            case StateWarning:
-                state = DrawStateWarning;
-                break;
-
-            case StateCritical:
-                state = DrawStateCritial;
-                break;
-
-            case StateBusy:
-                state = DrawStateBusy;
-                break;
-            }
+            state = _state;
 
             Invalidate();
         }
@@ -526,7 +527,7 @@ namespace nim
             } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0 ||
                        !identity.Exists(KCDB_ATTR_EXPIRE)) {
 
-                return std::wstring(L"");
+                return std::wstring(L"(Unknown expiration)");
 
             } else {
                 FILETIME ft_exp;
@@ -722,6 +723,7 @@ namespace nim
             case KHUI_NC_SUBTYPE_NONE:
                 monitor_progress = false;
                 el_status->SetCaption(L"");
+                el_meter->SetStatus(DrawStateNone);
                 MarkForExtentUpdate();
                 Invalidate();
                 break;
@@ -730,6 +732,7 @@ namespace nim
                 monitor_progress = true;
                 el_progress->SetProgress(0);
                 el_status->SetCaption(L"Obtaining new credentials");
+                el_meter->SetStatus(DrawStateBusy);
                 MarkForExtentUpdate();
                 Invalidate();
                 break;
@@ -738,6 +741,7 @@ namespace nim
                 monitor_progress = true;
                 el_progress->SetProgress(0);
                 el_status->SetCaption(L"Renewing credentials");
+                el_meter->SetStatus(DrawStateBusy);
                 MarkForExtentUpdate();
                 Invalidate();
                 break;
@@ -746,6 +750,7 @@ namespace nim
                 monitor_progress = true;
                 el_progress->SetProgress(0);
                 el_status->SetCaption(L"Changing password");
+                el_meter->SetStatus(DrawStateBusy);
                 MarkForExtentUpdate();
                 Invalidate();
                 break;
@@ -754,6 +759,7 @@ namespace nim
                 monitor_progress = true;
                 el_progress->SetProgress(0);
                 el_status->SetCaption(L"Acquiring privileged credentials");
+                el_meter->SetStatus(DrawStateBusy);
                 MarkForExtentUpdate();
                 Invalidate();
                 break;
@@ -765,6 +771,7 @@ namespace nim
                 monitor_progress = true;
                 el_progress->SetProgress(0);
                 el_status->SetCaption(L"Busy");
+                el_meter->SetStatus(DrawStateBusy);
                 MarkForExtentUpdate();
                 Invalidate();
                 break;
@@ -1100,13 +1107,20 @@ namespace nim
         void InsertDerivedIdentities(CwOutlineBase * o, Identity * id);
         void ToggleColumnByAttributeId(khm_int32 attr_id);
 
-    public:                     // Overrides
+    public:
+        typedef struct CwCreateParams {
+            bool is_primary_view;
+        };
+
+        // createParams is a pointer to CwCreateParams
         virtual BOOL OnCreate(LPVOID createParams);
+
+    public:                     // Overrides
         virtual void OnDestroy();
         virtual void OnColumnPosChanged(int from, int to);
         virtual void OnColumnSizeChanged(int idx);
         virtual void OnColumnSortChanged(int idx);
-        virtual void OnColumnContextMenu(int idx);
+        virtual void OnColumnContextMenu(int idx, const Point& p);
         virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype,
                                        khm_ui_4 uparam, void * vparam);
         virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
@@ -1137,7 +1151,7 @@ namespace nim
 
     public:
         static khm_int32 attrib_to_action[KCDB_ATTR_MAX_ID + 1];
-        static void RefreshGlobalColumnMenu();
+        static void RefreshGlobalColumnMenu(HWND hwnd);
     };
 
 #pragma warning(pop)
@@ -1229,7 +1243,9 @@ namespace nim
     {
         __super::UpdateLayoutPre(g, layout);
 
-        expandable = !!(NextOutline(TQFIRSTCHILD(this)));
+        expandable = (owner != NULL &&
+                      (unsigned)col_idx + 1 < owner->columns.size() &&
+                      !!(NextOutline(TQFIRSTCHILD(this))));
 
         if (expandable && outline_widget == NULL) {
             outline_widget = new CwExposeControlElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
@@ -1247,6 +1263,12 @@ namespace nim
                 outline_widget->visible = false;
             layout.X = g_theme->sz_margin.Width;
             layout.Width -= layout.X;
+            expanded = false;
+
+            for_each_child(c) {
+                if (c->visible)
+                    c->Show(false);
+            }
         }
 
         layout.Y = g_theme->sz_margin.Height;
@@ -1337,7 +1359,7 @@ namespace nim
     }
 
     void
-    CwTable::RefreshGlobalColumnMenu()
+    CwTable::RefreshGlobalColumnMenu(HWND hwnd)
     {
         khui_menu_def * column_menu = khui_find_menu(KHUI_MENU_COLUMNS);
 
@@ -1371,7 +1393,7 @@ namespace nim
                     khm_handle sub = NULL;
                     khm_int32  act;
 
-                    //kmq_create_hwnd_subscription(hwnd, &sub);
+                    kmq_create_hwnd_subscription(hwnd, &sub);
 
                     act = khui_action_create(attr_info->name,
                                              (attr_info->short_desc?
@@ -1456,10 +1478,11 @@ namespace nim
 
         ConfigSpace cs_cw(L"CredWindow", KHM_PERM_READ | KHM_PERM_WRITE);
 
-        if (cview == NULL && KHM_SUCCEEDED(cs_view.GetLastError()))
-            goto have_view;
+        is_identity_view = (khm_main_wnd_mode == KHM_MAIN_WND_MINI);
 
         if (cview == NULL) {
+            if (KHM_SUCCEEDED(cs_view.GetLastError()))
+                goto have_view;
             view_name = cs_cw.GetString((is_identity_view)? L"DefaultViewMini" : L"DefaultView");
         } else {
             view_name = cview;
@@ -1584,13 +1607,13 @@ namespace nim
             is_identity_view = false;
         }
 
-        if (!is_identity_view)
-            view_all_idents = false;
-
         columns_dirty = TRUE;
 
         if (is_primary_view)
             khui_refresh_actions();
+
+        if (hwnd_header)
+            columns.AddColumnsToHeaderControl(hwnd_header);
 
         MarkForExtentUpdate();
     }
@@ -1661,8 +1684,8 @@ namespace nim
     static khm_int32 KHMAPI IdentityNameComparator(const Identity& i1, const Identity& i2,
                                                    void * param)
     {
-        std::wstring dn1(i1.GetResourceString(KCDB_RES_DISPLAYNAME));
-        std::wstring dn2(i2.GetResourceString(KCDB_RES_DISPLAYNAME));
+        std::wstring dn1 = i1.GetResourceString(KCDB_RES_DISPLAYNAME);
+        std::wstring dn2 = i2.GetResourceString(KCDB_RES_DISPLAYNAME);
 
         if (dn1 < dn2)
             return -1;
@@ -1716,6 +1739,28 @@ namespace nim
             InsertDerivedIdentities(this, NULL);
 
         } else {
+            if (columns.size() > 0 &&
+                dynamic_cast<CwColumn *>(columns[0])->attr_id == KCDB_ATTR_ID_DISPLAY_NAME &&
+                columns[0]->group) {
+
+                if (!view_all_idents) {
+                    Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_DEFAULT,
+                                                             KCDB_IDENT_FLAG_DEFAULT);
+                    e.Sort(IdentityNameComparator);
+
+                    for (; !e.AtEnd(); ++e) {
+                        this->Insert(*e, columns, 0);
+                    }
+                } else {
+                    Identity::Enumeration e = Identity::Enum(0,0);
+                    e.Sort(IdentityNameComparator);
+
+                    for (; !e.AtEnd(); ++e) {
+                        this->Insert(*e, columns, 0);
+                    }
+                }
+            }
+
             InsertCredentialProcData d;
             d.table = this;
             d.target = this;
@@ -1724,13 +1769,6 @@ namespace nim
 
             credset.Apply(InsertCredentialProc, &d);
         }
-
-        ??;
-        // TODO: Need to fix layout switches
-        // TODO: Have tooltips for default identity widget
-        // TODO: Set the "Ready: Defaultidentity" string as a tooltip for the notification icon.
-        // TODO: Find out why status widget is still overflowing
-
 
         EndUpdate();
 
@@ -1763,11 +1801,15 @@ namespace nim
 
     BOOL CwTable::OnCreate(LPVOID createParams)
     {
-        // TODO: Check lpc and set initial create options such as
-        // is_primary_view and is_identity_view.
+        CwCreateParams * cparams;
+
+        cparams = reinterpret_cast<CwCreateParams *>(createParams);
+
+        if (cparams && cparams->is_primary_view)
+            is_primary_view = true;
 
         if (is_primary_view)
-            RefreshGlobalColumnMenu();
+            RefreshGlobalColumnMenu(hwnd);
 
         LoadView(NULL);
 
@@ -1798,11 +1840,13 @@ namespace nim
         is_custom_view = true;
         columns_dirty = true;
         UpdateOutline();
+        SaveView();
     }
 
     void CwTable::OnColumnSizeChanged(int order)
     {
         is_custom_view = true;
+        SaveView();
     }
 
     void CwTable::OnColumnSortChanged(int order)
@@ -1810,6 +1854,7 @@ namespace nim
         is_custom_view = true;
         columns_dirty = true;
         UpdateOutline();
+        SaveView();
     }
 
     void CwTable::SetContext(SelectionContext& sctx)
@@ -1817,8 +1862,13 @@ namespace nim
         sctx.SetContext(credset);
     }
 
-    void CwTable::OnColumnContextMenu(int order)
+    void CwTable::OnColumnContextMenu(int order, const Point& p)
     {
+        if (is_primary_view) {
+            khm_menu_show_panel(KHUI_MENU_COLUMNS, p.X, p.Y);
+        } else {
+            assert(false);
+        }
     }
 
     DEFINE_KMSG(CRED, ROOTDELTA)
@@ -1863,6 +1913,7 @@ namespace nim
 
         case KCDB_OP_NEW_DEFAULT:
             UpdateOutline();
+            Invalidate();
             if (is_primary_view) {
                 IdentityProvider provider = IdentityProvider::GetDefault();
                 Identity identity = provider.GetDefaultIdentity();
@@ -1882,7 +1933,7 @@ namespace nim
     {
         if ((uparam == KCDB_OP_INSERT || uparam == KCDB_OP_DELETE) &&
             is_primary_view) {
-            RefreshGlobalColumnMenu();
+            RefreshGlobalColumnMenu(hwnd);
         }
         return KHM_ERROR_SUCCESS;
     }
@@ -1963,6 +2014,7 @@ namespace nim
                 delete(col);
 
                 columns.ValidateColumns();
+                columns.AddColumnsToHeaderControl(hwnd_header);
                 columns_dirty = true;
                 is_custom_view = true;
 
@@ -1973,6 +2025,7 @@ namespace nim
                 if (is_primary_view) {
                     khui_check_action(attrib_to_action[attr_id], FALSE);
                     kmq_post_message(KMSG_ACT, KMSG_ACT_REFRESH, 0, 0);
+                    SaveView();
                 }
 
                 return;
@@ -1982,18 +2035,21 @@ namespace nim
         // We didn't find the attribute in the current columns list.
         // We should add a new column.
 
-        CwColumn * col = new CwColumn();
         AttributeInfo info(attr_id);
 
         if (KHM_FAILED(info.GetLastError()))
             return;
 
+        CwColumn * col = new CwColumn();
+
         col->attr_id = info->id;
         col->caption = info.GetDescription(KCDB_TS_SHORT);
-        col->width = -1;
+        col->width = 100;
         col->SetFlags(0);
 
         columns.push_back(col);
+        columns.ValidateColumns();
+        columns.AddColumnsToHeaderControl(hwnd_header);
 
         columns_dirty = true;
         is_custom_view = true;
@@ -2005,6 +2061,7 @@ namespace nim
         if (is_primary_view) {
             khui_check_action(attrib_to_action[attr_id], TRUE);
             kmq_post_message(KMSG_ACT, KMSG_ACT_REFRESH, 0, 0);
+            SaveView();
         }
     }
 
@@ -2062,6 +2119,7 @@ namespace nim
 
         case KHUI_ACTION_LAYOUT_ID:
             SaveView();
+            cs_view.Close();
             LoadView(L"ByIdentity");
             UpdateCredentials();
             UpdateOutline();
@@ -2070,6 +2128,7 @@ namespace nim
 
         case KHUI_ACTION_LAYOUT_LOC:
             SaveView();
+            cs_view.Close();
             LoadView(L"ByLocation");
             UpdateCredentials();
             UpdateOutline();
@@ -2078,6 +2137,7 @@ namespace nim
 
         case KHUI_ACTION_LAYOUT_TYPE:
             SaveView();
+            cs_view.Close();
             LoadView(L"ByType");
             UpdateCredentials();
             UpdateOutline();
@@ -2086,6 +2146,7 @@ namespace nim
 
         case KHUI_ACTION_LAYOUT_CUST:
             SaveView();
+            cs_view.Close();
             LoadView(L"Custom_0");
             UpdateCredentials();
             UpdateOutline();
@@ -2094,6 +2155,7 @@ namespace nim
 
         case KHUI_ACTION_LAYOUT_MINI:
             SaveView();
+            cs_view.Close();
             LoadView(NULL);
             UpdateCredentials();
             UpdateOutline();
@@ -2110,6 +2172,8 @@ namespace nim
                 if (is_primary_view) {
                     ConfigSpace cs_cw(L"CredWindow", KHM_PERM_READ|KHM_PERM_WRITE);
                     cs_cw.Set(L"ViewAllIdents", view_all_idents);
+                    khui_check_action(KHUI_ACTION_VIEW_ALL_IDS, view_all_idents);
+                    khui_refresh_actions();
                 }
             }
             return;
@@ -2161,6 +2225,10 @@ namespace nim
         RECT r;
         HWND hwnd;
 
+        CwTable::CwCreateParams cparams;
+
+        cparams.is_primary_view = true;
+
         assert(main_table == NULL);
 
         main_table = new CwTable;
@@ -2169,7 +2237,7 @@ namespace nim
 
         GetClientRect(parent, &r);
 
-        hwnd = main_table->Create(parent, RectFromRECT(&r), 0, NULL);
+        hwnd = main_table->Create(parent, RectFromRECT(&r), 0, &cparams);
 
         main_table->ShowWindow();
 

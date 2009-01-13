@@ -540,7 +540,7 @@ namespace nim {
         virtual LRESULT OnNotify(int id, NMHDR * pnmh);
 
 
-        LRESULT OnHeaderNotify(NMHEADER * pnmh);
+        LRESULT OnHeaderNotify(NMHDR * pnmh);
 
         LRESULT OnHeaderBeginTrack(NMHEADER * pnmh);
 
@@ -560,11 +560,13 @@ namespace nim {
 
         LRESULT OnHeaderItemChanged(NMHEADER * pnmh);
 
+        LRESULT OnHeaderRightClick(NMHDR * pnmh);
+
     public:                     // Overridables
         virtual void OnColumnSizeChanged(int idx) {}
         virtual void OnColumnPosChanged(int from, int to) {}
         virtual void OnColumnSortChanged(int idx) {}
-        virtual void OnColumnContextMenu(int idx) {}
+        virtual void OnColumnContextMenu(int idx, const Point& p) {}
     };
 
     // Applies to DisplayElement

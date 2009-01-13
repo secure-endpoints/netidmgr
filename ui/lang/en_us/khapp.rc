@@ -1009,6 +1009,8 @@ BEGIN
     IDS_NC_IDSEL_PROMPT     "Choose an identity ..."
     IDS_ACTION_OPT_IDENT    "Show identity options"
     IDS_ACTIONT_OPT_IDENT   "Configure options for the selected identity"
+    IDS_CWTT_DEFAULT_ID0    "This identity is not the default.\rClick on the star icon to make it the default."
+    IDS_CWTT_DEFAULT_ID1    "This is the default identity."
 END
 
 #endif    // English (U.S.) resources

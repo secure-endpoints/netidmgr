@@ -384,8 +384,9 @@ namespace nim {
         multi_string() { }
 
         multi_string(const wchar_t * mstring) {
-            for (const wchar_t * str = mstring; str; str = multi_string_next(str))
-                push_back(new std::wstring(str));
+            if (mstring && mstring[0])
+                for (const wchar_t * str = mstring; str; str = multi_string_next(str))
+                    push_back(new std::wstring(str));
         }
 
         multi_string(const multi_string& that) {
@@ -414,11 +415,12 @@ namespace nim {
 
             (cch != 0)? cch++ : cch = 2;
 
-            wchar_t * wbuffer = static_cast<wchar_t *>(PMALLOC(cch * sizeof(wchar_t)));
+            wchar_t * wbuffer = reinterpret_cast<wchar_t *>(PMALLOC(cch * sizeof(wchar_t)));
             wchar_t * wptr = wbuffer;
 
             for (iterator i = begin(); i != end(); ++i) {
                 StringCchCopyEx(wptr, cch, (*i)->c_str(), &wptr, &cch, 0);
+                ++wptr; --cch;
             }
 
             *wptr++ = L'\0';

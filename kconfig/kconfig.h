@@ -1079,7 +1079,7 @@ namespace nim {
             return last_error = khc_open_space(parent.csp, name, flags, &csp);
         }
 
-        khm_int32 GetLastError() const { return last_error; }
+        khm_int32 GetLastError() const { return (csp) ? last_error : KHM_ERROR_NOT_READY; }
 
         FILETIME GetLastWriteTime(khm_int32 flags = 0) {
             FILETIME rv = {0,0};

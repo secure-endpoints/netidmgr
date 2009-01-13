@@ -199,20 +199,21 @@ unsigned __stdcall kmqint_completion_thread_proc(void * p) {
             /* go through the loop again before checking the queue */
         } else {
             QGET(&kmq_completion_xfer, &m);
-            LeaveCriticalSection(&cs_compl);
-            EnterCriticalSection(&cs_kmq_msg);
-
             ctx = m->err_ctx;
+            LeaveCriticalSection(&cs_compl);
 
             if (ctx)
                 kherr_push_context(ctx);
 
+            EnterCriticalSection(&cs_kmq_msg);
+
             kmqint_put_message(m);
+
+            LeaveCriticalSection(&cs_kmq_msg);
 
             if (ctx)
                 kherr_pop_context();
 
-            LeaveCriticalSection(&cs_kmq_msg);
             EnterCriticalSection(&cs_compl);
         }
 

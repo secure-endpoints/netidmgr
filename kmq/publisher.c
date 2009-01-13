@@ -223,6 +223,8 @@ kmqint_get_message(void) {
 void 
 kmqint_put_message(kmq_message *m) {
     int queued;
+    kherr_context * ctx = NULL;
+
     /* we can only free a message if the refcount is zero.
        Otherwise we have to wait until the call is freed. */
     if(m->refcount == 0) {
@@ -231,15 +233,20 @@ kmqint_put_message(kmq_message *m) {
         queued = kmqint_notify_msg_completion(m);
         EnterCriticalSection(&cs_kmq_msg);
         if (!queued) {
-            if(m->err_ctx) {
-                kherr_release_context(m->err_ctx);
-                m->err_ctx = NULL;
-            }
+            ctx = m->err_ctx;
+            m->err_ctx = NULL;
+
             if(m->wait_o) {
                 CloseHandle(m->wait_o);
                 m->wait_o = NULL;
             }
             LPUSH(&msg_free,m);
+        }
+
+        if (ctx) {
+            LeaveCriticalSection(&cs_kmq_msg);
+            kherr_release_context(ctx);
+            EnterCriticalSection(&cs_kmq_msg);
         }
     } else if(m->wait_o) {
         SetEvent(m->wait_o);

@@ -161,10 +161,10 @@
         }                                                       \
     } while(0)
 
-#define QTOP(pq) ((pq)->head)
-#define QBOTTOM(pq) ((pq)->tail)
-#define QNEXT(pe) ((pe)->prev)
-#define QPREV(pe) ((pe)->next)
+#define QTOP(pq)        ((pq)->head)
+#define QBOTTOM(pq)     ((pq)->tail)
+#define QNEXT(pe)       ((pe)->prev)
+#define QPREV(pe)       ((pe)->next)
 
 #define QINSERT(pt, pre, pe)                    \
     do {                                        \
@@ -179,14 +179,17 @@
 
 #define QINSERTP(pt, post, pe)                  \
     do {                                        \
-    if ((post) == NULL ||                       \
-        QPREV(post) == NULL) { QPUSH(pt, pe);   \
-    } else {                                    \
-        QPREV(pe) = QPREV(post);                \
-        QNEXT(pe) = (post);                     \
-        QNEXT(QPREV(post)) = (pe);              \
-        QPREV(post) = (pe);                     \
-    }} while(0)
+        if ((post) == NULL) {                   \
+            QPUT(pt, pe);                       \
+        } else if (QPREV(post) == NULL) {       \
+            QPUSH(pt, pe);                      \
+        } else {                                \
+            QPREV(pe) = QPREV(post);            \
+            QNEXT(pe) = (post);                 \
+            QNEXT(QPREV(post)) = (pe);          \
+            QPREV(post) = (pe);                 \
+        }                                       \
+    } while(0)
 
 /* Trees with FIFO child lists */
 #define TQDCL(type)                             \

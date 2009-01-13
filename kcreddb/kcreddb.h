@@ -4506,7 +4506,7 @@ namespace nim {
 
         bool InError() const {
             const T *pT = static_cast<const T*>(this);
-            return KHM_SUCCEEDED(pT->GetLastError());
+            return KHM_FAILED(pT->GetLastError());
         }
     };
 
@@ -4937,6 +4937,10 @@ namespace nim {
             return kcdb_identity_set_parent(h, static_cast<khm_handle>(p));
         }
 
+        khm_int32 SetDefault() {
+            return kcdb_identity_set_default(h);
+        }
+
         static Enumeration Enum(khm_int32 and_flags, khm_int32 eq_flags) {
             kcdb_enumeration e = NULL;
             khm_size n = 0;
@@ -5295,6 +5299,10 @@ namespace nim {
         }
 
         Credential& operator * () {
+            return current;
+        }
+
+        Credential& operator -> () {
             return current;
         }
 

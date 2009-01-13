@@ -225,7 +225,7 @@ kherr_remove_ctx_handler_param(kherr_ctx_handler_param h,
 
 
 
-/* Called with cs_error held */
+/* Called with cs_error held. Lets go of cs_error while processing */
 static void
 notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
 {
@@ -238,9 +238,16 @@ notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
 
             if (ctx_handlers[i].use_param) {
                 kherr_ctx_handler_param h;
+                void * vparam;
 
                 h = ctx_handlers[i].h.p_handler_param;
-                (*h)(e, c, ctx_handlers[i].vparam);
+                vparam = ctx_handlers[i].vparam;
+
+                LeaveCriticalSection(&cs_error);
+
+                (*h)(e, c, vparam);
+
+                EnterCriticalSection(&cs_error);
 
                 /* A context handler is allowed to remove itself.  It
                    is not allowed to remove anything else.  If it did
@@ -253,7 +260,12 @@ notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
                 kherr_ctx_handler h;
 
                 h = ctx_handlers[i].h.p_handler;
+
+                LeaveCriticalSection(&cs_error);
+
                 (*h)(e, c);
+
+                EnterCriticalSection(&cs_error);
 
                 /* See above */
                 if (h != ctx_handlers[i].h.p_handler) {

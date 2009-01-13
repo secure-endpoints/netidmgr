@@ -428,7 +428,7 @@ namespace nim
     void
     KhmDraw::DrawCredMeterBusy(Graphics& g, const Rect& extents, DWORD *ms_to_next)
     {
-        static const int ANIMATION_DELAY = 1000;
+        static const int ANIMATION_DELAY = 200;
         static const int NEXT_THRESHOLD  = 100;
         static const int ANIMATION_FRAMES = 8;
 

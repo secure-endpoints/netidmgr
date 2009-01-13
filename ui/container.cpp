@@ -336,7 +336,12 @@ namespace nim {
     {
         int h_count = Header_GetItemCount(hwnd_header);
         int ord = 0;
-        assert(h_count == size());
+
+        if (h_count != size()) {
+            assert(false);
+            AddColumnsToHeaderControl(hwnd_header);
+            return;
+        }
 
         for (iterator i = begin(); i != end(); ++i) {
             int hidx = Header_OrderToIndex(hwnd_header, ord);
@@ -696,6 +701,9 @@ namespace nim {
             hwnd_header = NULL;
 
         }
+
+        if (!show_header)
+            header_height = 0;
     }
 
     void DisplayContainer::UpdateLayoutPost(Graphics& g, const Rect& layout)
@@ -905,7 +913,9 @@ namespace nim {
             return 0;
 
         if (pnmh->iButton == 1) { // Right mouse button
-            OnColumnContextMenu(hdi.iOrder);
+            DWORD dp = GetMessagePos();
+            POINTS pts = MAKEPOINTS(dp);
+            OnColumnContextMenu(hdi.iOrder, Point(pts.x, pts.y));
             return 0;
         }
 
@@ -966,35 +976,46 @@ namespace nim {
         return 0;
     }
 
-    LRESULT DisplayContainer::OnHeaderNotify(NMHEADER * pnmh)
+    LRESULT DisplayContainer::OnHeaderRightClick(NMHDR * pnmh)
     {
-        switch(pnmh->hdr.code) {
-            case HDN_BEGINDRAG:
-                return OnHeaderBeginDrag(pnmh);
+        DWORD dp = GetMessagePos();
+        POINTS pts = MAKEPOINTS(dp);
+        OnColumnContextMenu(-1, Point(pts.x, pts.y));
+        return 1;
+    }
 
-            case HDN_BEGINTRACK:
-                return OnHeaderBeginTrack(pnmh);
+    LRESULT DisplayContainer::OnHeaderNotify(NMHDR * pnmh)
+    {
+        switch(pnmh->code) {
+        case HDN_BEGINDRAG:
+            return OnHeaderBeginDrag(reinterpret_cast<NMHEADER *>(pnmh));
 
-            case HDN_ENDDRAG:
-                return OnHeaderEndDrag(pnmh);
+        case HDN_BEGINTRACK:
+            return OnHeaderBeginTrack(reinterpret_cast<NMHEADER *>(pnmh));
 
-            case HDN_ENDTRACK:
-                return OnHeaderEndTrack(pnmh);
+        case HDN_ENDDRAG:
+            return OnHeaderEndDrag(reinterpret_cast<NMHEADER *>(pnmh));
 
-            case HDN_ITEMCHANGING:
-                return OnHeaderItemChanging(pnmh);
+        case HDN_ENDTRACK:
+            return OnHeaderEndTrack(reinterpret_cast<NMHEADER *>(pnmh));
 
-            case HDN_ITEMCHANGED:
-                return OnHeaderItemChanged(pnmh);
+        case HDN_ITEMCHANGING:
+            return OnHeaderItemChanging(reinterpret_cast<NMHEADER *>(pnmh));
 
-            case HDN_ITEMCLICK:
-                return OnHeaderItemClick(pnmh);
+        case HDN_ITEMCHANGED:
+            return OnHeaderItemChanged(reinterpret_cast<NMHEADER *>(pnmh));
 
-            case HDN_ITEMDBLCLICK:
-                return OnHeaderItemDblClick(pnmh);
+        case HDN_ITEMCLICK:
+            return OnHeaderItemClick(reinterpret_cast<NMHEADER *>(pnmh));
 
-            case HDN_TRACK:
-                return OnHeaderTrack(pnmh);
+        case HDN_ITEMDBLCLICK:
+            return OnHeaderItemDblClick(reinterpret_cast<NMHEADER *>(pnmh));
+
+        case HDN_TRACK:
+            return OnHeaderTrack(reinterpret_cast<NMHEADER *>(pnmh));
+
+        case NM_RCLICK:
+            return OnHeaderRightClick(pnmh);
         }
         return 0;
     }
@@ -1002,7 +1023,7 @@ namespace nim {
     LRESULT DisplayContainer::OnNotify(int id, NMHDR * pnmh)
     {
         if (pnmh->hwndFrom == hwnd_header && hwnd_header != NULL)
-            return OnHeaderNotify(reinterpret_cast<NMHEADER *>(pnmh));
+            return OnHeaderNotify(pnmh);
         return ControlWindow::OnNotify(id, pnmh);
     }
 

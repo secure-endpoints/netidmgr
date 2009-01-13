@@ -252,7 +252,6 @@
 #define IDB_PNG3                        236
 #define IDB_BATT_RENEW                  236
 #define IDS_PACTION_KEEP                237
-#define IDB_PNG1                        237
 #define IDB_PROGRESS                    237
 #define IDS_PACTION_REMOVE              238
 #define IDS_PACTION_DISCARD             239
@@ -342,6 +341,9 @@
 #define IDS_NC_IDSEL_PROMPT             323
 #define IDS_ACTION_OPT_IDENT            324
 #define IDS_ACTIONT_OPT_IDENT           325
+#define IDS_CWTT_DEFAULT_ID0            326
+#define IDS_CWTT_DEFAULT1               327
+#define IDS_CWTT_DEFAULT_ID1            327
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027
