@@ -1008,6 +1008,165 @@ KHMEXP void KHMAPI khui_exit_actions(void);
 }
 #endif
 
+#ifdef __cplusplus
+
+#include <kcreddb.h>
+#include <perfstat.h>
+#include <map>
+
+namespace nim {
+
+    class SelectionContext {
+    protected:
+        typedef std::map <khm_int32, khui_header *> AttributeMap;
+
+        AttributeMap     attribute_filters;
+        Identity        *ident_filter;
+        Credential      *cred_filter;
+        CredentialType  *credtype_filter;
+
+    public:
+        SelectionContext() {
+            ident_filter = NULL;
+            cred_filter = NULL;
+            credtype_filter = NULL;
+        }
+
+        ~SelectionContext() {
+            if (ident_filter)
+                delete ident_filter;
+            if (cred_filter)
+                delete cred_filter;
+            if (credtype_filter)
+                delete credtype_filter;
+            for (AttributeMap::iterator i = attribute_filters.begin();
+                 i != attribute_filters.end(); i = attribute_filters.erase(i)) {
+                khui_header * h = i->second;
+                PFREE(h->data);
+                delete(h);
+            }
+        }
+
+        SelectionContext& Add(const Identity& _identity) {
+            if (ident_filter)
+                delete ident_filter;
+            ident_filter = new Identity(_identity);
+            return *this;
+        }
+
+        SelectionContext& Add(const Credential& _credential) {
+            if (cred_filter)
+                delete cred_filter;
+            cred_filter = new Credential(_credential);
+            return *this;
+        }
+
+        SelectionContext& Add(const CredentialType& _ctype) {
+            if (credtype_filter)
+                delete credtype_filter;
+            credtype_filter = new CredentialType(_ctype);
+            return *this;
+        }
+
+        SelectionContext& Add(const Credential& _credential, khm_int32 attr_id) {
+            khui_header group = {0, NULL, 0};
+
+            group.attr_id = attr_id;
+            if (_credential.GetAttrib(attr_id, NULL, &group.cb_data) != KHM_ERROR_TOO_LONG) {
+                group.cb_data = 0;
+                group.data = NULL;
+            } else {
+                group.data = PMALLOC(group.cb_data);
+                _credential.GetAttrib(attr_id, group.data, &group.cb_data);
+            }
+
+            if (group.data && group.cb_data) {
+                khui_header * h = new khui_header;
+                *h = group;
+
+                attribute_filters[attr_id] = h;
+            }
+
+            return *this;
+        }
+
+        bool Match(const Credential& credential) {
+            if (ident_filter && credential.GetIdentity() != *ident_filter)
+                return false;
+
+            if (credtype_filter && credential.GetType() != *credtype_filter)
+                return false;
+
+            if (cred_filter && credential != cred_filter)
+                return false;
+
+            for (AttributeMap::iterator i = attribute_filters.begin();
+                 i != attribute_filters.end(); ++i) {
+                khui_header * h = i->second;
+
+                if (h->cb_data == 0)
+                    return false;
+
+                khm_size  cb_data = 0;
+                void     *data = NULL;
+                khm_int32 irv;
+
+                if (credential.GetAttrib(h->attr_id, NULL, &cb_data) != KHM_ERROR_TOO_LONG)
+                    return false;
+                data = PMALLOC(cb_data);
+                credential.GetAttrib(h->attr_id, data, &cb_data);
+
+                AttributeInfo attr(h->attr_id);
+
+                irv = attr.GetTypeInfo()->comp(data, cb_data, h->data, h->cb_data);
+
+                PFREE(data);
+
+                if (irv != 0)
+                    return false;
+            }
+
+            return true;
+        }
+
+        void SetContext(CredentialSet& cs_src) {
+            khui_scope scope;
+
+            if (cred_filter)
+                scope = KHUI_SCOPE_CRED;
+            else if (credtype_filter)
+                scope = KHUI_SCOPE_CREDTYPE;
+            else if (ident_filter)
+                scope = KHUI_SCOPE_IDENT;
+            else
+                scope = KHUI_SCOPE_GROUP;
+
+            khm_size n_headers = attribute_filters.size();
+            khui_header * headers = NULL;
+
+            if (n_headers > 0) {
+                int j = 0;
+
+                headers = (khui_header *) PMALLOC(sizeof(headers[0]) * n_headers);
+                for (AttributeMap::iterator i = attribute_filters.begin();
+                     i != attribute_filters.end(); ++i, ++j) {
+                    headers[j] = *(i->second);
+                }
+            }
+
+            khui_context_set_ex(scope,
+                                ((ident_filter)? (khm_handle) *ident_filter : NULL),
+                                ((credtype_filter)? *credtype_filter: KCDB_CREDTYPE_ALL),
+                                ((cred_filter)? (khm_handle) *cred_filter : NULL),
+                                headers, n_headers, cs_src, NULL, 0);
+
+            if (headers)
+                PFREE(headers);
+        }
+    };
+};
+#endif
+
 /*@}*/
 /*@}*/
 #endif

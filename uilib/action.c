@@ -59,10 +59,6 @@ khui_action_ref khui_menu_cred[] = {
     MENU_SUBMENU(KHUI_MENU_DESTROY_CRED),
     MENU_SEP(),
     MENU_ACTION(KHUI_ACTION_SET_DEF_ID),
-#if 0
-    /* not implemented yet */
-    MENU_ACTION(KHUI_ACTION_SET_SRCH_ID),
-#endif
     MENU_SEP(),
     MENU_ACTION(KHUI_ACTION_PASSWD_ID),
     MENU_END()
@@ -1463,7 +1459,7 @@ khui_context_set_ex(khui_scope scope,
     tctx.int_cb_used = 0;
 
     khuiint_copy_context(&khui_ctx, &tctx);
-
+    
     khui_context_refresh();
 
     LeaveCriticalSection(&cs_actions);

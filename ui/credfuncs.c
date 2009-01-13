@@ -206,6 +206,49 @@ khm_new_cred_ops_pending(void)
     return (pending_new_cred_ops > 0);
 }
 
+void KHMCALLBACK
+khm_new_cred_progress_broadcast(enum kherr_ctx_event evt,
+                                kherr_context * ctx,
+                                void * vparam)
+{
+    khui_new_creds * nc = (khui_new_creds *) vparam;
+    khm_handle identity;
+
+    if (nc->n_identities > 0)
+        identity = nc->identities[0];
+    else
+        identity = nc->ctx.identity;
+
+    switch (evt) {
+    case KHERR_CTX_BEGIN:
+        kmq_post_message(KMSG_CREDP, KMSG_CREDP_BEGIN_NEWCRED, nc->subtype,
+                         identity);
+        break;
+
+    case KHERR_CTX_END:
+        kmq_post_message(KMSG_CREDP, KMSG_CREDP_END_NEWCRED, 0,
+                         identity);
+        break;
+
+    case KHERR_CTX_PROGRESS:
+        {
+            khm_ui_4 num = 0;
+            khm_ui_4 denom = 0;
+
+            kherr_get_progress_i(ctx, &num, &denom);
+            if (denom == 0) {
+                num = 0;
+            } else {
+                num = (num * 256) / denom;
+            }
+
+            kmq_post_message(KMSG_CREDP, KMSG_CREDP_PROG_NEWCRED,
+                             num, identity);
+        }
+        break;
+    }
+}
+
 /* Completion handler for KMSG_CRED messages.  We control the overall
    logic of credentials acquisition and other operations here.  Once a
    credentials operation is triggered, each successive message
@@ -475,6 +518,8 @@ kmsg_cred_completion(kmq_message *m)
             khui_new_creds * nc;
 
             nc = (khui_new_creds *) m->vparam;
+
+            khm_new_cred_progress_broadcast(KHERR_CTX_END, NULL, nc);
 
             switch (nc->subtype) {
             case KHUI_NC_SUBTYPE_NEW_CREDS:
@@ -899,8 +944,10 @@ khm_cred_obtain_new_creds_for_ident(khm_handle ident, wchar_t * title)
 {
     khui_action_context ctx;
 
-    if (ident == NULL)
+    if (ident == NULL) {
         khm_cred_obtain_new_creds(title);
+        return;
+    }
 
     khui_context_get(&ctx);
 
@@ -1132,6 +1179,11 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     _begin_task(KHERR_CF_TRANSITIVE);
 
     khm_nc_track_progress_of_this_task(nc);
+    khm_new_cred_progress_broadcast(KHERR_CTX_BEGIN, NULL, nc);
+    kherr_add_ctx_handler_param(khm_new_cred_progress_broadcast,
+                                KHERR_CTX_PROGRESS,
+                                KHERR_SERIAL_CURRENT,
+                                nc);
 
     /* Describe the context */
     if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
@@ -1186,6 +1238,8 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     return;
 
  _terminate_job:
+    khm_new_cred_progress_broadcast(KHERR_CTX_END, NULL, nc);
+
     if (nc->subtype == KMSG_CRED_RENEW_CREDS)
         kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, (void *) nc);
     else

@@ -29,7 +29,7 @@ namespace nim {
         TQINSERT(this, previous, e);
         e->recalc_extents = true;
         e->visible = visible;
-        e->owner = owner;
+        e->SetOwner(owner);
         MarkForExtentUpdate();
     }
 
@@ -38,7 +38,7 @@ namespace nim {
         TQINSERTP(this, next, e);
         e->recalc_extents = true;
         e->visible = visible;
-        e->owner = owner;
+        e->SetOwner(owner);
         MarkForExtentUpdate();
     }
 
@@ -674,7 +674,8 @@ namespace nim {
 
             assert(hwnd_header != NULL);
 
-            // TODO: set the header font here
+            HFONT hf = GetHFONT();
+            SendMessage(hwnd_header, WM_SETFONT, (WPARAM) hf, 0);
             columns.AddColumnsToHeaderControl(hwnd_header);
 
             // Since child elements might depend on what
@@ -867,12 +868,12 @@ namespace nim {
             DisplayColumn * col = reinterpret_cast<DisplayColumn *>(
                 reinterpret_cast<void *>(hdi.lParam));
             assert(col != NULL);
-            col->width = hdi.cxy;
+            col->width = pnmh->pitem->cxy;
 
             columns.UpdateHeaderControl(hwnd_header, HDI_WIDTH);
             MarkForExtentUpdate();
             OnColumnSizeChanged(hdi.iOrder);
-            DisplayElement::Invalidate();
+            Invalidate();
         }
         return 0;
     }

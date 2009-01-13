@@ -79,6 +79,13 @@ kcdbint_ident_msg_completion(kmq_message * m) {
     kcdb_identity_release(m->vparam);
 }
 
+/*! \note cs_ident must be available. */
+void 
+kcdbint_ident_post_message(khm_int32 op, kcdb_identity * id) {
+    kcdb_identity_hold(id);
+    kmq_post_message(KMSG_KCDB, KMSG_KCDB_IDENT, op, (void *) id);
+}
+
 /* hashtable callbacks */
 static khm_int32
 hash_identity(const void * vkey) {
@@ -344,7 +351,8 @@ kcdb_identity_create_ex(khm_handle vidpro,
         if (vparam)
             kcdb_identity_set_attr((khm_handle) id, KCDB_ATTR_PARAM, NULL, 0);
 
-        kcdbint_ident_post_message(KCDB_OP_INSERT, id);
+        if (id)
+            kcdbint_ident_post_message(KCDB_OP_INSERT, id);
 
         if (h_kcdb)
             khc_close_space(h_kcdb);
@@ -804,6 +812,8 @@ kcdb_identity_set_parent(khm_handle vid,
     if (old_parent)
         kcdb_identity_release(old_parent);
 
+    kcdbint_ident_post_message(KCDB_OP_MODIFY, id);
+
     return KHM_ERROR_SUCCESS;
 }
 
@@ -1055,13 +1065,6 @@ _exit:
 }
 
 /*! \note cs_ident must be available. */
-void 
-kcdbint_ident_post_message(khm_int32 op, kcdb_identity * id) {
-    kcdb_identity_hold(id);
-    kmq_post_message(KMSG_KCDB, KMSG_KCDB_IDENT, op, (void *) id);
-}
-
-/*! \note cs_ident must be available. */
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_hold(khm_handle vid) {
     kcdb_identity * id;
@@ -1208,6 +1211,9 @@ kcdb_identity_refresh(khm_handle vid) {
 
     if (code == 0)
         code = kcdb_identpro_update(vid);
+
+    if (ident != 0)
+        kcdbint_ident_post_message(KCDB_OP_MODIFY, ident);
 
     return code;
 }
@@ -1532,6 +1538,7 @@ kcdb_identity_set_attr(khm_handle vid,
     khm_size slot;
     khm_size cbdest;
     khm_int32 code = KHM_ERROR_SUCCESS;
+    khm_boolean notify = FALSE;
 
     EnterCriticalSection(&cs_ident);
     if(!kcdb_is_active_identity(vid)) {
@@ -1562,8 +1569,10 @@ kcdb_identity_set_attr(khm_handle vid,
         /* we are removing a value */
         slot = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) attr_id);
         if (slot != KCDB_BUF_INVALID_SLOT &&
-            kcdb_buf_exist(&id->buf, slot))
+            kcdb_buf_exist(&id->buf, slot)) {
             kcdb_buf_alloc(&id->buf, slot, (khm_ui_2) attr_id, 0);
+            notify = TRUE;
+        }
         code = KHM_ERROR_SUCCESS;
         goto _exit;
     }
@@ -1599,6 +1608,7 @@ kcdb_identity_set_attr(khm_handle vid,
     }
 
     kcdb_buf_set_value_flag(&id->buf, slot);
+    notify = TRUE;
 
 _exit:
     LeaveCriticalSection(&cs_ident);
@@ -1607,6 +1617,8 @@ _exit:
         kcdb_attrib_release_info(attrib);
     if(type)
         kcdb_type_release_info(type);
+    if (notify && id)
+        kcdbint_ident_post_message(KCDB_OP_MODIFY, id);
 
     return code;
 }

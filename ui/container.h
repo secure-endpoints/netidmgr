@@ -234,6 +234,11 @@ namespace nim {
 
         void SetTimer(TimerQueueClient * cb, DWORD milliseconds) {
             HANDLE timer;
+
+#ifdef DEBUG
+            kherr_debug_printf(L"SetTimer(%S, %d ms)\n",
+                               typeid(*cb).name(), milliseconds);
+#endif
             if (CreateTimerQueueTimer(&timer, timerQueue, TimerCallback,
                                       cb, milliseconds, 0, WT_EXECUTEONLYONCE)) {
                 cb->timer = timer;
@@ -435,7 +440,7 @@ namespace nim {
 
         virtual bool IsTabStop() { return false; }
 
-        virtual HFONT*GetHFONT() { return NULL; }
+        virtual HFONT GetHFONT() { return NULL; }
 
         virtual Font *GetFont(Graphics& g) { return NULL; }
 
@@ -589,7 +594,7 @@ namespace nim {
             origin.Y = 0;
 
             extents.Width = 0;
-            extents.Height = GetSystemMetrics(SM_CYICON);
+            extents.Height = 0;
 
             for (int i = col_idx;
                 (col_span > 0 && i < col_idx + col_span) ||
@@ -767,6 +772,11 @@ namespace nim {
             caption_pos.X = (INT) bb.X - bounds.X;
             caption_pos.Y = (INT) bb.Y - bounds.Y;
             truncated = ((unsigned int) chars != caption.length());
+
+            if (bb.Width > extents.Width) {
+                MarkForExtentUpdate();
+                Invalidate();
+            }
         }
 
         virtual bool OnShowToolTip(std::wstring& _caption, Rect& align_rect) {
@@ -885,6 +895,7 @@ namespace nim {
     // Applies to DisplayContainer
     template<class T = DisplayContainer>
     class NOINITVTABLE WithNavigation : public T {
+    protected:
         DisplayElement * el_focus;
         DisplayElement * el_anchor;
 

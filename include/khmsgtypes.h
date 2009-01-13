@@ -122,6 +122,13 @@
  */
 #define KMSG_TASKOBJ    8
 
+/*! \brief Credential operation progress messages
+
+    These messages are sent during credential operations to notify any
+    listeners of the progress of the operation.
+ */
+#define KMSG_CREDP      9
+
 /*! \brief Base message type ID for customized message types
  */
 #define KMSGBASE_USER   16
@@ -904,6 +911,51 @@
 #define KMSG_TASKOBJ_CALLBACK           1
 
 /*@}*/ /* /KMSG_TASKOBJ subtypes*/
+
+/*! \defgroup kmq_msg_credp KMSG_CREDP Subtypes
+  @{*/
+
+/*! \brief A new credentials operation is about to start
+
+  Sent when the new credentials operation is entering the process
+  stage.  This is when each of the credentials providers will be
+  invoked for the purpose of obtaining new credentials.
+
+  Once the operation ends, a ::KMSG_CREDP_END_NEWCRED message will be
+  broadcast.
+
+  Message parameters:
+
+  - \a uparam : Subtype.  One of ::khui_nc_subtypes
+
+  - \a vparam : Handle to the identity
+ */
+#define KMSG_CREDP_BEGIN_NEWCRED        1
+
+/*! \brief A new credentials operation has ended
+
+  Sent when a new credentials operation has ended.
+
+  - \a vparam : Handle to the identity
+
+  \see ::KMSG_CREDP_BEGIN_NEWCRED
+ */
+#define KMSG_CREDP_END_NEWCRED          2
+
+/*! \brief A new credentials operation is progressing
+
+  Sent when progress was reported in the new credentials acquisition.
+
+  Message parameters:
+
+  - \a uparam : Progress.  This is a value between 0 and 255
+    inclusive.
+
+  - \a vparam : Handle to the identity
+ */
+#define KMSG_CREDP_PROG_NEWCRED         3
+
+/*@}*/ /* /KMSG_CREDP subtypes*/
 
 /*@}*/ /* / message types */
 /*@}*/ /* / kmq */

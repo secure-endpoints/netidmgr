@@ -83,6 +83,7 @@ namespace nim {
         Image  *b_meter_state;      // Life meter state images
         Image  *b_meter_life;       // Life meter remainder images
         Image  *b_meter_renew;      // Life meter renewal animation images
+        Bitmap *b_progress;         // Progress bar
 
         bool    isThemeLoaded;      // TRUE if a theme was loaded
 
@@ -148,10 +149,15 @@ namespace nim {
 
         void DrawCredMeterState(Graphics& g, const Rect& extents, DrawState state, DWORD *ms_to_next);
 
-        // index is from 0 ... 255
+        // index is from 0 ... 256
         void DrawCredMeterLife(Graphics& g, const Rect& extents, unsigned int index);
 
         void DrawCredMeterBusy(Graphics& g, const Rect& extents, DWORD *ms_to_next);
+
+        // Progress is from 0 ... 256
+        void DrawProgressBar(Graphics& g, const Rect& extents, int progress);
+
+        void DrawFocusRect(Graphics& g, const Rect& extents);
     };
 
     typedef enum DrawTextStyle {
@@ -261,7 +267,7 @@ namespace nim {
     inline Color& operator += (Color& left, const Color& right) {
         UINT la = (UINT) left.GetAlpha();
         UINT ra = (UINT) right.GetAlpha();
-        UINT a = la + ((255 - la) * ra) / 255;
+        UINT a = la + (255 - la) * ra / 255;
         UINT r = (left.GetRed() * la + right.GetRed() * ra) / 255;
         UINT g = (left.GetGreen() * la + right.GetGreen() * ra) / 255;
         UINT b = (left.GetBlue() * la + right.GetBlue() * ra) / 255;
@@ -283,6 +289,11 @@ namespace nim {
 
     std::wstring
     LoadStringResource(UINT res_id, HINSTANCE inst = khm_hInstance);
+
+    template <size_t cch> inline
+    int LoadStringResource(wchar_t (&str)[cch], UINT res_id, HINSTANCE inst = khm_hInstance) {
+        return LoadString(inst, res_id, str, cch);
+    }
 
     HICON
     LoadIconResource(UINT res_id, bool small_icon,

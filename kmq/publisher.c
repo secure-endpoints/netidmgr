@@ -103,6 +103,7 @@ kmqint_msgtype_to_str(khm_int32 msg_type)
         L"ALERT",
         L"IDENT",
         L"TASKOBJ",
+        L"CREDP"
     };
 
     if (msg_type >= 0 && msg_type < ARRAYLENGTH(mt)) {
@@ -160,6 +161,10 @@ kmqint_msgsubtype_to_str(khm_int32 t, khm_int32 st)
         L"(*)", L"CALLBACK"
     };
 
+    static const wchar_t *_credp[] = {
+        L"(*)", L"BEGIN", L"END", L"PROGRESS"
+    };
+
 #define MT(s) {ARRAYLENGTH(s),s}
 
     static const struct {
@@ -174,7 +179,8 @@ kmqint_msgsubtype_to_str(khm_int32 t, khm_int32 st)
         MT(_act),
         MT(_alert),
         MT(_ident),
-        MT(_taskobj)
+        MT(_taskobj),
+        MT(_credp),
     };
 #undef MT
 

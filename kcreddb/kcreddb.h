@@ -4456,8 +4456,22 @@ namespace nim {
 
         bool operator == (T const &that) const {
             const T *pT = static_cast<const T*>(this);
-
             return pT->IsEqualTo(that);
+        }
+
+        bool operator == (khm_handle that) const {
+            const T *pT = static_cast<const T*>(this);
+            return pT->IsEqualTo(that);
+        }
+
+        bool operator != (T const &that) const {
+            const T *pT = static_cast<const T*>(this);
+            return !pT->IsEqualTo(that);
+        }
+
+        bool operator != (khm_handle that) const {
+            const T *pT = static_cast<const T*>(this);
+            return !pT->IsEqualTo(that);
         }
 
         bool IsValid() const {
@@ -4508,8 +4522,10 @@ namespace nim {
         }
 
         explicit
-        Buffer(khm_handle buf) {
+        Buffer(khm_handle buf, bool take_ownership = true) {
             h = buf;
+            if (!take_ownership)
+                Hold();
         }
 
         Buffer(const Buffer &that) {
@@ -4564,6 +4580,10 @@ namespace nim {
 
         bool IsEqualTo(Buffer const &that) const {
             return (h == that.h);
+        }
+
+        bool IsEqualTo(khm_handle that) const {
+            return (h == that);
         }
     };
 
@@ -4662,6 +4682,18 @@ namespace nim {
         bool operator == (const CredentialType & that) const {
             return ctype == that.ctype;
         }
+
+        bool operator == (khm_int32 that) const {
+            return ctype == that;
+        }
+
+        bool operator != (const CredentialType & that) const {
+            return ctype != that.ctype;
+        }
+
+        bool operator != (khm_int32 that) const {
+            return ctype != that;
+        }
     };
 
     class Identity;
@@ -4678,8 +4710,10 @@ namespace nim {
         }
 
         explicit
-        IdentityProvider(khm_handle _h) {
+        IdentityProvider(khm_handle _h, bool take_ownership = true) {
             h = _h;
+            if (!take_ownership)
+                Hold();
         }
 
         IdentityProvider(const wchar_t * name) {
@@ -4714,6 +4748,10 @@ namespace nim {
 
         bool IsEqualTo(IdentityProvider const &that) const {
             return !!kcdb_identpro_is_equal(h, that.h);
+        }
+
+        bool IsEqualTo(khm_handle that) const {
+            return !!kcdb_identpro_is_equal(h, that);
         }
 
         std::wstring GetName() const {
@@ -4762,8 +4800,10 @@ namespace nim {
         Identity() { h = NULL; }
 
         explicit
-        Identity(khm_handle _identity) {
+        Identity(khm_handle _identity, bool take_ownership = true) {
             h = _identity;
+            if (!take_ownership)
+                Hold();
         }
 
         Identity(IdentityProvider &provider, const wchar_t * name, khm_int32 flags, void * vparam = NULL) {
@@ -4833,6 +4873,10 @@ namespace nim {
             return !!kcdb_identity_is_equal(h, that.h);
         }
 
+        bool IsEqualTo(khm_handle that) const {
+            return !!kcdb_identity_is_equal(h, that);
+        }
+
         khm_int32 SetFlags(khm_int32 flags, khm_int32 mask) {
             return kcdb_identity_set_flags(h, flags, mask);
         }
@@ -4900,9 +4944,6 @@ namespace nim {
             kcdb_identity_begin_enum(and_flags, eq_flags, &e, &n);
             return Enumeration(e, n);
         }
-
-        /* TODO: Add properties or something to check for
-           warning/expiration/renewal thresholds etc.  This should ideally cache the values. */
     };
 
     inline Identity IdentityProvider::GetDefaultIdentity() const {
@@ -4929,8 +4970,10 @@ namespace nim {
         }
 
         explicit
-        Credential(khm_handle _h) {
+        Credential(khm_handle _h, bool take_ownership = true) {
             h = _h;
+            if (!take_ownership)
+                Hold();
         }
 
         Credential(const Credential &that) {
@@ -4987,6 +5030,10 @@ namespace nim {
 
         bool IsEqualTo(Credential const &that) const {
             return !!kcdb_creds_is_equal(h, that.h);
+        }
+
+        bool IsEqualTo(khm_handle that) const {
+            return !!kcdb_creds_is_equal(h, that);
         }
 
         std::wstring GetName() const {
@@ -5368,6 +5415,10 @@ namespace nim {
             else
                 desc = info->long_desc;
             return desc;
+        }
+
+        AttributeTypeInfo GetTypeInfo() const {
+            return AttributeTypeInfo(info->type);
         }
     };
 }

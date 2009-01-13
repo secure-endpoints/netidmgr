@@ -25,7 +25,6 @@
 /* $Id$ */
 
 #include "khmapp.h"
-#include<prsht.h>
 #include<assert.h>
 
 namespace nim
@@ -33,6 +32,8 @@ namespace nim
 
 #define CW_CANAME_FLAGS L"_CWFlags"
 
+    /*! \brief Credential window column
+     */
     class CwColumn : public DisplayColumn
     {
         // Legacy flags
@@ -78,6 +79,8 @@ namespace nim
     };
 
 
+    /*! \brief Credential Window Button template
+     */
     template<void (KhmDraw::*DF)(Graphics&, const Rect&, DrawState)>
     class CwButtonT : public WithFixedSizePos< DisplayElement > {
     public:
@@ -111,6 +114,11 @@ namespace nim
     };
 
 
+    /*! \brief Expose control
+
+      Displays the [+] or [-] image buttons depending on whether the
+      parent element is in an expanded state or not.
+     */
     class CwExposeControlElement : public CwButtonT< &KhmDraw::DrawCredWindowOutlineWidget > {
     public:
         CwExposeControlElement(const Point& _p) : CwButtonT(_p) {}
@@ -125,6 +133,10 @@ namespace nim
         }
     };
 
+    /*! \brief Icon display control
+
+      Displays a static icon.
+     */
     class CwIconDisplayElement : public WithFixedSizePos< DisplayElement > {
         Bitmap i;
         bool large;
@@ -139,6 +151,12 @@ namespace nim
         }
     };
 
+    /*! \brief Default identity control
+
+      This is the control which allows the user to set an identity as
+      the default.  It also indicates whether the current identity is
+      default.
+     */
     class CwDefaultIdentityElement : public CwButtonT< &KhmDraw::DrawStarWidget > {
         Identity * pidentity;
 
@@ -167,6 +185,10 @@ namespace nim
     class CwOutlineElement :
         virtual public DisplayElement {};
 
+
+
+    /*! \brief Base for all outline objects in the credentials window
+     */
     class CwOutlineBase :
         public WithOutline< CwOutlineElement >,
         public TimerQueueClient {
@@ -187,9 +209,20 @@ namespace nim
 
         template <class T>
         CwOutlineBase * Insert(T& obj, DisplayColumnList& columns, unsigned int column);
+
+        virtual bool Represents(Credential& credential) { return false; }
+        virtual bool Represents(Identity& identity) { return false; }
+        virtual void SetContext(SelectionContext& sctx) = 0;
+
+        template <class U, class V>
+        bool FindElements(V& criterion, std::vector<U *>& results);
     };
 
-    class CwOutline :
+
+
+    /*! \brief Basic outline object
+     */
+    class NOINITVTABLE CwOutline :
         public WithTabStop< WithColumnAlignment< CwOutlineBase > > {
     public:
         DisplayElement *outline_widget;
@@ -207,9 +240,6 @@ namespace nim
         ~CwOutline() {
             outline_widget = NULL; // will be automatically deleted
         }
-
-        virtual bool Represents(Credential& credential) { return false; }
-        virtual bool Represents(Identity& identity) { return false; }
 
         virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip);
 
@@ -231,8 +261,68 @@ namespace nim
             Rect r = layout;
             LayoutOutlineChildren(g, r);
         }
+
+        void Select(bool _select);
+
+        void Focus(bool _focus) {
+            if (focus == _focus)
+                return;
+
+            __super::Focus(_focus);
+
+            SelectionContext sctx;
+
+            SetContext(sctx);
+        }
     };
 
+
+
+    DrawState GetIdentityDrawState(Identity& identity)
+    {
+        DrawState ds = DrawStateNone;
+
+        do {
+            if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0) {
+
+                ds = DrawStateDisabled;
+
+            } else if (identity.Exists(KCDB_ATTR_EXPIRE)) {
+                khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
+                khm_int64 now;
+
+                FILETIME ft;
+
+                GetSystemTimeAsFileTime(&ft);
+                now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+
+                if (now > expire) {
+                    ds = DrawStateExpired;
+                    break;
+                }
+
+                khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
+
+                if (thr_crit != 0 && now > expire - thr_crit) {
+                    ds = DrawStateCritial;
+                    break;
+                }
+
+                khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
+
+                if (thr_warn != 0 && now > expire - thr_warn) {
+                    ds = DrawStateWarning;
+                    break;
+                }
+            }
+        } while (false);
+
+        return ds;
+    }
+
+
+    /*! \brief Get the next outline object in an element
+     */
     inline CwOutline * NextOutline(DisplayElement * e) {
         for (DisplayElement * i = e; i != NULL; i = TQNEXTSIBLING(i)) {
             CwOutline * t = dynamic_cast< CwOutline * >(i);
@@ -242,6 +332,12 @@ namespace nim
         return static_cast< CwOutline * >(NULL);
     }
 
+
+    /*! \brief Identity Title (Text) element
+
+        Used for displaying identity display name in an identity
+        outline node.
+     */
     class CwIdentityTitleElement :
         public HeaderTextBoxT< WithStaticCaption < WithTextDisplay <> > > {
     public:
@@ -250,6 +346,11 @@ namespace nim
         }
     };
 
+    /*! \brief Identity Type (Text) element
+
+        Displays the type of the identity (KCDB_RES_INSTANCE resource
+        of the identity provider).
+     */
     class CwIdentityTypeElement :
         public SubheaderTextBoxT< WithStaticCaption < WithTextDisplay <> > > {
     public:
@@ -258,6 +359,10 @@ namespace nim
         }
     };
 
+    /*! \brief Identit Lifetime Meter
+
+        Lifetime meter and also busy/renew indicator.
+     */
     class CwIdentityMeterElement :
         public WithFixedSizePos<>, public TimerQueueClient {
 
@@ -349,7 +454,6 @@ namespace nim
                     expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
 
                     if (expire < now) {
-
                         g_theme->DrawCredMeterState(g, bounds, DrawStateExpired, &ms);
                     } else {
                         khm_int64 lifetime;
@@ -392,21 +496,35 @@ namespace nim
     };
 
 
+    /*! \brief Identity Status (Text) element
+     */
     class CwIdentityStatusElement :
-        public IdentityStatusTextT< WithTextDisplay <> >,
+        public IdentityStatusTextT< WithStaticCaption< WithTextDisplay <> > >,
         public TimerQueueClient {
 
-        Identity identity;
-        long     ms_to_next_change;
+        Identity        identity;
+        long            ms_to_next_change;
+        bool            use_static_caption;
 
     public:
         CwIdentityStatusElement(Identity& _identity) : identity(_identity) {
-            ms_to_next_change = 0;
+            ms_to_next_change   = 0;
+            use_static_caption  = false;
+        }
+
+        void SetCaption(const std::wstring& _caption) {
+            use_static_caption = (_caption.length()  != 0);
+            __super::SetCaption(_caption);
         }
 
         std::wstring GetCaption() {
-            if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0 ||
-                !identity.Exists(KCDB_ATTR_EXPIRE)) {
+
+            if (use_static_caption) {
+
+                return __super::GetCaption();
+
+            } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0 ||
+                       !identity.Exists(KCDB_ATTR_EXPIRE)) {
 
                 return std::wstring(L"");
 
@@ -423,7 +541,7 @@ namespace nim
                     wchar_t fmt[32];
 
                     // "Valid for %s"
-                    LoadString(khm_hInstance, IDS_CW_EXPIREF, fmt, ARRAYLENGTH(fmt));
+                    LoadStringResource(fmt, IDS_CW_EXPIREF);
 
                     FILETIME ft_timeleft;
                     wchar_t timeref[128];
@@ -461,6 +579,33 @@ namespace nim
     };
 
 
+
+    /*! \brief Progress bar control
+     */
+    class CwProgressBarElement :
+        public WithFixedSizePos< DisplayElement > {
+
+        int progress;
+
+    public:
+        CwProgressBarElement() {
+            SetSize(Size(g_theme->sz_icon_sm.Width * 8, g_theme->sz_icon_sm.Height));
+        }
+
+        void SetProgress(int _progress) {
+            progress = _progress;
+            Invalidate();
+        }
+
+        void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
+            g_theme->DrawProgressBar(g, bounds, progress);
+        }
+    };
+
+
+
+    /*! \brief  Identity Outline Node
+     */
     class CwIdentityOutline : public CwOutline
     {
     public:
@@ -471,25 +616,47 @@ namespace nim
         CwIdentityTypeElement    *el_type_name;
         CwIdentityStatusElement  *el_status;
         CwIdentityMeterElement   *el_meter;
+        CwProgressBarElement     *el_progress;
+
+        bool                     monitor_progress;
 
     public:
         CwIdentityOutline(Identity& _identity, int _column)
             : identity(_identity), CwOutline(_column) {
-            el_icon          = NULL;
-            el_default_id       = NULL;
-            el_display_name = NULL;
-            el_type_name = NULL;
-            el_status = NULL;
-            el_meter         = NULL;
+            monitor_progress    = false;
+
+            InsertChildAfter(el_icon =
+                             new CwIconDisplayElement(Point(0,0),
+                                                      identity.GetResourceIcon(KCDB_RES_ICON_NORMAL),
+                                                      true));
+
+            InsertChildAfter(el_default_id =
+                             new CwDefaultIdentityElement(&identity, Point(0,16)));
+
+            InsertChildAfter(el_display_name =
+                             new CwIdentityTitleElement(identity));
+
+            InsertChildAfter(el_type_name =
+                             new CwIdentityTypeElement(identity));
+
+            InsertChildAfter(el_meter =
+                             new CwIdentityMeterElement(identity));
+
+            InsertChildAfter(el_status =
+                             new CwIdentityStatusElement(identity));
+
+            InsertChildAfter(el_progress =
+                             new CwProgressBarElement());
         }
 
         ~CwIdentityOutline() {
-            el_icon = NULL;
-            el_default_id = NULL;
-            el_display_name = NULL;
-            el_type_name = NULL;
-            el_status = NULL;
-            el_meter         = NULL;
+            el_icon             = NULL;
+            el_default_id       = NULL;
+            el_display_name     = NULL;
+            el_type_name        = NULL;
+            el_status           = NULL;
+            el_meter            = NULL;
+            el_progress         = NULL;
         }
 
         virtual bool Represents(Credential& credential) {
@@ -502,28 +669,6 @@ namespace nim
 
         virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
             LayoutOutlineSetup(g, layout);
-
-            if (el_icon == NULL) {
-                InsertChildAfter(el_icon =
-                                 new CwIconDisplayElement(Point(0,0),
-                                                          identity.GetResourceIcon(KCDB_RES_ICON_NORMAL),
-                                                          true));
-
-                InsertChildAfter(el_default_id =
-                                 new CwDefaultIdentityElement(&identity, Point(0,16)));
-
-                InsertChildAfter(el_display_name =
-                                 new CwIdentityTitleElement(identity));
-
-                InsertChildAfter(el_type_name =
-                                 new CwIdentityTypeElement(identity));
-
-                InsertChildAfter(el_meter =
-                                 new CwIdentityMeterElement(identity));
-
-                InsertChildAfter(el_status =
-                                 new CwIdentityStatusElement(identity));
-            }
         }
 
         virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
@@ -537,7 +682,8 @@ namespace nim
                 .Add(el_icon, FlowLayout::Center)
                 .LineBreak()
                 .Add(el_meter, FlowLayout::Center, FlowLayout::Fixed,
-                     has_creds = (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0));
+                     (has_creds = (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0)))
+                ;
 
             FlowLayout lr = l.InsertFillerColumn();
 
@@ -546,8 +692,10 @@ namespace nim
                 .Add(el_display_name, FlowLayout::Left, FlowLayout::Squish)
                 .Add(el_type_name, FlowLayout::Right, FlowLayout::Squish)
                 .LineBreak()
-                .Add(el_status, FlowLayout::Left, FlowLayout::Squish, has_creds);
-            ;
+                .Add(el_status, FlowLayout::Left, FlowLayout::Squish, has_creds)
+                .Add(el_progress, FlowLayout::Right, FlowLayout::Squish, monitor_progress)
+                .LineBreak()
+                ;
 
             Rect r;
 
@@ -561,48 +709,79 @@ namespace nim
         }
 
         virtual DrawState GetDrawState() {
-            DrawState ds = DrawStateNone;
+            return (DrawState)(GetIdentityDrawState(identity) | __super::GetDrawState());
+        }
 
-            do {
-                if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0) {
+        void SetContext(SelectionContext& sctx) {
+            sctx.Add(identity);
+            dynamic_cast<CwOutlineBase*>(TQPARENT(this))->SetContext(sctx);
+        }
 
-                    ds = DrawStateDisabled;
+        void SetIdentityOp(khui_nc_subtype stype) {
+            switch (stype) {
+            case KHUI_NC_SUBTYPE_NONE:
+                monitor_progress = false;
+                el_status->SetCaption(L"");
+                MarkForExtentUpdate();
+                Invalidate();
+                break;
 
-                } else if (identity.Exists(KCDB_ATTR_EXPIRE)) {
-                    khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
-                    khm_int64 now;
+            case KHUI_NC_SUBTYPE_NEW_CREDS:
+                monitor_progress = true;
+                el_progress->SetProgress(0);
+                el_status->SetCaption(L"Obtaining new credentials");
+                MarkForExtentUpdate();
+                Invalidate();
+                break;
 
-                    FILETIME ft;
+            case KHUI_NC_SUBTYPE_RENEW_CREDS:
+                monitor_progress = true;
+                el_progress->SetProgress(0);
+                el_status->SetCaption(L"Renewing credentials");
+                MarkForExtentUpdate();
+                Invalidate();
+                break;
 
-                    GetSystemTimeAsFileTime(&ft);
-                    now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+            case KHUI_NC_SUBTYPE_PASSWORD:
+                monitor_progress = true;
+                el_progress->SetProgress(0);
+                el_status->SetCaption(L"Changing password");
+                MarkForExtentUpdate();
+                Invalidate();
+                break;
 
-                    if (now > expire) {
-                        ds = DrawStateExpired;
-                        break;
-                    }
+            case KHUI_NC_SUBTYPE_ACQPRIV_ID:
+                monitor_progress = true;
+                el_progress->SetProgress(0);
+                el_status->SetCaption(L"Acquiring privileged credentials");
+                MarkForExtentUpdate();
+                Invalidate();
+                break;
 
-                    khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
 
-                    if (thr_crit != 0 && now > expire - thr_crit) {
-                        ds = DrawStateCritial;
-                        break;
-                    }
+            default:
+                // Includes KHUI_NC_SUBTYPE_OTHER
 
-                    khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
+                monitor_progress = true;
+                el_progress->SetProgress(0);
+                el_status->SetCaption(L"Busy");
+                MarkForExtentUpdate();
+                Invalidate();
+                break;
+            }
+        }
 
-                    if (thr_warn != 0 && now > expire - thr_warn) {
-                        ds = DrawStateWarning;
-                        break;
-                    }
-                }
-            } while (false);
-
-            return (DrawState)(ds | __super::GetDrawState());
+        void SetIdentityOpProgress(int progress) {
+            if (!monitor_progress) {
+                SetIdentityOp(KHUI_NC_SUBTYPE_OTHER);
+            }
+            el_progress->SetProgress(progress);
         }
     };
 
 
+    /*! \brief Credential Type (Text) element
+     */
     class CwCredentialTypeElement :
         public SubheaderTextBoxT< WithStaticCaption < WithTextDisplay <> > > {
     public:
@@ -611,6 +790,8 @@ namespace nim
         }
     };
 
+    /*! \brief Generic Static (Text) element
+     */
     class CwStaticTextElement :
         public GenericTextT< WithStaticCaption < WithTextDisplay <> > > {
     public:
@@ -619,6 +800,9 @@ namespace nim
         }
     };
 
+
+    /*! \brief Credential Type Outline Node
+     */
     class CwCredTypeOutline : public CwOutline
     {
     public:
@@ -652,9 +836,16 @@ namespace nim
             extents.Width = r.GetRight();
             extents.Height = r.GetBottom();
         }
+
+        void SetContext(SelectionContext& sctx) {
+            sctx.Add(credtype);
+            dynamic_cast<CwOutlineBase*>(TQPARENT(this))->SetContext(sctx);
+        }
     };
 
 
+    /*! \brief Generic Outline Node
+     */
     class CwGenericOutline : public CwOutline
     {
     public:
@@ -692,9 +883,80 @@ namespace nim
             extents.Width = r.GetRight();
             extents.Height = r.GetBottom();
         }
+
+        void SetContext(SelectionContext& sctx) {
+            sctx.Add(credential, attr_id);
+            dynamic_cast<CwOutlineBase*>(TQPARENT(this))->SetContext(sctx);
+        }
     };
 
 
+    /*! \brief Time Value (Text) element
+     */
+    class CwTimeTextCellElement :
+        public WithColumnAlignment< ColumnCellTextT < WithStaticCaption < WithTextDisplay <> > > >,
+        public TimerQueueClient {
+
+    protected:
+        Credential credential;
+        khm_int32  attr_id;
+        khm_int32  ftse_flags;
+        volatile bool need_update;
+
+    public:
+        CwTimeTextCellElement(Credential& _credential,
+                              khm_int32 _attr_id, khm_int32 _ftse_flags, int _column):
+            WithColumnAlignment(_column, 1),
+            credential(_credential),
+            attr_id(_attr_id),
+            ftse_flags(_ftse_flags),
+            need_update(true)
+        {}
+
+    public:
+        void UpdateCaption() {
+            FILETIME ft = credential.GetAttribFileTime(attr_id);
+            wchar_t buf[128] = L"";
+            khm_size cb = sizeof(buf);
+            long ms = 0;
+
+            CancelTimer();
+
+            FtToStringEx(&ft, ftse_flags, &ms, buf, &cb);
+
+            SetCaption(std::wstring(buf));
+            if (ms != 0) {
+                TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
+                if (host)
+                    host->SetTimer(this, ms);
+            }
+
+            need_update = false;
+        }
+
+        void OnTimer() {
+            need_update = true;
+            MarkForExtentUpdate();
+            Invalidate();
+        }
+
+        void UpdateLayoutPre(Graphics& g, Rect& layout) {
+            if (need_update)
+                UpdateCaption();
+            __super::UpdateLayoutPre(g, layout);
+        }
+
+        void UpdateLayoutPost(Graphics& g, const Rect& bounds) {
+            INT width = extents.Width;
+            WithTextDisplay::UpdateLayoutPost(g, bounds);
+            extents.Width = width;
+            extents.Height += g_theme->sz_margin.Height;
+        }
+    };
+
+
+    /*! \brief Static Table Cell (Text) Element
+     */
     class CwStaticCellElement :
         public WithColumnAlignment< ColumnCellTextT < WithStaticCaption < WithTextDisplay <> > > > {
     public:
@@ -712,6 +974,8 @@ namespace nim
     };
 
 
+    /*! \brief Credential Row Outline Node
+     */
     class CwCredentialRow : public CwOutline
     {
     public:
@@ -732,15 +996,26 @@ namespace nim
 
         virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
 
-            __super::UpdateLayoutPre(g, layout);
+            WithColumnAlignment::UpdateLayoutPre(g, layout);
 
             if (el_list.size() == 0) {
                 for (int i = col_idx;
                      (col_span > 0 && i < col_idx + col_span) ||
                          (col_span <= 0 && (unsigned int) i < owner->columns.size()); i++) {
                     CwColumn * cwc = dynamic_cast<CwColumn *>(owner->columns[i]);
-                    DisplayElement * e =
-                        new CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
+                    DisplayElement * e;
+
+                    switch (cwc->attr_id) {
+                    case KCDB_ATTR_RENEW_TIMELEFT:
+                    case KCDB_ATTR_TIMELEFT:
+                        e = new CwTimeTextCellElement(credential, cwc->attr_id,
+                                                      FTSE_INTERVAL, i);
+                        break;
+
+                    default:
+                        e = new CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
+                    }
+
                     InsertChildAfter(e);
                     el_list.push_back(e);
                 }
@@ -754,14 +1029,29 @@ namespace nim
         virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
             g_theme->DrawCredWindowNormalBackground(g, bounds, GetDrawState());
         }
+
+        void SetContext(SelectionContext& sctx) {
+            sctx.Add(credential);
+            dynamic_cast<CwOutlineBase*>(TQPARENT(this))->SetContext(sctx);
+        }
+
+        void Select(bool _select) {
+            if (_select == selected)
+                return;
+
+            __super::Select(_select);
+
+            credential.SetFlags((selected)? KCDB_CRED_FLAG_SELECTED : 0,
+                                KCDB_CRED_FLAG_SELECTED);
+        }
     };
 
-#define DCL_KMSG(T,ST) \
+#define DCL_KMSG(T,ST)                                                  \
     khm_int32 OnKmsg ## T ## _ ## ST (khm_ui_4 uparam, void * vparam)
-#define DEFINE_KMSG(T,ST) \
+#define DEFINE_KMSG(T,ST)                                               \
     khm_int32 CwTable::OnKmsg ## T ## _ ## ST (khm_ui_4 uparam, void * vparam)
 
-#define HANDLE_KMSG(T,ST) \
+#define HANDLE_KMSG(T,ST)                                               \
     if (msg_type == KMSG_ ## T && msg_subtype == KMSG_ ## T ## _ ## ST) \
         return OnKmsg ## T ## _ ## ST (uparam, vparam)
 
@@ -772,6 +1062,11 @@ namespace nim
     // DisplayContainer and CwOutlineBase.  This is expected.
 #pragma warning(disable: 4250)
 
+
+
+
+    /*! \brief Credential Window
+     */
     class CwTable : public WithVerticalLayout< WithNavigation< WithTooltips< DisplayContainer > > >,
                     public CwOutlineBase,
                     public TimerQueueHost
@@ -820,7 +1115,11 @@ namespace nim
         virtual DWORD GetStyle();
         virtual DWORD GetStyleEx();
 
+        virtual HFONT GetHFONT();
+
         virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip);
+
+        virtual void SetContext(SelectionContext& sctx);
 
     public:                     // Handlers for KMSG_*
         DCL_KMSG(CRED, ROOTDELTA);
@@ -832,6 +1131,9 @@ namespace nim
         DCL_KMSG(KCDB, ATTRIB);
         DCL_KMSG(KMM, I_DONE);
         DCL_KMSG(ACT, ACTIVATE);
+        DCL_KMSG(CREDP, BEGIN_NEWCRED);
+        DCL_KMSG(CREDP, END_NEWCRED);
+        DCL_KMSG(CREDP, PROG_NEWCRED);
 
     public:
         static khm_int32 attrib_to_action[KCDB_ATTR_MAX_ID + 1];
@@ -982,6 +1284,16 @@ namespace nim
         return new CwIdentityOutline(identity, column);
     }
 
+    void CwOutline::Select(bool _select) {
+        if (selected == _select)
+            return;
+
+        __super::Select(_select);
+        for_each_child(c) {
+            c->Select(_select);
+        }
+    }
+
     CwOutline * CreateOutlineNode(Credential & cred, DisplayColumnList& columns, int column)
     {
         CwColumn * cwcol = NULL;
@@ -1002,6 +1314,21 @@ namespace nim
         default:
             return new CwGenericOutline(cred, cwcol->attr_id, column);
         }
+    }
+
+    template <class elementT, class queryT>
+    bool CwOutlineBase::FindElements(queryT& criterion, std::vector<elementT *>& results) {
+        elementT * addend;
+        if (Represents(criterion) &&
+            (addend = dynamic_cast<elementT *>(this)) != NULL) {
+            results.push_back(addend);
+        }
+
+        for_each_child(c) {
+            c->FindElements(criterion, results);
+        }
+
+        return results.size() > 0;
     }
 
     void CwTable::PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip)
@@ -1398,9 +1725,40 @@ namespace nim
             credset.Apply(InsertCredentialProc, &d);
         }
 
+        ??;
+        // TODO: Need to fix layout switches
+        // TODO: Have tooltips for default identity widget
+        // TODO: Set the "Ready: Defaultidentity" string as a tooltip for the notification icon.
+        // TODO: Find out why status widget is still overflowing
+
+
         EndUpdate();
 
-        // TODO: We should also update the notification icon here.
+        columns_dirty = false;
+
+        // Update the notification icon
+        {
+            IdentityProvider p = IdentityProvider::GetDefault();
+            Identity i = p.GetDefaultIdentity();
+
+            if (p.IsValid() && i.IsValid()) {
+                DrawState ds = GetIdentityDrawState(i);
+                khm_notif_expstate expstate = KHM_NOTIF_EMPTY;
+
+                if (ds & DrawStateDisabled)
+                    expstate = KHM_NOTIF_EMPTY;
+                else if (ds & DrawStateWarning)
+                    expstate = KHM_NOTIF_WARN;
+                else if (ds & DrawStateExpired)
+                    expstate = KHM_NOTIF_EXP;
+                else
+                    expstate = KHM_NOTIF_OK;
+
+                khm_notify_icon_expstate(expstate);
+            } else {
+                khm_notify_icon_expstate(KHM_NOTIF_EMPTY);
+            }
+        }
     }
 
     BOOL CwTable::OnCreate(LPVOID createParams)
@@ -1422,12 +1780,14 @@ namespace nim
         kmq_subscribe_hwnd(KMSG_CRED, hwnd);
         kmq_subscribe_hwnd(KMSG_KCDB, hwnd);
         kmq_subscribe_hwnd(KMSG_KMM, hwnd);
+        kmq_subscribe_hwnd(KMSG_CREDP, hwnd);
 
         return __super::OnCreate(createParams);
     }
 
     void CwTable::OnDestroy()
     {
+        kmq_unsubscribe_hwnd(KMSG_CREDP, hwnd);
         kmq_unsubscribe_hwnd(KMSG_CRED, hwnd);
         kmq_unsubscribe_hwnd(KMSG_KCDB, hwnd);
         kmq_unsubscribe_hwnd(KMSG_KMM, hwnd);
@@ -1437,6 +1797,7 @@ namespace nim
     {
         is_custom_view = true;
         columns_dirty = true;
+        UpdateOutline();
     }
 
     void CwTable::OnColumnSizeChanged(int order)
@@ -1448,6 +1809,12 @@ namespace nim
     {
         is_custom_view = true;
         columns_dirty = true;
+        UpdateOutline();
+    }
+
+    void CwTable::SetContext(SelectionContext& sctx)
+    {
+        sctx.SetContext(credset);
     }
 
     void CwTable::OnColumnContextMenu(int order)
@@ -1464,21 +1831,25 @@ namespace nim
 
     DEFINE_KMSG(CRED, PP_BEGIN)
     {
+        khm_pp_begin((khui_property_sheet *) vparam);
         return KHM_ERROR_SUCCESS;
     }
 
     DEFINE_KMSG(CRED, PP_PRECREATE)
     {
+        khm_pp_precreate((khui_property_sheet *) vparam);
         return KHM_ERROR_SUCCESS;
     }
 
     DEFINE_KMSG(CRED, PP_END)
     {
+        khm_pp_end((khui_property_sheet *) vparam);
         return KHM_ERROR_SUCCESS;
     }
 
     DEFINE_KMSG(CRED, PP_DESTROY)
     {
+        khm_pp_destroy((khui_property_sheet *) vparam);
         return KHM_ERROR_SUCCESS;
     }
 
@@ -1524,6 +1895,52 @@ namespace nim
             UpdateOutline();
             Invalidate();
         }
+        return KHM_ERROR_SUCCESS;
+    }
+
+    DEFINE_KMSG(CREDP, BEGIN_NEWCRED)
+    {
+        khui_nc_subtype subtype = (khui_nc_subtype) uparam;
+        khm_handle identity = (khm_handle) vparam;
+        std::vector<CwIdentityOutline *> elts;
+
+        FindElements(Identity(identity, false), elts);
+
+        for (std::vector<CwIdentityOutline *>::iterator i = elts.begin();
+             i != elts.end(); ++i) {
+            (*i)->SetIdentityOp(subtype);
+        }
+        return KHM_ERROR_SUCCESS;
+    }
+
+    DEFINE_KMSG(CREDP, PROG_NEWCRED)
+    {
+        int progress = (int) uparam;
+        khm_handle identity = (khm_handle) vparam;
+        std::vector<CwIdentityOutline *> elts;
+
+        FindElements(Identity(identity, false), elts);
+
+        for (std::vector<CwIdentityOutline *>::iterator i = elts.begin();
+             i != elts.end(); ++i) {
+            (*i)->SetIdentityOpProgress(progress);
+        }
+
+        return KHM_ERROR_SUCCESS;
+    }
+
+    DEFINE_KMSG(CREDP, END_NEWCRED)
+    {
+        khm_handle identity = (khm_handle) vparam;
+        std::vector<CwIdentityOutline *> elts;
+
+        FindElements(Identity(identity, false), elts);
+
+        for (std::vector<CwIdentityOutline *>::iterator i = elts.begin();
+             i != elts.end(); ++i) {
+            (*i)->SetIdentityOp((khui_nc_subtype) 0);
+        }
+
         return KHM_ERROR_SUCCESS;
     }
 
@@ -1621,6 +2038,9 @@ namespace nim
         HANDLE_KMSG(KCDB, ATTRIB);
         HANDLE_KMSG(KMM, I_DONE);
         HANDLE_KMSG(ACT, ACTIVATE);
+        HANDLE_KMSG(CREDP, BEGIN_NEWCRED);
+        HANDLE_KMSG(CREDP, PROG_NEWCRED);
+        HANDLE_KMSG(CREDP, END_NEWCRED);
 
         return KHM_ERROR_SUCCESS;
     }
@@ -1706,10 +2126,22 @@ namespace nim
         return 0;
     }
 
+    HFONT CwTable::GetHFONT() {
+        return g_theme->hf_normal;
+    }
+
     void CwTable::OnContextMenu(const Point& p)
     {
-        // TODO: show context menu.  note that x,y = (-1,-1) if the
-        // context menu was invoked via keyboard.
+        Point pm = p;
+
+        if (p.X == -1 && p.Y == -1) {
+            if (el_focus)
+                pm = el_focus->MapToScreen(Point(0,0));
+            else
+                pm = MapToScreen(Point(scroll.X, scroll.Y));
+        }
+
+        khm_menu_show_panel(KHUI_MENU_IDENT_CTX, pm.X, pm.Y);
     }
 
     extern "C" void 

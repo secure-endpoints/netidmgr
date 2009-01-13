@@ -420,8 +420,8 @@ enum kherr_ctx_event {
 
     \see kherr_add_ctx_handler()
  */
-typedef void (KHMAPI * kherr_ctx_handler)(enum kherr_ctx_event, 
-                                         kherr_context *);
+typedef void (KHMCALLBACK * kherr_ctx_handler)(enum kherr_ctx_event, 
+                                               kherr_context *);
 
 /*! \brief Context even handler with parameter
 
@@ -431,9 +431,9 @@ typedef void (KHMAPI * kherr_ctx_handler)(enum kherr_ctx_event,
 
     \see kherr_add_ctx_handler_param()
  */
-typedef void (KHMAPI * kherr_ctx_handler_param)(enum kherr_ctx_event,
-                                                kherr_context *,
-                                                void * vparam);
+typedef void (KHMCALLBACK * kherr_ctx_handler_param)(enum kherr_ctx_event,
+                                                     kherr_context *,
+                                                     void * vparam);
 
 /*! \brief Add a context event handler
 

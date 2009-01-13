@@ -285,7 +285,6 @@ khm_show_properties(void)
         return FALSE;
     }
 
-
     khui_ps_create_sheet(&ps);
 
     ps->header.hInstance = khm_hInstance;

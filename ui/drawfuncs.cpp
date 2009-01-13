@@ -30,6 +30,18 @@
 namespace nim
 {
 
+    static const INT FOCUS_RECT_OPACITY         = 64;
+
+    static const INT SELECTION_OPACITY          = 64;
+
+    static const INT SELECTION_OPACITY_END      = 0;
+
+    static const INT OUTLINE_OPACITY            = 64;
+
+    static const INT OUTLINE_OPACITY_END        = 0;
+
+    static const INT OUTLINE_BORDER_OPACITY     = 96;
+
     KhmDraw::KhmDraw()
     {
         isThemeLoaded = FALSE;
@@ -64,6 +76,8 @@ namespace nim
         b_meter_state = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_STATE), L"PNG");
         b_meter_life  = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_LIFE),  L"PNG");
         b_meter_renew = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_RENEW), L"PNG");
+        b_progress    = dynamic_cast<Bitmap*>
+            (LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_PROGRESS),   L"PNG"));
 
         sz_icon.Width     = GetSystemMetrics(SM_CXICON);
         sz_icon.Height    = GetSystemMetrics(SM_CYICON);
@@ -94,15 +108,16 @@ namespace nim
 
     void KhmDraw::UnloadTheme(void)
     {
-        if (b_credwnd) {
-            delete b_credwnd;
-            b_credwnd = NULL;
-        }
+#define DEL_BITMAP(b) if (b) { delete b; b = NULL; }
 
-        if (b_watermark) {
-            delete b_watermark;
-            b_watermark = NULL;
-        }
+        DEL_BITMAP(b_credwnd);
+        DEL_BITMAP(b_watermark);
+        DEL_BITMAP(b_meter_state);
+        DEL_BITMAP(b_meter_life);
+        DEL_BITMAP(b_meter_renew);
+        DEL_BITMAP(b_progress);
+
+#undef  DEL_BITMAP
 
         isThemeLoaded = FALSE;
     }
@@ -152,11 +167,33 @@ namespace nim
         }
     }
 
+    void
+    KhmDraw::DrawFocusRect(Graphics& g, const Rect& extents)
+    {
+        Rect fr = extents;
+
+        // Fix off by one problem.  Windows GDI calls including Window
+        // management functions rectangles differently from GDI+.  In
+        // GDI+ a rectangle drawn at (0,0) that's 100x100 pixels in
+        // dimension will have it's right edge at the 100th column,
+        // while WINGDI and WINUSER will expect the rightmost edge to
+        // be at the 99th column.
+
+        fr.Width -= 1;
+        fr.Height -= 1;
+
+        fr.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
+
+        Pen p(c_text * FOCUS_RECT_OPACITY);
+        p.SetDashStyle(DashStyleDot);
+
+        g.DrawRectangle(&p, fr);
+    }
+
     void 
     KhmDraw::DrawCredWindowOutline(Graphics& g, const Rect& extents, DrawState state)
     {
         Color c1;
-        Color c2 = c_background;
         Rect r = extents;
 
         if (state & DrawStateSelected)
@@ -170,21 +207,109 @@ namespace nim
         else
             c1 = c_header;
 
-        LinearGradientBrush br(extents, c1, c2, 0, FALSE);
+        r.Width -= 1;
+        r.Height -= 1;
+
+        {
+            Pen p_frame(c1 * OUTLINE_BORDER_OPACITY, 1.0);
+            g.DrawRectangle(&p_frame, r);
+        }
 
         r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
 
-        g.FillRectangle(&br, r);
+        {
+            LinearGradientBrush br(extents,
+                                   c1 * OUTLINE_OPACITY,
+                                   c1 * OUTLINE_OPACITY_END, 0, FALSE);
+            g.FillRectangle(&br, r);
+        }
 
-        if (state & DrawStateFocusRect) {
-            Color c = c_text;
-            Pen p(c);
+        if (state & DrawStateFocusRect)
+            DrawFocusRect(g, extents);
+    }
 
-            p.SetDashStyle(DashStyleDash);
+    void
+    KhmDraw::DrawProgressBar(Graphics& g, const Rect& extents, int progress)
+    {
+        INT partition;
+        const INT width = extents.Width - 1;
+        const INT cel_cx = sz_icon_sm.Width;
+        const INT cel_cy = sz_icon_sm.Height;
+        const INT X = extents.X;
+        const INT Y = extents.Y;
 
-            Rect r = extents;
-            r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
-            g.DrawRectangle(&p, r);
+        static const INT
+            BEGIN_FILLED = 0,
+            MID_FILLED = 1,
+            END_FILLED = 2,
+            BEGIN_EMPTY = 3,
+            MID_EMPTY = 4,
+            END_EMPTY = 5;
+
+        if (progress < 0)
+            progress = 0;
+        if (progress > 256)
+            progress = 256;
+
+        partition = width * progress / 256;
+
+        if (partition > 0) {
+            g.DrawImage(b_progress, X, Y,
+                        BEGIN_FILLED * cel_cx, 0,
+                        __min(cel_cx, partition),
+                        cel_cy, UnitPixel);
+        }
+
+        if (partition > cel_cx) {
+            for (INT x = cel_cx;
+                 x < partition && x < width - cel_cx;
+                 x += cel_cx) {
+                g.DrawImage(b_progress,
+                            X + x, Y,
+                            MID_FILLED * cel_cx, 0,
+                            __min(cel_cx, partition - x),
+                            cel_cy,
+                            UnitPixel);
+            }
+        }
+
+        if (partition > width - cel_cx) {
+            g.DrawImage(b_progress,
+                        X + width - cel_cx, Y,
+                        END_FILLED * cel_cx, 0,
+                        partition - (width - cel_cx),
+                        cel_cy, UnitPixel);
+        }
+
+        if (partition < cel_cx) {
+            g.DrawImage(b_progress,
+                        X + partition, Y,
+                        BEGIN_EMPTY * cel_cx + partition, 0,
+                        cel_cx - partition, cel_cy, UnitPixel);
+            partition = cel_cx;
+        }
+
+        if (partition < width - cel_cx) {
+            for (INT x = width - cel_cx * 2;
+                 x > partition - cel_cx;
+                 x -= cel_cx) {
+                g.DrawImage(b_progress,
+                            __max(partition, x) + X, Y,
+                            MID_EMPTY * cel_cx +
+                            __max(0, partition - x), 0,
+                            __min(x + cel_cx - partition, cel_cx),
+                            cel_cy,
+                            UnitPixel);
+            }
+            partition = width - cel_cx;
+        }
+
+        if (partition < width) {
+            g.DrawImage(b_progress,
+                        X + partition, Y,
+                        END_EMPTY * cel_cx + partition
+                        - (width - cel_cx), 0,
+                        width - partition, cel_cy, UnitPixel);
         }
     }
 
@@ -216,47 +341,45 @@ namespace nim
     KhmDraw::DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state)
     {
         Color c1;
-        Color c2 = c_background;
+        Color c2;
         Rect r = extents;
 
-        if (state & DrawStateSelected)
-            c1 = c_selection;
-        else
-            c1 = c_background;
+        r.Width -= 1;
+        r.Height -= 1;
 
-        LinearGradientBrush br(extents, c1, c2, 0, FALSE);
+        if (state & DrawStateSelected) {
+            c1 = c_selection * SELECTION_OPACITY;
+            c2 = c_background + c_selection * SELECTION_OPACITY_END;
+        } else {
+            c1 = c_background;
+            c2 = c_background;
+        }
+
+        LinearGradientBrush br(r, c1, c2, 0, FALSE);
 
         g.FillRectangle(&br, r);
 
-        if (state & DrawStateFocusRect) {
-            Color c = c_text;
-            Pen p(c);
-
-            p.SetDashStyle(DashStyleDash);
-
-            Rect r = extents;
-            r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
-            g.DrawRectangle(&p, r);
-        }
+        if (state & DrawStateFocusRect)
+            DrawFocusRect(g, extents);
     }
 
-    inline void NEXT_FRAME_AND_REFRESH(int ANIMATION_DELAY, unsigned int NEXT_THRESHOLD,
-                                       int ANIMATION_FRAMES,
+    inline void Next_Frame_And_Refresh(int _Delay, unsigned int Next_Threshold,
+                                       int _Frames,
                                        int& frame, DWORD& refresh)
     {
         DWORD ticks = GetTickCount();
-        int   fidx = (ticks / ANIMATION_DELAY);
-        DWORD nextin = ANIMATION_DELAY - (ticks % ANIMATION_DELAY);
+        int   fidx = (ticks / _Delay);
+        DWORD nextin = _Delay - (ticks % _Delay);
 
-        if (nextin < NEXT_THRESHOLD) {
-            nextin += ANIMATION_DELAY;
+        if (nextin < Next_Threshold) {
+            nextin += _Delay;
             fidx++;
         }
 
-        fidx %= ANIMATION_FRAMES;
+        fidx %= _Frames;
 
         frame += fidx;
-        refresh = ANIMATION_DELAY;
+        refresh = _Delay;
     }
 
     void
@@ -274,11 +397,11 @@ namespace nim
 
         if (state & DrawStateWarning) {
             frame = FRAME_WARN_BEGIN;
-            NEXT_FRAME_AND_REFRESH(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+            Next_Frame_And_Refresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
                                    frame, *ms_to_next);
         } else if (state & DrawStateCritial) {
             frame = FRAME_CRIT_BEGIN;
-            NEXT_FRAME_AND_REFRESH(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+            Next_Frame_And_Refresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
                                    frame, *ms_to_next);
         } else {
             frame = FRAME_DISABLED;
@@ -296,7 +419,7 @@ namespace nim
         if (index < 0)
             index = 0;
 
-        if (index >= 8)
+        if (index > 7)
             index = 7;
 
         DrawImageByIndex(g, b_meter_life, Point(extents.X, extents.Y), index, sz_meter);
@@ -311,7 +434,7 @@ namespace nim
 
         int frame = 0;
 
-        NEXT_FRAME_AND_REFRESH(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+        Next_Frame_And_Refresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
                                frame, *ms_to_next);
 
         DrawImageByIndex(g, b_meter_renew, Point(extents.X, extents.Y), frame, sz_meter);
@@ -383,7 +506,7 @@ namespace nim
         if (S_OK != CreateStreamOnHGlobal(hgmem, TRUE, &istr))
             goto done;
 
-        rimage = Image::FromStream(istr);
+        rimage = Bitmap::FromStream(istr);
 
     done:
         if (istr != NULL)

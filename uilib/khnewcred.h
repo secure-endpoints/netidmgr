@@ -375,19 +375,25 @@ enum khui_wm_nc_ident_notify {
 
 
 typedef enum khui_nc_subtypes {
-    KHUI_NC_SUBTYPE_NEW_CREDS = KMSG_CRED_NEW_CREDS,
+    KHUI_NC_SUBTYPE_NONE = 0,
+    /*!< An invalid subtype for internal use. */
+
+    KHUI_NC_SUBTYPE_OTHER = 1,
+    /*!< An invalid subtype for internal use. */
+
+    KHUI_NC_SUBTYPE_NEW_CREDS   = KMSG_CRED_NEW_CREDS,
     /*!< Obtain new credentials for an identity */
 
     KHUI_NC_SUBTYPE_RENEW_CREDS = KMSG_CRED_RENEW_CREDS,
     /*!< Obtain renewd credentials for an identity */
 
-    KHUI_NC_SUBTYPE_PASSWORD = KMSG_CRED_PASSWORD,
+    KHUI_NC_SUBTYPE_PASSWORD    = KMSG_CRED_PASSWORD,
     /*!< Change the password for an identity */
 
-    KHUI_NC_SUBTYPE_ACQPRIV_ID = KMSG_CRED_ACQPRIV_ID,
+    KHUI_NC_SUBTYPE_ACQPRIV_ID  = KMSG_CRED_ACQPRIV_ID,
     /*!< Acquire privileged information for an identity */
 
-    KHUI_NC_SUBTYPE_IDSPEC = 256,
+    KHUI_NC_SUBTYPE_IDSPEC      = 256,
     /*!< Choose an identity */
 
     KHUI_NC_SUBTYPE_CONFIG_ID,
