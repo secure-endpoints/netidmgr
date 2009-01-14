@@ -156,7 +156,7 @@ namespace nim {
         static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     public:
-        HWND Create(HWND parent, Rect & extents, int id, LPVOID createParams = NULL);
+        HWND Create(HWND parent, const Rect & extents, int id, LPVOID createParams = NULL);
 
         BOOL ShowWindow(int nCmdShow = SW_SHOW);
 

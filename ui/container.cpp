@@ -1043,7 +1043,7 @@ namespace nim {
 
     ATOM ControlWindow::window_class = 0;
 
-    HWND ControlWindow::Create(HWND parent, Rect & extents, int id, LPVOID createParams)
+    HWND ControlWindow::Create(HWND parent, const Rect & extents, int id, LPVOID createParams)
     {
         CreateParams cp;
 
