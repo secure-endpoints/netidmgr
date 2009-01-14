@@ -1095,7 +1095,7 @@ namespace nim {
 
     BOOL ControlWindow::HandleOnCreate(HWND hwnd, LPCREATESTRUCT lpc)
     {
-        CreateParams * cp = (UNALIGNED CreateParams *) lpc->lpCreateParams;
+        CreateParams * cp = (CreateParams *) lpc->lpCreateParams;
         ControlWindow *cw = cp->cw;
 
         assert(cw != NULL);
