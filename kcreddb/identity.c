@@ -160,12 +160,15 @@ kcdbint_refresh_identity_timer_thresholds(kcdb_identity * id, khm_handle csp_id)
     khm_int32 t;
     FILETIME ft;
 
+    if (KHM_FAILED(khc_get_last_write_time(csp_id, 0, &ft))) {
+        ft = IntToFt(0);
+    }
+
     if ((id->ft_thr_last_update.dwHighDateTime != 0 ||
          id->ft_thr_last_update.dwLowDateTime != 0) &&
 
-        KHM_SUCCEEDED(khc_get_last_write_time(csp_id, 0, &ft)) &&
-
-        CompareFileTime(&ft, &id->ft_thr_last_update) <= 0)
+        (FtToInt(&ft) == 0 ||
+         CompareFileTime(&ft, &id->ft_thr_last_update) <= 0))
 
         return;
 
@@ -173,7 +176,10 @@ kcdbint_refresh_identity_timer_thresholds(kcdb_identity * id, khm_handle csp_id)
         != (KCONF_FLAG_SCHEMA | KCONF_FLAG_USER))
         return;
 
-    id->ft_thr_last_update = ft;
+    if (FtToInt(&ft) != 0)
+        id->ft_thr_last_update = ft;
+    else
+        GetSystemTimeAsFileTime(&id->ft_thr_last_update);
 
     if (KHM_FAILED(khc_read_int32(csp_id, L"Monitor", &t)) || t == 0) {
         id->ft_thr_renew = IntToFt(0);
@@ -1167,7 +1173,7 @@ kcdbint_idref_proc(khm_handle cred, void * r) {
 
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_refresh(khm_handle vid) {
-    kcdb_identity * ident;
+    kcdb_identity * ident = NULL;
     khm_int32 code = KHM_ERROR_SUCCESS;
     struct kcdb_idref_result result;
 
@@ -1212,7 +1218,7 @@ kcdb_identity_refresh(khm_handle vid) {
     if (code == 0)
         code = kcdb_identpro_update(vid);
 
-    if (ident != 0)
+    if (ident != 0 && code == 0)
         kcdbint_ident_post_message(KCDB_OP_MODIFY, ident);
 
     return code;
