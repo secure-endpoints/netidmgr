@@ -31,32 +31,45 @@ all: finale
 MODULE=all
 !include <config/Makefile.w32>
 
+!if "$(CPU)" != "i386"
+KH_NO_KRB4=1
+KH_NO_W2K=1
+!endif
+
 !ifndef CLEANRUN
-!ifndef TESTRUN
-!ifndef ETAGRUN
+! ifndef TESTRUN
+!  ifndef ETAGRUN
 
 # Define KH_NO_WX if the build should not fail on warnings.  The
 # default is to treat warnings as errors.
 
 #RMAKE=$(MAKECMD) /nologo all KH_NO_WX=1
 RMAKE=$(MAKECMD) /nologo all
+!   ifndef KH_NO_W2K
 RMAKE_W2K=$(MAKECMD) /nologo all KHBUILD_W2K=1
+!   endif
 
-!else
+!  else
 RMAKE=$(MAKECMD) /nologo etag
+!   ifndef KH_NO_W2K
 RMAKE_W2K=echo Skipping W2K target for ETAGS run.
-!endif
-!else
+!   endif
+!  endif
+! else
 RMAKE=$(MAKECMD) /nologo test
+!  ifndef KH_NO_W2K
 RMAKE_W2K=$(MAKECMD) /nologo test KHBUILD_W2K=1
-!endif
+!  endif
+! endif
 !else
 RMAKE=$(MAKECMD) /nologo clean
+! ifndef KH_NO_W2K
 RMAKE_W2K=$(MAKECMD) /nologo clean KHBUILD_W2K=1
+! endif
 !endif
 
-!if "$(CPU)" != "i386"
-NO_KRB4=1
+!ifdef KH_NO_W2K
+RMAKE_W2K=$(ECHO) --- Skipping W2K Build Step
 !endif
 
 start:
@@ -163,7 +176,7 @@ krb5plugin: plugincommon
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
 
-!ifndef NO_KRB4
+!ifndef KH_NO_KRB4
 finale: krb4plugin
 
 krb4plugin: plugincommon

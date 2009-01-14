@@ -1011,6 +1011,8 @@ BEGIN
     IDS_ACTIONT_OPT_IDENT   "Configure options for the selected identity"
     IDS_CWTT_DEFAULT_ID0    "This identity is not the default.\rClick on the star icon to make it the default."
     IDS_CWTT_DEFAULT_ID1    "This is the default identity."
+    IDS_CWTT_STICKY_ID0     "Click to show this identity even when there are no credentials."
+    IDS_CWTT_STICKY_ID1     "This identity will always be displayed."
 END
 
 #endif    // English (U.S.) resources

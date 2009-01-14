@@ -4168,6 +4168,7 @@ kcdb_credtype_get_id(const wchar_t * name,
 #define KCDB_OP_UNSETSEARCH 9
 #define KCDB_OP_NEW_DEFAULT 10
 #define KCDB_OP_DELCONFIG   11
+#define KCDB_OP_RESUPDATE   12
 
 /*@}*/
 
@@ -4201,7 +4202,7 @@ namespace nim {
         }
 
         T* Next() {
-            khm_handle h = pT->GetHandle();
+            khm_handle h = pT->Detach();
             kcdb_enum_next(e, &h);
             pT->Attach(h);
             if (h != NULL)
@@ -4284,11 +4285,13 @@ namespace nim {
             return *pT;
         }
 
-        void Detach() {
+        khm_handle Detach() {
             T *pT = static_cast<T*>(this);
+            khm_handle th = pT->h;
             if (pT->h) {
                 pT->h = NULL;
             }
+            return th;
         }
 
         T& Assign(khm_handle _h) {
@@ -5120,12 +5123,15 @@ namespace nim {
             return *this;
         }
 
-        void Detach() {
+        khm_handle Detach() {
+            khm_handle th;
             if (delete_after_use) {
                 kcdb_credset_delete(h);
             }
+            th = h;
             h = NULL;
             delete_after_use = false;
+            return th;
         }
 
         CredentialSet& Assign(khm_handle _h) {

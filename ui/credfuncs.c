@@ -1189,7 +1189,9 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
        nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
         cbsize = sizeof(wsinsert);
-        kcdb_identity_get_name(nc->identities[0], wsinsert, &cbsize);
+        kcdb_get_resource(nc->identities[0],
+                          KCDB_RES_DISPLAYNAME,
+                          0, NULL, NULL, wsinsert, &cbsize);
 
         _report_sr1(KHERR_NONE,  IDS_CTX_PROC_NEW_CREDS,
                     _cstr(wsinsert));

@@ -138,55 +138,24 @@ namespace nim
       Displays a static icon.
      */
     class CwIconDisplayElement : public WithFixedSizePos< DisplayElement > {
-        Bitmap i;
+        Bitmap *i;
         bool large;
     public:
-        CwIconDisplayElement(const Point& _p, HICON _icon, bool _large) : i(_icon), large(_large) {
+        CwIconDisplayElement(const Point& _p, HICON _icon, bool _large) :
+            i(Bitmap::FromHICON(_icon)), large(_large) {
             SetPosition(_p);
             SetSize((large)? g_theme->sz_icon : g_theme->sz_icon_sm);
         }
 
+        void SetIcon(HICON _icon) {
+            if (i)
+                delete i;
+            i = Bitmap::FromHICON(_icon);
+            Invalidate();
+        }
+
         virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) {
-            g.DrawImage(&i, bounds);
-        }
-    };
-
-    /*! \brief Default identity control
-
-      This is the control which allows the user to set an identity as
-      the default.  It also indicates whether the current identity is
-      default.
-     */
-    class CwDefaultIdentityElement : public CwButtonT< &KhmDraw::DrawStarWidget > {
-        Identity * pidentity;
-
-    public:
-        CwDefaultIdentityElement(Identity * _pidentity, const Point& _p) :
-            CwButtonT(_p), pidentity(_pidentity) {};
-
-        bool IsChecked() {
-            return (pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT);
-        }
-
-        bool OnShowToolTip(std::wstring& caption, Rect& align_rect) {
-            if (pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT) {
-                caption = LoadStringResource(IDS_CWTT_DEFAULT_ID1);
-            } else {
-                caption = LoadStringResource(IDS_CWTT_DEFAULT_ID0);
-            }
-            Point pt = MapToScreen(Point(extents.Width, extents.Height));
-            align_rect.X = pt.X;
-            align_rect.Y = pt.Y;
-            align_rect.Width = extents.Width;
-            align_rect.Height = extents.Height;
-
-            return true;
-        }
-
-        void OnClick(const Point& pt, UINT keyflags, bool doubleClick) {
-            if (!(pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT)) {
-                pidentity->SetDefault();
-            }
+            g.DrawImage(i, bounds);
         }
     };
 
@@ -338,7 +307,7 @@ namespace nim
         }
     };
 
-    /*! \brief Identit Lifetime Meter
+    /*! \brief Identity Lifetime Meter
 
         Lifetime meter and also busy/renew indicator.
      */
@@ -538,6 +507,84 @@ namespace nim
     };
 
 
+    /*! \brief Default identity control
+
+      This is the control which allows the user to set an identity as
+      the default.  It also indicates whether the current identity is
+      default.
+     */
+    class CwDefaultIdentityElement : public CwButtonT< &KhmDraw::DrawStarWidget > {
+        Identity * pidentity;
+
+    public:
+        CwDefaultIdentityElement(Identity & _identity) :
+            CwButtonT(Point(0,0)), pidentity(&_identity) {};
+
+        bool IsChecked() {
+            return !!(pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT);
+        }
+
+        bool OnShowToolTip(std::wstring& caption, Rect& align_rect) {
+            if (pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT) {
+                caption = LoadStringResource(IDS_CWTT_DEFAULT_ID1);
+            } else {
+                caption = LoadStringResource(IDS_CWTT_DEFAULT_ID0);
+            }
+            Point pt = MapToScreen(Point(extents.Width, extents.Height));
+            align_rect.X = pt.X;
+            align_rect.Y = pt.Y;
+            align_rect.Width = extents.Width;
+            align_rect.Height = extents.Height;
+
+            return true;
+        }
+
+        void OnClick(const Point& pt, UINT keyflags, bool doubleClick) {
+            if (!(pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT)) {
+                pidentity->SetDefault();
+            }
+        }
+    };
+
+
+    /*! \brief Default identity control
+
+      This is the control which allows the user to set an identity as
+      the default.  It also indicates whether the current identity is
+      default.
+     */
+    class CwSticktyIdentityElement : public CwButtonT< &KhmDraw::DrawStickyWidget > {
+        Identity * pidentity;
+
+    public:
+        CwSticktyIdentityElement(Identity& _identity) :
+            CwButtonT(Point(0,0)), pidentity(&_identity) {};
+
+        bool IsChecked() {
+            return !!(pidentity->GetFlags() & KCDB_IDENT_FLAG_STICKY);
+        }
+
+        bool OnShowToolTip(std::wstring& caption, Rect& align_rect) {
+            if (pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT) {
+                caption = LoadStringResource(IDS_CWTT_STICKY_ID1);
+            } else {
+                caption = LoadStringResource(IDS_CWTT_STICKY_ID0);
+            }
+            Point pt = MapToScreen(Point(extents.Width, extents.Height));
+            align_rect.X = pt.X;
+            align_rect.Y = pt.Y;
+            align_rect.Width = extents.Width;
+            align_rect.Height = extents.Height;
+
+            return true;
+        }
+
+        void OnClick(const Point& pt, UINT keyflags, bool doubleClick) {
+            pidentity->SetFlags(((IsChecked())? 0 : KCDB_IDENT_FLAG_STICKY),
+                                KCDB_IDENT_FLAG_STICKY);
+        }
+    };
+
 
     /*! \brief Progress bar control
      */
@@ -576,6 +623,7 @@ namespace nim
         CwIdentityStatusElement  *el_status;
         CwIdentityMeterElement   *el_meter;
         CwProgressBarElement     *el_progress;
+        CwSticktyIdentityElement *el_sticky;
 
         bool                     monitor_progress;
 
@@ -590,7 +638,7 @@ namespace nim
                                                       true));
 
             InsertChildAfter(el_default_id =
-                             new CwDefaultIdentityElement(&identity, Point(0,16)));
+                             new CwDefaultIdentityElement(identity));
 
             InsertChildAfter(el_display_name =
                              new CwIdentityTitleElement(identity));
@@ -600,6 +648,9 @@ namespace nim
 
             InsertChildAfter(el_meter =
                              new CwIdentityMeterElement(identity));
+
+            InsertChildAfter(el_sticky =
+                             new CwSticktyIdentityElement(identity));
 
             InsertChildAfter(el_status =
                              new CwIdentityStatusElement(identity));
@@ -651,6 +702,7 @@ namespace nim
                 .Add(el_display_name, FlowLayout::Left, FlowLayout::Squish)
                 .Add(el_type_name, FlowLayout::Right, FlowLayout::Squish)
                 .LineBreak()
+                .Add(el_sticky, FlowLayout::Left, FlowLayout::Fixed)
                 .Add(el_status, FlowLayout::Left, FlowLayout::Squish, has_creds)
                 .Add(el_progress, FlowLayout::Right, FlowLayout::Squish, monitor_progress)
                 .LineBreak()
@@ -741,6 +793,10 @@ namespace nim
                 SetIdentityOp(KHUI_NC_SUBTYPE_OTHER);
             }
             el_progress->SetProgress(progress);
+        }
+
+        void NotifyIdentityResUpdate() {
+            el_icon->SetIcon(identity.GetResourceIcon(KCDB_RES_ICON_NORMAL));
         }
     };
 
@@ -1862,6 +1918,19 @@ namespace nim
     DEFINE_KMSG(KCDB, IDENT)
     {
         switch (uparam) {
+        case KCDB_OP_RESUPDATE:
+            {
+                khm_handle identity = (khm_handle) vparam;
+                std::vector<CwIdentityOutline *> elts;
+
+                FindElements(Identity(identity, false), elts);
+                for (std::vector<CwIdentityOutline *>::iterator i = elts.begin();
+                     i != elts.end(); ++i) {
+                    (*i)->NotifyIdentityResUpdate();
+                }
+            }
+            break;
+
         case KCDB_OP_MODIFY:
             UpdateOutline();
             Invalidate();

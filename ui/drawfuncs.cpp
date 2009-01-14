@@ -338,6 +338,18 @@ namespace nim
         DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
     }
 
+    void
+    KhmDraw::DrawStickyWidget(Graphics& g, const Rect& extents, DrawState state)
+    {
+        CredWndImages image;
+
+        image = ((state & DrawStateChecked)?
+                 ((state & DrawStateHotTrack)? ImgStuckHi : ImgStuck) :
+                 ((state & DrawStateHotTrack)? ImgStickHi : ImgStick));
+
+        DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
+    }
+
     void 
     KhmDraw::DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state)
     {

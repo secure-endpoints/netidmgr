@@ -344,6 +344,8 @@
 #define IDS_CWTT_DEFAULT_ID0            326
 #define IDS_CWTT_DEFAULT1               327
 #define IDS_CWTT_DEFAULT_ID1            327
+#define IDS_CWTT_STICKY_ID0             328
+#define IDS_CWTT_STICKY_ID1             329
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027

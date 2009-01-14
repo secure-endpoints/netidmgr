@@ -149,6 +149,8 @@ namespace nim {
 
         void DrawStarWidget(Graphics& g, const Rect& extents, DrawState state);
 
+        void DrawStickyWidget(Graphics& g, const Rect& extents, DrawState state);
+
         void DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state);
 
         void DrawCredMeterState(Graphics& g, const Rect& extents, DrawState state, DWORD *ms_to_next);
@@ -327,6 +329,10 @@ namespace nim {
     DrawState
     GetIdentityDrawState(Identity& identity);
 
+    inline bool
+    IsRemoteSession() {
+        return GetSystemMetrics(SM_REMOTESESSION) != 0;
+    }
 } /* namespace nim */
 
 

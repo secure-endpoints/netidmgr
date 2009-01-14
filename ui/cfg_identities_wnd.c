@@ -1074,7 +1074,10 @@ change_icon_ident (HWND hwnd, khui_config_init_data * idata)
         kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE,
                           NULL, NULL, &hicon, &cb);
 
-        InvalidateRect(khm_hwnd_main_cred, NULL, TRUE);
+        kcdb_identity_hold(d->ident);
+        kmq_post_message(KMSG_KCDB, KMSG_KCDB_IDENT, KCDB_OP_RESUPDATE, (void *) d->ident);
+        /* d->ident will be automatically released when the message
+           handling is completed. */
     }
 
  _cleanup:
@@ -1118,7 +1121,11 @@ reset_icon_ident (HWND hwnd, khui_config_init_data * idata)
     SendDlgItemMessage(hwnd, IDC_CFG_ICON, STM_SETICON,
                        (WPARAM) hicon, 0);
     InvalidateRect(GetDlgItem(hwnd, IDC_CFG_ICON), NULL, TRUE);
-    InvalidateRect(khm_hwnd_main_cred, NULL, TRUE);
+
+    kcdb_identity_hold(d->ident);
+    kmq_post_message(KMSG_KCDB, KMSG_KCDB_IDENT, KCDB_OP_RESUPDATE, (void *) d->ident);
+    /* d->ident will be automatically released when the message
+       handling is completed. */
 
     if (csp_id)
         khc_close_space(csp_id);

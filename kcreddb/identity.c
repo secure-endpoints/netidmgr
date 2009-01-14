@@ -727,7 +727,7 @@ kcdb_identity_set_flags(khm_handle vid,
                 khc_close_space(h_conf);
             }
 
-            id->flags = 
+            id->flags =
                 ((id->flags & ~KCDB_IDENT_FLAG_STICKY) |
                  (flag & KCDB_IDENT_FLAG_STICKY));
 
