@@ -86,6 +86,20 @@ namespace nim {
         }
     }
 
+    void DisplayElement::NotifyDeleteChild(DisplayElement * e)
+    {
+        if (owner && owner != dynamic_cast<DisplayContainer *>(this)) {
+            owner->NotifyDeleteChild(e);
+        }
+    }
+
+    void DisplayElement::NotifyDeleteAllChildren()
+    {
+        if (owner && owner != dynamic_cast<DisplayContainer *>(this)) {
+            owner->NotifyDeleteAllChildren();
+        }
+    }
+
     void DisplayElement::UpdateLayout(Graphics & g, const Rect & layout)
     {
         Rect t_layout;

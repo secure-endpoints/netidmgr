@@ -367,9 +367,9 @@ namespace nim {
 
         void   DeleteAllChildren();
 
-        virtual void NotifyDeleteChild(DisplayElement * e) {}
+        virtual void NotifyDeleteChild(DisplayElement * e);
 
-        virtual void NotifyDeleteAllChildren() {}
+        virtual void NotifyDeleteAllChildren();
 
         void   MoveChildAfter(DisplayElement * e, DisplayElement * previous);
 

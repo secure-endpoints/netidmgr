@@ -62,28 +62,29 @@ namespace nim {
 
     class KhmDraw {
     public:
-        HFONT   hf_normal;          // normal text
-        HFONT   hf_header;          // header text
-        HFONT   hf_select;          // selected text
-        HFONT   hf_select_header;   // selected header text
+        HFONT   hf_normal;        // normal text
+        HFONT   hf_header;        // header text
+        HFONT   hf_select;        // selected text
+        HFONT   hf_select_header; // selected header text
 
-        Color   c_selection;        // Selection color
-        Color   c_background;       // Background color
-        Color   c_header;           // Header color
+        Color   c_selection;    // Selection color
+        Color   c_background;   // Background color
 
-        Color   c_warning;          // Warning color
-        Color   c_critical;         // Critical color
-        Color   c_expired;          // Expired color
+        Color   c_normal;       // Normal background color
+        Color   c_empty;        // Empty background color
+        Color   c_warning;      // Warning background color
+        Color   c_critical;     // Critical background color
+        Color   c_expired;      // Expired background color
 
-        Color   c_text;             // Normal text color
-        Color   c_text_selected;    // Selected text color
+        Color   c_text;          // Normal text color
+        Color   c_text_selected; // selected text color
 
-        Image  *b_credwnd;          // Credentials window widget images (small icon size)
-        Image  *b_watermark;        // Credentials window watermark
-        Image  *b_meter_state;      // Life meter state images
-        Image  *b_meter_life;       // Life meter remainder images
-        Image  *b_meter_renew;      // Life meter renewal animation images
-        Bitmap *b_progress;         // Progress bar
+        Image  *b_credwnd; // Credentials window widget images (small icon size)
+        Image  *b_watermark;    // Credentials window watermark
+        Image  *b_meter_state;  // Life meter state images
+        Image  *b_meter_life;   // Life meter remainder images
+        Image  *b_meter_renew;  // Life meter renewal animation images
+        Bitmap *b_progress;     // Progress bar
 
         bool    isThemeLoaded;      // TRUE if a theme was loaded
 
@@ -125,15 +126,18 @@ namespace nim {
             ImgStarEmpty
         } CredWndImages;
 
-    protected:
-        void DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx, const Size& sz);
-        void DrawCredWindowImage(Graphics & g, CredWndImages img, const Point& p);
-
     public:
+
         KhmDraw();
+
         ~KhmDraw();
 
+        void DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx, const Size& sz);
+
+        void DrawCredWindowImage(Graphics & g, CredWndImages img, const Point& p);
+
         void LoadTheme(const wchar_t * themename = NULL);
+
         void UnloadTheme(void);
 
         void DrawCredWindowBackground(Graphics & g, const Rect& extents,
@@ -264,13 +268,17 @@ namespace nim {
                      (a << Color::AlphaShift));
     }
 
+#define COMBINE_ALPHA(a1, a2) (255 - ((255 - (a1)) * (255 - (a2))) / 255)
+#define COMBINE_COMPONENT(c1, a1, c2, a2)       \
+    ((((c1) * (a1) * (255 - (a2))) / 255 + (c2) * (a2)) / 255)
+
     inline Color& operator += (Color& left, const Color& right) {
         UINT la = (UINT) left.GetAlpha();
         UINT ra = (UINT) right.GetAlpha();
-        UINT a = la + (255 - la) * ra / 255;
-        UINT r = (left.GetRed() * la + right.GetRed() * ra) / 255;
-        UINT g = (left.GetGreen() * la + right.GetGreen() * ra) / 255;
-        UINT b = (left.GetBlue() * la + right.GetBlue() * ra) / 255;
+        UINT a = COMBINE_ALPHA(la, ra);
+        UINT r = COMBINE_COMPONENT(left.GetRed(), la, right.GetRed(), ra);
+        UINT g = COMBINE_COMPONENT(left.GetGreen(), la, right.GetGreen(), ra);
+        UINT b = COMBINE_COMPONENT(left.GetBlue(), la, right.GetBlue(), ra);
 
         left.SetValue(Color::MakeARGB(a, __min(r, 255), __min(g, 255), __min(b, 255)));
         return left;
@@ -279,19 +287,22 @@ namespace nim {
     inline Color operator + (const Color& left, const Color& right) {
         UINT la = (UINT) left.GetAlpha();
         UINT ra = (UINT) right.GetAlpha();
-        UINT a = la + ((255 - la) * ra) / 255;
-        UINT r = (left.GetRed() * la + right.GetRed() * ra) / 255;
-        UINT g = (left.GetGreen() * la + right.GetGreen() * ra) / 255;
-        UINT b = (left.GetBlue() * la + right.GetBlue() * ra) / 255;
+        UINT a = COMBINE_ALPHA(la, ra);
+        UINT r = COMBINE_COMPONENT(left.GetRed(), la, right.GetRed(), ra);
+        UINT g = COMBINE_COMPONENT(left.GetGreen(), la, right.GetGreen(), ra);
+        UINT b = COMBINE_COMPONENT(left.GetBlue(), la, right.GetBlue(), ra);
 
         return Color(Color::MakeARGB(a, __min(r, 255), __min(g, 255), __min(b, 255)));
     }
 
+#undef COMBINE_ALPHA
+#undef COMBINE_COMPONENT
+
     std::wstring
     LoadStringResource(UINT res_id, HINSTANCE inst = khm_hInstance);
 
-    template <size_t cch> inline
-    int LoadStringResource(wchar_t (&str)[cch], UINT res_id, HINSTANCE inst = khm_hInstance) {
+    template <size_t cch> inline int
+    LoadStringResource(wchar_t (&str)[cch], UINT res_id, HINSTANCE inst = khm_hInstance) {
         return LoadString(inst, res_id, str, cch);
     }
 
@@ -306,13 +317,21 @@ namespace nim {
     Image*
     LoadImageResourceAsStream(LPCTSTR name, LPCTSTR type, HINSTANCE inst = khm_hInstance);
 
+    DrawState
+    GetIdentityDrawState(Identity& identity);
+
 } /* namespace nim */
-#else  /* not __cplusplus */
 
-void khm_init_drawfuncs(void);
 
-void khm_exit_drawfuncs(void);
+extern "C" {
+#endif
 
+    void khm_init_drawfuncs(void);
+
+    void khm_exit_drawfuncs(void);
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

@@ -299,48 +299,6 @@ namespace nim
 
 
 
-    DrawState GetIdentityDrawState(Identity& identity)
-    {
-        DrawState ds = DrawStateNone;
-
-        do {
-            if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0) {
-
-                ds = DrawStateDisabled;
-
-            } else if (identity.Exists(KCDB_ATTR_EXPIRE)) {
-                khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
-                khm_int64 now;
-
-                FILETIME ft;
-
-                GetSystemTimeAsFileTime(&ft);
-                now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
-
-                if (now > expire) {
-                    ds = DrawStateExpired;
-                    break;
-                }
-
-                khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
-
-                if (thr_crit != 0 && now > expire - thr_crit) {
-                    ds = DrawStateCritial;
-                    break;
-                }
-
-                khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
-
-                if (thr_warn != 0 && now > expire - thr_warn) {
-                    ds = DrawStateWarning;
-                    break;
-                }
-            }
-        } while (false);
-
-        return ds;
-    }
-
 
     /*! \brief Get the next outline object in an element
      */
@@ -1441,7 +1399,7 @@ namespace nim
         cs_columns.Open(cs_view, L"Columns", KHM_PERM_WRITE | KHM_FLAG_CREATE);
 
         cs_view.Set(L"ExpandedIdentity", static_cast<khm_int32>(!!is_identity_view));
-        cs_view.Set(L"NoHeader", static_cast<khm_int32>(!!show_header));
+        cs_view.Set(L"NoHeader", static_cast<khm_int32>(!show_header));
 
         for (DisplayColumnList::iterator column = columns.begin();
              column != columns.end();

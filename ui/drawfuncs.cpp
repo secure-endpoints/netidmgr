@@ -64,10 +64,11 @@ namespace nim
 
         c_selection    .SetFromCOLORREF(khm_get_element_color(KHM_CLR_SELECTION));
         c_background   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_BACKGROUND));
-        c_header       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER));
+        c_normal       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER));
         c_warning      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_WARN));
         c_critical     .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_CRIT));
         c_expired      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_EXP));
+        c_empty = c_background;
         c_text         .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT));
         c_text_selected.SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_SEL));
 
@@ -205,7 +206,7 @@ namespace nim
         else if (state & DrawStateWarning)
             c1 = c_warning;
         else
-            c1 = c_header;
+            c1 = c_normal;
 
         r.Width -= 1;
         r.Height -= 1;
@@ -544,146 +545,147 @@ namespace nim
         }
     }
 
+    DrawState GetIdentityDrawState(Identity& identity)
+    {
+        DrawState ds = DrawStateNone;
 
+        do {
+            if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0) {
 
-#if 0
+                ds = DrawStateDisabled;
+
+            } else if (identity.Exists(KCDB_ATTR_EXPIRE)) {
+                khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
+                khm_int64 now;
+
+                FILETIME ft;
+
+                GetSystemTimeAsFileTime(&ft);
+                now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+
+                if (now > expire) {
+                    ds = DrawStateExpired;
+                    break;
+                }
+
+                khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
+
+                if (thr_crit != 0 && now > expire - thr_crit) {
+                    ds = DrawStateCritial;
+                    break;
+                }
+
+                khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
+
+                if (thr_warn != 0 && now > expire - thr_warn) {
+                    ds = DrawStateWarning;
+                    break;
+                }
+            }
+        } while (false);
+
+        return ds;
+    }
+
+    extern "C"
     void
     khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act)
     {
-        wchar_t * cap;
-        HDC hdc;
-        SIZE sz;
-        size_t len;
-        HFONT hf_old;
+        Graphics g(hwnd);
 
-        sz.cx = MENU_SIZE_ICON_X;
-        sz.cy = MENU_SIZE_ICON_Y;
+        HDC hdc = g.GetHDC();
+        Font font(hdc, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
+        g.ReleaseHDC(hdc);
 
-        cap = act->caption;
-        assert(cap);
-        hdc = GetDC(khm_hwnd_main);
-        assert(hdc);
+        StringFormat sf(StringFormatFlagsNoWrap);
 
-        StringCchLength(cap, KHUI_MAXCCH_NAME, &len);
-
-        hf_old = SelectFont(hdc, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
-
-        GetTextExtentPoint32(hdc, cap, (int) len, &sz);
-
-        SelectFont(hdc, hf_old);
-
-        ReleaseDC(khm_hwnd_main, hdc);
-
-        lpm->itemWidth = sz.cx + sz.cy * 3 / 2 + GetSystemMetrics(SM_CXSMICON);
-        lpm->itemHeight = sz.cy * 3 / 2;
+        sf.SetAlignment(StringAlignmentNear);
+        sf.SetLineAlignment(StringAlignmentCenter);
+        sf.SetTrimming(StringTrimmingEllipsisCharacter);
+        
+        RectF rf;
+        g.MeasureString(act->caption, -1, &font, PointF(0.0, 0.0), &sf, &rf);
+        
+        lpm->itemWidth = (UINT)(rf.Width + g_theme->sz_margin.Width * 2 + g_theme->sz_icon_sm.Width);
+        lpm->itemHeight =(UINT)(rf.Height + g_theme->sz_margin.Height * 2);
     }
 
+    extern "C"
     void
     khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
     {
-        khui_credwnd_tbl * tbl;
-        khm_handle ident;
-        size_t count = 0;
-        COLORREF old_clr;
-        wchar_t * cap;
-        size_t len;
-        int margin;
-        SIZE sz;
-        HBRUSH hbr;
-        COLORREF text_clr;
-        khm_int32 idflags;
-        khm_int32 expflags;
+        Identity identity(act->data, false);
 
-        tbl = (khui_credwnd_tbl *)(LONG_PTR) GetWindowLongPtr(hwnd, 0);
-        if (tbl == NULL)
-            return;
+        wchar_t * cap = act->caption;
 
-        ident = act->data;
-        cap = act->caption;
-        assert(ident != NULL);
-        assert(cap != NULL);
+        DrawState draw_state = GetIdentityDrawState(identity);
+
+        Color color_bgl;
+        Color color_bgr;
+
+        Color color_fg = g_theme->c_text;
 
         {
-            khui_credwnd_ident * cwi;
+            Color c_key;
 
-            cwi = cw_find_ident(tbl, ident);
-            if (cwi) {
-                count = cwi->id_credcount;
+            if (lpd->itemState & (ODS_HOTLIGHT | ODS_SELECTED)) {
+                color_fg  = g_theme->c_text_selected;
+                c_key = g_theme->c_selection;
+            } else if (draw_state & DrawStateExpired) {
+                c_key = g_theme->c_expired;
+            } else if (draw_state & DrawStateWarning) {
+                c_key = g_theme->c_warning;
+            } else if (draw_state & DrawStateCritial) {
+                c_key = g_theme->c_critical;
+            } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0) {
+                c_key = g_theme->c_normal;
             } else {
-                count = 0;
+                c_key = g_theme->c_empty;
             }
+
+            color_bgl = g_theme->c_background + c_key * OUTLINE_OPACITY;
+            color_bgr = g_theme->c_background + c_key * OUTLINE_OPACITY_END;
         }
 
-        expflags = cw_get_buf_exp_flags(tbl, ident);
+        Graphics g(lpd->hDC);
+        Rect     r_item = RectFromRECT(&lpd->rcItem);
 
-        text_clr = tbl->cr_hdr_normal;
-
-        if (lpd->itemState & (ODS_HOTLIGHT | ODS_SELECTED)) {
-            hbr = GetSysColorBrush(COLOR_HIGHLIGHT);
-            text_clr = GetSysColor(COLOR_HIGHLIGHTTEXT);
-        } else if (expflags == CW_EXPSTATE_EXPIRED) {
-            hbr = tbl->hb_hdr_bg_exp;
-        } else if (expflags == CW_EXPSTATE_WARN) {
-            hbr = tbl->hb_hdr_bg_warn;
-        } else if (expflags == CW_EXPSTATE_CRITICAL) {
-            hbr = tbl->hb_hdr_bg_crit;
-        } else if (count > 0) {
-            hbr = tbl->hb_hdr_bg_cred;
-        } else {
-            hbr = tbl->hb_hdr_bg;
+        {
+            LinearGradientBrush lgr(r_item, color_bgl, color_bgr, LinearGradientModeHorizontal);
+            g.FillRectangle(&lgr, r_item);
         }
 
-        FillRect(lpd->hDC, &lpd->rcItem, hbr);
+        {
+            Font font(lpd->hDC, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
+            StringFormat sf(StringFormatFlagsNoWrap);
+            SolidBrush br(color_fg);
 
-        SetBkMode(lpd->hDC, TRANSPARENT);
+            sf.SetAlignment(StringAlignmentNear);
+            sf.SetLineAlignment(StringAlignmentCenter);
+            sf.SetTrimming(StringTrimmingEllipsisCharacter);
 
-        old_clr = SetTextColor(lpd->hDC, text_clr);
+            int margin = g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width * 2;
 
-        StringCchLength(cap, KHUI_MAXCCH_NAME, &len);
+            RectF rf((REAL)(r_item.X + margin),
+                     (REAL) r_item.Y,
+                     (REAL) r_item.Width - margin,
+                     (REAL) r_item.Height);
 
-        GetTextExtentPoint32(lpd->hDC, cap, (int) len, &sz);
-        margin = sz.cy / 4;
+            g.DrawString(cap, -1, &font, rf, &sf, &br);
+        }
 
-        TextOut(lpd->hDC, lpd->rcItem.left + margin * 2 + GetSystemMetrics(SM_CXSMICON),
-                lpd->rcItem.top + margin, cap, (int) len);
-
-        SetTextColor(lpd->hDC, old_clr);
-
-        kcdb_identity_get_flags(ident, &idflags);
-
-        if (idflags & KCDB_IDENT_FLAG_DEFAULT) {
-            HICON hic;
-
-            hic = (HICON) LoadImage(khm_hInstance, MAKEINTRESOURCE(IDI_ENABLED),
-                                    IMAGE_ICON,
-                                    GetSystemMetrics(SM_CXSMICON),
-                                    GetSystemMetrics(SM_CYSMICON),
-                                    LR_DEFAULTCOLOR);
-            if (hic) {
-                DrawIconEx(lpd->hDC,
-                           lpd->rcItem.left + margin,
-                           lpd->rcItem.top + margin,
-                           hic,
-                           GetSystemMetrics(SM_CXSMICON),
-                           GetSystemMetrics(SM_CYSMICON),
-                           0,
-                           hbr,
-                           DI_NORMAL);
-                DestroyIcon(hic);
-            }
+        if (identity.GetFlags() & KCDB_IDENT_FLAG_DEFAULT) {
+            g_theme->DrawStarWidget(g, Rect(r_item.X + g_theme->sz_margin.Width,
+                                            r_item.Y + (r_item.Height - g_theme->sz_icon_sm.Height) / 2,
+                                            g_theme->sz_icon_sm.Width,
+                                            g_theme->sz_icon_sm.Height),
+                                    (DrawState)
+                                    (((lpd->itemState & ODS_HOTLIGHT) ?
+                                      DrawStateHotTrack : DrawStateNone) |
+                                     ((lpd->itemState & ODS_SELECTED) ?
+                                      DrawStateSelected : DrawStateNone) |
+                                     DrawStateChecked)
+                                    );
         }
     }
-
-#endif
 }
-
-void
-khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act)
-{
-}
-
-void
-khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
-{
-}
-
