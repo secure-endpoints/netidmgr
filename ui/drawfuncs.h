@@ -268,8 +268,9 @@ namespace nim {
                      (a << Color::AlphaShift));
     }
 
-#define COMBINE_ALPHA(a1, a2) (255 - ((255 - (a1)) * (255 - (a2))) / 255)
-#define COMBINE_COMPONENT(c1, a1, c2, a2)       \
+#define COMBINE_ALPHA(a1, a2)                   \
+    (255 - ((255 - (a1)) * (255 - (a2))) / 255)
+#define COMBINE_COMPONENT(c1, a1, c2, a2)                       \
     ((((c1) * (a1) * (255 - (a2))) / 255 + (c2) * (a2)) / 255)
 
     inline Color& operator += (Color& left, const Color& right) {
@@ -280,7 +281,10 @@ namespace nim {
         UINT g = COMBINE_COMPONENT(left.GetGreen(), la, right.GetGreen(), ra);
         UINT b = COMBINE_COMPONENT(left.GetBlue(), la, right.GetBlue(), ra);
 
-        left.SetValue(Color::MakeARGB(a, __min(r, 255), __min(g, 255), __min(b, 255)));
+        left.SetValue(Color::MakeARGB((BYTE) a,
+                                      (BYTE) __min(r, 255),
+                                      (BYTE) __min(g, 255),
+                                      (BYTE) __min(b, 255)));
         return left;
     }
 
@@ -292,7 +296,10 @@ namespace nim {
         UINT g = COMBINE_COMPONENT(left.GetGreen(), la, right.GetGreen(), ra);
         UINT b = COMBINE_COMPONENT(left.GetBlue(), la, right.GetBlue(), ra);
 
-        return Color(Color::MakeARGB(a, __min(r, 255), __min(g, 255), __min(b, 255)));
+        return Color(Color::MakeARGB((BYTE) a,
+                                     (BYTE) __min(r, 255),
+                                     (BYTE) __min(g, 255),
+                                     (BYTE) __min(b, 255)));
     }
 
 #undef COMBINE_ALPHA

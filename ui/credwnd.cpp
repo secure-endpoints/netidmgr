@@ -231,12 +231,12 @@ namespace nim
         template <class T>
         CwOutlineBase * Insert(T& obj, DisplayColumnList& columns, unsigned int column);
 
-        virtual bool Represents(Credential& credential) { return false; }
-        virtual bool Represents(Identity& identity) { return false; }
+        virtual bool Represents(const Credential& credential) { return false; }
+        virtual bool Represents(const Identity& identity) { return false; }
         virtual void SetContext(SelectionContext& sctx) = 0;
 
         template <class U, class V>
-        bool FindElements(V& criterion, std::vector<U *>& results);
+        bool FindElements(const V& criterion, std::vector<U *>& results);
     };
 
 
@@ -580,7 +580,7 @@ namespace nim
         bool                     monitor_progress;
 
     public:
-        CwIdentityOutline(Identity& _identity, int _column)
+        CwIdentityOutline(const Identity& _identity, int _column)
             : identity(_identity), CwOutline(_column) {
             monitor_progress    = false;
 
@@ -618,11 +618,11 @@ namespace nim
             el_progress         = NULL;
         }
 
-        virtual bool Represents(Credential& credential) {
+        virtual bool Represents(const Credential& credential) {
             return credential.GetIdentity() == identity;
         }
 
-        virtual bool Represents(Identity& _identity) {
+        virtual bool Represents(const Identity& _identity) {
             return identity == _identity;
         }
 
@@ -750,7 +750,7 @@ namespace nim
     class CwCredentialTypeElement :
         public SubheaderTextBoxT< WithStaticCaption < WithTextDisplay <> > > {
     public:
-        CwCredentialTypeElement(CredentialType& credtype) {
+        CwCredentialTypeElement(const CredentialType& credtype) {
             SetCaption(credtype.GetResourceString(KCDB_RES_DISPLAYNAME));
         }
     };
@@ -775,7 +775,7 @@ namespace nim
         CwCredentialTypeElement * el_typename;
 
     public:
-        CwCredTypeOutline(CredentialType& _credtype, int _column) :
+        CwCredTypeOutline(const CredentialType& _credtype, int _column) :
             credtype(_credtype),
             CwOutline(_column) {
 
@@ -783,7 +783,7 @@ namespace nim
                              new CwCredentialTypeElement(_credtype));
         }
 
-        virtual bool Represents(Credential& credential) {
+        virtual bool Represents(const Credential& credential) {
             return credtype == credential.GetType();
         }
 
@@ -819,7 +819,7 @@ namespace nim
         CwStaticTextElement * el_text;
 
     public:
-        CwGenericOutline(Credential& _credential, khm_int32 _attr_id, int _column) :
+        CwGenericOutline(const Credential& _credential, khm_int32 _attr_id, int _column) :
             credential(_credential),
             attr_id(_attr_id),
             CwOutline(_column) {
@@ -830,7 +830,7 @@ namespace nim
 
         ~CwGenericOutline() {}
 
-        virtual bool Represents(Credential& _credential) {
+        virtual bool Represents(const Credential& _credential) {
             return credential.CompareAttrib(_credential, attr_id) == 0;
         }
 
@@ -948,14 +948,14 @@ namespace nim
         std::vector<DisplayElement *> el_list;
 
     public:
-        CwCredentialRow(Credential& _credential, int _column) :
+        CwCredentialRow(const Credential& _credential, int _column) :
             credential(_credential),
             CwOutline(_column) {
         }
 
         ~CwCredentialRow() {}
 
-        virtual bool Represents(Credential& _credential) {
+        virtual bool Represents(const Credential& _credential) {
             return credential == _credential;
         }
 
@@ -1297,7 +1297,7 @@ namespace nim
     }
 
     template <class elementT, class queryT>
-    bool CwOutlineBase::FindElements(queryT& criterion, std::vector<elementT *>& results) {
+    bool CwOutlineBase::FindElements(const queryT& criterion, std::vector<elementT *>& results) {
         elementT * addend;
         if (Represents(criterion) &&
             (addend = dynamic_cast<elementT *>(this)) != NULL) {

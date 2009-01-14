@@ -5072,11 +5072,11 @@ namespace nim {
             kcdb_cred_set_flags(h, flags, mask);
         }
 
-        khm_int32 CompareAttrib(Credential &that, const wchar_t * attrib_name) const {
+        khm_int32 CompareAttrib(const Credential &that, const wchar_t * attrib_name) const {
             return kcdb_creds_comp_attrib(h, static_cast<khm_handle>(that), attrib_name);
         }
 
-        khm_int32 CompareAttrib(Credential &that, khm_int32 attr_id) const {
+        khm_int32 CompareAttrib(const Credential &that, khm_int32 attr_id) const {
             return kcdb_creds_comp_attr(h, static_cast<khm_handle>(that), attr_id);
         }
     };

@@ -444,7 +444,7 @@ namespace nim {
 
         virtual Font *GetFont(Graphics& g) { return NULL; }
 
-        virtual Color GetForegroundColor() { return Color(Color::Black); }
+        virtual Color GetForegroundColor() { return Color((ARGB) Color::Black); }
     };
 
     class DisplayContainer : virtual public DisplayElement, public ControlWindow {
