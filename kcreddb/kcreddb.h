@@ -5269,7 +5269,7 @@ namespace nim {
 
     class CredentialSetEnumeration {
     protected:
-        const CredentialSet cs;
+        CredentialSet cs;
         Credential    current;
         khm_int32     next_idx;
 
@@ -5277,7 +5277,7 @@ namespace nim {
         CredentialSetEnumeration(const CredentialSet * _cs) : cs(*_cs) {
             Reset();
         }
-
+        
         friend class CredentialSet;
 
     public:
