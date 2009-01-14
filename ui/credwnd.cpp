@@ -1680,8 +1680,6 @@ namespace nim
     void
     CwTable::UpdateOutline()
     {
-        int ordinal = 0;
-
         /*  this is called after calling UpdateCredentials(), so we
             assume that the credentials are all loaded and sorted
             according to grouping rules  */
