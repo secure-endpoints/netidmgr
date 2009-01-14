@@ -724,7 +724,7 @@ IDB_CREDWND_IMAGELIST   PNG                     "..\\..\\images\\credwnd-images.
 IDB_BATT_STATE          PNG                     "..\\..\\images\\battery-state.png"
 IDB_BATT_LIFE           PNG                     "..\\..\\images\\battery-life.png"
 IDB_BATT_RENEW          PNG                     "..\\..\\images\\battery-renew.png"
-IDB_PROGRESS            PNG                     "C:\\work\\pismere\\athena\\auth\\krb5\\src\\windows\\identity\\ui\\images\\progress.png"
+IDB_PROGRESS            PNG                     "..\\..\\images\\progress.png"
 
 /////////////////////////////////////////////////////////////////////////////
 //
