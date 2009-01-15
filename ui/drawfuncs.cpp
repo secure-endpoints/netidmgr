@@ -478,6 +478,46 @@ namespace nim
                                    LR_DEFAULTCOLOR | LR_DEFAULTSIZE | ((shared)? LR_SHARED : 0));
     }
 
+    Bitmap *GetBitmapFromHICON(HICON icon)
+    {
+        ICONINFO ii;
+
+        GetIconInfo(icon, &ii);
+
+        Bitmap bmp(ii.hbmColor, NULL);
+
+        DeleteObject(ii.hbmColor);
+        DeleteObject(ii.hbmMask);
+
+        PixelFormat pf = bmp.GetPixelFormat();
+        INT width, height;
+
+        width = bmp.GetWidth();
+        height = bmp.GetHeight();
+
+        if (pf != PixelFormat32bppARGB &&
+            pf != PixelFormat32bppPARGB &&
+            pf != PixelFormat32bppRGB)
+            return bmp.Clone(0, 0, width, height, pf);
+
+        BitmapData bmData, bmDataT;
+        Rect r(0, 0, width, height);
+
+        bmp.LockBits(&r, ImageLockModeRead, pf, &bmData);
+
+        Bitmap *ret = new Bitmap(width, height, PixelFormat32bppARGB);
+
+        bmDataT = bmData;
+
+        ret->LockBits(&r, ImageLockModeWrite|ImageLockModeUserInputBuf,
+                      PixelFormat32bppARGB, &bmDataT);
+        ret->UnlockBits(&bmDataT);
+
+        bmp.UnlockBits(&bmData);
+
+        return ret;
+    }
+
     Image* LoadImageResourceAsStream(LPCTSTR name, LPCTSTR type, HINSTANCE inst)
     {
         Image * rimage = NULL;

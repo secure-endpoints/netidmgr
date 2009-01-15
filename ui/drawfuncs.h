@@ -326,6 +326,9 @@ namespace nim {
     Image*
     LoadImageResourceAsStream(LPCTSTR name, LPCTSTR type, HINSTANCE inst = khm_hInstance);
 
+    Bitmap *
+    GetBitmapFromHICON(HICON icon);
+
     DrawState
     GetIdentityDrawState(Identity& identity);
 

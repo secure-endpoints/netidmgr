@@ -142,20 +142,25 @@ namespace nim
         bool large;
     public:
         CwIconDisplayElement(const Point& _p, HICON _icon, bool _large) :
-            i(Bitmap::FromHICON(_icon)), large(_large) {
+            i(NULL), large(_large) {
             SetPosition(_p);
             SetSize((large)? g_theme->sz_icon : g_theme->sz_icon_sm);
+
+            i = GetBitmapFromHICON(_icon);
         }
 
-        void SetIcon(HICON _icon) {
+        void SetIcon(HICON _icon, bool redraw = true) {
             if (i)
                 delete i;
-            i = Bitmap::FromHICON(_icon);
-            Invalidate();
+
+            i = GetBitmapFromHICON(_icon);
+
+            if (redraw)
+                Invalidate();
         }
 
         virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) {
-            g.DrawImage(i, bounds);
+            g.DrawImage(i, bounds.X, bounds.Y, bounds.Width, bounds.Height);
         }
     };
 
