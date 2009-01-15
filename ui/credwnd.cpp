@@ -683,6 +683,11 @@ namespace nim
         }
 
         virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
+            CwIdentityOutline * p = dynamic_cast<CwIdentityOutline *>(TQPARENT(this));
+            if (p && p->col_idx == col_idx) {
+                indent = p->indent + g_theme->sz_margin.Width * 4 + g_theme->sz_icon_sm.Width;
+            }
+
             LayoutOutlineSetup(g, layout);
         }
 
@@ -1262,9 +1267,18 @@ namespace nim
     {
         __super::UpdateLayoutPre(g, layout);
 
+        origin.X += indent;
+        extents.Width -= indent;
+
         expandable = (owner != NULL &&
                       (unsigned)col_idx + 1 < owner->columns.size() &&
                       !!(NextOutline(TQFIRSTCHILD(this))));
+
+        if (!expandable) {
+            CwOutline * c = NextOutline(TQFIRSTCHILD(this));
+            if (c && c->col_idx == col_idx)
+                expandable = true;
+        }
 
         if (expandable && outline_widget == NULL) {
             outline_widget = new CwExposeControlElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
