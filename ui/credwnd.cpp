@@ -1756,12 +1756,23 @@ namespace nim
                 columns[0]->group) {
 
                 if (!view_all_idents) {
-                    Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_DEFAULT,
-                                                             KCDB_IDENT_FLAG_DEFAULT);
-                    e.Sort(IdentityNameComparator);
+                    {
+                        Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_DEFAULT,
+                                                                 KCDB_IDENT_FLAG_DEFAULT);
+                        e.Sort(IdentityNameComparator);
 
-                    for (; !e.AtEnd(); ++e) {
-                        this->Insert(*e, columns, 0);
+                        for (; !e.AtEnd(); ++e) {
+                            this->Insert(*e, columns, 0);
+                        }
+                    }
+                    {
+                        Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_STICKY,
+                                                                 KCDB_IDENT_FLAG_STICKY);
+                        e.Sort(IdentityNameComparator);
+
+                        for (; !e.AtEnd(); ++e) {
+                            this->Insert(*e, columns, 0);
+                        }
                     }
                 } else {
                     Identity::Enumeration e = Identity::Enum(0,0);

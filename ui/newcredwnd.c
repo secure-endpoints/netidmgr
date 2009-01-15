@@ -2102,7 +2102,12 @@ nc_notify_new_identity(khui_new_creds * nc, BOOL notify_ui)
 
     nc->privint.initialized = FALSE;
     nc->nav.state &= ~NC_NAVSTATE_OKTOFINISH;
-    nc->persist_privcred = FALSE;
+
+    if (nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
+        nc->persist_privcred = TRUE;
+    else
+        nc->persist_privcred = FALSE;
+
     if (nc->persist_identity)
         kcdb_identity_release(nc->persist_identity);
     nc->persist_identity = NULL;
