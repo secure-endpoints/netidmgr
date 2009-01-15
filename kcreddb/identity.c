@@ -846,13 +846,12 @@ KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_serial(khm_handle vid, khm_ui_8 * pserial)
 {
     kcdb_identity * id;
-    khm_ui_8 s;
     khm_int32 rv;
 
     EnterCriticalSection(&cs_ident);
     if (kcdb_is_active_identity(vid)) {
         id = (kcdb_identity *) vid;
-        s = id->serial;
+        *pserial = id->serial;
         rv = KHM_ERROR_SUCCESS;
     } else {
         rv = KHM_ERROR_INVALID_PARAM;
