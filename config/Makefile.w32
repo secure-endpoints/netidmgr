@@ -160,16 +160,7 @@ kfwincflags = -I$(KFWINCDIR) -I$(PISMERE)\athena\util\loadfuncs -I$(PISMERE)\ath
 KFWLIBDIR=$(PISMERE)\target\lib\$(CPU)\$(OUTPRE_DBG)
 !endif
 
-!ifdef KH_AFSPATH
-AFSINCDIR=$(KH_AFSPATH)\include
-AFSLIBDIR=$(KH_AFSPATH)\lib
-afsincflags=-I$(AFSINCDIR)
-!endif
-
-#EXTLIBDIR=$(SRC)\ext-lib\$(CPU)
-#EXTINCDIR=-I$(SRC)\ext-inc
-
-incflags= -I$(INCDIR) -I$(OBJ) $(kfwincflags) $(afsincflags)
+incflags= -I$(INCDIR) -I$(OBJ) $(kfwincflags)
 rincflags= /i $(INCDIR)
 khdefines=-DUNICODE -D_UNICODE
 khcwarn=/Wp64
