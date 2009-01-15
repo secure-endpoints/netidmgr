@@ -1079,7 +1079,7 @@ khm_set_main_window_mode(int mode) {
 
     }
 
-    khm_cred_refresh();
+    /* khm_cred_refresh(); */
 }
 
 void 

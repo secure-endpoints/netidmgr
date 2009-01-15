@@ -2157,6 +2157,22 @@ namespace nim
         return KHM_ERROR_SUCCESS;
     }
 
+#ifdef DEBUG
+#define DCL_TIMER(t) LARGE_INTEGER pcounter_ ## t
+#define START_TIMER(t) QueryPerformanceCounter(&pcounter_ ## t)
+#define END_TIMER(t, prefix)                                            \
+    do {                                                                \
+        LARGE_INTEGER tend;                                             \
+        LARGE_INTEGER freq;                                             \
+        QueryPerformanceCounter(&tend);                                 \
+        QueryPerformanceFrequency(&freq);                               \
+        wchar_t buf[100];                                               \
+        StringCbPrintf(buf, sizeof(buf), prefix L" Time elapsed: %f seconds\n", \
+                       (tend.QuadPart - pcounter_ ## t.QuadPart * 1.0) / freq.QuadPart);                  \
+        OutputDebugString(buf);                                         \
+    } while(0)
+#endif
+
     void CwTable::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
     {
         switch (id) {
@@ -2209,12 +2225,30 @@ namespace nim
             return;
 
         case KHUI_ACTION_LAYOUT_MINI:
+            DCL_TIMER(mini);
+
+            START_TIMER(mini);
             SaveView();
+            END_TIMER(mini, L"SaveView()");
+
+            START_TIMER(mini);
             cs_view.Close();
+            END_TIMER(mini, L"cs_view.Close()");
+
+            START_TIMER(mini);
             LoadView(NULL);
+            END_TIMER(mini, L"LoadView()");
+
+            START_TIMER(mini);
             UpdateCredentials();
+            END_TIMER(mini, L"UpdateCredentials()");
+
+            START_TIMER(mini);
             UpdateOutline();
+            END_TIMER(mini, L"UpdateOutline()");
+
             Invalidate();
+            UpdateWindow(hwnd);
             return;
 
         case KHUI_ACTION_VIEW_ALL_IDS:
