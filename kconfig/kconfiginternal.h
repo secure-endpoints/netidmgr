@@ -43,39 +43,43 @@ typedef struct kconf_provider_t {
 } kconf_provider;
 */
 
-typedef struct kconf_conf_space_t {
-    wchar_t * name;
+typedef struct kconf_conf_space {
+    khm_int32           magic;
+    wchar_t *           name;
 
     /* kconf_provider * provider; */
 
     /* the regpath is the cumulative path starting from a hive root */
-    wchar_t *   regpath;
-    HKEY        regkey_user;
-    khm_int32   regkey_user_flags;
-    HKEY        regkey_machine;
-    khm_int32   regkey_machine_flags;
+    wchar_t *           regpath;
+    HKEY                regkey_user;
+    HKEY                regkey_machine;
 
-    khm_int32   refcount;
-    khm_int32   flags;
+    volatile LONG       refcount;
+    khm_int32           flags;
 
     const kconf_schema * schema;
-    khm_int32   nSchema;
+    khm_int32           nSchema;
 
-    TDCL(struct kconf_conf_space_t);
+    TDCL(struct kconf_conf_space);
 } kconf_conf_space;
+
+#define KCONF_SPACE_MAGIC 0x7E9488EE
 
 #define KCONF_SPACE_FLAG_DELETE_U 0x00000040
 #define KCONF_SPACE_FLAG_DELETE_M 0x00000080
 #define KCONF_SPACE_FLAG_DELETED  0x00000100
 
-typedef struct kconf_conf_handle_t {
+#define KCONF_SPACE_FLAG_NO_HKCU  0x00000200
+#define KCONF_SPACE_FLAG_NO_HKLM  0x00000400
+
+typedef struct kconf_conf_handle {
     khm_int32   magic;
     khm_int32   flags;
     kconf_conf_space * space;
 
-    struct kconf_conf_handle_t * lower;
+    struct kconf_conf_handle * lower;
 
-    LDCL(struct kconf_conf_handle_t);
+    LDCL(struct kconf_conf_handle);
 } kconf_handle;
 
 #define KCONF_HANDLE_MAGIC 0x38eb49d2
@@ -101,6 +105,7 @@ void exit_kconf(void);
 #define khc_is_schema_handle(h)     (((kconf_handle *) h)->flags & KCONF_FLAG_SCHEMA)
 #define khc_is_user_handle(h)       (((kconf_handle *) h)->flags & KCONF_FLAG_USER)
 #define khc_is_machine_handle(h)    (((kconf_handle *) h)->flags & KCONF_FLAG_MACHINE)
+#define khc_is_readonly(h)          (((kconf_handle *) h)->flags & KCONF_FLAG_READONLY)
 #define khc_handle_flags(h)         (((kconf_handle *) h)->flags)
 
 kconf_handle *

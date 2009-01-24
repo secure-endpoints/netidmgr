@@ -148,6 +148,9 @@ typedef struct tag_kconf_schema {
 /*! \brief Indicates that the last component of the given configuration path is to be considered to be a configuration value */
 #define KCONF_FLAG_TRAILINGVALUE 0x00000020
 
+/*! \brief Read-only  */
+#define KCONF_FLAG_READONLY      0x00000040
+
 /*! \brief Only write values back there is a change
 
     Any write operations using the handle with check if the value

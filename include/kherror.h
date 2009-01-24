@@ -173,6 +173,10 @@
     A request was put on hold or postponed. */
 #define KHM_ERROR_HELD              (KHM_ERROR_BASE + 22)
 
+/*! \brief The operation failed because the target was marked read-only
+ */
+#define KHM_ERROR_READONLY          (KHM_ERROR_BASE + 23)
+
 /*@}*/ /*kherror_codes*/
 
 /*! \brief Tests whether a return value indicates success */

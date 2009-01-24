@@ -40,7 +40,8 @@ DECLARE_ONCE(conf_once);
 LONG volatile conf_status = 0;
 
 
-void init_kconf(void) {
+void init_kconf(void)
+{
     if(InitializeOnce(&conf_once)) {
         /* we are the first */
         InitializeCriticalSection(&cs_conf_global);
@@ -58,7 +59,8 @@ void init_kconf(void) {
     }
 }
 
-void exit_kconf(void) {
+void exit_kconf(void)
+{
     if(khc_is_config_running()) {
         kconf_handle * h;
 
@@ -95,7 +97,8 @@ void exit_kconf(void) {
 #include<stdio.h>
 
 static void
-khcint_dump_space(FILE * f, kconf_conf_space * sp) {
+khcint_dump_space(FILE * f, kconf_conf_space * sp)
+{
 
     kconf_conf_space * sc;
 
@@ -119,7 +122,8 @@ khcint_dump_space(FILE * f, kconf_conf_space * sp) {
 }
 
 KHMEXP void KHMAPI
-khcint_dump_handles(FILE * f) {
+khcint_dump_handles(FILE * f)
+{
     if (khc_is_config_running()) {
         kconf_handle * h, * sh;
 
@@ -281,18 +285,10 @@ khcint_handle_dup(kconf_handle * o)
     return r;
 }
 
-/* obtains cs_conf_global */
-void 
-khcint_space_hold(kconf_conf_space * s) {
-    EnterCriticalSection(&cs_conf_global);
-    s->refcount ++;
-    LeaveCriticalSection(&cs_conf_global);
-}
-
 /* called with cs_conf_global */
 void
-khcint_try_free_space(kconf_conf_space * s) {
-
+khcint_try_free_space(kconf_conf_space * s)
+{
     if (TFIRSTCHILD(s) == NULL &&
         s->refcount == 0 &&
         s->schema == NULL) {
@@ -314,12 +310,20 @@ khcint_try_free_space(kconf_conf_space * s) {
 
 /* obtains cs_conf_global */
 void 
-khcint_space_release(kconf_conf_space * s) {
-    khm_int32 l;
+khcint_space_hold(kconf_conf_space * s)
+{
+    InterlockedIncrement(&s->refcount);
+}
+
+/* obtains cs_conf_global */
+void 
+khcint_space_release(kconf_conf_space * s)
+{
+    LONG l;
 
     EnterCriticalSection(&cs_conf_global);
 
-    l = -- s->refcount;
+    l = InterlockedDecrement(&s->refcount);
     if (l == 0) {
         if(s->regkey_machine)
             RegCloseKey(s->regkey_machine);
@@ -347,412 +351,71 @@ khcint_space_release(kconf_conf_space * s) {
     LeaveCriticalSection(&cs_conf_global);
 }
 
-/* case sensitive replacement for RegOpenKeyEx */
-LONG 
-khcint_RegOpenKeyEx(HKEY hkey, LPCWSTR sSubKey, DWORD ulOptions,
-                    REGSAM samDesired, PHKEY phkResult) {
-    int i;
-    wchar_t sk_name[KCONF_MAXCCH_NAME];
-    FILETIME ft;
-    size_t cch;
-    HKEY hkp = NULL;
-    const wchar_t * t;
-    LONG rv = ERROR_SUCCESS;
-
-    hkp = hkey;
-    t = sSubKey;
-
-    /* check for case insensitive prefix first */
-    if (!_wcsnicmp(sSubKey, CONFIG_REGPATHW, ARRAYLENGTH(CONFIG_REGPATHW) - 1)) {
-        HKEY hkt;
-
-        t = sSubKey + (ARRAYLENGTH(CONFIG_REGPATHW) - 1);
-
-#ifdef DEBUG
-        assert(*t == L'\0' || *t == L'\\');
-#endif
-
-        rv = RegOpenKeyEx(hkp,
-                          CONFIG_REGPATHW,
-                          ulOptions,
-                          samDesired,
-                          &hkt);
-
-        if (rv != ERROR_SUCCESS)
-            return rv;
-
-        if (*t == L'\0') {
-            *phkResult = hkt;
-            return rv;
-        }
-
-        t++;
-        hkp = hkt;
-    }
-
-    /* descend down the components of the subkey */
-    while(TRUE) {
-        wchar_t * slash;
-        HKEY hkt;
-
-        slash = wcschr(t, L'\\');
-        if (slash == NULL)
-            break;
-
-        if (FAILED(StringCchCopyN(sk_name, ARRAYLENGTH(sk_name),
-                                  t, slash - t))) {
-            rv = ERROR_CANTOPEN;
-            goto _cleanup;
-        }
-
-        sk_name[slash - t] = L'\0';
-        t = slash+1;
-
-        if (khcint_RegOpenKeyEx(hkp, sk_name, ulOptions, samDesired, &hkt) ==
-            ERROR_SUCCESS) {
-
-            if (hkp != hkey)
-                RegCloseKey(hkp);
-            hkp = hkt;
-
-        } else {
-
-            rv = ERROR_CANTOPEN;
-            goto _cleanup;
-
-        }
-    }
-
-    /* by now hkp is a handle to the parent of the last component in
-       the subkey.  t is a pointer to the last component. */
-
-    if (FAILED(StringCchLength(t, KCONF_MAXCCH_NAME, &cch))) {
-        rv = ERROR_CANTOPEN;
-        goto _cleanup;
-    }
-
-    /* go through and find the case sensitive match for the key */
-
-    for (i=0; ;i++) {
-        LONG l;
-        DWORD dw;
-
-        dw = ARRAYLENGTH(sk_name);
-        l = RegEnumKeyEx(hkp, i, sk_name, &dw,
-                         NULL, NULL, NULL, &ft);
-
-        if (l != ERROR_SUCCESS) {
-            rv = ERROR_CANTOPEN;
-            goto _cleanup;
-        }
-
-        if (!(wcsncmp(sk_name, t, cch))) {
-            /* bingo! ?? */
-            if (cch < KCONF_MAXCCH_NAME &&
-                (sk_name[cch] == L'\0' ||
-                 sk_name[cch] == L'~')) {
-                rv = RegOpenKeyEx(hkp, sk_name, ulOptions,
-                                  samDesired, phkResult);
-                goto _cleanup;
-            }
-        }
-    }
-
- _cleanup:
-    if (hkp != hkey && hkp != NULL)
-        RegCloseKey(hkp);
-
-    return rv;
-}
-
-/*! \internal
-
- \note This function is not a good replacement for RegDeleteKey since
-     it deletes all the subkeys in addition to the key being deleted.
- */
-LONG
-khcint_RegDeleteKey(HKEY hKey,
-                    LPCWSTR lpSubKey) {
-    int i;
-    wchar_t sk_name[KCONF_MAXCCH_NAME];
-    FILETIME ft;
-    size_t cch;
-    LONG rv = ERROR_SUCCESS;
-
-    /* go through and find the case sensitive match for the key */
-
-    if (FAILED(StringCchLength(lpSubKey, KCONF_MAXCCH_NAME, &cch)))
-        return ERROR_BADKEY;
-
-    for (i=0; ;i++) {
-        LONG l;
-        DWORD dw;
-
-        dw = ARRAYLENGTH(sk_name);
-        l = RegEnumKeyEx(hKey, i, sk_name, &dw,
-                         NULL, NULL, NULL, &ft);
-
-        if (l != ERROR_SUCCESS) {
-            rv = ERROR_BADKEY;
-            goto _cleanup;
-        }
-
-        if (!(wcsncmp(sk_name, lpSubKey, cch))) {
-            /* bingo! ?? */
-            if ((sk_name[cch] == L'\0' ||
-                 sk_name[cch] == L'~')) {
-
-                /* instead of calling RegDeleteKey we call SHDeleteKey
-                   because we want to blow off all the subkeys as
-                   well.  This is different from the behavior of
-                   RegDeleteKey making khcint_RegDeleteKey not a very
-                   good case sensitive replacement for
-                   RegDeleteKey. */
-
-                rv = SHDeleteKey(hKey, sk_name);
-                goto _cleanup;
-            }
-        }
-    }
-
- _cleanup:
-    return rv;
-}
-
-LONG
-khcint_RegCreateKeyEx(HKEY hKey,
-                      LPCWSTR lpSubKey,
-                      DWORD Reserved,
-                      LPWSTR lpClass,
-                      DWORD dwOptions,
-                      REGSAM samDesired,
-                      LPSECURITY_ATTRIBUTES lpSecurityAttributes,
-                      PHKEY phkResult,
-                      LPDWORD lpdwDisposition) {
-    LONG l;
-    int i;
-    long index = 0;
-    wchar_t sk_name[KCONF_MAXCCH_NAME]; /* hard limit in Windows */
-    FILETIME ft;
-    size_t cch;
-    const wchar_t * t;
-    LONG rv = ERROR_SUCCESS;
-    HKEY hkp = NULL;
-
-    hkp = hKey;
-    t = lpSubKey;
-
-    /* check for case insensitive prefix first */
-    if (!_wcsnicmp(lpSubKey, CONFIG_REGPATHW, ARRAYLENGTH(CONFIG_REGPATHW) - 1)) {
-        HKEY hkt;
-
-        t = lpSubKey + (ARRAYLENGTH(CONFIG_REGPATHW) - 1);
-
-#ifdef DEBUG
-        assert(*t == L'\0' || *t == L'\\');
-#endif
-
-        rv = RegCreateKeyEx(hkp,
-                            CONFIG_REGPATHW,
-                            Reserved,
-                            lpClass,
-                            dwOptions,
-                            samDesired,
-                            lpSecurityAttributes,
-                            &hkt,
-                            lpdwDisposition);
-
-        if (rv != ERROR_SUCCESS)
-            return rv;
-
-        if (*t == L'\0') {
-            *phkResult = hkt;
-            return rv;
-        }
-
-        t++;
-        hkp = hkt;
-    }
-
-    while(TRUE) {
-        wchar_t * slash;
-        HKEY hkt;
-
-        slash = wcschr(t, L'\\');
-        if (slash == NULL)
-            break;
-
-        if (FAILED(StringCchCopyN(sk_name, ARRAYLENGTH(sk_name),
-                                  t, slash - t))) {
-            rv = ERROR_CANTOPEN;
-            goto _cleanup;
-        }
-
-        sk_name[slash - t] = L'\0';
-        t = slash+1;
-
-        if (khcint_RegOpenKeyEx(hkp, sk_name, 0, samDesired, &hkt) ==
-            ERROR_SUCCESS) {
-
-            if (hkp != hKey)
-                RegCloseKey(hkp);
-            hkp = hkt;
-        } else {
-
-            rv = RegCreateKeyEx(hKey,
-                                lpSubKey,
-                                Reserved,
-                                lpClass,
-                                dwOptions,
-                                samDesired,
-                                lpSecurityAttributes,
-                                phkResult,
-                                lpdwDisposition);
-            goto _cleanup;
-        }
-    }
-
-    if (FAILED(StringCchLength(t, KCONF_MAXCCH_NAME, &cch))) {
-        rv = ERROR_CANTOPEN;
-        goto _cleanup;
-    }
-
-    for (i=0; ;i++) {
-        DWORD dw;
-
-        dw = ARRAYLENGTH(sk_name);
-        l = RegEnumKeyEx(hkp, i, sk_name, &dw,
-                         NULL, NULL, NULL, &ft);
-
-        if (l != ERROR_SUCCESS)
-            break;
-
-        if (!(wcsncmp(sk_name, t, cch))) {
-            /* bingo! ?? */
-            if (sk_name[cch] == L'\0' ||
-                sk_name[cch] == L'~') {
-                l = RegOpenKeyEx(hkp, sk_name, 0,
-                                 samDesired, phkResult);
-                if (l == ERROR_SUCCESS && lpdwDisposition)
-                    *lpdwDisposition = REG_OPENED_EXISTING_KEY;
-                rv = l;
-                goto _cleanup;
-            }
-        }
-
-        if (!_wcsnicmp(sk_name, t, cch) &&
-            (sk_name[cch] == L'\0' ||
-             sk_name[cch] == L'~')) {
-            long new_idx;
-
-            if (sk_name[cch] == L'\0')
-                new_idx = 1;
-            else if (cch + 1 < KCONF_MAXCCH_NAME)
-                new_idx = wcstol(sk_name + (cch + 1), NULL, 10);
-            else
-                return ERROR_BUFFER_OVERFLOW;
-
-            assert(new_idx > 0);
-
-            if (new_idx > index)
-                index = new_idx;
-        }
-    }
-
-    if (index != 0) {
-        if (FAILED(StringCbPrintf(sk_name, sizeof(sk_name),
-                                  L"%s~%d", t, index)))
-            return ERROR_BUFFER_OVERFLOW;
-    } else {
-        StringCbCopy(sk_name, sizeof(sk_name), t);
-    }
-
-    rv = RegCreateKeyEx(hkp,
-                        sk_name,
-                        Reserved,
-                        lpClass,
-                        dwOptions,
-                        samDesired,
-                        lpSecurityAttributes,
-                        phkResult,
-                        lpdwDisposition);
-
- _cleanup:
-
-    if (hkp != hKey && hkp != NULL)
-        RegCloseKey(hkp);
-
-    return rv;
-}
-
 /* obtains cs_conf_global */
 HKEY 
-khcint_space_open_key(kconf_conf_space * s, khm_int32 flags) {
+khcint_space_open_key(kconf_conf_space * s, khm_int32 flags)
+{
+    HKEY hk_root;
     HKEY hk = NULL;
     int nflags = 0;
     DWORD disp;
-    if(flags & KCONF_FLAG_MACHINE) {
-        if(s->regkey_machine)
-            return s->regkey_machine;
-        if((khcint_RegOpenKeyEx(HKEY_LOCAL_MACHINE, s->regpath, 0, 
-                                KEY_READ | KEY_WRITE, &hk) != 
-            ERROR_SUCCESS) && 
-           !(flags & KHM_PERM_WRITE)) {
+    khm_boolean per_machine = !!(flags & KCONF_FLAG_MACHINE);
+    khm_boolean skip = FALSE;
 
-            if(khcint_RegOpenKeyEx(HKEY_LOCAL_MACHINE, s->regpath, 0, 
-                                   KEY_READ, &hk) == ERROR_SUCCESS) {
-                nflags = KHM_PERM_READ;
-            }
-
-        }
-        if(!hk && (flags & KHM_FLAG_CREATE)) {
-
-            khcint_RegCreateKeyEx(HKEY_LOCAL_MACHINE, 
-                                  s->regpath, 
-                                  0,
-                                  NULL,
-                                  REG_OPTION_NON_VOLATILE,
-                                  KEY_READ | KEY_WRITE,
-                                  NULL,
-                                  &hk,
-                                  &disp);
-        }
-        if(hk) {
-            EnterCriticalSection(&cs_conf_global);
-            s->regkey_machine = hk;
-            s->regkey_machine_flags = nflags;
-            LeaveCriticalSection(&cs_conf_global);
-        }
-
-        return hk;
+    EnterCriticalSection(&cs_conf_global);
+    if (per_machine) {
+        hk = s->regkey_machine;
+        hk_root = HKEY_LOCAL_MACHINE;
+        skip = !!(s->flags & KCONF_SPACE_FLAG_NO_HKLM);
     } else {
-        if(s->regkey_user)
-            return s->regkey_user;
-        if((khcint_RegOpenKeyEx(HKEY_CURRENT_USER, s->regpath, 0, 
-                                KEY_READ | KEY_WRITE, &hk) != 
-            ERROR_SUCCESS) && 
-           !(flags & KHM_PERM_WRITE)) {
-            if(khcint_RegOpenKeyEx(HKEY_CURRENT_USER, s->regpath, 0, 
-                                   KEY_READ, &hk) == ERROR_SUCCESS) {
-                nflags = KHM_PERM_READ;
-            }
-        }
-        if(!hk && (flags & KHM_FLAG_CREATE)) {
-            khcint_RegCreateKeyEx(HKEY_CURRENT_USER, 
-                                  s->regpath, 0, NULL,
-                                  REG_OPTION_NON_VOLATILE,
-                                  KEY_READ | KEY_WRITE,
-                                  NULL, &hk, &disp);
-        }
-        if(hk) {
-            EnterCriticalSection(&cs_conf_global);
-            s->regkey_user = hk;
-            s->regkey_user_flags = nflags;
-            LeaveCriticalSection(&cs_conf_global);
-        }
-
-        return hk;
+        hk = s->regkey_user;
+        hk_root = HKEY_CURRENT_USER;
+        skip = !!(s->flags & KCONF_SPACE_FLAG_NO_HKCU);
     }
+    LeaveCriticalSection(&cs_conf_global);
+
+    if (hk || (skip && !(flags & KHM_FLAG_CREATE)))
+        return hk;
+
+    if((RegOpenKeyEx(hk_root, s->regpath, 0, 
+                     KEY_READ | KEY_WRITE, &hk) != ERROR_SUCCESS) &&
+
+       !(flags & KHM_PERM_WRITE)) {
+
+        if(RegOpenKeyEx(hk_root, s->regpath, 0, 
+                        KEY_READ, &hk) == ERROR_SUCCESS) {
+            nflags = KHM_PERM_READ;
+        }
+    }
+
+    if(!hk && (flags & KHM_FLAG_CREATE)) {
+
+        RegCreateKeyEx(hk_root, 
+                       s->regpath, 
+                       0, NULL,
+                       REG_OPTION_NON_VOLATILE,
+                       KEY_READ | KEY_WRITE,
+                       NULL, &hk, &disp);
+    }
+
+    EnterCriticalSection(&cs_conf_global);
+    if(hk) {
+        if (per_machine) {
+            s->regkey_machine = hk;
+            s->flags &= ~KCONF_SPACE_FLAG_NO_HKLM;
+        } else {
+            s->regkey_user = hk;
+            s->flags &= ~KCONF_SPACE_FLAG_NO_HKCU;
+        }
+    } else {
+        if (per_machine)
+            s->flags |= KCONF_SPACE_FLAG_NO_HKLM;
+        else
+            s->flags |= KCONF_SPACE_FLAG_NO_HKCU;
+    }
+    LeaveCriticalSection(&cs_conf_global);
+
+    return hk;
 }
 
 KHMEXP khm_int32 KHMAPI
@@ -817,19 +480,22 @@ khc_shadow_space(khm_handle upper, khm_handle lower)
 
 /* no locks */
 kconf_conf_space * 
-khcint_create_empty_space(void) {
+khcint_create_empty_space(void)
+{
     kconf_conf_space * r;
 
     r = PMALLOC(sizeof(kconf_conf_space));
     assert(r != NULL);
     ZeroMemory(r,sizeof(kconf_conf_space));
+    r->magic = KCONF_SPACE_MAGIC;
 
     return r;
 }
 
 /* called with cs_conf_global */
 void 
-khcint_free_space(kconf_conf_space * r) {
+khcint_free_space(kconf_conf_space * r)
+{
     kconf_conf_space * c;
 
     if(!r)
@@ -860,11 +526,10 @@ khcint_free_space(kconf_conf_space * r) {
 khm_int32
 khcint_open_space(kconf_conf_space * parent, 
                   const wchar_t * sname, size_t n_sname, 
-                  khm_int32 flags, kconf_conf_space **result) {
+                  khm_int32 flags, kconf_conf_space **result)
+{
     kconf_conf_space * p;
     kconf_conf_space * c;
-    HKEY pkey = NULL;
-    HKEY ckey = NULL;
     wchar_t buf[KCONF_MAXCCH_NAME];
     size_t cb_regpath = 0;
 
@@ -889,6 +554,9 @@ khcint_open_space(kconf_conf_space * parent,
 
         c = LNEXT(c);
     }
+
+    if (c)
+        khcint_space_hold(c);
     LeaveCriticalSection(&cs_conf_global);
 
     if(c) {
@@ -899,17 +567,19 @@ khcint_open_space(kconf_conf_space * parent,
                               KCONF_SPACE_FLAG_DELETE_M |
                               KCONF_SPACE_FLAG_DELETE_U);
             } else {
+                khcint_space_release(c);
                 *result = NULL;
                 return KHM_ERROR_NOT_FOUND;
             }
         }
 
-        khcint_space_hold(c);
         *result = c;
         return KHM_ERROR_SUCCESS;
     }
 
     if(!(flags & KHM_FLAG_CREATE)) {
+        HKEY pkey = NULL;
+        HKEY ckey = NULL;
 
         /* we are not creating the space, so it must exist in the form
            of a registry key in HKLM or HKCU.  If it existed as a
@@ -919,16 +589,15 @@ khcint_open_space(kconf_conf_space * parent,
             pkey = khcint_space_open_key(p, KHM_PERM_READ | KCONF_FLAG_USER);
 
         if((!pkey ||
-            (khcint_RegOpenKeyEx(pkey, buf, 0, KEY_READ, &ckey) !=
-             ERROR_SUCCESS))
+            (RegOpenKeyEx(pkey, buf, 0, KEY_READ, &ckey) != ERROR_SUCCESS))
            && (flags & KCONF_FLAG_MACHINE)) {
 
             pkey = khcint_space_open_key(p, KHM_PERM_READ | KCONF_FLAG_MACHINE);
-            if(!pkey ||
-               (khcint_RegOpenKeyEx(pkey, buf, 0, KEY_READ, &ckey) !=
-                ERROR_SUCCESS)) {
-                *result = NULL;
 
+            if(!pkey ||
+               (RegOpenKeyEx(pkey, buf, 0, KEY_READ, &ckey) != ERROR_SUCCESS)) {
+
+                *result = NULL;
                 return KHM_ERROR_NOT_FOUND;
             }
         }
@@ -973,52 +642,68 @@ khcint_open_space(kconf_conf_space * parent,
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
 khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags, 
-               khm_handle * result) {
+               khm_handle * result)
+{
     kconf_conf_space * p;
     kconf_conf_space * c = NULL;
     size_t cbsize;
     const wchar_t * str;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    if(!khc_is_config_running()) {
+    if (!khc_is_config_running()) {
         return KHM_ERROR_NOT_READY;
     }
 
-    if(!result || (parent && !khc_is_handle(parent))) {
+    if (!result || (parent && !khc_is_handle(parent)) ||
+        (cspace && FAILED(StringCbLength(cspace, KCONF_MAXCB_PATH, &cbsize)))) {
         return KHM_ERROR_INVALID_PARAM;
     }
 
     /* if none of these flags are specified, make it seem like all of
        them were */
-    if(!(flags & KCONF_FLAG_USER) &&
-        !(flags & KCONF_FLAG_MACHINE) &&
-        !(flags & KCONF_FLAG_SCHEMA))
+    if ((flags & (KCONF_FLAG_USER |
+                  KCONF_FLAG_MACHINE |
+                  KCONF_FLAG_SCHEMA)) == 0)
         flags |= KCONF_FLAG_USER | KCONF_FLAG_MACHINE | KCONF_FLAG_SCHEMA;
 
     if(!parent)
         p = conf_root;
-    else {
+    else
         p = khc_space_from_handle(parent);
-    }
 
     khcint_space_hold(p);
 
     if(cspace == NULL) {
+        /* If space is NULL, the caller wants a new handle to the same
+           configuration space with different options. */
         *result = (khm_handle) khcint_handle_from_space(p, flags);
         khcint_space_release(p);
         return KHM_ERROR_SUCCESS;
-    }
-
-    if(FAILED(StringCbLength(cspace, KCONF_MAXCB_PATH, &cbsize))) {
-        khcint_space_release(p);
-        *result = NULL;
-        return KHM_ERROR_INVALID_PARAM;
     }
 
     str = cspace;
     while(TRUE) {
         const wchar_t * end = NULL;
         khm_boolean last = FALSE;
+
+        /* Loop invariants:
+
+           str = pointer to rest of configuration path to parse
+           p   = configuration space in which to evaluate str
+
+           On loop exit:
+
+           c   = configuration space we want
+           p   = parent of c, if non NULL
+
+           e.g.:
+
+           khc_open_space(h, L"foo\\bar\\baz", ...);
+           -> (p = h, str = "foo\\bar\\baz")
+           -> (p = h\foo, str = "bar\\baz")
+           -> (p = h\foo\bar, str = "baz")
+           -> exit with c = h\foo\bar\baz
+         */
 
         if (flags & KCONF_FLAG_NOPARSENAME) {
             end = str + wcslen(str);
@@ -1053,8 +738,10 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
         } else if (last && rv == KHM_ERROR_NOT_FOUND &&
                    (flags & KCONF_FLAG_SHADOW)) {
             
-            rv = khcint_open_space(p, L"_Schema", 7, flags, &c);
+            rv = khcint_open_space(p, L"_Schema", 7,
+                                   flags, &c);
             flags &= ~KCONF_FLAG_SHADOW;
+            flags |= KCONF_FLAG_READONLY;
             khcint_space_release(p);
             p = NULL;
             break;
@@ -1081,12 +768,14 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
                 khcint_space_hold(p);
 
                 flags &= ~KHM_FLAG_CREATE;
-                rv = khcint_open_space(p, L"_Schema", 7, flags, &shadow);
+                rv = khcint_open_space(p, L"_Schema", 7,
+                                       flags, &shadow);
 
                 if (KHM_SUCCEEDED(rv)) {
                     khm_handle tshadow = NULL;
 
-                    tshadow = khcint_handle_from_space(shadow, flags);
+                    tshadow = khcint_handle_from_space(shadow,
+                                                       flags | KCONF_FLAG_READONLY);
 
                     khc_shadow_space(*result, tshadow);
 
@@ -1112,7 +801,8 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
 
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
-khc_close_space(khm_handle csp) {
+khc_close_space(khm_handle csp)
+{
     if(!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
 
@@ -1127,6 +817,232 @@ khc_close_space(khm_handle csp) {
     return KHM_ERROR_SUCCESS;
 }
 
+
+static const DWORD kc_type_to_reg_type[] = {
+    0,
+    0,
+    0,
+    REG_DWORD,
+    REG_QWORD,
+    REG_SZ,
+    REG_BINARY
+};
+
+khm_int32
+khcint_read_value_from_registry(HKEY hk, const wchar_t * value,
+                                khm_int32 expected_type,
+                                void * buf, khm_size * bufsize)
+{
+    DWORD size;
+    DWORD type;
+    LONG hr;
+
+    if (hk == NULL)
+        return KHM_ERROR_NOT_FOUND;
+
+    size = (DWORD) *bufsize;
+
+    hr = RegQueryValueEx(hk, value, NULL, &type, (LPBYTE) buf, &size);
+
+    if(hr == ERROR_SUCCESS) {
+        if(type != kc_type_to_reg_type[expected_type]) {
+            return KHM_ERROR_TYPE_MISMATCH;
+        } else {
+            *bufsize = size;
+            /* if buf==NULL, RegQueryValueEx will return success and
+               just return the required buffer size in 'size' */
+            return (buf)? KHM_ERROR_SUCCESS: KHM_ERROR_TOO_LONG;
+        }
+    } else if(hr == ERROR_MORE_DATA) {
+        *bufsize = size;
+        return KHM_ERROR_TOO_LONG;
+    } else {
+        return KHM_ERROR_NOT_FOUND;
+    }
+}
+
+khm_int32
+khcint_read_value_from_schema(kconf_conf_space * c,
+                              const wchar_t * value,
+                              khm_int32 expected_type,
+                              void * buf, khm_size * bufsize)
+{
+    int i;
+
+    for (i = 0; i < c->nSchema; i++) {
+
+        if (c->schema[i].type == expected_type &&
+
+            !wcscmp(value, c->schema[i].name)) {
+
+            khm_int32 i32 = 0;
+            khm_int64 i64 = 0;
+            size_t cbsize = 0;
+            void * src = NULL;
+            const kconf_schema * s = &c->schema[i];
+
+            switch (s->type) {
+            case KC_INT32:
+                cbsize = sizeof(khm_int32);
+                i32 = (khm_int32) s->value;
+                src = &i32;
+                break;
+
+            case KC_INT64:
+                cbsize = sizeof(khm_int64);
+                i64 = (khm_int64) s->value;
+                src = &i64;
+                break;
+
+            case KC_STRING:
+                if(FAILED(StringCbLength((wchar_t *) s->value, KCONF_MAXCB_STRING, &cbsize))) {
+                    break;
+                }
+                cbsize += sizeof(wchar_t);
+                src = (wchar_t *) s->value;
+                break;
+            }
+
+            if (src == NULL)
+                return KHM_ERROR_NOT_FOUND;
+
+            if (buf == NULL || *bufsize < cbsize) {
+                *bufsize = cbsize;
+                return KHM_ERROR_TOO_LONG;
+            }
+
+            memcpy(buf, src, cbsize);
+            *bufsize = cbsize;
+            return KHM_ERROR_SUCCESS;
+        }
+    }
+
+    return KHM_ERROR_NOT_FOUND;
+}
+
+
+/*! \internal
+  \brief Get the actual parent configuration space handle and value
+
+  The value name passed into some of the kconf functions can include
+  configuration space components.  I.e.:
+
+  \code
+  khc_read_int32(h, L"foo\\bar", &i);
+  \endcode
+
+  In such cases, the caller is referring to a value named "bar" in a
+  configuration space named "foo" that is a child of the space
+  represented by \a h.  This function takes a configuration space
+  handle \a pconf and a \a path and returns a handle to the
+  configuration space containing the value that is being referenced.
+ */
+khm_int32
+khcint_get_parent_config_space(khm_handle pconf,
+                               const wchar_t * path,
+                               khm_handle *ppconf,
+                               const wchar_t ** pvalue)
+{
+    wchar_t * value = NULL;
+
+    /* If the value contains a '\\', we consider it to be of the form
+       "relative\\path\\valuename".  Therefore we have to obtain a
+       handle to the configuration space which holds the value. */
+    if((value = wcsrchr(path, L'\\')) != NULL) {
+
+        if(KHM_FAILED(khc_open_space(pconf,
+                                     path,
+                                     KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
+                                     ppconf)))
+            return KHM_ERROR_INVALID_PARAM;
+
+        *pvalue = ++value;
+    } else {
+        *pvalue = path;
+        *ppconf = pconf;
+    }
+
+    return KHM_ERROR_SUCCESS;
+}
+
+khm_int32
+khcint_read_value_from_cspace(khm_handle pconf,
+                              const wchar_t * pvalue,
+                              khm_int32 expected_type,
+                              void * buf, khm_size * bufsize)
+{
+    kconf_conf_space * c = NULL;
+    const wchar_t * value = NULL;
+    khm_handle conf = NULL;
+    khm_int32 rv = KHM_ERROR_NOT_FOUND;
+
+    rv = khcint_get_parent_config_space(pconf, pvalue, &conf, &value);
+    if (KHM_FAILED(rv))
+        goto done;
+
+    assert(khc_is_handle(conf));
+
+    c = khc_space_from_handle(conf);
+
+    if (khc_is_user_handle(conf) &&
+
+        (rv = khcint_read_value_from_registry(khcint_space_open_key(c, KHM_PERM_READ),
+                                               value, expected_type,
+                                               buf, bufsize)) != KHM_ERROR_NOT_FOUND) {
+        goto done;
+    }
+
+    if (khc_is_machine_handle(conf) &&
+        (rv = khcint_read_value_from_registry
+         (khcint_space_open_key(c,
+                                KHM_PERM_READ | KCONF_FLAG_MACHINE),
+          value, expected_type,
+          buf, bufsize)) != KHM_ERROR_NOT_FOUND) {
+        goto done;
+    }
+
+    if (khc_is_schema_handle(conf) &&
+        (rv = khcint_read_value_from_schema(c, value, expected_type,
+                                             buf, bufsize)) != KHM_ERROR_NOT_FOUND) {
+        goto done;
+    }
+
+ done:
+    if(conf != pconf)
+        khc_close_space(conf);
+
+    return rv;
+}
+
+
+khm_int32
+khcint_read_value(khm_handle pconf,
+                  const wchar_t * pvalue,
+                  khm_int32 expected_type,
+                  void * buf, khm_size * bufsize)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    if(!khc_is_config_running())
+        return KHM_ERROR_NOT_READY;
+
+    if (expected_type < 0 || expected_type >= ARRAYLENGTH(kc_type_to_reg_type))
+        return KHM_ERROR_INVALID_PARAM;
+
+    do {
+        rv = khcint_read_value_from_cspace(pconf, pvalue, expected_type, buf, bufsize);
+        if (rv != KHM_ERROR_NOT_FOUND)
+            break;
+
+        if (khc_is_shadowed(pconf))
+            pconf = khc_shadow(pconf);
+        else
+            break;
+    } while(pconf);
+
+    return rv;
+}
+
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
 khc_read_string(khm_handle pconf, 
@@ -1134,625 +1050,46 @@ khc_read_string(khm_handle pconf,
                 wchar_t * buf, 
                 khm_size * bufsize) 
 {
-    kconf_conf_space * c;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    do {
-        HKEY hku = NULL;
-        HKEY hkm = NULL;
-        const wchar_t * value = NULL;
-        int free_space = 0;
-        khm_handle conf = NULL;
-        DWORD size;
-        DWORD type;
-        LONG hr;
-
-        int i;
-
-        if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-
-            if(KHM_FAILED(khc_open_space(
-                pconf, 
-                pvalue, 
-                KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-                &conf)))
-                goto _shadow;
-
-            free_space = 1;
-
-            if (value) {
-                value++;
-            } else {
-#ifdef DEBUG
-                assert(FALSE);
-#endif
-            }
-        } else {
-            value = pvalue;
-            conf = pconf;
-            free_space = 0;
-        }
-
-        if(!khc_is_handle(conf))
-            goto _shadow;
-
-        c = khc_space_from_handle(conf);
-
-        if(khc_is_user_handle(conf))
-            hku = khcint_space_open_key(c, KHM_PERM_READ);
-
-        if(khc_is_machine_handle(conf))
-            hkm = khcint_space_open_key(c, KHM_PERM_READ | KCONF_FLAG_MACHINE);
-
-        size = (DWORD) *bufsize;
-        if(hku) {
-            hr = RegQueryValueEx(hku, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_SZ) {
-                    rv = KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    *bufsize = size;
-                    /* if buf==NULL, RegQueryValueEx will return success and just return the
-                       required buffer size in 'size' */
-                    rv = (buf)? KHM_ERROR_SUCCESS: KHM_ERROR_TOO_LONG;
-                    goto _exit;
-                }
-            } else {
-                if(hr == ERROR_MORE_DATA) {
-                    *bufsize = size;
-                    rv = KHM_ERROR_TOO_LONG;
-                    goto _exit;
-                }
-            }
-        }
-
-        size = (DWORD) *bufsize;
-        if(hkm) {
-            hr = RegQueryValueEx(hkm, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_SZ) {
-                    rv = KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    *bufsize = size;
-                    rv = (buf)? KHM_ERROR_SUCCESS: KHM_ERROR_TOO_LONG;
-                    goto _exit;
-                }
-            } else {
-                if(hr == ERROR_MORE_DATA) {
-                    *bufsize = size;
-                    rv = KHM_ERROR_TOO_LONG;
-                    goto _exit;
-                }
-            }
-        }
-
-        if(c->schema && khc_is_schema_handle(conf)) {
-            for(i=0;i<c->nSchema;i++) {
-                if(c->schema[i].type == KC_STRING && !wcscmp(value, c->schema[i].name)) {
-                    /* found it */
-                    size_t cbsize = 0;
-
-                    if(!c->schema[i].value) {
-                        rv = KHM_ERROR_NOT_FOUND;
-                        goto _exit;
-                    }
-
-                    if(FAILED(StringCbLength((wchar_t *) c->schema[i].value, KCONF_MAXCB_STRING, &cbsize))) {
-                        rv = KHM_ERROR_NOT_FOUND;
-                        goto _exit;
-                    }
-                    cbsize += sizeof(wchar_t);
-
-                    if(!buf || *bufsize < cbsize) {
-                        *bufsize = cbsize;
-                        rv = KHM_ERROR_TOO_LONG;
-                        goto _exit;
-                    }
-
-                    StringCbCopy(buf, *bufsize, (wchar_t *) c->schema[i].value);
-                    *bufsize = cbsize;
-                    rv = KHM_ERROR_SUCCESS;
-                    goto _exit;
-                }
-            }
-        }
-
-_shadow:
-        if(free_space && conf)
-            khc_close_space(conf);
-
-        if(khc_is_shadowed(pconf)) {
-            pconf = khc_shadow(pconf);
-            continue;
-        } else {
-            rv = KHM_ERROR_NOT_FOUND;
-            break;
-        }
-
-_exit:
-        if(free_space && conf)
-            khc_close_space(conf);
-        break;
-
-    } while(TRUE);
-
-    return rv;
+    return khcint_read_value(pconf, pvalue, KC_STRING, buf, bufsize);
 }
 
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
-khc_read_int32(khm_handle pconf, const wchar_t * pvalue, khm_int32 * buf) {
-    kconf_conf_space * c;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    if(!buf || !pvalue)
-        return KHM_ERROR_INVALID_PARAM;
-
-    do {
-        DWORD size;
-        DWORD type;
-        LONG hr;
-        HKEY hku = NULL;
-        HKEY hkm = NULL;
-
-        const wchar_t * value = NULL;
-        int free_space = 0;
-        khm_handle conf = NULL;
-
-        int i;
-
-        if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-            if(KHM_FAILED(khc_open_space(
-                pconf, 
-                pvalue, 
-                KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-                &conf)))
-                goto _shadow;
-            free_space = 1;
-
-            if (value) {
-                value++;
-            } else {
-#ifdef DEBUG
-                assert(FALSE);
-#endif
-            }
-        } else {
-            value = pvalue;
-            conf = pconf;
-            free_space = 0;
-        }
-
-        if(!khc_is_handle(conf) || !buf)
-            goto _shadow;
-
-        c = khc_space_from_handle(conf);
-
-        if(khc_is_user_handle(conf))
-            hku = khcint_space_open_key(c, KHM_PERM_READ);
-
-        if(khc_is_machine_handle(conf))
-            hkm = khcint_space_open_key(c, KHM_PERM_READ | KCONF_FLAG_MACHINE);
-
-        size = sizeof(DWORD);
-        if(hku) {
-            hr = RegQueryValueEx(hku, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_DWORD) {
-                    rv = KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    rv = KHM_ERROR_SUCCESS;
-                    goto _exit;
-                }
-            }
-        }
-
-        size = sizeof(DWORD);
-        if(hkm) {
-            hr = RegQueryValueEx(hkm, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_DWORD) {
-                    rv= KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    rv=  KHM_ERROR_SUCCESS;
-                    goto _exit;
-                }
-            }
-        }
-
-        if(c->schema && khc_is_schema_handle(conf)) {
-            for(i=0;i<c->nSchema;i++) {
-                if(c->schema[i].type == KC_INT32 && !wcscmp(value, c->schema[i].name)) {
-                    *buf = (khm_int32) c->schema[i].value;
-                    rv = KHM_ERROR_SUCCESS;
-                    goto _exit;
-                }
-            }
-        }
-_shadow:
-        if(free_space && conf)
-            khc_close_space(conf);
-
-        if(khc_is_shadowed(pconf)) {
-            pconf = khc_shadow(pconf);
-            continue;
-        } else {
-            rv = KHM_ERROR_NOT_FOUND;
-            break;
-        }
-_exit:
-        if(free_space && conf)
-            khc_close_space(conf);
-        break;
-    }
-    while(TRUE);
-
-    return rv;
+khc_read_int32(khm_handle pconf, const wchar_t * pvalue, khm_int32 * buf)
+{
+    khm_size cb = sizeof(khm_int32);
+    return khcint_read_value(pconf, pvalue, KC_INT32, buf, &cb);
 }
 
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
-khc_read_int64(khm_handle pconf, const wchar_t * pvalue, khm_int64 * buf) {
-    kconf_conf_space * c;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    do {
-        DWORD size;
-        DWORD type;
-        LONG hr;
-        HKEY hku = NULL;
-        HKEY hkm = NULL;
-
-        const wchar_t * value = NULL;
-        int free_space = 0;
-        khm_handle conf = NULL;
-
-        int i;
-
-        if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-            if(KHM_FAILED(khc_open_space(
-                pconf, 
-                pvalue, 
-                KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-                &conf)))
-                goto _shadow;
-            free_space = 1;
-
-            if (value) {
-                value++;
-            } else {
-#ifdef DEBUG
-                assert(FALSE);
-#endif
-            }
-        } else {
-            value = pvalue;
-            conf = pconf;
-            free_space = 0;
-        }
-
-        if(!khc_is_handle(conf) || !buf)
-            goto _shadow;
-
-        c = khc_space_from_handle(conf);
-
-        if(khc_is_user_handle(conf))
-            hku = khcint_space_open_key(c, KHM_PERM_READ);
-
-        if(khc_is_machine_handle(conf))
-            hkm = khcint_space_open_key(c, KHM_PERM_READ | KCONF_FLAG_MACHINE);
-
-        size = sizeof(khm_int64);
-        if(hku) {
-            hr = RegQueryValueEx(hku, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_QWORD) {
-                    rv= KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    rv = KHM_ERROR_SUCCESS;
-                    goto _exit;
-                }
-            }
-        }
-
-        size = sizeof(khm_int64);
-        if(hkm) {
-            hr = RegQueryValueEx(hkm, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_QWORD) {
-                    rv = KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    rv = KHM_ERROR_SUCCESS;
-                    goto _exit;
-                }
-            }
-        }
-
-        if(c->schema && khc_is_schema_handle(conf)) {
-            for(i=0;i<c->nSchema;i++) {
-                if(c->schema[i].type == KC_INT64 && !wcscmp(value, c->schema[i].name)) {
-                    *buf = (khm_int64) c->schema[i].value;
-                    rv = KHM_ERROR_SUCCESS;
-                    goto _exit;
-                }
-            }
-        }
-
-_shadow:
-        if(free_space && conf)
-            khc_close_space(conf);
-        if(khc_is_shadowed(pconf)) {
-            pconf = khc_shadow(pconf);
-            continue;
-        } else {
-            rv = KHM_ERROR_NOT_FOUND;
-            break;
-        }
-
-_exit:
-        if(free_space && conf)
-            khc_close_space(conf);
-        break;
-
-    } while(TRUE);
-    return rv;
+khc_read_int64(khm_handle pconf, const wchar_t * pvalue, khm_int64 * buf)
+{
+    khm_size cb = sizeof(khm_int64);
+    return khcint_read_value(pconf, pvalue, KC_INT64, buf, &cb);
 }
 
 /* obtaincs cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
 khc_read_binary(khm_handle pconf, const wchar_t * pvalue, 
-                void * buf, khm_size * bufsize) {
-    kconf_conf_space * c;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    do {
-        DWORD size;
-        DWORD type;
-        LONG hr;
-        HKEY hku = NULL;
-        HKEY hkm = NULL;
-
-        const wchar_t * value = NULL;
-        int free_space = 0;
-        khm_handle conf = NULL;
-
-        if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-            if(KHM_FAILED(khc_open_space(
-                pconf, 
-                pvalue, 
-                KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-                &conf)))
-                goto _shadow;
-            free_space = 1;
-
-            if (value) {
-                value++;
-            } else {
-#ifdef DEBUG
-                assert(FALSE);
-#endif
-            }
-        } else {
-            value = pvalue;
-            conf = pconf;
-            free_space = 0;
-        }
-
-        if(!khc_is_handle(conf))
-            goto _shadow;
-
-        c = khc_space_from_handle(conf);
-
-        if(khc_is_user_handle(conf))
-            hku = khcint_space_open_key(c, KHM_PERM_READ);
-
-        if(khc_is_machine_handle(conf))
-            hkm = khcint_space_open_key(c, KHM_PERM_READ | KCONF_FLAG_MACHINE);
-
-        size = (DWORD) *bufsize;
-        if(hku) {
-            hr = RegQueryValueEx(hku, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_BINARY) {
-                    rv = KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    *bufsize = size;
-                    rv =  (buf? KHM_ERROR_SUCCESS : KHM_ERROR_TOO_LONG);
-                    goto _exit;
-                }
-            } else {
-                if(hr == ERROR_MORE_DATA) {
-                    *bufsize = size;
-                    rv = KHM_ERROR_TOO_LONG;
-                    goto _exit;
-                }
-            }
-        }
-
-        size = (DWORD) *bufsize;
-        if(hkm) {
-            hr = RegQueryValueEx(hkm, value, NULL, &type, (LPBYTE) buf, &size);
-            if(hr == ERROR_SUCCESS) {
-                if(type != REG_BINARY) {
-                    rv = KHM_ERROR_TYPE_MISMATCH;
-                    goto _exit;
-                }
-                else {
-                    *bufsize = size;
-                    rv = (buf ? KHM_ERROR_SUCCESS : KHM_ERROR_TOO_LONG);
-                    goto _exit;
-                }
-            } else {
-                if(hr == ERROR_MORE_DATA) {
-                    *bufsize = size;
-                    rv = KHM_ERROR_TOO_LONG;
-                    goto _exit;
-                }
-            }
-        }
-
-        /* binary values aren't supported in schema */
-_shadow:
-        if(free_space && conf)
-            khc_close_space(conf);
-        if(khc_is_shadowed(pconf)) {
-            pconf = khc_shadow(pconf);
-            continue;
-        } else {
-            rv = KHM_ERROR_NOT_FOUND;
-            break;
-        }
-
-_exit:
-        if(free_space && conf)
-            khc_close_space(conf);
-        break;
-
-    }while (TRUE);
-
-    return rv;
+                void * buf, khm_size * bufsize)
+{
+    return khcint_read_value(pconf, pvalue, KC_BINARY, buf, bufsize);
 }
 
-/* obtains cs_conf_handle/cs_conf_global */
-KHMEXP khm_int32 KHMAPI 
-khc_write_string(khm_handle pconf, 
-                 const wchar_t * pvalue, 
-                 const wchar_t * buf) 
+khm_int32
+khcint_write_value(khm_handle pconf,
+                   const wchar_t * pvalue,
+                   khm_int32 type,
+                   const void * buf,
+                   khm_size bufsize)
 {
-    HKEY pk = NULL;
-    kconf_conf_space * c;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-    LONG hr;
-    size_t cbsize;
-    const wchar_t * value = NULL;
-    int free_space = 0;
+    kconf_conf_space * c = NULL;
     khm_handle conf = NULL;
-
-
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    if(pconf && !khc_is_machine_handle(pconf) && !khc_is_user_handle(pconf))
-        return KHM_ERROR_INVALID_OPERATION;
-
-    if(FAILED(StringCbLength(buf, KCONF_MAXCB_STRING, &cbsize))) {
-        rv = KHM_ERROR_INVALID_PARAM;
-        goto _exit;
-    }
-
-    cbsize += sizeof(wchar_t);
-
-    if (khc_handle_flags(pconf) & KCONF_FLAG_WRITEIFMOD) {
-        wchar_t tmpbuf[512];
-        wchar_t * buffer;
-        size_t tmpsize = cbsize;
-        khm_boolean is_equal = FALSE;
-
-        if (cbsize <= sizeof(tmpbuf)) {
-            buffer = tmpbuf;
-        } else {
-            buffer = PMALLOC(cbsize);
-        }
-
-        if (KHM_SUCCEEDED(khc_read_string(pconf, pvalue, buffer, &tmpsize)) &&
-            tmpsize == cbsize) {
-            if (khc_handle_flags(pconf) & KCONF_FLAG_IFMODCI)
-                is_equal = !lstrcmpi(buffer, buf);
-            else
-                is_equal = !lstrcmp(buffer, buf);
-        }
-
-        if (buffer != tmpbuf)
-            PFREE(buffer);
-
-        if (is_equal) {
-            return KHM_ERROR_SUCCESS;
-        }
-    }
-
-    if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-        if(KHM_FAILED(khc_open_space(pconf, pvalue, 
-                                     KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-                                     &conf)))
-            return KHM_ERROR_INVALID_PARAM;
-        free_space = 1;
-
-        if (value) {
-            value ++;
-        } else {
-#ifdef DEBUG
-            assert(FALSE);
-#endif
-        }
-    } else {
-        value = pvalue;
-        conf = pconf;
-        free_space = 0;
-    }
-
-    if(!khc_is_handle(conf) || !buf) {
-        rv = KHM_ERROR_INVALID_PARAM;
-        goto _exit;
-    }
-
-    c = khc_space_from_handle(conf);
-
-    if(khc_is_user_handle(conf)) {
-        pk = khcint_space_open_key(c, KHM_PERM_WRITE | KHM_FLAG_CREATE);
-    } else {
-        pk = khcint_space_open_key(c, KHM_PERM_WRITE | KCONF_FLAG_MACHINE | KHM_FLAG_CREATE);
-    }
-
-    hr = RegSetValueEx(pk, value, 0, REG_SZ, (LPBYTE) buf, (DWORD) cbsize);
-
-    if(hr != ERROR_SUCCESS)
-        rv = KHM_ERROR_INVALID_OPERATION;
-
-_exit:
-    if(free_space)
-        khc_close_space(conf);
-    return rv;
-}
-
-/* obtaincs cs_conf_handle/cs_conf_global */
-KHMEXP khm_int32 KHMAPI 
-khc_write_int32(khm_handle pconf, 
-                const wchar_t * pvalue, 
-                khm_int32 buf) 
-{
+    wchar_t * value = NULL;
     HKEY pk = NULL;
-    kconf_conf_space * c;
+    LONG hr = 0;
     khm_int32 rv = KHM_ERROR_SUCCESS;
-    LONG hr;
-    const wchar_t * value = NULL;
-    int free_space = 0;
-    khm_handle conf = NULL;
 
     if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
@@ -1760,198 +1097,114 @@ khc_write_int32(khm_handle pconf,
     if (pconf && !khc_is_machine_handle(pconf) && !khc_is_user_handle(pconf))
         return KHM_ERROR_INVALID_OPERATION;
 
-    if (pconf && khc_handle_flags(pconf) & KCONF_FLAG_WRITEIFMOD) {
-        khm_int32 tmpvalue;
+    if (pconf && khc_is_readonly(pconf))
+        return KHM_ERROR_READONLY;
 
-        if (KHM_SUCCEEDED(khc_read_int32(pconf, pvalue, &tmpvalue)) &&
-            tmpvalue == buf) {
-            return KHM_ERROR_SUCCESS;
-        }
-    }
-
-    if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-        if(KHM_FAILED(khc_open_space(
-            pconf, 
-            pvalue, 
-            KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-            &conf)))
-            return KHM_ERROR_INVALID_PARAM;
-        free_space = 1;
-
-        if (value) {
-            value ++;
-        } else {
-#ifdef DEBUG
-            assert(FALSE);
-#endif
-        }
-    } else {
-        value = pvalue;
-        conf = pconf;
-        free_space = 0;
-    }
-
-    if(!khc_is_handle(conf))
+    if (type != KC_STRING && type != KC_INT32 && type != KC_INT64 && type != KC_BINARY)
         return KHM_ERROR_INVALID_PARAM;
 
-    c = khc_space_from_handle( conf);
+    if (pconf && (khc_handle_flags(pconf) & KCONF_FLAG_WRITEIFMOD)) {
+        khm_int32 static_buf[128];
+        void * b_exist = static_buf;
+        size_t b_existsize = sizeof(static_buf);
+        khm_boolean is_equal = FALSE;
+        khm_int32 rv;
 
-    if(khc_is_user_handle(conf)) {
+        rv = khcint_read_value(pconf, pvalue, type, b_exist, &b_existsize);
+        if (rv == KHM_ERROR_TOO_LONG) {
+            b_exist = PMALLOC(b_existsize);
+            rv = khcint_read_value(pconf, pvalue, type, b_exist, &b_existsize);
+        }
+
+        if (KHM_SUCCEEDED(rv) && b_existsize == bufsize) {
+            if (type == KC_STRING && (khc_handle_flags(pconf) & KCONF_FLAG_IFMODCI))
+                is_equal = !lstrcmpi(b_exist, buf);
+            else
+                is_equal = !memcmp(b_exist, buf, bufsize);
+        }
+
+        if (b_exist != static_buf)
+            PFREE(b_exist);
+
+        if (is_equal)
+            return KHM_ERROR_SUCCESS;
+    }
+
+    rv = khcint_get_parent_config_space(pconf, pvalue, &conf, &value);
+    if (KHM_FAILED(rv))
+        goto done;
+
+    c = khc_space_from_handle(conf);
+
+    if (khc_is_user_handle(conf)) {
         pk = khcint_space_open_key(c, KHM_PERM_WRITE | KHM_FLAG_CREATE);
     } else {
         pk = khcint_space_open_key(c, KHM_PERM_WRITE | KCONF_FLAG_MACHINE | KHM_FLAG_CREATE);
     }
 
-    hr = RegSetValueEx(pk, value, 0, REG_DWORD, (LPBYTE) &buf, sizeof(khm_int32));
+    hr = RegSetValueEx(pk, value, 0,
+                       kc_type_to_reg_type[type],
+                       (LPBYTE) buf,
+                       (DWORD) bufsize);
 
-    if(hr != ERROR_SUCCESS)
+    if (hr == ERROR_SUCCESS)
+        rv = KHM_ERROR_SUCCESS;
+    else
         rv = KHM_ERROR_INVALID_OPERATION;
 
-    if(free_space)
+ done:
+    if (conf && conf != pconf)
         khc_close_space(conf);
-
     return rv;
+}
+
+
+/* obtains cs_conf_handle/cs_conf_global */
+KHMEXP khm_int32 KHMAPI 
+khc_write_string(khm_handle pconf, 
+                 const wchar_t * pvalue, 
+                 const wchar_t * buf) 
+{
+    size_t cb;
+
+    if (FAILED(StringCbLength(buf, KCONF_MAXCB_STRING, &cb)))
+        return KHM_ERROR_INVALID_PARAM;
+
+    cb += sizeof(wchar_t);
+
+    return khcint_write_value(pconf, pvalue, KC_STRING, buf, cb);
+}
+
+/* obtaincs cs_conf_handle/cs_conf_global */
+KHMEXP khm_int32 KHMAPI 
+khc_write_int32(khm_handle pconf, 
+                const wchar_t * pvalue, 
+                khm_int32 val) 
+{
+    return khcint_write_value(pconf, pvalue, KC_INT32, &val, sizeof(val));
 }
 
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
-khc_write_int64(khm_handle pconf, const wchar_t * pvalue, khm_int64 buf) {
-    HKEY pk = NULL;
-    kconf_conf_space * c;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-    LONG hr;
-    const wchar_t * value = NULL;
-    int free_space = 0;
-    khm_handle conf = NULL;
-
-
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    if(pconf && !khc_is_machine_handle(pconf) && !khc_is_user_handle(pconf))
-        return KHM_ERROR_INVALID_OPERATION;
-
-    if (khc_handle_flags(pconf) & KCONF_FLAG_WRITEIFMOD) {
-        khm_int64 tmpvalue;
-
-        if (KHM_SUCCEEDED(khc_read_int64(pconf, pvalue, &tmpvalue)) &&
-            tmpvalue == buf) {
-            return KHM_ERROR_SUCCESS;
-        }
-    }
-
-    if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-        if(KHM_FAILED(khc_open_space(
-            pconf, 
-            pvalue, 
-            KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-            &conf)))
-            return KHM_ERROR_INVALID_PARAM;
-        free_space = 1;
-
-        if (value) {
-            value ++;
-        } else {
-#ifdef DEBUG
-            assert(FALSE);
-#endif
-        }
-    } else {
-        value = pvalue;
-        conf = pconf;
-        free_space = 0;
-    }
-
-    if(!khc_is_handle(conf))
-        return KHM_ERROR_INVALID_PARAM;
-
-    c = khc_space_from_handle( conf);
-
-    if(khc_is_user_handle(conf)) {
-        pk = khcint_space_open_key(c, KHM_PERM_WRITE | KHM_FLAG_CREATE);
-    } else {
-        pk = khcint_space_open_key(c, KHM_PERM_WRITE | KCONF_FLAG_MACHINE | KHM_FLAG_CREATE);
-    }
-
-    hr = RegSetValueEx(pk, value, 0, REG_QWORD, (LPBYTE) &buf, sizeof(khm_int64));
-
-    if(hr != ERROR_SUCCESS)
-        rv = KHM_ERROR_INVALID_OPERATION;
-
-    if(free_space)
-        khc_close_space(conf);
-
-    return rv;
+khc_write_int64(khm_handle pconf, const wchar_t * pvalue, khm_int64 val)
+{
+    return khcint_write_value(pconf, pvalue, KC_INT64, &val, sizeof(val));
 }
 
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
 khc_write_binary(khm_handle pconf, 
                  const wchar_t * pvalue, 
-                 const void * buf, khm_size bufsize) {
-    HKEY pk = NULL;
-    kconf_conf_space * c;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-    LONG hr;
-    const wchar_t * value = NULL;
-    int free_space = 0;
-    khm_handle conf = NULL;
-
-
-    if(!khc_is_config_running())
-        return KHM_ERROR_NOT_READY;
-
-    if(pconf && !khc_is_machine_handle(pconf) && !khc_is_user_handle(pconf))
-        return KHM_ERROR_INVALID_OPERATION;
-
-    if((value = wcsrchr(pvalue, L'\\')) != NULL) {
-        if(KHM_FAILED(khc_open_space(
-            pconf, 
-            pvalue, 
-            KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
-            &conf)))
-            return KHM_ERROR_INVALID_PARAM;
-        free_space = 1;
-
-        if (value) {
-            value ++;
-        } else {
-#ifdef DEBUG
-            assert(FALSE);
-#endif
-        }
-    } else {
-        value = pvalue;
-        conf = pconf;
-        free_space = 0;
-    }
-
-    if(!khc_is_handle(conf))
-        return KHM_ERROR_INVALID_PARAM;
-
-    c = khc_space_from_handle(conf);
-
-    if(khc_is_user_handle(conf)) {
-        pk = khcint_space_open_key(c, KHM_PERM_WRITE | KHM_FLAG_CREATE);
-    } else {
-        pk = khcint_space_open_key(c, KHM_PERM_WRITE | KCONF_FLAG_MACHINE | KHM_FLAG_CREATE);
-    }
-
-    hr = RegSetValueEx(pk, value, 0, REG_BINARY, buf, (DWORD) bufsize);
-
-    if(hr != ERROR_SUCCESS)
-        rv = KHM_ERROR_INVALID_OPERATION;
-
-    if(free_space)
-        khc_close_space(conf);
-
-    return rv;
+                 const void * buf, khm_size bufsize)
+{
+    return khcint_write_value(pconf, pvalue, KC_BINARY, buf, bufsize);
 }
 
 /* no locks */
 KHMEXP khm_int32 KHMAPI 
 khc_get_config_space_name(khm_handle conf, 
-                          wchar_t * buf, khm_size * bufsize) {
+                          wchar_t * buf, khm_size * bufsize)
+{
     kconf_conf_space * c;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
@@ -1992,7 +1245,8 @@ khc_get_config_space_name(khm_handle conf,
 
 /* obtains cs_conf_handle/cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
-khc_get_config_space_parent(khm_handle conf, khm_handle * parent) {
+khc_get_config_space_parent(khm_handle conf, khm_handle * parent)
+{
     kconf_conf_space * c;
 
     if(!khc_is_config_running())
@@ -2013,7 +1267,8 @@ khc_get_config_space_parent(khm_handle conf, khm_handle * parent) {
 
 /* obtains cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
-khc_get_type(khm_handle conf, const wchar_t * value) {
+khc_get_type(khm_handle conf, const wchar_t * value)
+{
     HKEY hkm = NULL;
     HKEY hku = NULL;
     kconf_conf_space * c;
@@ -2140,7 +1395,8 @@ khc_get_last_write_time(khm_handle conf, khm_int32 flags, FILETIME * last_w_time
 
 /* obtains cs_conf_global */
 KHMEXP khm_int32 KHMAPI 
-khc_value_exists(khm_handle conf, const wchar_t * value) {
+khc_value_exists(khm_handle conf, const wchar_t * value)
+{
     HKEY hku = NULL;
     HKEY hkm = NULL;
     kconf_conf_space * c;
@@ -2188,7 +1444,8 @@ khc_value_exists(khm_handle conf, const wchar_t * value) {
 
 /* obtains cs_conf_global */
 KHMEXP khm_int32 KHMAPI
-khc_remove_value(khm_handle conf, const wchar_t * value, khm_int32 flags) {
+khc_remove_value(khm_handle conf, const wchar_t * value, khm_int32 flags)
+{
     HKEY hku = NULL;
     HKEY hkm = NULL;
     kconf_conf_space * c;
@@ -2196,32 +1453,33 @@ khc_remove_value(khm_handle conf, const wchar_t * value, khm_int32 flags) {
     DWORD t;
     LONG l;
 
-    if(!khc_is_config_running())
+    if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
 
-    if(!khc_is_handle(conf))
+    if (!khc_is_handle(conf))
         return KHM_ERROR_INVALID_PARAM;
 
     c = khc_space_from_handle(conf);
 
-    if(khc_is_user_handle(conf))
-        hku = khcint_space_open_key(c, KHM_PERM_READ);
-    hkm = khcint_space_open_key(c, KHM_PERM_READ | KCONF_FLAG_MACHINE);
+    if (khc_is_user_handle(conf))
+        hku = khcint_space_open_key(c, KHM_PERM_WRITE);
+    if (khc_is_machine_handle(conf))
+        hkm = khcint_space_open_key(c, KHM_PERM_WRITE | KCONF_FLAG_MACHINE);
 
-    if((flags == 0 ||
-        (flags & KCONF_FLAG_USER)) &&
-       hku && (RegQueryValueEx(hku, value, NULL, 
-                               &t, NULL, NULL) == ERROR_SUCCESS)) {
+    if ((flags == 0 ||
+         (flags & KCONF_FLAG_USER)) &&
+        hku && (RegQueryValueEx(hku, value, NULL, 
+                                &t, NULL, NULL) == ERROR_SUCCESS)) {
         l = RegDeleteValue(hku, value);
         if (l == ERROR_SUCCESS)
             rv = KHM_ERROR_SUCCESS;
         else
             rv = KHM_ERROR_UNKNOWN;
     }
-    if((flags == 0 ||
-        (flags & KCONF_FLAG_MACHINE)) &&
-       hkm && (RegQueryValueEx(hkm, value, NULL, 
-                               &t, NULL, NULL) == ERROR_SUCCESS)) {
+    if ((flags == 0 ||
+         (flags & KCONF_FLAG_MACHINE)) &&
+        hkm && (RegQueryValueEx(hkm, value, NULL, 
+                                &t, NULL, NULL) == ERROR_SUCCESS)) {
         l = RegDeleteValue(hkm, value);
         if (l == ERROR_SUCCESS)
             rv = (rv == KHM_ERROR_UNKNOWN)?KHM_ERROR_PARTIAL: 
@@ -2236,14 +1494,12 @@ khc_remove_value(khm_handle conf, const wchar_t * value, khm_int32 flags) {
 
 /* called with cs_conf_global held */
 khm_int32
-khcint_remove_space(kconf_conf_space * c, khm_int32 flags) {
+khcint_remove_space(kconf_conf_space * c, khm_int32 flags)
+{
     kconf_conf_space * cc;
     kconf_conf_space * cn;
     kconf_conf_space * p;
     khm_boolean free_c = FALSE;
-
-    /* TODO: if this is the last child space and the parent is marked
-       for deletion, delete the parent as well. */
 
     p = TPARENT(c);
 
@@ -2265,7 +1521,7 @@ khcint_remove_space(kconf_conf_space * c, khm_int32 flags) {
     }
 
     cc = TFIRSTCHILD(c);
-    if (!cc && c->refcount == 0) {
+    if (!cc && !c->schema && c->refcount == 0) {
         TDELCHILD(p, c);
         free_c = TRUE;
     } else {
@@ -2296,13 +1552,13 @@ khcint_remove_space(kconf_conf_space * c, khm_int32 flags) {
             hk = khcint_space_open_key(p, KCONF_FLAG_USER);
 
             if (hk)
-                khcint_RegDeleteKey(hk, c->name);
+                RegDeleteKey(hk, c->name);
         }
         if (flags & KCONF_SPACE_FLAG_DELETE_M) {
             hk = khcint_space_open_key(p, KCONF_FLAG_MACHINE);
 
             if (hk)
-                khcint_RegDeleteKey(hk, c->name);
+                RegDeleteKey(hk, c->name);
         }
     }
 
@@ -2315,29 +1571,30 @@ khcint_remove_space(kconf_conf_space * c, khm_int32 flags) {
 
 /* obtains cs_conf_global */
 KHMEXP khm_int32 KHMAPI
-khc_remove_space(khm_handle conf) {
+khc_remove_space(khm_handle conf)
+{
 
     /*
-       - mark this space as well as all child spaces as
-         'delete-on-close' using flags.  Mark should indicate which
-         repository to delete the space from. (user/machine)
+      - mark this space as well as all child spaces as
+        'delete-on-close' using flags.  Mark should indicate which
+        repository to delete the space from. (user/machine)
 
-       - When each subspace is released, check if it has been marked
-         for deletion.  If so, delete the marked spaces as well as
-         removing the space from kconf space tree.
+      - When each subspace is released, check if it has been marked
+        for deletion.  If so, delete the marked spaces as well as
+        removing the space from kconf space tree.
 
-       - When removing a subspace from a space, check if the parent
-         space has any children left.  If there are none, check if the
-         parent space is also marked for deletion.
+      - When removing a subspace from a space, check if the parent
+        space has any children left.  If there are none, check if the
+        parent space is also marked for deletion.
     */
     kconf_conf_space * c;
     khm_int32 rv = KHM_ERROR_SUCCESS;
     khm_int32 flags = 0;
 
-    if(!khc_is_config_running())
+    if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
 
-    if(!khc_is_handle(conf))
+    if (!khc_is_handle(conf))
         return KHM_ERROR_INVALID_PARAM;
 
     c = khc_space_from_handle(conf);
@@ -2376,52 +1633,52 @@ khcint_validate_schema(const kconf_schema * schema,
     int state = 0;
     int end_found = 0;
 
-    i=begin;
-    while(!end_found) {
-        switch(state) {
-            case 0: /* initial.  this record should start a config space */
-                if(!khcint_is_valid_name(schema[i].name) ||
-                    schema[i].type != KC_SPACE)
-                    return KHM_ERROR_INVALID_PARAM;
-                state = 1;
-                break;
-
-            case 1: /* we are inside a config space, in the values area */
-                if(!khcint_is_valid_name(schema[i].name))
-                    return KHM_ERROR_INVALID_PARAM;
-                if(schema[i].type == KC_SPACE) {
-                    if(KHM_FAILED(khcint_validate_schema(schema, i, &i)))
-                        return KHM_ERROR_INVALID_PARAM;
-                    state = 2;
-                } else if(schema[i].type == KC_ENDSPACE) {
-                    end_found = 1;
-                    if(end)
-                        *end = i;
-                } else {
-                    if(schema[i].type != KC_STRING &&
-                        schema[i].type != KC_INT32 &&
-                        schema[i].type != KC_INT64 &&
-                        schema[i].type != KC_BINARY)
-                        return KHM_ERROR_INVALID_PARAM;
-                }
-                break;
-
-            case 2: /* we are inside a config space, in the subspace area */
-                if(schema[i].type == KC_SPACE) {
-                    if(KHM_FAILED(khcint_validate_schema(schema, i, &i)))
-                        return KHM_ERROR_INVALID_PARAM;
-                } else if(schema[i].type == KC_ENDSPACE) {
-                    end_found = 1;
-                    if(end)
-                        *end = i;
-                } else {
-                    return KHM_ERROR_INVALID_PARAM;
-                }
-                break;
-
-            default:
-                /* unreachable */
+    i = begin;
+    while (!end_found) {
+        switch (state) {
+        case 0: /* initial.  this record should start a config space */
+            if(!khcint_is_valid_name(schema[i].name) ||
+               schema[i].type != KC_SPACE)
                 return KHM_ERROR_INVALID_PARAM;
+            state = 1;
+            break;
+
+        case 1: /* we are inside a config space, in the values area */
+            if (!khcint_is_valid_name(schema[i].name))
+                return KHM_ERROR_INVALID_PARAM;
+            if (schema[i].type == KC_SPACE) {
+                if(KHM_FAILED(khcint_validate_schema(schema, i, &i)))
+                    return KHM_ERROR_INVALID_PARAM;
+                state = 2;
+            } else if (schema[i].type == KC_ENDSPACE) {
+                end_found = 1;
+                if (end)
+                    *end = i;
+            } else {
+                if (schema[i].type != KC_STRING &&
+                    schema[i].type != KC_INT32 &&
+                    schema[i].type != KC_INT64 &&
+                    schema[i].type != KC_BINARY)
+                    return KHM_ERROR_INVALID_PARAM;
+            }
+            break;
+
+        case 2: /* we are inside a config space, in the subspace area */
+            if (schema[i].type == KC_SPACE) {
+                if (KHM_FAILED(khcint_validate_schema(schema, i, &i)))
+                    return KHM_ERROR_INVALID_PARAM;
+            } else if (schema[i].type == KC_ENDSPACE) {
+                end_found = 1;
+                if (end)
+                    *end = i;
+            } else {
+                return KHM_ERROR_INVALID_PARAM;
+            }
+            break;
+            
+        default:
+            /* unreachable */
+            return KHM_ERROR_INVALID_PARAM;
         }
         i++;
     }
@@ -2625,10 +1882,10 @@ khc_enum_subspaces(khm_handle conf,
     kconf_conf_space * p;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    if(!khc_is_config_running())
+    if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
 
-    if(!khc_is_handle(conf) || next == NULL ||
+    if (!khc_is_handle(conf) || next == NULL ||
         (prev != NULL && !khc_is_handle(prev)))
         return KHM_ERROR_INVALID_PARAM;
 
@@ -2690,7 +1947,7 @@ khc_enum_subspaces(khm_handle conf,
         }
 
         /* don't need to go through schema, because that was already
-        done when the schema was loaded. */
+           done when the schema was loaded. */
     }
 
     /* at last we are now ready to return the results */
@@ -2787,7 +2044,7 @@ khc_read_multi_string(khm_handle conf, const wchar_t * value,
 
     rv = csv_to_multi_string(buf, bufsize, tb);
 
-_exit:
+ _exit:
     if (tb != vbuf)
         PFREE(tb);
 

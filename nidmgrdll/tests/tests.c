@@ -138,9 +138,9 @@ void end_task(int failed)
 void check_ifx(khm_boolean b, const char * msg)
 {
     if (!b) {
-        log("%8s: FAILED %.70s\n", suites[current_test]->name, msg);
+        log("%8s: FAILED %.50s\n", suites[current_test]->name, msg);
         task_status = 1;
     } else {
-        log("%8s: Pass %.70s\n", suites[current_test]->name, msg);
+        log("%8s: Pass   %.50s\n", suites[current_test]->name, msg);
     }
 }
