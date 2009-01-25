@@ -846,18 +846,36 @@ khcint_read_value_from_registry(HKEY hk, const wchar_t * value,
 
     if(hr == ERROR_SUCCESS) {
         if(type != kc_type_to_reg_type[expected_type]) {
+
             return KHM_ERROR_TYPE_MISMATCH;
+
+        } else if (type == REG_SZ && buf != NULL &&
+                   ((wchar_t *) buf)[size / sizeof(wchar_t) - 1] != L'\0') {
+
+            /* if the target buffer is not large enough to store the
+               terminating NUL, RegQueryValueEx() will return
+               ERROR_SUCCESS without terminating the string. */
+
+            *bufsize = size + sizeof(wchar_t);
+            return KHM_ERROR_TOO_LONG;
+
         } else {
+
             *bufsize = size;
+
             /* if buf==NULL, RegQueryValueEx will return success and
                just return the required buffer size in 'size' */
             return (buf)? KHM_ERROR_SUCCESS: KHM_ERROR_TOO_LONG;
         }
     } else if(hr == ERROR_MORE_DATA) {
+
         *bufsize = size;
         return KHM_ERROR_TOO_LONG;
+
     } else {
+
         return KHM_ERROR_NOT_FOUND;
+
     }
 }
 

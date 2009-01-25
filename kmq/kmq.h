@@ -524,6 +524,18 @@ KHMEXP khm_int32 KHMAPI kmq_send_subs_msg(
     khm_ui_4 uparam, 
     void * vparam);
 
+/*! \brief Get the message that is being processed
+
+    When this function is called during processing of a message
+    (i.e. in a kmq_dispatch() call, kmq_wm_dispatch() call or between
+    kmq_wm_begin() and kmq_wm_end() ) returns the message that is
+    being processed.
+
+    If there is no current message, sets *ppm to NULL.
+ */
+KHMEXP khm_int32 KHMAPI
+kmq_get_current_message(kmq_message ** ppm);
+
 /*! \brief Dispatch a message for the current thread.
 
     This function opens the message list for the current thread and
@@ -544,6 +556,53 @@ KHMEXP khm_int32 KHMAPI kmq_send_subs_msg(
     \retval KHM_ERROR_EXIT The message found on the queue was <KMSG_SYSTEM,KMSG_SYSTEM_EXIT>
 */
 KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout);
+
+/*! \brief Match the message type
+
+    \see kmq_purge_queue()
+  */
+#define KMQ_MATCH_TYPE    0x00000001
+
+/*! \brief Match the message type and subtype
+
+    \see kmq_purge_queue()
+  */
+#define KMQ_MATCH_SUBTYPE 0x00000003
+
+/*! \brief Match the message type, subtype and uparam
+
+    \see kmq_purge_queue()
+  */
+#define KMQ_MATCH_UPARAM  0x00000007
+
+/*! \brief Match the message vparam
+
+    \see kmq_purge_queue()
+  */
+#define KMQ_MATCH_VPARAM  0x00000008
+
+/*! \brief Purge messages from a message queue
+
+    All the message that are currently in the queue that match the
+    given criteria will be removed from the queue.  Any message
+    completion routines will be immediately invoked if applicable.
+
+    The purge operation only applies to the message queue that is
+    associated with the current thread.
+
+    \param[in] flags A combination of ::KMQ_MATCH_TYPE,
+        ::KMQ_MATCH_SUBTYPE, ::KMQ_MATCH_UPARAM and ::KMQ_MATCH_VPARAM
+        that specify which of the other parameters are used to match
+        messages.
+
+    \retval KHM_ERROR_SUCCESS One or messages were purged from the queue.
+    \retval KHM_ERROR_NOT_FOUND No messages were found that matches
+        the type and subtype specified.
+*/
+KHMEXP khm_int32 KHMAPI
+kmq_purge_queue(khm_int32 flags,
+                khm_int32 type, khm_int32 subtype,
+                khm_ui_4 uparam, void * vparam);
 
 /*! \brief Send a message
 

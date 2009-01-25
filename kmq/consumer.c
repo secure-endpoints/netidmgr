@@ -167,6 +167,50 @@ void kmqint_get_queue_message_ref(kmq_queue * q, kmq_message_ref ** r) {
     LeaveCriticalSection(&q->cs);
 }
 
+void kmqint_set_queue_message(kmq_queue * q, kmq_message * m)
+{
+    EnterCriticalSection(&q->cs);
+    q->last_msg = m;
+    LeaveCriticalSection(&q->cs);
+}
+
+void
+kmqint_get_queue_message_ref_match(kmq_queue * q,
+                                   khm_int32 flags,
+                                   khm_int32 ty, khm_int32 sty,
+                                   khm_ui_4 up, void * vp,
+                                   kmq_message_ref ** r)
+{
+    EnterCriticalSection(&q->cs);
+
+    if (q->flags & KMQ_QUEUE_FLAG_DELETED) {
+        *r = NULL;
+    } else {
+        kmq_message_ref * mr = NULL;
+
+        for (mr = QBOTTOM(q); mr; mr = QNEXT(mr)) {
+            if (((flags & KMQ_MATCH_TYPE) != KMQ_MATCH_TYPE || mr->msg->type == ty) &&
+                ((flags & KMQ_MATCH_SUBTYPE) != KMQ_MATCH_SUBTYPE || mr->msg->subtype == sty) &&
+                ((flags & KMQ_MATCH_UPARAM) != KMQ_MATCH_UPARAM || mr->msg->uparam == up) &&
+                ((flags & KMQ_MATCH_VPARAM) != KMQ_MATCH_VPARAM || mr->msg->vparam == vp))
+
+                break;
+        }
+
+        *r = mr;
+
+        if (mr) {
+            QDEL(q, mr);
+            if (QTOP(q))
+                SetEvent(q->wait_o);
+            else
+                ResetEvent(q->wait_o);
+        }
+    }
+
+    LeaveCriticalSection(&q->cs);
+}
+
 /*! \internal
     \brief Post a message to a queue
     \note Obtains ::cs_kmq_msg_ref, ::cs_kmq_msg, kmq_queue::cs
@@ -476,11 +520,24 @@ KHMEXP khm_int32 KHMAPI kmq_unsubscribe(khm_int32 type, kmq_callback_t cb) {
     return (s)?KHM_ERROR_SUCCESS:KHM_ERROR_NOT_FOUND;
 }
 
+KHMEXP khm_int32 KHMAPI kmq_get_current_message(kmq_message ** ppm)
+{
+    kmq_queue * q;
+
+    q = kmqint_get_thread_queue();
+    EnterCriticalSection(&q->cs);
+    *ppm = q->last_msg;
+    LeaveCriticalSection(&q->cs);
+
+    return KHM_ERROR_SUCCESS;
+}
+
 KHMEXP LRESULT KHMAPI kmq_wm_begin(LPARAM lparm, kmq_message ** m) {
     *m = (kmq_message *) lparm;
     if ((*m)->err_ctx) {
         kherr_push_context((*m)->err_ctx);
     }
+    kmqint_set_queue_message(kmqint_get_thread_queue(), *m);
     return TRUE;
 }
 
@@ -488,6 +545,7 @@ KHMEXP LRESULT KHMAPI kmq_wm_begin(LPARAM lparm, kmq_message ** m) {
     \note Obtains ::cs_kmq_msg
     */
 KHMEXP LRESULT KHMAPI kmq_wm_end(kmq_message *m, khm_int32 rv) {
+    kmqint_set_queue_message(kmqint_get_thread_queue(), NULL);
     if (m->err_ctx)
         kherr_pop_context();
 
@@ -518,7 +576,11 @@ KHMEXP LRESULT KHMAPI kmq_wm_dispatch(LPARAM lparm, kmq_callback_t cb) {
     if (m->err_ctx)
         kherr_push_context(m->err_ctx);
 
+    kmqint_set_queue_message(kmqint_get_thread_queue(), m);
+
     rv = cb(m->type, m->subtype, m->uparam, m->vparam);
+
+    kmqint_set_queue_message(kmqint_get_thread_queue(), NULL);
 
     if (m->err_ctx)
         kherr_pop_context();
@@ -539,16 +601,53 @@ KHMEXP LRESULT KHMAPI kmq_wm_dispatch(LPARAM lparm, kmq_callback_t cb) {
     return TRUE;
 }
 
-KHMEXP khm_boolean KHMAPI kmq_is_call_aborted(void) {
+KHMEXP khm_boolean KHMAPI kmq_is_call_aborted(void)
+{
     /* TODO: Implement this */
     return FALSE;
+}
+
+KHMEXP khm_int32 KHMAPI
+kmq_purge_queue(khm_int32 flags,
+                khm_int32 type, khm_int32 subtype,
+                khm_ui_4 uparam, void * vparam)
+{
+    kmq_queue * q;
+    kmq_message_ref * r;
+    kmq_message *m;
+    int n_purged = 0;
+
+    q = kmqint_get_thread_queue();
+
+    do {
+        kmqint_get_queue_message_ref_match(q, flags, type, subtype, uparam, vparam, &r);
+        if (r == NULL)
+            break;
+        m = r->msg;
+
+        EnterCriticalSection(&cs_kmq_msg);
+        EnterCriticalSection(&cs_kmq_msg_ref);
+        kmqint_put_message_ref(r);
+        LeaveCriticalSection(&cs_kmq_msg_ref);
+
+        m->nCompleted++;
+
+        if(m->nCompleted + m->nFailed == m->nSent) {
+            kmqint_put_message(m);
+        }
+        LeaveCriticalSection(&cs_kmq_msg);
+        n_purged++;
+    } while (TRUE);
+
+    return (n_purged > 0)? KHM_ERROR_SUCCESS : KHM_ERROR_NOT_FOUND;
 }
 
 /*! \internal
 
     \note Obtains ::cs_kmq_global, kmq_queue::cs, ::cs_kmq_msg_ref, ::cs_kmq_msg, 
 */
-KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout) {
+KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout)
+{
     kmq_queue * q;
     kmq_message_ref * r;
     kmq_message *m;
@@ -577,8 +676,12 @@ KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout) {
                needs to happen in kmq_wm_dispatch() and
                kmq_wm_begin() as well. */
 
+            kmqint_set_queue_message(q, m);
+
             /* dispatch */
-            rv = r->recipient(m->type, m->subtype, m->uparam, m->vparam);
+            rv = (*r->recipient)(m->type, m->subtype, m->uparam, m->vparam);
+
+            kmqint_set_queue_message(q, NULL);
 
             if (m->err_ctx)
                 kherr_pop_context();

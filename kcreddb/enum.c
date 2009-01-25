@@ -164,3 +164,27 @@ kcdb_enum_sort(kcdb_enumeration e,
 
     return KHM_ERROR_SUCCESS;
 }
+
+KHMEXP khm_int32 KHMAPI
+kcdb_enum_filter(kcdb_enumeration e,
+                 kcdb_filter_func f,
+                 void * vparam)
+{
+    khm_size i;
+
+    if (!kcdb_is_enum(e))
+        return KHM_ERROR_INVALID_PARAM;
+
+    for (i=0; i < e->n; i++) {
+        if (!(*f)(e->objs[i], vparam)) {
+            kcdb_buf_release(e->objs[i]);
+            if (i+1 < e->n)
+                memmove(&e->objs[i], &e->objs[i+1], (e->n - (i+1)) * sizeof(e->objs[0]));
+            e->n--;
+            --i;
+        }
+    }
+
+    kcdb_enum_reset(e);
+    return KHM_ERROR_SUCCESS;
+}

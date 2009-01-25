@@ -77,6 +77,8 @@ typedef struct tag_kmq_queue {
 
     khm_int32 flags;            /*!< Flags.  Currently, it's just KMQ_QUEUE_FLAG_DELETED */
 
+    kmq_message * last_msg;     /*!< Last message that was dispatched on this thread */
+
     /*Q*/
     QDCL(kmq_message_ref);      /*!< Queue of message references  */
 

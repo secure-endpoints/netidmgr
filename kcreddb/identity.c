@@ -54,7 +54,8 @@ static khm_int32
 hash_identity_comp(const void *, const void *);
 
 void 
-kcdbint_ident_init(void) {
+kcdbint_ident_init(void)
+{
     InitializeCriticalSection(&cs_ident);
     kcdb_identities_namemap =
         hash_new_hashtable(KCDB_IDENT_HASHTABLE_SIZE,
@@ -65,7 +66,8 @@ kcdbint_ident_init(void) {
 }
 
 void 
-kcdbint_ident_exit(void) {
+kcdbint_ident_exit(void)
+{
     EnterCriticalSection(&cs_ident);
     hash_del_hashtable(kcdb_identities_namemap);
     LeaveCriticalSection(&cs_ident);
@@ -75,20 +77,23 @@ kcdbint_ident_exit(void) {
 
 /* message completion routine */
 void 
-kcdbint_ident_msg_completion(kmq_message * m) {
+kcdbint_ident_msg_completion(kmq_message * m)
+{
     kcdb_identity_release(m->vparam);
 }
 
 /*! \note cs_ident must be available. */
 void 
-kcdbint_ident_post_message(khm_int32 op, kcdb_identity * id) {
+kcdbint_ident_post_message(khm_int32 op, kcdb_identity * id)
+{
     kcdb_identity_hold(id);
     kmq_post_message(KMSG_KCDB, KMSG_KCDB_IDENT, op, (void *) id);
 }
 
 /* hashtable callbacks */
 static khm_int32
-hash_identity(const void * vkey) {
+hash_identity(const void * vkey)
+{
     const kcdb_identity * key = (const kcdb_identity *) vkey;
 
 #ifdef DEBUG
@@ -99,7 +104,8 @@ hash_identity(const void * vkey) {
 }
 
 static khm_int32
-hash_identity_comp(const void * vkey1, const void * vkey2) {
+hash_identity_comp(const void * vkey1, const void * vkey2)
+{
     const kcdb_identity * key1 = (const kcdb_identity *) vkey1;
     const kcdb_identity * key2 = (const kcdb_identity *) vkey2;
 
@@ -223,10 +229,12 @@ kcdb_identity_create_ex(khm_handle vidpro,
                         const wchar_t * name,
                         khm_int32 flags,
                         void * vparam,
-                        khm_handle * result) {
+                        khm_handle * result)
+{
     kcdb_identity * id = NULL;
     kcdb_identity * id_tmp = NULL;
     kcdb_identity   id_query;
+    khm_boolean     create_config = FALSE;
 
     if (!result || !name || !kcdb_is_active_identpro(vidpro))
         return KHM_ERROR_INVALID_PARAM;
@@ -252,7 +260,8 @@ kcdb_identity_create_ex(khm_handle vidpro,
         return KHM_ERROR_NOT_FOUND;
     }
 
-    flags &= ~KCDB_IDENT_FLAG_CREATE;
+    create_config = !!(flags & KCDB_IDENT_FLAG_CONFIG);
+    flags &= ~(KCDB_IDENT_FLAG_CREATE | KCDB_IDENT_FLAG_CONFIG);
 
     /* nope. create it */
     if((flags & ~KCDB_IDENT_FLAGMASK_RDWR) ||
@@ -285,7 +294,10 @@ kcdb_identity_create_ex(khm_handle vidpro,
     /* vidpro is already held from above */
 
     id->flags = (flags & KCDB_IDENT_FLAGMASK_RDWR);
-    id->flags |= KCDB_IDENT_FLAG_ACTIVE | KCDB_IDENT_FLAG_EMPTY;
+    id->flags |=
+        KCDB_IDENT_FLAG_ACTIVE |
+        KCDB_IDENT_FLAG_EMPTY |
+        KCDB_IDENT_FLAG_NO_NOTIFY;
     LINIT(id);
 
     EnterCriticalSection(&cs_ident);
@@ -309,9 +321,9 @@ kcdb_identity_create_ex(khm_handle vidpro,
            identity serial number */
         h_kcdb = kcdb_get_config();
         if (kcdb_ident_serial == 0) {
-			khm_int64 t = 0;
+            khm_int64 t = 0;
             khc_read_int64(h_kcdb, L"IdentSerial", &t);
-			kcdb_ident_serial = (khm_ui_8) t;
+            kcdb_ident_serial = (khm_ui_8) t;
         }
 
         if (id->serial == 0)
@@ -321,7 +333,10 @@ kcdb_identity_create_ex(khm_handle vidpro,
         LPUSH(&kcdb_identities, id);
         kcdb_identity_hold((khm_handle) id);
 
-        if(KHM_SUCCEEDED(kcdb_identity_get_config((khm_handle) id, KCONF_FLAG_SHADOW, &h_cfg))) {
+        if (KHM_SUCCEEDED(kcdb_identity_get_config((khm_handle) id,
+                                                   KCONF_FLAG_SHADOW |
+                                                   ((create_config)? KHM_FLAG_CREATE : 0),
+                                                   &h_cfg))) {
             /* don't need to set the KCDB_IDENT_FLAG_CONFIG flags
                since kcdb_identity_get_config() sets it for us. */
             khm_int32 sticky;
@@ -335,7 +350,7 @@ kcdb_identity_create_ex(khm_handle vidpro,
 
             khc_close_space(h_cfg);
         }
-
+        
         if (id->serial == kcdb_ident_serial) {
             khc_write_int64(h_kcdb, L"IdentSerial", kcdb_ident_serial);
         }
@@ -362,6 +377,10 @@ kcdb_identity_create_ex(khm_handle vidpro,
 
         if (h_kcdb)
             khc_close_space(h_kcdb);
+
+        EnterCriticalSection(&cs_ident);
+        id->flags &= ~KCDB_IDENT_FLAG_NO_NOTIFY;
+        LeaveCriticalSection(&cs_ident);
     }
 
     return KHM_ERROR_SUCCESS;
@@ -370,7 +389,8 @@ kcdb_identity_create_ex(khm_handle vidpro,
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_create(const wchar_t *name, 
                      khm_int32 flags, 
-                     khm_handle * result) {
+                     khm_handle * result)
+{
     wchar_t * pc;
     wchar_t id_name[KCDB_IDENT_MAXCCH_NAME];
     khm_handle vidpro = NULL;
@@ -593,7 +613,8 @@ khui_cache_del_by_owner(khm_handle owner);
 
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_delete(khm_handle vid) {
+kcdb_identity_delete(khm_handle vid)
+{
     kcdb_identity * id;
     khm_int32 code = KHM_ERROR_SUCCESS;
 
@@ -650,7 +671,8 @@ kcdb_identity_delete(khm_handle vid) {
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_set_flags(khm_handle vid, 
                         khm_int32 flag,
-                        khm_int32 mask) {
+                        khm_int32 mask)
+{
     kcdb_identity * id;
     khm_int32 oldflags;
     khm_int32 newflags;
@@ -769,7 +791,7 @@ kcdb_identity_set_flags(khm_handle vid,
             vid);
     }
 
-    if(delta != 0)
+    if(delta != 0 && !(newflags & KCDB_IDENT_FLAG_NO_NOTIFY))
         kcdbint_ident_post_message(KCDB_OP_MODIFY, vid);
 
     return KHM_ERROR_SUCCESS;
@@ -801,6 +823,7 @@ kcdb_identity_set_parent(khm_handle vid,
 {
     kcdb_identity * id;
     kcdb_identity * old_parent = NULL;
+    khm_boolean notify = FALSE;
 
     if (!kcdb_is_active_identity(vid) ||
         (vparent != NULL && !kcdb_is_active_identity(vparent)))
@@ -813,12 +836,14 @@ kcdb_identity_set_parent(khm_handle vid,
     id->parent = (kcdb_identity *) vparent;
     if (vparent)
         kcdb_identity_hold(vparent);
+    notify = !(id->flags & KCDB_IDENT_FLAG_NO_NOTIFY);
     LeaveCriticalSection(&cs_ident);
 
     if (old_parent)
         kcdb_identity_release(old_parent);
 
-    kcdbint_ident_post_message(KCDB_OP_MODIFY, id);
+    if (notify)
+        kcdbint_ident_post_message(KCDB_OP_MODIFY, id);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -864,7 +889,8 @@ kcdb_identity_get_serial(khm_handle vid, khm_ui_8 * pserial)
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_get_name(khm_handle vid, 
                        wchar_t * buffer, 
-                       khm_size * pcbsize) {
+                       khm_size * pcbsize)
+{
     size_t namesize;
     kcdb_identity * id;
 
@@ -913,7 +939,8 @@ kcdb_identity_get_identpro(khm_handle h_ident,
 #pragma warning(disable: 4995)
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_get_default(khm_handle * pvid) {
+kcdb_identity_get_default(khm_handle * pvid)
+{
     khm_handle idpro = NULL;
     khm_int32 rv;
 
@@ -949,7 +976,8 @@ kcdb_identity_set_default_int(khm_handle vid) {
 KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_config(khm_handle vid, 
                          khm_int32 flags,
-                         khm_handle * result) {
+                         khm_handle * result)
+{
     khm_handle hkcdb;
     khm_handle hidents = NULL;
     khm_handle hident = NULL;
@@ -970,6 +998,8 @@ kcdb_identity_get_config(khm_handle vid,
         return rv;
 
     if (flags & KHM_FLAG_CREATE) {
+        /* Identity configuration should only be created in the user
+           store and should use the schema. */
         flags |= KCONF_FLAG_USER | KCONF_FLAG_SCHEMA;
     }
 
@@ -1055,7 +1085,7 @@ kcdb_identity_get_config(khm_handle vid,
     } else
         rv = KHM_ERROR_UNKNOWN;
 
-_exit:
+ _exit:
     LeaveCriticalSection(&cs_ident);
 
     if (need_to_notify_provider) {
@@ -1071,7 +1101,8 @@ _exit:
 
 /*! \note cs_ident must be available. */
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_hold(khm_handle vid) {
+kcdb_identity_hold(khm_handle vid)
+{
     kcdb_identity * id;
 
     EnterCriticalSection(&cs_ident);
@@ -1088,7 +1119,8 @@ kcdb_identity_hold(khm_handle vid) {
 
 /*! \note cs_ident must be available. */
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_release(khm_handle vid) {
+kcdb_identity_release(khm_handle vid)
+{
     kcdb_identity * id;
     khm_int32 refcount;
 
@@ -1123,7 +1155,8 @@ struct kcdb_idref_result {
 /* Identity refresh callback.  Itereated over all the credentials in
    the root credentials set. */
 static khm_int32 KHMAPI 
-kcdbint_idref_proc(khm_handle cred, void * r) {
+kcdbint_idref_proc(khm_handle cred, void * r)
+{
     khm_handle vid;
     struct kcdb_idref_result *result;
     khm_int32 flags;
@@ -1171,10 +1204,12 @@ kcdbint_idref_proc(khm_handle cred, void * r) {
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_refresh(khm_handle vid) {
+kcdb_identity_refresh(khm_handle vid)
+{
     kcdb_identity * ident = NULL;
     khm_int32 code = KHM_ERROR_SUCCESS;
     struct kcdb_idref_result result;
+    khm_boolean notify = FALSE;
 
     EnterCriticalSection(&cs_ident);
 
@@ -1210,6 +1245,9 @@ kcdb_identity_refresh(khm_handle vid) {
     ident->n_credentials = result.n_credentials;
     ident->n_id_credentials = result.n_id_credentials;
     ident->n_init_credentials = result.n_init_credentials;
+    ident->flags &= ~KCDB_IDENT_FLAG_NEEDREFRESH;
+
+    notify = !(ident->flags & KCDB_IDENT_FLAG_NO_NOTIFY);
 
  _exit:
     LeaveCriticalSection(&cs_ident);
@@ -1217,14 +1255,15 @@ kcdb_identity_refresh(khm_handle vid) {
     if (code == 0)
         code = kcdb_identpro_update(vid);
 
-    if (ident != 0 && code == 0)
+    if (ident != 0 && code == 0 && notify)
         kcdbint_ident_post_message(KCDB_OP_MODIFY, ident);
 
     return code;
 }
 
 KHMEXP khm_int32 KHMAPI 
-kcdb_identity_refresh_all(void) {
+kcdb_identity_refresh_all(void)
+{
     kcdb_identity * ident;
     kcdb_identity * next;
     khm_int32 code = KHM_ERROR_SUCCESS;
@@ -1280,10 +1319,11 @@ kcdb_identity_refresh_all(void) {
 /*****************************************/
 /* Custom property functions             */
 
-khm_int32 kcdbint_ident_attr_cb(khm_handle h,
-                                khm_int32 attr,
-                                void * buf,
-                                khm_size *pcb_buf)
+khm_int32
+kcdbint_ident_attr_cb(khm_handle h,
+                      khm_int32 attr,
+                      void * buf,
+                      khm_size *pcb_buf)
 {
     kcdb_identity * id;
 
@@ -1809,7 +1849,7 @@ kcdb_identity_get_attr_string(khm_handle vid,
             code = KHM_ERROR_NOT_FOUND;
     }
 
-_exit:
+ _exit:
     LeaveCriticalSection(&cs_ident);
     if(type)
         kcdb_type_release_info(type);
@@ -1860,9 +1900,9 @@ check_config_for_identities(void)
         if(KHM_FAILED(khc_open_space(h_kcdb, L"Identity", 0, &h_idents)))
             goto _config_check_cleanup;
 
-        while(KHM_SUCCEEDED(khc_enum_subspaces(h_idents,
-                                               h_ident,
-                                               &h_ident))) {
+        while (KHM_SUCCEEDED(khc_enum_subspaces(h_idents,
+                                                h_ident,
+                                                &h_ident))) {
 
             wchar_t wname[KCDB_IDENT_MAXCCH_NAME];
             khm_size cb;
@@ -1912,7 +1952,8 @@ check_config_for_identities(void)
                 LeaveCriticalSection(&cs_ident);
 
                 if (KHM_SUCCEEDED(kcdb_identity_create(wname,
-                                                       KCDB_IDENT_FLAG_CREATE,
+                                                       KCDB_IDENT_FLAG_CREATE |
+                                                       KCDB_IDENT_FLAG_CONFIG,
                                                        &t_id)))
                     kcdb_identity_release(t_id);
                 else

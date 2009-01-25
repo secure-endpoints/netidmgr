@@ -279,11 +279,18 @@ Functions, macros etc. for manipulating identities.
  */
 #define KCDB_IDENT_FLAG_KEY_STORE   0x00008000L
 
+/*! \brief Don't post notifications
+
+    No notifications about identity property changes will be generated
+    while this flag is set.
+ */
+#define KCDB_IDENT_FLAG_NO_NOTIFY   0x00010000L
+
 /*! \brief Read/write flags mask.
 
     A bitmask that correspond to all the read/write flags in the mask.
 */
-#define KCDB_IDENT_FLAGMASK_RDWR    0x0000ffffL
+#define KCDB_IDENT_FLAGMASK_RDWR    0x0001ffffL
 
 /*@}*/
 
@@ -526,8 +533,8 @@ kcdb_enum_end(kcdb_enumeration e);
   identity providers.
 */
 typedef khm_int32 (KHMCALLBACK * kcdb_comp_func)(khm_handle h1,
-                                            khm_handle h2,
-                                            void * vparam);
+                                                 khm_handle h2,
+                                                 void * vparam);
 
 /*! \brief Sort an enumeration
 
@@ -539,6 +546,16 @@ KHMEXP khm_int32 KHMAPI
 kcdb_enum_sort(kcdb_enumeration e,
                kcdb_comp_func   f,
                void * vparam);
+
+
+/*! \brief Generic filter function
+
+ */
+typedef khm_boolean (KHMCALLBACK * kcdb_filter_func)(khm_handle h,
+                                                     void * vparam);
+
+KHMEXP khm_int32 KHMAPI
+kcdb_enum_filter(kcdb_enumeration e, kcdb_filter_func f, void * vparam);
 
 /*@}*/
 
@@ -1084,6 +1101,11 @@ kcdb_identity_create(const wchar_t *name,
         Additional flags can be set here which will be assigned to the
         identity if it is created.  Additional flags have no effect if
         an existing identity is opened.
+
+        Specifying ::KCDB_IDENT_FLAG_CONFIG here will create a
+        configuration space for the identity if this is a new
+        identity.  If the identity already exists and is active, a
+        configuration space will not be created.
 
     \param[in] vparam Additional parameter for identity creation.  If
         the name of the identity is not sufficient to uniquely
@@ -1685,7 +1707,7 @@ kcdb_identity_begin_enum(khm_int32 and_flags,
 */
 typedef khm_int32 
 (KHMCALLBACK *kcdb_cred_apply_func)(khm_handle cred, 
-                               void * rock);
+                                    void * rock);
 
 /*! \brief Credentials filter function.
 
@@ -1702,8 +1724,8 @@ typedef khm_int32
 */
 typedef khm_int32 
 (KHMCALLBACK *kcdb_cred_filter_func)(khm_handle cred, 
-                                khm_int32 flags, 
-                                void * rock);
+                                     khm_int32 flags, 
+                                     void * rock);
 
 /*! \defgroup kcdb_credset Credential sets */
 /*@{*/
@@ -4237,6 +4259,7 @@ namespace nim {
         }
 
         typedef khm_int32 (KHMCALLBACK * Comparator)(const T& e1, const T& e2, void * param);
+        typedef khm_boolean (KHMCALLBACK * FilterProc)(const T& e, void * param);
 
     private:
         struct ComparatorData {
@@ -4246,9 +4269,20 @@ namespace nim {
 
         static khm_int32 KHMCALLBACK InternalComparator(khm_handle h1, khm_handle h2, void * param) {
             ComparatorData * d = reinterpret_cast<ComparatorData *>(param);
-            T t1, t2;
-            t1 = h1; t2 = h2;
+            T t1(h1, false);
+            T t2(h2, false);
             return d->f(t1, t2, d->param);
+        }
+
+        struct FilterProcData {
+            FilterProc f;
+            void * param;
+        };
+
+        static khm_boolean KHMCALLBACK InternalFilterProc(khm_handle h, void * param) {
+            FilterProcData * d = reinterpret_cast<FilterProcData *>(param);
+            T t(h, false);
+            return d->f(t, d->param);
         }
 
     public:
@@ -4269,6 +4303,16 @@ namespace nim {
 
             rv = kcdb_enum_sort(e, f, param);
             Reset();
+            return rv;
+        }
+
+        khm_int32 Filter(FilterProc f, void * param = NULL) {
+            khm_int32 rv;
+            FilterProcData d;
+
+            d.f = f;
+            d.param = param;
+            rv = kcdb_enum_filter(e, InternalFilterProc, &d);
             return rv;
         }
     };

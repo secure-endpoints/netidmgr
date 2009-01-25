@@ -91,7 +91,7 @@ kmqint_dump_publisher(FILE * f) {
 }
 
 const wchar_t *
-kmqint_msgtype_to_str(khm_int32 msg_type)
+kmqint_msgsubtype_to_str(wchar_t * buf, khm_size cb, khm_int32 t, khm_int32 st)
 {
     static const wchar_t *mt[] = {
         L"SYSTEM",
@@ -106,16 +106,6 @@ kmqint_msgtype_to_str(khm_int32 msg_type)
         L"CREDP"
     };
 
-    if (msg_type >= 0 && msg_type < ARRAYLENGTH(mt)) {
-        return mt[msg_type];
-    } else {
-        return L"(Custom)";
-    }
-}
-
-const wchar_t *
-kmqint_msgsubtype_to_str(khm_int32 t, khm_int32 st)
-{
     static const wchar_t *_sys[] = {
         L"(*)", L"INIT", L"EXIT", L"Completion"
     };
@@ -154,7 +144,6 @@ kmqint_msgsubtype_to_str(khm_int32 t, khm_int32 st)
         L"VALIDATE_IDENTITY", L"CANON_NAME", L"COMPARE_NAME", L"SET_DEFAULT",
         L"SET_SEARCHABLE", L"GET_INFO", L"ENUM_KNOWN", L"UPDATE",
         L"GET_UI_CALLBACK", L"NOTIFY_CREATE", L"RESOURCE_REQ", L"GET_IDSEL_FACTORY"
-        
     };
 
     static const wchar_t *_taskobj[] = {
@@ -186,13 +175,48 @@ kmqint_msgsubtype_to_str(khm_int32 t, khm_int32 st)
 
     if (t >= 0 && t < ARRAYLENGTH(mst)) {
         if (st >= 0 && st < mst[t].max) {
-            return mst[t].s[st];
+            StringCbPrintf(buf, cb, L"<%s, %s>", mt[t], mst[t].s[st]);
         } else {
-            return L"(Custom)";
+            StringCbPrintf(buf, cb, L"<%s, %d>", mt[t], st);
         }
     } else {
-        return L"(Custom Type)";
+        StringCbPrintf(buf, cb, L"<%d, %d>", t, st);
     }
+
+    return buf;
+}
+
+extern khm_boolean
+decode_kmsg_cred_message_to_string(wchar_t * buf, khm_size cb,
+                                   khm_int32 ty, khm_int32 sty, khm_ui_4 up, void * vp);
+
+extern khm_boolean
+decode_kmsg_kcdb_message_to_string(wchar_t * buf, khm_size cb,
+                                   khm_int32 ty, khm_int32 sty, khm_ui_4 up, void * vp);
+
+static void
+kmqint_report_message(const wchar_t * prefix,
+                      khm_int32 ty, khm_int32 sty, khm_ui_4 up, void * vp)
+{
+    wchar_t buf[128];
+    wchar_t tbuf[64];
+
+    switch (ty) {
+    case KMSG_CRED:
+        if (decode_kmsg_cred_message_to_string(buf, sizeof(buf), ty, sty, up, vp))
+            break;
+
+    case KMSG_KCDB:
+        if (decode_kmsg_kcdb_message_to_string(buf, sizeof(buf), ty, sty, up, vp))
+            break;
+
+    default:
+        StringCbPrintf(buf, sizeof(buf), L"%s with uparam=%d, vparam=0x%p",
+                       kmqint_msgsubtype_to_str(tbuf, sizeof(tbuf), ty, sty),
+                       up, vp);
+    }
+
+    _reportf(L"%s %s", prefix, buf);
 }
 
 #endif
@@ -315,10 +339,7 @@ kmqint_post_message_ex(khm_int32 type, khm_int32 subtype, khm_ui_4 uparam,
     kherr_context * ctx;
 
 #ifdef DEBUG
-    _reportf(L"Posting message (%s,%s)<%d,%d> with parameters <%x, %p>",
-             kmqint_msgtype_to_str(type),
-             kmqint_msgsubtype_to_str(type, subtype),
-             type, subtype, uparam, blob);
+    kmqint_report_message(L"Posting message", type, subtype, uparam, blob);
 #endif
 
     EnterCriticalSection(&cs_kmq_msg);
@@ -389,10 +410,7 @@ kmqint_post_sub_msg_ex(khm_handle sub, khm_int32 type, khm_int32 subtype,
     kherr_context * ctx;
 
 #ifdef DEBUG
-    _reportf(L"Posting message (%s,%s)<%d,%d> with parameters <%x, %p> (Subscription)",
-             kmqint_msgtype_to_str(type),
-             kmqint_msgsubtype_to_str(type, subtype),
-             type, subtype, uparam, vparam);
+    kmqint_report_message(L"Posting message (Subscription)", type, subtype, uparam, vparam);
 #endif
 
     EnterCriticalSection(&cs_kmq_msg);
@@ -457,10 +475,8 @@ kmqint_post_subs_msg_ex(khm_handle * subs, khm_size   n_subs, khm_int32 type,
     khm_size i;
 
 #ifdef DEBUG
-    _reportf(L"Posting message (%s,%s)<%d,%d> with parameters <%x, %p> (Subscriptions)",
-             kmqint_msgtype_to_str(type),
-             kmqint_msgsubtype_to_str(type, subtype),
-             type, subtype, uparam, vparam);
+    kmqint_report_message(L"Posting message (Subscriptions)", type, subtype,
+                          uparam, vparam);
 #endif
 
     if(n_subs == 0)
