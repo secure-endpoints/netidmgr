@@ -1162,7 +1162,7 @@ namespace nim
         void UpdateCredentials();
         void UpdateOutline();
 
-        void InsertDerivedIdentities(CwOutlineBase * o, Identity * id);
+        int  InsertDerivedIdentities(CwOutlineBase * o, Identity * id);
         void ToggleColumnByAttributeId(khm_int32 attr_id);
 
     public:
@@ -1735,18 +1735,21 @@ namespace nim
     }
 
     struct InsertCredentialProcData {
-        CwTable       *table;
-        CwOutlineBase *target;
-        Identity      *filter_by;
-        int column;
+        CwTable        *table;
+        CwOutlineBase  *target;
+        Identity       *filter_by;
+        int             column;
+        int             n_added;
     };
 
     static khm_int32 KHMCALLBACK InsertCredentialProc(Credential& credential, void * p)
     {
         InsertCredentialProcData *d = static_cast<InsertCredentialProcData *>(p);
 
-        if (d->filter_by == NULL || credential.GetIdentity() == *d->filter_by)
+        if (d->filter_by == NULL || credential.GetIdentity() == *d->filter_by) {
             d->target->Insert(credential, d->table->columns, d->column);
+            d->n_added++;
+        }
         return KHM_ERROR_SUCCESS;
     }
 
@@ -1770,37 +1773,52 @@ namespace nim
     khm_boolean KHMCALLBACK FilterByParent(const Identity& identity, void * param)
     {
         FilterByParentData * d = reinterpret_cast<FilterByParentData *>(param);
-        return identity.GetParent() == *(d->parent);
+        return
+            (d->parent == NULL && static_cast<khm_handle>(identity.GetParent()) == NULL) ||
+            (d->parent != NULL && identity.GetParent() == *(d->parent));
     }
 
-    void
+    khm_boolean KHMCALLBACK FilterByAlwaysVisible(const Identity& identity, void * param)
+    {
+        return (identity.GetFlags() & (KCDB_IDENT_FLAG_STICKY |
+                                       KCDB_IDENT_FLAG_DEFAULT)) ||
+            identity.GetAttribInt32(KCDB_ATTR_N_CREDS) > 0;
+    }
+
+    int
     CwTable::InsertDerivedIdentities(CwOutlineBase * o, Identity * id)
     {
+        int n_added = 0;
+
         Identity::Enumeration e = Identity::Enum(0,0);
-        if (id) {
-            FilterByParentData d;
-            d.parent = id;
-            e.Filter(FilterByParent, &d);
-        }
+        FilterByParentData d;
+        d.parent = id;
+        e.Filter(FilterByParent, &d);
         e.Sort(IdentityNameComparator);
 
         for (; !e.AtEnd(); ++e) {
-            if ((id == NULL && static_cast<khm_handle>(e->GetParent()) == NULL) ||
-                (id != NULL && e->GetParent() == *id)) {
+            int n_child_ids = 0;
+            CwOutlineBase * co = o->Insert(*e, columns, 0);
 
-                // Match
-                CwOutlineBase * co = o->Insert(*e, columns, 0);
+            InsertCredentialProcData d;
+            d.table = this;
+            d.target = co;
+            d.column = 1;
+            d.filter_by = &(*e);
+            d.n_added = 0;
+            credset.Apply(InsertCredentialProc, &d);
 
-                InsertCredentialProcData d;
-                d.table = this;
-                d.target = co;
-                d.column = 1;
-                d.filter_by = &(*e);
-                credset.Apply(InsertCredentialProc, &d);
-
-                InsertDerivedIdentities(co, &(*e));
+            n_child_ids = InsertDerivedIdentities(co, &(*e));
+            if (!view_all_idents && n_child_ids + d.n_added == 0 &&
+                !(e->GetFlags() & (KCDB_IDENT_FLAG_STICKY |
+                                   KCDB_IDENT_FLAG_DEFAULT))) {
+                o->DeleteChild(co);
+            } else {
+                n_added ++;
             }
         }
+
+        return n_added;
     }
 
     void
@@ -1833,32 +1851,13 @@ namespace nim
                 dynamic_cast<CwColumn *>(columns[0])->attr_id == KCDB_ATTR_ID_DISPLAY_NAME &&
                 columns[0]->group) {
 
-                if (!view_all_idents) {
-                    {
-                        Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_DEFAULT,
-                                                                 KCDB_IDENT_FLAG_DEFAULT);
-                        e.Sort(IdentityNameComparator);
+                Identity::Enumeration e = Identity::Enum(0,0);
+                if (!view_all_idents)
+                    e.Filter(FilterByAlwaysVisible, NULL);
+                e.Sort(IdentityNameComparator);
 
-                        for (; !e.AtEnd(); ++e) {
-                            this->Insert(*e, columns, 0);
-                        }
-                    }
-                    {
-                        Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_STICKY,
-                                                                 KCDB_IDENT_FLAG_STICKY);
-                        e.Sort(IdentityNameComparator);
-
-                        for (; !e.AtEnd(); ++e) {
-                            this->Insert(*e, columns, 0);
-                        }
-                    }
-                } else {
-                    Identity::Enumeration e = Identity::Enum(0,0);
-                    e.Sort(IdentityNameComparator);
-
-                    for (; !e.AtEnd(); ++e) {
-                        this->Insert(*e, columns, 0);
-                    }
+                for (; !e.AtEnd(); ++e) {
+                    this->Insert(*e, columns, 0);
                 }
             }
 
@@ -1867,6 +1866,7 @@ namespace nim
             d.target = this;
             d.column = 0;
             d.filter_by = NULL;
+            d.n_added = 0;
 
             credset.Apply(InsertCredentialProc, &d);
         }
