@@ -354,7 +354,7 @@ typedef struct tag_khui_new_creds {
                                    be saved? */
     khm_handle          persist_identity;
                                 /*!< identity which will be used to
-                                   store privileged credentials. */
+                                  store privileged credentials. */
 
 
     /* New Identity Wizard components*/
@@ -377,6 +377,18 @@ typedef struct tag_khui_new_creds {
                                   the top */
     khm_boolean         is_modal;
                                 /*!< Is this a modal dialog? */
+    struct tag_khui_new_creds * parent;
+                                /*!< If this new credentials operation
+                                   was intiated by another new
+                                   credentials operaiton (i.e. if this
+                                   is a derived identity acquisition
+                                   based on privileged credentials
+                                   from another new credentials
+                                   operation), this field is used to
+                                   point to the parent. */
+    khm_int32           n_children;
+                                /*!< Number of child operations that
+                                   we are waiting for. */
 
 } khui_new_creds;
 

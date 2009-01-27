@@ -1309,9 +1309,12 @@ namespace nim
                       !!(NextOutline(TQFIRSTCHILD(this))));
 
         if (!expandable) {
-            CwOutline * c = NextOutline(TQFIRSTCHILD(this));
-            if (c && c->col_idx == col_idx)
-                expandable = true;
+            for (CwOutline * c = NextOutline(TQFIRSTCHILD(this));
+                 c != NULL; c =  NextOutline(TQNEXTSIBLING(c)))
+                if (c && c->col_idx == col_idx) {
+                    expandable = true;
+                    break;
+                }
         }
 
         if (expandable && outline_widget == NULL) {
@@ -1759,11 +1762,12 @@ namespace nim
         std::wstring dn1 = i1.GetResourceString(KCDB_RES_DISPLAYNAME);
         std::wstring dn2 = i2.GetResourceString(KCDB_RES_DISPLAYNAME);
 
-        if (dn1 < dn2)
-            return -1;
-        else if (dn1 == dn2)
-            return 0;
-        return 1;
+        return CompareString(LOCALE_USER_DEFAULT,
+                             NORM_IGNORECASE | NORM_IGNORENONSPACE |
+                             NORM_IGNORESYMBOLS | NORM_IGNOREWIDTH |
+                             SORT_STRINGSORT,
+                             dn1.c_str(), (int) dn1.size(),
+                             dn2.c_str(), (int) dn2.size());
     }
 
     struct FilterByParentData {

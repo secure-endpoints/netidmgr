@@ -124,11 +124,6 @@ get_ident_display_data(nc_ident_display * d, khm_handle ident)
     khm_size cb;
     khm_handle idpro = NULL;
 
-#if 0
-    if (d->hident)
-        kcdb_identity_release(d->hident);
-#endif
-
     ZeroMemory(d, sizeof(*d));
 
     if (ident == NULL)
@@ -170,8 +165,8 @@ nc_layout_idsel(khui_new_creds * nc)
 {
     khui_cw_lock_nc(nc);
 
-	/* If there are no identities selected, we should clear out
-           all the display data that we have cached. */
+    /* If there are no identities selected, we should clear out all
+       the display data that we have cached. */
     if (nc->n_identities > 0) {
         get_ident_display_data(&nc->idsel.id, nc->identities[0]);
     } else {
@@ -1680,29 +1675,39 @@ nc_prep_cred_types(khui_new_creds * nc)
 }
 
 void
-khm_nc_track_progress_of_this_task(khui_new_creds * nc)
+khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 {
+    khui_new_creds * nc;
+
+    if (tnc->progress.hwnd == NULL &&
+        tnc->parent)
+        nc = tnc->parent;
+    else
+        nc = tnc;
+
     if (nc->progress.hwnd != NULL) {
 
         khui_alert * a = NULL;
         RECT r_pos;
 
-        if (nc->progress.hwnd_container) {
-            DestroyWindow(nc->progress.hwnd_container);
-            nc->progress.hwnd_container = NULL;
+        if (tnc == nc) {
+            if (nc->progress.hwnd_container) {
+                DestroyWindow(nc->progress.hwnd_container);
+                nc->progress.hwnd_container = NULL;
+            }
+
+            {
+                HWND hw_rect;
+
+                hw_rect = GetDlgItem(nc->progress.hwnd, IDC_CONTAINER);
+                GetWindowRect(hw_rect, &r_pos);
+                MapWindowPoints(HWND_DESKTOP, nc->progress.hwnd, (LPPOINT) &r_pos,
+                                sizeof(RECT)/sizeof(POINT));
+            }
+
+            nc->progress.hwnd_container = khui_alert_create_container(nc->progress.hwnd,
+                                                                      &r_pos, 0);
         }
-
-        {
-            HWND hw_rect;
-
-            hw_rect = GetDlgItem(nc->progress.hwnd, IDC_CONTAINER);
-            GetWindowRect(hw_rect, &r_pos);
-            MapWindowPoints(HWND_DESKTOP, nc->progress.hwnd, (LPPOINT) &r_pos,
-                            sizeof(RECT)/sizeof(POINT));
-        }
-
-        nc->progress.hwnd_container = khui_alert_create_container(nc->progress.hwnd,
-                                                                  &r_pos, 0);
 
         khui_alert_create_empty(&a);
         khui_alert_set_type(a, KHUI_ALERTTYPE_PROGRESSACQ);
@@ -3202,10 +3207,13 @@ container_WMNC_DIALOG_PROCESS_COMPLETE(HWND hwnd, khui_new_creds * nc, int sPara
 {
     int has_error = sParam;
 
+    if (nc->n_children != 0)
+        return TRUE;
+
     nc->response &= ~KHUI_NC_RESPONSE_PROCESSING;
 
-    if(nc->response & KHUI_NC_RESPONSE_NOEXIT) {
-                
+    if (nc->response & KHUI_NC_RESPONSE_NOEXIT) {
+
         nc_enable_controls(nc, TRUE);
 
         /* reset state */
@@ -3218,11 +3226,11 @@ container_WMNC_DIALOG_PROCESS_COMPLETE(HWND hwnd, khui_new_creds * nc, int sPara
             nc_layout_nav(nc);
             return TRUE;
         } if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-              nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
-              nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
-        else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD)
+              nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
+            nc_navigate(nc, NC_PAGE_CREDOPT_BASIC);
+        } else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD) {
             nc_navigate(nc, NC_PAGE_PASSWORD);
-        else {
+        } else {
             assert(FALSE);
         }
         return TRUE;
@@ -3272,6 +3280,8 @@ container_WMNC_DERIVE_FROM_PRIVCRED(HWND hwnd, khui_new_creds * nc, int sParam, 
     kcdb_credset_create(&cs_privcred);
     kcdb_credset_collect(cs_privcred, pcd->dest_credset, NULL, KCDB_CREDTYPE_ALL, NULL);
     khui_cw_set_privileged_credential_collector(nc_child, cs_privcred);
+    nc_child->parent = nc;
+    nc->n_children++;
     if (khm_cred_begin_new_cred_op()) {
         kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
     } else {

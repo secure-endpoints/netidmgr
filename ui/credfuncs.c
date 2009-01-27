@@ -555,6 +555,13 @@ kmsg_cred_completion(kmq_message *m)
                 break;
             }
 
+            if (nc->parent) {
+                nc->parent->n_children--;
+                if (nc->parent->n_children == 0)
+                    PostMessage(nc->parent->hwnd, KHUI_WM_NC_NOTIFY,
+                                MAKEWPARAM(0, WMNC_DIALOG_PROCESS_COMPLETE), 0);
+            }
+
             khui_cw_destroy_cred_blob(nc);
 
             kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, 0);

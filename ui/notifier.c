@@ -739,6 +739,7 @@ typedef struct tag_alerter_wnd_data {
 #define WMNC_ALERT_RECALC_LAYOUT 1
 #define WMNC_ALERT_REFRESH_VIEW  2
 #define WMNC_ALERT_NEW_CTX       3
+#define WMNC_ALERT_ADD_ALERT     4
 
 static void
 add_alert_to_wnd_data(alerter_wnd_data * d,
@@ -3001,6 +3002,16 @@ alert_bin_wnd_proc(HWND hwnd,
                     InvalidateRect(hwnd, NULL, TRUE);
                 }
                 break;
+
+            case WMNC_ALERT_ADD_ALERT:
+                {
+                    khui_alert * a = (khui_alert *) lParam;
+
+                    add_alert_to_wnd_data(d, a);
+                    estimate_alerter_wnd_sizes(d);
+                    setup_alerter_window_controls(d);
+                }
+                break;
             }
         }
         break;
@@ -3266,9 +3277,8 @@ khui_alert_add_to_container(HWND hwnd_container,
     assert(d && d->magic == ALERTER_WND_DATA_MAGIC);
 #endif
 
-    add_alert_to_wnd_data(d, a);
-    estimate_alerter_wnd_sizes(d);
-    setup_alerter_window_controls(d);
+    SendMessage(hwnd_container, KHUI_WM_NC_NOTIFY,
+                MAKEWPARAM(0, WMNC_ALERT_ADD_ALERT), (LPARAM) a);
 }
 
 ATOM khm_register_alerter_wnd_class(void)
