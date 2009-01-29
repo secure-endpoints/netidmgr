@@ -39,7 +39,6 @@ OBJFILES= 			\
 	$(OBJ)\timer.obj	\
 	$(OBJ)\uiconfig.obj 	\
 	$(OBJ)\mainwnd.obj 	\
-	$(OBJ)\credwnd.obj 	\
 	$(OBJ)\htwnd.obj 	\
 	$(OBJ)\passwnd.obj 	\
 	$(OBJ)\newcredwnd.obj 	\
@@ -54,8 +53,16 @@ OBJFILES= 			\
 	$(OBJ)\propertysheet.obj  	\
 	$(OBJ)\windowctl.obj	\
 	$(OBJ)\iconselectwnd.obj	\
-	$(OBJ)\container.obj	\
 	$(OBJ)\drawfuncs.obj	\
+	$(OBJ)\ControlWindow.obj	\
+	$(OBJ)\DisplayContainer.obj	\
+	$(OBJ)\DisplayColumn.obj	\
+	$(OBJ)\DisplayColumnList.obj	\
+	$(OBJ)\DisplayElement.obj	\
+	$(OBJ)\credwnd.obj 	\
+	$(OBJ)\CwOutline.obj	\
+	$(OBJ)\CwOutlineBase.obj	\
+	$(OBJ)\CwTable.obj	\
 	$(OBJ)\cfg_general_wnd.obj	\
 	$(OBJ)\cfg_identities_wnd.obj	\
 	$(OBJ)\cfg_notif_wnd.obj	\
