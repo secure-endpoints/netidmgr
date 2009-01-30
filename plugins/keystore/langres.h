@@ -36,7 +36,9 @@
 #define IDD_NC_PRIV1                    121
 #define IDD_NC_PRIV_STORE               121
 #define IDS_ID_DISPLAYNAME              122
+#define IDD_CONFIG_ID_KS                122
 #define IDS_ID_DESCRIPTION              123
+#define IDD_CONFIG_ID_O                 123
 #define IDS_ID_INSTANCE                 124
 #define IDS_ID_TOOLTIP                  125
 #define IDS_NCPRIV_CAPTION              126
@@ -60,6 +62,8 @@
 #define IDS_INVALIDREASON               144
 #define IDS_DEF_KSNAME                  145
 #define IDS_DEF_KSDESCF                 146
+#define IDS_CFG_KSLIST_C0               147
+#define IDS_CFG_KSLIST_C1               148
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041
@@ -80,6 +84,9 @@
 #define IDC_LBL_KSNAME                  1060
 #define IDC_IDICON                      1061
 #define IDC_INFO                        1062
+#define IDC_EDIT2                       1064
+#define IDC_LOCATION                    1064
+#define IDC_KSLIST                      1066
 
 // Next default values for new objects
 // 
@@ -87,7 +94,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        120
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1063
+#define _APS_NEXT_CONTROL_VALUE         1067
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

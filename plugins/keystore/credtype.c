@@ -509,8 +509,7 @@ update_keystore_list(void)
         khm_handle def_ks = NULL;
 
         LeaveCriticalSection(&cs_ks);
-        if (n_keystores == 0)
-            def_ks = create_default_keystore();
+        def_ks = create_default_keystore();
         EnterCriticalSection(&cs_ks);
 
         if (def_ks)
@@ -674,11 +673,6 @@ get_keystore_credential(keystore_t * ks)
 khm_handle
 get_keystore_credential_for_identity(khm_handle identity)
 {
-    /* 1. find_keystore_for_identity()
-       2. Extract the display name etc from the keystore
-       3. Write out the fields to the credential
-    */
-
     keystore_t * ks;
     khm_handle credential = NULL;
 
@@ -692,6 +686,7 @@ get_keystore_credential_for_identity(khm_handle identity)
 
 #define MAX_KS_LIST 16
 
+/* The list that is returned must be freed using free_keystores_list */
 khm_size
 get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks)
 {
@@ -739,6 +734,19 @@ get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks)
     }
 
     return n_ks;
+}
+
+void
+free_keystores_list(keystore_t ** aks, khm_size n_ks)
+{
+    khm_size i;
+
+    for (i=0; i < n_ks; i++) {
+        ks_keystore_release(aks[i]);
+    }
+
+    if (aks)
+        free(aks);
 }
 
 khm_int32

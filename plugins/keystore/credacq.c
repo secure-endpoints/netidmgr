@@ -223,7 +223,7 @@ creddlg_refresh_idlist(HWND hwlist, keystore_t * ks)
         khm_size cb;
         khm_handle idpro;
 
-		lvi_type.pszText = idtype;
+        lvi_type.pszText = idtype;
 
         if (KHM_SUCCEEDED(kcdb_identpro_find(ks->keys[i]->provider_name, &idpro))) {
             cb = sizeof(idtype);

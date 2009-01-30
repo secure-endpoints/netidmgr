@@ -38,6 +38,8 @@ khm_int32 idk_credtype_id = KCDB_CREDTYPE_INVALID;
 khm_handle g_credset = NULL;
 CRITICAL_SECTION cs_ks;
 
+HANDLE h_idprov_event = NULL;
+
 khm_int32
 handle_kmsg_system_init(void)
 {
@@ -47,6 +49,10 @@ handle_kmsg_system_init(void)
     khui_config_node cnode;
     khui_config_node_reg creg;
     khm_int32 rv;
+
+    assert (h_idprov_event == NULL);
+
+    h_idprov_event = CreateEvent(NULL, TRUE, FALSE, L"Local\\SEIKeystoreIdProWaiter");
 
     InitializeCriticalSection(&cs_ks);
 
@@ -192,7 +198,7 @@ handle_kmsg_system_init(void)
     creg.h_module = hResModule;
     creg.dlg_template = MAKEINTRESOURCE(IDD_CONFIG_ID);
     creg.dlg_proc = config_id_dlgproc;
-    creg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_PLURAL;
+    creg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_INSTANCE;
 
     khui_cfg_register(cnode, &creg);
 
@@ -263,6 +269,12 @@ handle_kmsg_system_exit(void)
     }
 
     DeleteCriticalSection(&cs_ks);
+
+    assert (h_idprov_event != NULL);
+    if (h_idprov_event != NULL) {
+        CloseHandle(h_idprov_event);
+        h_idprov_event = NULL;
+    }
 
     return KHM_ERROR_SUCCESS;
 }
@@ -525,6 +537,11 @@ handle_kmsg_cred (khm_int32 msg_type,
                   void *    vparam)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    assert(h_idprov_event != NULL);
+
+    if (h_idprov_event)
+        WaitForSingleObject(h_idprov_event, INFINITE);
 
     switch(msg_subtype) {
     case KMSG_CRED_REFRESH:

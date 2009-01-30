@@ -198,6 +198,12 @@ handle_cred_acq_msg(khm_int32 msg_type,
                     khm_ui_4  uparam,
                     void *    vparam);
 
+void
+creddlg_setup_idlist(HWND hwlist);
+
+void
+creddlg_refresh_idlist(HWND hwlist, keystore_t * ks);
+
 /* in proppage.c */
 INT_PTR CALLBACK
 pp_cred_dlg_proc(HWND hwnd,
@@ -278,6 +284,9 @@ get_keystore_credential_for_identity(khm_handle identity);
 
 khm_size
 get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks);
+
+void
+free_keystores_list(keystore_t ** aks, khm_size n_ks);
 
 khm_int32
 save_keystore_with_identity(keystore_t * ks);

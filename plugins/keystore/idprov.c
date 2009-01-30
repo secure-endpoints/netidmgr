@@ -32,8 +32,15 @@
 khm_handle h_idprov = NULL;
 khm_handle idprov_sub = NULL;
 
+extern HANDLE h_idprov_event;
+
 khm_int32
 handle_kmsg_ident_init(void) {
+
+    assert(h_idprov_event);
+
+    if (h_idprov_event)
+        SetEvent(h_idprov_event);
 
     /* First get a handle to self.  Something is very wrong if we
        can't do that. */
@@ -41,7 +48,6 @@ handle_kmsg_ident_init(void) {
         return KHM_ERROR_UNKNOWN;
     }
 
-    /* TODO: Additional initialization code goes here */
     assert(credtype_id > 0);
 
     kcdb_identity_set_type(credtype_id);
@@ -52,8 +58,6 @@ handle_kmsg_ident_init(void) {
 khm_int32
 handle_kmsg_ident_exit(void)
 {
-
-    /* TODO: Additional uninitialization code goes here */
 
     if (idprov_sub) {
         kmq_delete_subscription(idprov_sub);
