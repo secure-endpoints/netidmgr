@@ -584,17 +584,17 @@ khcint_open_space(kconf_conf_space * parent,
         /* we are not creating the space, so it must exist in the form
            of a registry key in HKLM or HKCU.  If it existed as a
            schema, we would have already retured it above. */
-        
+
         if (flags & KCONF_FLAG_USER)
             pkey = khcint_space_open_key(p, KHM_PERM_READ | KCONF_FLAG_USER);
 
-        if((!pkey ||
+        if((pkey == NULL ||
             (RegOpenKeyEx(pkey, buf, 0, KEY_READ, &ckey) != ERROR_SUCCESS))
            && (flags & KCONF_FLAG_MACHINE)) {
 
             pkey = khcint_space_open_key(p, KHM_PERM_READ | KCONF_FLAG_MACHINE);
 
-            if(!pkey ||
+            if(pkey == NULL ||
                (RegOpenKeyEx(pkey, buf, 0, KEY_READ, &ckey) != ERROR_SUCCESS)) {
 
                 *result = NULL;
@@ -705,26 +705,21 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
            -> exit with c = h\foo\bar\baz
          */
 
-        if (flags & KCONF_FLAG_NOPARSENAME) {
-            end = str + wcslen(str);
-            last = TRUE;
-        } else {
-            end = wcschr(str, L'\\');
+        end = wcschr(str, L'\\');
 
-            if (end == NULL) {
-                if (flags & KCONF_FLAG_TRAILINGVALUE) {
-                    c = p;
-                    p = NULL;
-                    break;
-                } else {
-                    end = str + wcslen(str);
-                    last = TRUE;
-                }
+        if (end == NULL) {
+            if (flags & KCONF_FLAG_TRAILINGVALUE) {
+                c = p;
+                p = NULL;
+                break;
             } else {
-                if (flags & KCONF_FLAG_TRAILINGVALUE) {
-                    if (wcschr(end + 1, L'\\') == NULL)
-                        last = TRUE;
-                }
+                end = str + wcslen(str);
+                last = TRUE;
+            }
+        } else {
+            if (flags & KCONF_FLAG_TRAILINGVALUE) {
+                if (wcschr(end + 1, L'\\') == NULL)
+                    last = TRUE;
             }
         }
 

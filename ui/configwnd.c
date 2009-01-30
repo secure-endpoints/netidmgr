@@ -124,7 +124,7 @@ cfgui_add_node(cfgui_wnd_data * d,
     khui_cfg_set_param(node, (LPARAM) hItem);
 
     if (KHM_SUCCEEDED(khui_cfg_get_first_child(node,
-                                             &c))) {
+                                               &c))) {
         do {
             cfgui_add_node(d, hwtv, c, node,
                            !!(reg.flags & KHUI_CNFLAG_SORT_CHILDREN));
@@ -328,26 +328,14 @@ cfgui_activate_node(HWND hwnd, khui_config_node node) {
         return;                 /* nothing to do */
 
     {
-        RECT r_title;
         RECT r_pane;
-        HWND hw;
 
         if (d->hw_current)
             ShowWindow(d->hw_current, SW_HIDE);
 
-        hw = GetDlgItem(hwnd, IDC_CFG_TITLE);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r_title);
-
-        hw = GetDlgItem(hwnd, IDC_CFG_PANE);
-#ifdef DEBUG
-        assert(hw);
-#endif
-        GetWindowRect(hw, &r_pane);
-
-        OffsetRect(&r_pane, -r_title.left, -r_title.top);
+        GetWindowRect(GetDlgItem(hwnd, IDC_CFG_PANE), &r_pane);
+        MapWindowPoints(HWND_DESKTOP, hwnd, (POINT *) &r_pane,
+                        sizeof(r_pane) / sizeof(POINT));
 
         SetWindowPos(hw_new,
                      hwtv,
@@ -371,9 +359,7 @@ cfgui_activate_node(HWND hwnd, khui_config_node node) {
         khui_config_node_reg reg;
 
         rv = khui_cfg_get_reg(node, &reg);
-#ifdef DEBUG
         assert(KHM_SUCCEEDED(rv));
-#endif
         SetDlgItemText(hwnd, IDC_CFG_TITLE, reg.long_desc);
     }
 
@@ -975,11 +961,6 @@ khm_show_config_pane(khui_config_node node) {
     }
 }
 
-/* TODO: The configuratoin system is not quite right.  While we should
-   allow registering subpanels for all nodes in some container, there
-   should also be a way for the panel to refuse an instantiation on a
-   particular configuration node. */
-
 /* Goes through all the active identities that have configuration
    information associated with it and makes sure that there is a
    corresponding configuration panel.*/
@@ -1238,7 +1219,7 @@ void khm_init_config(void) {
                wshort, ARRAYLENGTH(wshort));
     LoadString(khm_hInstance, IDS_CFG_ID_TAB_LONG,
                wlong, ARRAYLENGTH(wlong));
-    reg.flags = KHUI_CNFLAG_PLURAL | KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_SYSTEM;
+    reg.flags = KHUI_CNFLAG_INSTANCE | KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_SYSTEM;
 
     khui_cfg_register(node, &reg);
 

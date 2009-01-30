@@ -31,13 +31,15 @@
 #endif
 
 static khui_config_node
-get_window_node(HWND hwnd) {
+get_window_node(HWND hwnd)
+{
     return (khui_config_node) (LONG_PTR)
         GetWindowLongPtr(hwnd, DWLP_USER);
 }
 
 static void
-set_window_node(HWND hwnd, khui_config_node node) {
+set_window_node(HWND hwnd, khui_config_node node)
+{
 #pragma warning(push)
 #pragma warning(disable: 4244)
     SetWindowLongPtr(hwnd, DWLP_USER,
@@ -48,8 +50,8 @@ set_window_node(HWND hwnd, khui_config_node node) {
 static void
 add_subpanels(HWND hwnd, 
               khui_config_node ctx_node,
-              khui_config_node ref_node) {
-
+              khui_config_node ref_node)
+{
     HWND hw_tab;
     HWND hw_target;
     khui_config_node sub;
@@ -59,15 +61,11 @@ add_subpanels(HWND hwnd,
 
     hw_tab = GetDlgItem(hwnd, IDC_CFG_TAB);
     hw_target = GetDlgItem(hwnd, IDC_CFG_TARGET);
-#ifdef DEBUG
     assert(hw_tab);
     assert(hw_target);
-#endif
 
     if (KHM_FAILED(khui_cfg_get_first_subpanel(ref_node, &sub))) {
-#ifdef DEBUG
         assert(FALSE);
-#endif
         return;
     }
 
@@ -76,11 +74,12 @@ add_subpanels(HWND hwnd,
         HWND hwnd_panel;
         TCITEM tci;
         int iid;
+        khm_int32 init_rc;
 
         khui_cfg_get_reg(sub, &reg);
 
-        if ((ctx_node == ref_node && (reg.flags & KHUI_CNFLAG_PLURAL)) ||
-            (ctx_node != ref_node && !(reg.flags & KHUI_CNFLAG_PLURAL)))
+        if ((ctx_node == ref_node && (reg.flags & KHUI_CNFLAG_INSTANCE)) ||
+            (ctx_node != ref_node && !(reg.flags & KHUI_CNFLAG_INSTANCE)))
             goto _next_node;
 
         idata.ctx_node = ctx_node;
@@ -93,16 +92,50 @@ add_subpanels(HWND hwnd,
                                        reg.dlg_proc,
                                        (LPARAM) &idata);
 
-        /* TODO: verify that we actually need this instantiation of a
-           subpanel.  We should augment the API to include a callback
-           or maybe we can send a message to the dialog box to ask if
-           it really wants to instantiate itself or something like
-           that.  Maybe we can augment the idata structure to get
-           feedback. */
-
-#ifdef DEBUG
         assert(hwnd_panel);
-#endif
+
+        /* For backwards compatibility, we assume that if the
+           configuration node is a Kerberos 5 identity or the identity
+           globals node, then all panels default to 'Allow' if the
+           WMCFG_INIT_PANEL message isn't handled and 'Disallow'
+           otherwise. */
+        if (ctx_node != ref_node) {
+            khm_handle ident = khui_cfg_get_data(ctx_node);
+
+            if (ident == NULL) {
+                assert(FALSE);  /* Shouldn't happen */
+                init_rc = KHM_ERROR_UNKNOWN;
+            } else {
+                khm_int32 ident_type = KCDB_CREDTYPE_INVALID;
+                khm_int32 krb5_type = KCDB_CREDTYPE_INVALID;
+
+                khm_size cb = sizeof(ident_type);
+
+                kcdb_identity_get_attr(ident, KCDB_ATTR_TYPE, NULL, &ident_type, &cb);
+                kcdb_credtype_get_id(L"Krb5Cred", &krb5_type);
+
+                if (ident_type == krb5_type)
+                    init_rc = KHM_ERROR_SUCCESS;
+                else
+                    init_rc = KHM_ERROR_NOT_IMPLEMENTED;
+            }
+        } else {
+            /* identity globals node */
+            init_rc = KHM_ERROR_SUCCESS;
+        }
+
+        /* If the panel doesn't initialize properly or determines that
+           the subpanel does not apply to the context node, we have to
+           skip to the next subpanel node. */
+
+        SendMessage(hwnd_panel, KHUI_WM_CFG_NOTIFY,
+                    MAKEWPARAM(0, WMCFG_INIT_PANEL), (LPARAM) &init_rc);
+
+        if (KHM_FAILED(init_rc)) {
+            DestroyWindow(hwnd_panel);
+            goto _next_node;
+        }
+
 #if _WIN32_WINNT >= 0x0501
         EnableThemeDialogTexture(hwnd_panel, ETDT_ENABLETAB);
 #endif
@@ -118,7 +151,7 @@ add_subpanels(HWND hwnd,
         iid = TabCtrl_InsertItem(hw_tab, 0, &tci);
         idx++;
 
-        if (reg.flags & KHUI_CNFLAG_PLURAL) {
+        if (reg.flags & KHUI_CNFLAG_INSTANCE) {
             khui_cfg_set_param_inst(sub, ctx_node, iid);
             khui_cfg_set_hwnd_inst(sub, ctx_node, hwnd_panel);
         } else {
@@ -137,13 +170,14 @@ add_subpanels(HWND hwnd,
 static void
 apply_all(HWND hwnd, 
           HWND hw_tab,
-          khui_config_node noderef) {
+          khui_config_node noderef)
+{
     TCITEM tci;
     HWND hw;
     khui_config_node_reg reg;
     int idx;
     int count;
-    BOOL cont = TRUE;
+    khm_boolean cont = TRUE;
 
     count = TabCtrl_GetItemCount(hw_tab);
 
@@ -156,18 +190,14 @@ apply_all(HWND hwnd,
                         idx,
                         &tci);
 
-#ifdef DEBUG
         assert(tci.lParam);
-#endif
         khui_cfg_get_reg((khui_config_node) tci.lParam, &reg);
-        if (reg.flags & KHUI_CNFLAG_PLURAL)
+        if (reg.flags & KHUI_CNFLAG_INSTANCE)
             hw = khui_cfg_get_hwnd_inst((khui_config_node) tci.lParam,
                                         noderef);
         else
             hw = khui_cfg_get_hwnd((khui_config_node) tci.lParam);
-#ifdef DEBUG
         assert(hw);
-#endif
 
         SendMessage(hw, KHUI_WM_CFG_NOTIFY,
                     MAKEWPARAM(0, WMCFG_APPLY), (LPARAM) &cont);
@@ -179,7 +209,8 @@ show_tab_panel(HWND hwnd,
                khui_config_node node,
                HWND hw_tab,
                int idx,
-               BOOL show) {
+               khm_boolean show)
+{
     TCITEM tci;
     HWND hw;
     HWND hw_target;
@@ -195,18 +226,14 @@ show_tab_panel(HWND hwnd,
                     idx,
                     &tci);
 
-#ifdef DEBUG
     assert(tci.lParam);
-#endif
     khui_cfg_get_reg((khui_config_node) tci.lParam, &reg);
-    if (reg.flags & KHUI_CNFLAG_PLURAL)
+    if (reg.flags & KHUI_CNFLAG_INSTANCE)
         hw = khui_cfg_get_hwnd_inst((khui_config_node) tci.lParam,
                                     node);
     else
         hw = khui_cfg_get_hwnd((khui_config_node) tci.lParam);
-#ifdef DEBUG
     assert(hw);
-#endif
 
     if (!show) {
         ShowWindow(hw, SW_HIDE);
@@ -214,9 +241,8 @@ show_tab_panel(HWND hwnd,
     }
 
     hw_target = GetDlgItem(hwnd, IDC_CFG_TARGET);
-#ifdef DEBUG
     assert(hw_target);
-#endif
+
     GetWindowRect(hwnd, &rref);
     GetWindowRect(hw_target, &r);
 
@@ -261,7 +287,8 @@ handle_cfg_notify(HWND hwnd,
 static INT_PTR
 handle_notify(HWND hwnd,
               WPARAM wParam,
-              LPARAM lParam) {
+              LPARAM lParam)
+{
     LPNMHDR lpnm;
     int i;
 
@@ -302,20 +329,20 @@ handle_notify(HWND hwnd,
 }
 
 typedef struct tag_ident_props {
-    BOOL monitor;
-    BOOL auto_renew;
-    BOOL sticky;
+    khm_boolean monitor;
+    khm_boolean auto_renew;
+    khm_boolean sticky;
 } ident_props;
 
 typedef struct tag_ident_data {
-    khm_handle ident;
+    khm_handle  ident;
     int lv_idx;
 
-    BOOL removed;               /* this identity was marked for removal */
-    BOOL applied;
-    BOOL purged;                /* this identity was actually removed */
+    khm_boolean removed;               /* this identity was marked for removal */
+    khm_boolean applied;
+    khm_boolean purged;                /* this identity was actually removed */
 
-    khm_int32 flags;
+    khm_int32   flags;
 
     ident_props saved;
     ident_props work;
@@ -324,46 +351,55 @@ typedef struct tag_ident_data {
 } ident_data;
 
 typedef struct tag_global_props {
-    BOOL monitor;
-    BOOL auto_renew;
-    BOOL sticky;
+    khm_boolean monitor;
+    khm_boolean auto_renew;
+    khm_boolean sticky;
 } global_props;
 
 typedef struct tag_idents_data {
-    BOOL         valid;
+    khm_boolean valid;
 
-    ident_data * idents;
-    khm_size     n_idents;
-    khm_size     nc_idents;
+    ident_data *idents;
+    khm_size    n_idents;
+    khm_size    nc_idents;
 #define IDENTS_DATA_ALLOC_INCR 8
 
     /* global options */
-    global_props saved;
-    global_props work;
-    BOOL         applied;
+    global_props        saved;
+    global_props        work;
+    khm_boolean         applied;
 
-    int          refcount;
+    int         refcount;
 
-    HIMAGELIST   hi_status;
-    int          idx_id;
-    int          idx_default;
-    int          idx_modified;
-    int          idx_applied;
-    int          idx_deleted;
+    HIMAGELIST  hi_status;
+    int         idx_id;
+    int         idx_default;
+    int         idx_modified;
+    int         idx_applied;
+    int         idx_deleted;
 
-    HWND         hwnd;
-    khui_config_init_data cfg;
+    HWND        hwnd;
+    khui_config_init_data       cfg;
 } idents_data;
 
-static idents_data cfg_idents = {FALSE, NULL, 0, 0,
-                                 {0, 0, 0},
-                                 {0, 0, 0},
-                                 FALSE,
+static idents_data cfg_idents = {
+    FALSE,
+    NULL, 0, 0,
+    {0, 0, 0},
+    {0, 0, 0},
+    FALSE,
 
-                                 0, NULL };
+    0,
+
+    NULL, 0, 0, 0, 0, 0,
+
+    NULL,
+    {NULL, NULL, NULL}
+};
 
 static void
-read_params_ident(ident_data * d) {
+read_params_ident(ident_data * d)
+{
     khm_handle csp_ident;
     khm_int32 t;
 
@@ -400,7 +436,8 @@ read_params_ident(ident_data * d) {
 }
 
 static void
-write_params_ident(ident_data * d) {
+write_params_ident(ident_data * d)
+{
     khm_handle csp_ident;
 
     if (d->saved.monitor == d->work.monitor &&
@@ -466,7 +503,8 @@ write_params_ident(ident_data * d) {
 }
 
 static void
-write_params_idents(void) {
+write_params_idents(void)
+{
     khm_handle csp_kcdb = NULL;
 
     if (KHM_SUCCEEDED(khc_open_space(NULL, L"KCDB",
@@ -500,7 +538,8 @@ write_params_idents(void) {
 }
 
 static void
-init_idents_data(void) {
+init_idents_data(void)
+{
     kcdb_enumeration e;
     khm_handle ident;
     khm_int32 rv;
@@ -511,11 +550,9 @@ init_idents_data(void) {
     if (cfg_idents.valid)
         return;
 
-#ifdef DEBUG
     assert(cfg_idents.idents == NULL);
     assert(cfg_idents.n_idents == 0);
     assert(cfg_idents.nc_idents == 0);
-#endif
 
     if (KHM_SUCCEEDED(khc_open_space(NULL, L"KCDB", 0, &csp_kcdb))) {
         khm_int32 t;
@@ -560,9 +597,7 @@ init_idents_data(void) {
 
     cfg_idents.idents = PMALLOC(sizeof(*cfg_idents.idents) * 
                                 cfg_idents.n_idents);
-#ifdef DEBUG
     assert(cfg_idents.idents);
-#endif
     ZeroMemory(cfg_idents.idents, 
                sizeof(*cfg_idents.idents) * cfg_idents.n_idents);
     cfg_idents.nc_idents = cfg_idents.n_idents;
@@ -576,9 +611,7 @@ init_idents_data(void) {
         cfg_idents.idents[i].removed = FALSE;
 
         kcdb_identity_get_flags(ident, &cfg_idents.idents[i].flags);
-#ifdef DEBUG
         assert(cfg_idents.idents[i].flags & KCDB_IDENT_FLAG_CONFIG);
-#endif
 
         read_params_ident(&cfg_idents.idents[i]);
 
@@ -593,7 +626,8 @@ init_idents_data(void) {
 }
 
 static void
-free_idents_data(void) {
+free_idents_data(void)
+{
     int i;
 
     if (!cfg_idents.valid)
@@ -614,20 +648,18 @@ free_idents_data(void) {
 }
 
 static void
-hold_idents_data(void) {
+hold_idents_data(void)
+{
     if (!cfg_idents.valid)
         init_idents_data();
-#ifdef DEBUG
     assert(cfg_idents.valid);
-#endif
     cfg_idents.refcount++;
 }
 
 static void
-release_idents_data(void) {
-#ifdef DEBUG
+release_idents_data(void)
+{
     assert(cfg_idents.valid);
-#endif
     cfg_idents.refcount--;
 
     if (cfg_idents.refcount == 0)
@@ -636,7 +668,8 @@ release_idents_data(void) {
 
 
 static void
-refresh_data_idents(HWND hwnd) {
+refresh_data_idents(HWND hwnd)
+{
     cfg_idents.work.monitor =
         (IsDlgButtonChecked(hwnd, IDC_CFG_MONITOR) == BST_CHECKED);
     cfg_idents.work.auto_renew =
@@ -646,9 +679,10 @@ refresh_data_idents(HWND hwnd) {
 }
 
 static void
-refresh_view_idents_state(HWND hwnd) {
-    BOOL modified;
-    BOOL applied;
+refresh_view_idents_state(HWND hwnd)
+{
+    khm_boolean modified;
+    khm_boolean applied;
     khm_int32 flags = 0;
 
     applied = cfg_idents.applied;
@@ -671,7 +705,8 @@ INT_PTR CALLBACK
 khm_cfg_ids_tab_proc(HWND hwnd,
                     UINT umsg,
                     WPARAM wParam,
-                    LPARAM lParam) {
+                    LPARAM lParam)
+{
 
     switch(umsg) {
     case WM_INITDIALOG:
@@ -812,6 +847,14 @@ khm_cfg_ids_tab_proc(HWND hwnd,
             case WMCFG_UPDATE_STATE:
                 refresh_view_idents_state(hwnd);
                 break;
+
+            case WMCFG_INIT_PANEL:
+                {
+                    khm_int32 *prv = (khm_int32 *) lParam;
+                    if (prv)
+                        *prv = KHM_ERROR_SUCCESS;
+                }
+                break;
             }
         }
         return TRUE;
@@ -836,7 +879,8 @@ INT_PTR CALLBACK
 khm_cfg_identities_proc(HWND hwnd,
                         UINT uMsg,
                         WPARAM wParam,
-                        LPARAM lParam) {
+                        LPARAM lParam)
+{
     HWND hw;
     switch(uMsg) {
     case WM_INITDIALOG:
@@ -865,7 +909,8 @@ khm_cfg_identities_proc(HWND hwnd,
 }
 
 static ident_data *
-find_ident_by_node(khui_config_node node) {
+find_ident_by_node(khui_config_node node)
+{
     int i;
     khm_handle ident = NULL;
 
@@ -899,15 +944,11 @@ find_ident_by_node(khui_config_node node) {
         cfg_idents.nc_idents = UBOUNDSS(cfg_idents.n_idents + 1,
                                         IDENTS_DATA_ALLOC_INCR,
                                         IDENTS_DATA_ALLOC_INCR);
-#ifdef DEBUG
         assert(cfg_idents.nc_idents > cfg_idents.n_idents);
-#endif
         cfg_idents.idents = PREALLOC(cfg_idents.idents,
                                      sizeof(*cfg_idents.idents) *
                                      cfg_idents.nc_idents);
-#ifdef DEBUG
         assert(cfg_idents.idents);
-#endif
         ZeroMemory(&(cfg_idents.idents[cfg_idents.n_idents]),
                    sizeof(*cfg_idents.idents) *
                    (cfg_idents.nc_idents - cfg_idents.n_idents));
@@ -919,9 +960,7 @@ find_ident_by_node(khui_config_node node) {
     cfg_idents.idents[i].removed = FALSE;
 
     kcdb_identity_get_flags(ident, &cfg_idents.idents[i].flags);
-#ifdef DEBUG
     assert(cfg_idents.idents[i].flags & KCDB_IDENT_FLAG_CONFIG);
-#endif
 
     read_params_ident(&cfg_idents.idents[i]);
 
@@ -933,13 +972,12 @@ find_ident_by_node(khui_config_node node) {
 }
 
 static void
-refresh_view_ident(HWND hwnd, khui_config_node node) {
+refresh_view_ident(HWND hwnd, khui_config_node node)
+{
     ident_data * d;
 
     d = find_ident_by_node(node);
-#ifdef DEBUG
     assert(d);
-#endif
 
     CheckDlgButton(hwnd, IDC_CFG_MONITOR,
                    (d->work.monitor? BST_CHECKED: BST_UNCHECKED));
@@ -950,13 +988,12 @@ refresh_view_ident(HWND hwnd, khui_config_node node) {
 }
 
 static void
-mark_remove_ident(HWND hwnd, khui_config_init_data * idata) {
+mark_remove_ident(HWND hwnd, khui_config_init_data * idata)
+{
     ident_data * d;
 
     d = find_ident_by_node(idata->ctx_node);
-#ifdef DEBUG
     assert(d);
-#endif
 
     if (d->removed)
         return;
@@ -970,13 +1007,12 @@ mark_remove_ident(HWND hwnd, khui_config_init_data * idata) {
 }
 
 static void
-refresh_data_ident(HWND hwnd, khui_config_init_data * idata) {
+refresh_data_ident(HWND hwnd, khui_config_init_data * idata)
+{
     ident_data * d;
 
     d = find_ident_by_node(idata->ctx_node);
-#ifdef DEBUG
     assert(d);
-#endif
 
     if (IsDlgButtonChecked(hwnd, IDC_CFG_MONITOR) == BST_CHECKED)
         d->work.monitor = TRUE;
@@ -1017,9 +1053,7 @@ change_icon_ident (HWND hwnd, khui_config_init_data * idata)
     khm_handle csp_id = NULL;
 
     d = find_ident_by_node(idata->ctx_node);
-#ifdef DEBUG
     assert(d);
-#endif
 
     if (d == NULL)
         return;
@@ -1058,16 +1092,14 @@ change_icon_ident (HWND hwnd, khui_config_init_data * idata)
                           NULL, NULL, &hicon, &cb);
         kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE,
                           NULL, NULL, &hicon, &cb);
-#ifdef DEBUG
         assert(hicon != NULL);
-#endif
+
         /* And set the dialog control while we are at it */
 
         hicon = (HICON) SendDlgItemMessage(hwnd, IDC_CFG_ICON, STM_SETICON,
                                            (WPARAM) hicon, 0);
-#ifdef DEBUG
         assert(hicon != NULL);
-#endif
+
         InvalidateRect(GetDlgItem(hwnd, IDC_CFG_ICON), NULL, TRUE);
 
         hicon = NULL; cb = sizeof(hicon);
@@ -1094,9 +1126,7 @@ reset_icon_ident (HWND hwnd, khui_config_init_data * idata)
     khm_size cb;
 
     d = find_ident_by_node(idata->ctx_node);
-#ifdef DEBUG
     assert(d);
-#endif
 
     if (d == NULL)
         return;
@@ -1115,9 +1145,7 @@ reset_icon_ident (HWND hwnd, khui_config_init_data * idata)
                       NULL, NULL, &hicon, &cb);
     kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE,
                       NULL, NULL, &hicon, &cb);
-#ifdef DEBUG
     assert(hicon != NULL);
-#endif
     SendDlgItemMessage(hwnd, IDC_CFG_ICON, STM_SETICON,
                        (WPARAM) hicon, 0);
     InvalidateRect(GetDlgItem(hwnd, IDC_CFG_ICON), NULL, TRUE);
@@ -1139,7 +1167,8 @@ INT_PTR CALLBACK
 khm_cfg_id_tab_proc(HWND hwnd,
                     UINT umsg,
                     WPARAM wParam,
-                    LPARAM lParam) {
+                    LPARAM lParam)
+{
 
     khui_config_init_data * idata;
 
@@ -1254,13 +1283,13 @@ khm_cfg_id_tab_proc(HWND hwnd,
     case KHUI_WM_CFG_NOTIFY:
         {
             ident_data * d;
-            BOOL * cont;
+            khm_boolean * cont;
 
             khui_cfg_get_dialog_data(hwnd, &idata, NULL);
 
             switch (HIWORD(wParam)) {
             case WMCFG_APPLY:
-                cont = (BOOL *) lParam;
+                cont = (khm_boolean *) lParam;
                 d = find_ident_by_node(idata->ctx_node);
                 write_params_ident(d);
                 if (d->removed) {
@@ -1277,6 +1306,14 @@ khm_cfg_id_tab_proc(HWND hwnd,
                 refresh_view_ident(hwnd, idata->ctx_node);
                 refresh_data_ident(hwnd, idata);
                 break;
+
+            case WMCFG_INIT_PANEL:
+                {
+                    khm_int32 * prv = (khm_int32 *) lParam;
+                    if (prv)
+                        *prv = KHM_ERROR_SUCCESS;
+                }
+                break;
             }
         }
         return TRUE;
@@ -1290,7 +1327,8 @@ INT_PTR CALLBACK
 khm_cfg_identity_proc(HWND hwnd,
                       UINT uMsg,
                       WPARAM wParam,
-                      LPARAM lParam) {
+                      LPARAM lParam)
+{
     HWND hw;
 
     switch(uMsg) {
@@ -1301,9 +1339,8 @@ khm_cfg_identity_proc(HWND hwnd,
             set_window_node(hwnd, (khui_config_node) lParam);
 
             khui_cfg_open(NULL, L"KhmIdentities", &refnode);
-#ifdef DEBUG
             assert(refnode != NULL);
-#endif
+
             add_subpanels(hwnd,
                           (khui_config_node) lParam,
                           refnode);

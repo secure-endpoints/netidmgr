@@ -111,7 +111,7 @@ int reg(void) {
         /* Intentionally unsorted.  The order of registration
            shouldn't matter. */
         reg.name = reg.short_desc = reg.long_desc = L"CP2";
-        reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_PLURAL;
+        reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_INSTANCE;
         CHECK(KHM_SUCCEEDED(khui_cfg_register(parent, &reg)));
 
         reg.name = reg.short_desc = reg.long_desc = L"CS1";
@@ -131,7 +131,7 @@ int reg(void) {
         CHECK(KHM_SUCCEEDED(khui_cfg_register(parent, &reg)));
 
         reg.name = reg.short_desc = reg.long_desc = L"CP1";
-        reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_PLURAL;
+        reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_INSTANCE;
         CHECK(KHM_SUCCEEDED(khui_cfg_register(parent, &reg)));
 
         reg.name = reg.short_desc = reg.long_desc = L"CC2";
@@ -370,7 +370,7 @@ map_subpanels(khui_config_node node,
 
     if (KHM_SUCCEEDED(khui_cfg_get_first_subpanel(node, &subpanel))) {
         do {
-            if (khui_cfg_get_flags(subpanel) & KHUI_CNFLAG_PLURAL) {
+            if (khui_cfg_get_flags(subpanel) & KHUI_CNFLAG_INSTANCE) {
                 if (KHM_SUCCEEDED(khui_cfg_get_first_child(node, &child))) {
                     do {
                         (*pf)(subpanel, child);
@@ -486,7 +486,7 @@ void gsfi_test_node(khui_config_node node, khui_config_node ctx)
     CHECK(KHM_SUCCEEDED(khui_cfg_get_name(node, name, &cb)));
     log("Looking at node [%S]\n", name);
 
-    if (khui_cfg_get_flags(node) & KHUI_CNFLAG_PLURAL) {
+    if (khui_cfg_get_flags(node) & KHUI_CNFLAG_INSTANCE) {
         if (_plural >= ARRAYLENGTH(_pl_before)) {
             CHECKX(FALSE, "_plural out of bounds\n");
             return;

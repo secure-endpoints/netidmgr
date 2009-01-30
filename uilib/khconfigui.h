@@ -90,8 +90,8 @@ enum khui_wm_cfg_notifications {
 
     WMCFG_INIT_PANEL = 5,
     /*!< Sent to all the configuration subpanels after they are
-       created.  The subpanels should return TRUE if the subpanel does
-       not apply to the context in which they were created. */
+      created.  The subpanels should return \a TRUE if the subpanel
+      does not apply to the context in which they were created. */
 };
 
 /*! \brief Registration information for a configuration node
@@ -133,7 +133,7 @@ typedef struct tag_khui_config_node_reg {
 
     khm_int32 flags;            /*!< Flags.  Can be a combination of
                                   ::KHUI_CNFLAG_SORT_CHILDREN,
-                                  ::KHUI_CNFLAG_SUBPANEL, and ::KHUI_CNFLAG_PLURAL*/
+                                  ::KHUI_CNFLAG_SUBPANEL, and ::KHUI_CNFLAG_INSTANCE*/
 
 } khui_config_node_reg;
 
@@ -147,31 +147,38 @@ typedef struct tag_khui_config_node_reg {
 /*! \brief Is a subpanel */
 #define KHUI_CNFLAG_SUBPANEL      0x0002
 
-/*! \brief Node represents a subpanel that is replicated for all child nodes
+/*! \brief Node represents a subpanel that is instantiated for each child node
 
   If this flags is specified when registering a configuration node,
   khui_cfg_register() will automatically add the
   ::KHUI_CNFLAG_SUBPANEL flag.
+
+  Used for specifying configuration panels that act as subpanels to
+  each child of a configuration space.  Notably used for specifying
+  per identity configuration panels for identities.
 */
+#define KHUI_CNFLAG_INSTANCE      0x0004
+
 #define KHUI_CNFLAG_PLURAL        0x0004
+#pragma deprecated("KHUI_CNFLAG_PLURAL")
 
 /*! \brief System node
 
-    \note For internal use by the NetIDMgr application.  Do not use.
+  \note For internal use by the NetIDMgr application.  Do not use.
 */
 #define KHUI_CNFLAG_SYSTEM        0x0010
 
 /*! \brief Settings have been modified
 
-    Settings for this configuration panel have been modified.  This
-    flag should be cleared once the settings have been successfully
-    applied.
+  Settings for this configuration panel have been modified.  This
+  flag should be cleared once the settings have been successfully
+  applied.
  */
 #define KHUI_CNFLAG_MODIFIED      0x0100
 
 /*! \brief Settings have been applied
 
-    Set once any modified settings were successfully applied.
+  Set once any modified settings were successfully applied.
  */
 #define KHUI_CNFLAG_APPLIED       0x0200
 
@@ -229,8 +236,43 @@ typedef khm_handle khui_config_node;
 
 /*! \brief Initialization data passed in to a subpanel 
 
-    When creating a subpanel, a pointer to the following strucutred
-    will be passed in as the creation parameter for the dialog.
+  When creating a subpanel, a pointer to the following strucutred
+  will be passed in as the creation parameter for the dialog.
+
+  The example scenarios below should help clarify the use of \a
+  ctx_node, \a this_node and \a ref_node:
+
+  - \a A (normal configuration node.  No special flags)
+
+    - \a B (::KHUI_CNFLAG_SUBPANEL)
+    - \a C (::KHUI_CNFLAG_SUBPANEL, ::KHUI_CNFLAG_INSTANCE)
+    - \a D (No special flags)
+
+  In the scenario above, \a A and \a D are normal configuration nodes
+  while \a B and \a C are subpanels.  In addition, \a C is an instance
+  subpanel.  When the configuration dialog is invoked, the dialog
+  templates corresponding to \a A and \a D will be created using
+  CreateDialogParam() with a handle to configuaration spaces \a A and
+  \a D (respectively) as the dialog parameter. (i.e. \a lParam of the
+  \a WM_INITDIALOG message will be a handle to the configuration
+  space).
+
+  The dialog template corresponding to \a B will be instantiated as a
+  subpanel of \a A.  The dialog paramter for \a B will be a pointer to
+  a ::khui_config_init_data structure where:
+
+  \a ctx_node = handle to \a A
+  \a this_node = handle to \a B
+  \a ref_node = handle to \a A
+
+  The dialog template for \a C will be instantiated as an instance
+  subpanel of \a D.  The dialog parameter for \a C will be a pointer
+  to a ::khui_config_init_data structure where:
+
+  \a ctx_node = handle to \a D
+  \a this_node = handle to \a C
+  \a ref_node = handle to \a A
+
 */
 typedef struct tag_khui_config_init_data {
     khui_config_node ctx_node;  /*!< The node under which the current
@@ -242,7 +284,7 @@ typedef struct tag_khui_config_init_data {
 
     khui_config_node ref_node;  /*!< The parent node of the subpanel
                                   node.  In nodes which have the
-                                  ::KHUI_CNFLAG_PLURAL, this would be
+                                  ::KHUI_CNFLAG_INSTANCE, this would be
                                   different from the \a ctx_node. */
 } khui_config_init_data;
 

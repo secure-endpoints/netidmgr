@@ -161,8 +161,8 @@ static int open_space_test(void) {
     CHECK(t == 1);
     IS(khc_close_space(csp1));
 
-    CHECK(KHM_SUCCEEDED(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent2\\Something",
-                                       KCONF_FLAG_SHADOW | KCONF_FLAG_TRAILINGVALUE, &csp1)));
+    IS(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent2\\Something",
+                      KCONF_FLAG_SHADOW | KCONF_FLAG_TRAILINGVALUE, &csp1));
     IS(khc_read_int32(csp1, L"ID", &t));
     CHECK(t == 2);
     IS(khc_read_int32(csp1, L"AllowAutoRenew", &t));
@@ -206,6 +206,13 @@ static int open_space_test(void) {
     ISNT(khc_open_space(NULL, L"KCDBTest\\Identity2", KCONF_FLAG_SHADOW, &csp2));
 
     IS(khc_close_space(csp1));
+
+    IS(khc_open_space(NULL, L"KCDBTest", 0, &csp1));
+    IS(khc_open_space(csp1, L"Identity", 0, &csp2));
+    IS(khc_open_space(csp2, L"_Schema", 0, &csp3));
+    IS(khc_close_space(csp1));
+    IS(khc_close_space(csp2));
+    IS(khc_close_space(csp3));
 
     return 0;
 }

@@ -147,7 +147,7 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
                 reg.h_module = hResModule;
                 reg.dlg_template = MAKEINTRESOURCE(IDD_CFG_ID_KRB4);
                 reg.dlg_proc = krb4_id_config_proc;
-                reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_PLURAL;
+                reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_INSTANCE;
 
                 LoadString(hResModule, IDS_CFG_KRB4_SHORT,
                            wlong_desc, ARRAYLENGTH(wlong_desc));

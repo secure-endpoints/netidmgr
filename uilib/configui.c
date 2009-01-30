@@ -159,7 +159,7 @@ khui_cfg_register(khui_config_node vparent,
 
     node->reg = *reg;
     node->reg.flags &= KHUI_CNFLAGMASK_STATIC;
-    if (node->reg.flags & KHUI_CNFLAG_PLURAL)
+    if (node->reg.flags & KHUI_CNFLAG_INSTANCE)
         node->reg.flags |= KHUI_CNFLAG_SUBPANEL;
 
     name = PMALLOC(cb_name);
@@ -696,8 +696,8 @@ recalc_node_flags(khui_config_node vnode, khm_boolean plural) {
     for(subpanel = TFIRSTCHILD(parent); subpanel;
         subpanel = LNEXT(subpanel)) {
         if (!(subpanel->reg.flags & KHUI_CNFLAG_SUBPANEL) ||
-            (plural && !(subpanel->reg.flags & KHUI_CNFLAG_PLURAL)) ||
-            (!plural && (subpanel->reg.flags & KHUI_CNFLAG_PLURAL)))
+            (plural && !(subpanel->reg.flags & KHUI_CNFLAG_INSTANCE)) ||
+            (!plural && (subpanel->reg.flags & KHUI_CNFLAG_INSTANCE)))
             continue;
 
         data = get_node_data(subpanel, vnode, FALSE);

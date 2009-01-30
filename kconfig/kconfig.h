@@ -194,6 +194,7 @@ typedef struct tag_kconf_schema {
     is taken to mean configuration space \a foo\\bar.
  */
 #define KCONF_FLAG_NOPARSENAME   0x00000100
+#pragma deprecated("KCONF_FLAG_NOPARSENAME")
 
 /*! \brief Shadow configuration
 

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\pismere\athena\auth\krb5\src\windows\identity\ui\lang\en_us\khapp.rc
+// Used by C:\work\netidmgr\ui\lang\en_us\khapp.rc
 //
 #define IDC_NC_ABORT                    3
 #define IDC_NC_CLOSE                    4
@@ -448,6 +448,8 @@
 #define IDC_BORDER                      1185
 #define IDC_IDICON                      1186
 #define IDC_PERSIST                     1187
+#define IDC_LIST1                       1189
+#define IDC_CFGLIST                     1190
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -463,7 +465,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        238
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1189
+#define _APS_NEXT_CONTROL_VALUE         1191
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

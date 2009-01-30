@@ -2828,7 +2828,7 @@ k5_register_config_panels(void) {
     reg.h_module = hResModule;
     reg.dlg_template = MAKEINTRESOURCE(IDD_CFG_ID_TAB);
     reg.dlg_proc = k5_id_tab_dlgproc;
-    reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_PLURAL;
+    reg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_INSTANCE;
 
     khui_cfg_register(node, &reg);
 
