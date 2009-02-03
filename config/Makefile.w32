@@ -33,6 +33,7 @@ KHIMAIRA_WIN32_CONFIG=1
 #  The following environment variables MUST be set:
 #   KH_ROOT : Root of the source tree.
 #   KH_BUILD: One of DEBUG or RETAIL
+#   KH_CLVER: One of 'vc7', 'vc8' or 'vc9'.  The C compiler used for the build
 #
 #  The following environment variables are optional:
 #   KH_RUNTIME: One of STATIC or DLL, specifies whether the CRT libs
@@ -43,18 +44,13 @@ KHIMAIRA_WIN32_CONFIG=1
 #      PREPRELEASE: A beta/release candidate release
 #      PRIVATE    : Private build
 #      SPECIAL    : Special build.  Typically one with non-mainline patches.
+#   KH_PROFILE: Profiling.  Can be one of PGI or PGO
+#      PGI        : Instrument for profiling
+#      PGO        : Optimized build using profile data
 
 !include "Makefile.version"
 
 # Actual build environment settings
-
-# See what compiler we are using
-# TODO: Update this to support other compilers
-!if defined(MSVCVer) && "$(MSVCVer)"=="8.0"
-KH_CLVER=vc8
-!else
-KH_CLVER=vc7
-!endif
 
 # Check for required env vars
 !ifndef MODULE
@@ -66,6 +62,19 @@ KH_CLVER=vc7
 ! else
 KH_ROOT=$(PISMERE)\athena\auth\krb5\src\windows\identity
 ! endif
+!endif
+
+# See what compiler we are using
+!ifndef KH_CLVER
+!  error KH_CLVER needs to be set to the version of the C/C++ compiler that is being used (vc7, vc8 or vc9)
+!endif
+!if "$(KH_CLVER)" != "vc7" && "$(KH_CLVER)" != "vc8" && "$(KH_CLVER)" != "vc9"
+!  error Unknown compiler specified in KH_CLVER
+!endif
+
+# Profiling
+!if defined(KH_PROFILE) && "$(KH_PROFILE)" != "PGI" && "$(KH_PROFILE)" != "PGO"
+!  error Invalid profiling mode specified in KH_PROFILE
 !endif
 
 !ifdef NODEBUG
@@ -98,6 +107,8 @@ DOCDIR=$(DESTDIR)\doc
 
 # Source directories
 CONFDIR=$(SRC)\config
+
+
 
 # If we are forcing a Win2K build, we need to adjust the build
 # directories and environment.
@@ -172,7 +183,7 @@ khcwarn=$(khcwarn) /WX
 khdefines=$(khdefines) -D_USE_32BIT_TIME_T
 !endif
 
-#DEBUG_SYMBOLS
+# Debug symbols
 ldebug=$(ldebug) /DEBUG
 cdebug=$(cdebug) -Os -Zi
 
@@ -181,6 +192,22 @@ cdebug=$(cdebug) -Os -Zi
 cppdebug=/GR
 !else
 cppdebug=
+!endif
+
+# Profiling
+!ifdef KH_PROFILE
+cprof=/GL
+!if "$(KH_PROFILE)" == "PGI"
+lprof=/LTCG:PGINSTRUMENT
+!elseif "$(KH_PROFILE)" == "PGO"
+lprof=/LTCG:PGOPTIMIZE
+!else
+! error Invalid KH_PROFILE value
+!endif
+!else
+# ndef(KH_PROFILE)
+cprof=
+lprof=
 !endif
 
 # Additionally, suppress conflicting default library directives that we
@@ -192,11 +219,11 @@ lndeflibflag=/NODEFAULTLIB:MSVCRT
 lndeflibflag=/NODEFAULTLIB:MSVCRTD
 !endif
 
-khcflags=$(cdebug) $(cflags) $(incflags) $(khdefines) $(khcwarn)
-khlguiflags=$(ldebug) $(guilflags) $(lndeflibflag)
-khlconflags=$(ldebug) $(conlflags) $(lndeflibflag)
-khldllguiflags=$(ldebug) $(dlllflags) $(lndeflibflag)
-khldllconflags=$(ldebug) $(dlllflags) $(lndeflibflag)
+khcflags=$(cdebug) $(cflags) $(incflags) $(khdefines) $(khcwarn) $(cprof)
+khlguiflags=$(ldebug) $(guilflags) $(lndeflibflag) $(lprof)
+khlconflags=$(ldebug) $(conlflags) $(lndeflibflag) $(lprof)
+khldllguiflags=$(ldebug) $(dlllflags) $(lndeflibflag) $(lprof)
+khldllconflags=$(ldebug) $(dlllflags) $(lndeflibflag) $(lprof)
 
 !if "$(KH_RUNTIME)" == "STATIC"
 khcflags=$(khcflags) $(cvarsmt)
