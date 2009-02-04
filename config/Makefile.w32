@@ -185,7 +185,10 @@ khdefines=$(khdefines) -D_USE_32BIT_TIME_T
 
 # Debug symbols
 ldebug=$(ldebug) /DEBUG
-cdebug=$(cdebug) -Os -Zi
+cdebug=$(cdebug) -Zi
+
+# Optimization
+copt=/Os /O2
 
 # C++ Run-time type info
 !ifndef NODEBUG
@@ -198,9 +201,9 @@ cppdebug=
 !ifdef KH_PROFILE
 cprof=/GL
 !if "$(KH_PROFILE)" == "PGI"
-lprof=/LTCG:PGINSTRUMENT
+lprof=/LTCG:PGINSTRUMENT /PGD:$(@R).pgd
 !elseif "$(KH_PROFILE)" == "PGO"
-lprof=/LTCG:PGOPTIMIZE
+lprof=/LTCG:PGOPTIMIZE /PGD:$(@R).pgd
 !else
 ! error Invalid KH_PROFILE value
 !endif
@@ -219,7 +222,7 @@ lndeflibflag=/NODEFAULTLIB:MSVCRT
 lndeflibflag=/NODEFAULTLIB:MSVCRTD
 !endif
 
-khcflags=$(cdebug) $(cflags) $(incflags) $(khdefines) $(khcwarn) $(cprof)
+khcflags=$(cdebug) $(cflags) $(incflags) $(khdefines) $(khcwarn) $(cprof) $(copt)
 khlguiflags=$(ldebug) $(guilflags) $(lndeflibflag) $(lprof)
 khlconflags=$(ldebug) $(conlflags) $(lndeflibflag) $(lprof)
 khldllguiflags=$(ldebug) $(dlllflags) $(lndeflibflag) $(lprof)
