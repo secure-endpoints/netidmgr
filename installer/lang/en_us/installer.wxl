@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<WixLocalization CodePage="1252">
+
+  <!--
+
+      Copyright (c) 2008 Secure Endpoints Inc.
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use,
+      copy, modify, merge, publish, distribute, sublicense, and/or
+      sell copies of the Software, and to permit persons to whom the
+      Software is furnished to do so, subject to the following
+      conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+      OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+      OTHER DEALINGS IN THE SOFTWARE.
+
+    -->
+
+  <String Id="LanguageId">1033</String>
+
+  <String Id="CodePage">1252</String>
+
+  <String Id="ProductManufacturer">Secure-Endpoints Inc.</String>
+
+  <String Id="ProductName">Network Identity Manager</String>
+
+  <String Id="ProductDescription">Network Identity Manager.</String>
+
+  <String Id="ARPComments">Network Identity Manager.</String>
+
+  <String Id="ARPContact">netidmgr@secure-endpoints.com</String>
+
+  <String Id="ARPURLInfo">http://www.secure-endpoints.com</String>
+
+  <String Id="ARPURLHelp">http://www.secure-endpoints.com</String>
+
+  <String Id="CompanyDirName">Secure Endpoints</String>
+
+  <String Id="CompanyDirShortName">secendpt</String>
+
+  <String Id="ProductDirName">NetIDMgr</String>
+
+  <String Id="ProductDirShortName">NETIDMGR</String>
+
+  <String Id="AdminRequired">This package requires administrator privileges to install</String>
+
+  <String Id="OsVersionRequired">This package requires Windows XP or later</String>
+
+  <String Id="Platform64Required">This package requires a 64-bit operating system</String>
+
+  <String Id="FeatureMainTitle">Network Identity Manager</String>
+
+  <String Id="FeatureMainDesc">Installs the Network Identity Manager core binaries.</String>
+
+  <String Id="FeatureKrb4Title">Kerberos IV Plug-in</String>
+
+  <String Id="FeatureKrb4Desc">Adds support for MIT Kerberos IV.  (Requires MIT Kerberos for Windows)</String>
+
+  <String Id="FeatureKrb5Title">Kerberos V Plug-in</String>
+
+  <String Id="FeatureKrb5Desc">Adds support for MIT Kerberos V.  (Requires MIT Kerberos for Windows)</String>
+
+  <String Id="FeatureDebug">Debug Symbols</String>
+
+  <String Id="FeatureDebugDesc">Debugging symbols for all the binaries.</String>
+
+</WixLocalization>

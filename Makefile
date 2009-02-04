@@ -187,17 +187,6 @@ krb4plugin: plugincommon
 	$(ECHO) -- Done with $@
 !endif
 
-!ifdef BUILD_AFS
-finale: afsplugin
-
-afsplugin: plugincommon
-	$(ECHO) -- Entering $@
-	$(CD) plugins\afs
-	$(RMAKE)
-	$(CD) ..\..
-	$(ECHO) -- Done with $@
-!endif
-
 !ifdef NODOCBUILD
 doctarget=
 !else
@@ -212,6 +201,15 @@ pdoc:
 doc: pdoc
 	$(ECHO) -- Entering $@:
 	$(CD) $@
+	$(RMAKE)
+	$(CD) ..
+	$(ECHO) -- Done with $@
+
+pinstaller:
+
+installer: pinstaller
+	$(ECHO) -- Entering $@
+	$(CD) installer
 	$(RMAKE)
 	$(CD) ..
 	$(ECHO) -- Done with $@
