@@ -144,6 +144,9 @@ khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
                              wchar_t * wscc_src);
 
 long
+khm_krb5_sync_default_id_with_mslsa(void);
+
+long
 khm_krb5_get_temp_ccache(krb5_context ctx,
                          krb5_ccache * cc);
 

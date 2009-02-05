@@ -1579,6 +1579,36 @@ khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
 }
 
 long
+khm_krb5_sync_default_id_with_mslsa(void)
+{
+    long rv = KHM_ERROR_UNKNOWN;
+    khm_handle def_id = NULL;
+    wchar_t ccname[KRB5_MAXCCH_CCNAME];
+    khm_size cb;
+
+    if (k5_identpro == NULL ||
+        KHM_FAILED(kcdb_identity_get_default_ex(k5_identpro, &def_id)))
+        return KHM_ERROR_NOT_FOUND;
+
+    cb = sizeof(ccname);
+    if (KHM_FAILED(kcdb_identity_get_attr(def_id, attr_id_krb5_ccname, NULL,
+                                          ccname, &cb)))
+        goto _cleanup;
+
+    if (!wcscmp(ccname, L"MSLSA:")) {
+        rv = 0;
+        goto _cleanup;
+    }
+
+    rv = khm_krb5_copy_ccache_by_name(NULL, ccname, L"MSLSA:");
+
+ _cleanup:
+    if (def_id)
+        kcdb_identity_release(def_id);
+    return rv;
+}
+
+long
 khm_krb5_canon_cc_name(wchar_t * wcc_name,
                        size_t cb_cc_name) {
     size_t cb_len;

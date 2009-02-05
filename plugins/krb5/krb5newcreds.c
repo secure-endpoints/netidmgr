@@ -870,6 +870,8 @@ k5_handle_process_new_creds(khui_new_creds *nc,
                 kcdb_identpro_release(idpro);
         }
 
+        khm_krb5_sync_default_id_with_mslsa();
+
         /* and update the LRU */
         k5_update_LRU(ident);
 

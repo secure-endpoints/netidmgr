@@ -40,6 +40,11 @@
 
 #include<assert.h>
 
+#ifndef HANDLE_WM_HELP
+#define HANDLE_WM_HELP(hwnd, wParam, lParam, fn) \
+    (LRESULT)(fn)((hwnd), (HELPINFO *)(LPARAM) lParam)
+#endif
+
 
 
 static HWND
@@ -174,9 +179,14 @@ nc_layout_idsel(khui_new_creds * nc)
     }
     khui_cw_unlock_nc(nc);
 
+    if (nc->page == NC_PAGE_PROGRESS) {
+        EnableWindow(GetDlgItem(nc->idsel.hwnd, IDC_IDSEL), FALSE);
+    } else {
+        EnableWindow(GetDlgItem(nc->idsel.hwnd, IDC_IDSEL), TRUE);
+    }
+
     InvalidateRect(nc->idsel.hwnd, NULL, TRUE);
 }
-
 
 
 static void
@@ -3321,29 +3331,30 @@ container_KHUI_WM_NC_NOTIFY(HWND hwnd, khui_wm_nc_notification code,
     return TRUE;
 }
 
-#ifndef HANDLE_WM_HELP
-#define HANDLE_WM_HELP(hwnd, wParam, lParam, fn) \
-    (LRESULT)(fn)((hwnd), (HELPINFO *)(LPARAM) lParam)
-#endif
-
 static LRESULT
 container_WM_HELP(HWND hwnd, HELPINFO * hlp)
 {
-#if 0
+    /* Context mapping:
+
+       This is a list of pairs of DWORDs.  The first DWORD specifies
+       the control ID, and the second DWORD specifies the help context
+       ID.  The list ends with a 0.
+
+     */
     static DWORD ctxids[] = {
-        NC_TS_CTRL_ID_MIN, IDH_NC_TABMAIN,
-        NC_TS_CTRL_ID_MIN + 1, IDH_NC_TABBUTTON,
-        NC_TS_CTRL_ID_MIN + 2, IDH_NC_TABBUTTON,
-        NC_TS_CTRL_ID_MIN + 3, IDH_NC_TABBUTTON,
-        NC_TS_CTRL_ID_MIN + 4, IDH_NC_TABBUTTON,
-        NC_TS_CTRL_ID_MIN + 5, IDH_NC_TABBUTTON,
-        NC_TS_CTRL_ID_MIN + 6, IDH_NC_TABBUTTON,
-        NC_TS_CTRL_ID_MIN + 7, IDH_NC_TABBUTTON,
-        IDOK, IDH_NC_OK,
+        IDC_IDSEL, IDH_NC_IDSEL,
+        IDC_IDPROVLIST, IDH_NC_IDPROVLIST,
+        IDC_CLOSEIF, IDH_NC_CLOSEIF,
+        IDC_BACK, IDH_NC_BACK,
+        IDC_NEXT, IDH_NC_NEXT,
+        IDC_FINISH, IDH_NC_FINISH,
+        IDC_NC_ABORT, IDH_NC_ABORT,
+        IDC_NC_CLOSE, IDH_NC_CLOSE,
+        IDC_RETRY, IDH_NC_RETRY,
         IDCANCEL, IDH_NC_CANCEL,
-        IDC_NC_HELP, IDH_NC_HELP,
+        IDC_PERSIST, IDH_NC_PERSIST,
+        IDC_NC_MAKEDEFAULT, IDH_NC_MAKEDEFAULT,
         IDC_NC_ADVANCED, IDH_NC_ADVANCED,
-        IDC_NC_CREDTEXT, IDH_NC_CREDWND,
         0
     };
 
@@ -3376,9 +3387,7 @@ container_WM_HELP(HWND hwnd, HELPINFO * hlp)
 
         if (ctxids[i] != 0)
             hw = khm_html_help(hw_ctrl,
-                               ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)?
-                                L"::popups_newcreds.txt":
-                                L"::popups_password.txt"),
+                               L"::popups_newcreds.txt",
                                HH_TP_HELP_WM_HELP,
                                (DWORD_PTR) ctxids);
     }
@@ -3388,8 +3397,6 @@ container_WM_HELP(HWND hwnd, HELPINFO * hlp)
                       ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)?
                        IDH_ACTION_NEW_ID: IDH_ACTION_PASSWD_ID));
     }
-
-#endif
 
     return TRUE;
 }

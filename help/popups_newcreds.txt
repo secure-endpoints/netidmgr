@@ -1,22 +1,33 @@
-.topic IDH_NC_TABMAIN
-Opens the identity selection panel.
+.topic IDH_NC_IDSEL
+Click here to see a list of available identities.  If you would like
+to select an identity that is not listed, you can click on the `(New
+identity ...)' item.
 
-.topic IDH_NC_TABBUTTON
-Opens the option panel for this credentials type.
+.topic IDH_NC_MAKEDEFAULT
+If checked, this identity will be marked as the default identity.  If
+this is already marked as defualt, then this checkbox will be
+disabled.
 
-.topic IDH_NC_OK
+.topic IDH_NC_ADVANCED
+Toggle between the expanded view of the new credentials wizard which
+allows you to choose additional options for the credentials, and the
+compact view.
+
+.topic IDH_NC_NEXT
+Continue to the next page of the new credentials wizard.
+
+.topic IDH_NC_BACK
+Go back to the previous page of the new credentials wizard.
+
+.topic IDH_NC_FINISH
 Obtains new credentials using the information that you provided.
+
+.topic IDH_NC_ABORT
+Abort the new credentials operation.  Any credentials that have
+already been acquired will remain.
 
 .topic IDH_NC_CANCEL
 Cancels the new credentials operation.
-
-.topic IDH_NC_HELP
-Provides help for this dialog box.
-
-.topic IDH_NC_ADVANCED
-Expands the dialog and allows you to set additional
-options for the credentials that will be obtained
-by this dialog.
 
 .topic IDH_NC_CREDWND
 Provides an overview of the credentials that will be obtained
@@ -25,6 +36,29 @@ Clicking on the hyperlinks will take you to the corresponding
 credentials option panels where you will be able to set
 additional options for each type.
 
-.topic IDH_NC_SETDEF
-If checked, once the credentials acquisition operation completes, the
-identity will be set as the default.
+.topic IDH_NC_IDPROVLIST
+Select an identity provider from this list to create an identity of
+that type.
+
+.topic IDH_NC_CLOSEIF
+Closes the wizard when the operation completes.  If this is not checked
+the dialog will close automatically when the new credentials have been
+obtained.
+
+.topic IDH_NC_CLOSE
+Closes the wizard dialog.
+
+.topic IDH_NC_RETRY
+Retry the new credentials operation.  If the operation fails due to a
+transient condition, retrying the operation may successfully obtain
+new credentials.
+
+.topic IDH_NC_PERSIST
+
+If this is checked, your password will be saved in the secure
+persistent storage location indicated.  You may be asked to provide a
+password for the secure storage location.
+
+Use this option if you have multiple identities with multiple
+passwords and you want to save all your passwords in one secure
+storage.
