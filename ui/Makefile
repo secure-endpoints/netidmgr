@@ -41,7 +41,6 @@ OBJFILES= 			\
 	$(OBJ)\mainwnd.obj 	\
 	$(OBJ)\htwnd.obj 	\
 	$(OBJ)\passwnd.obj 	\
-	$(OBJ)\newcredwnd.obj 	\
 	$(OBJ)\propertywnd.obj 	\
 	$(OBJ)\credfuncs.obj 	\
 	$(OBJ)\configwnd.obj	\
@@ -54,7 +53,18 @@ OBJFILES= 			\
 	$(OBJ)\windowctl.obj	\
 	$(OBJ)\iconselectwnd.obj	\
 	$(OBJ)\drawfuncs.obj	\
+	$(OBJ)\newcredwnd.obj 	\
+	$(OBJ)\NewCredAdvancedPanel.obj \
+	$(OBJ)\NewCredBasicPanel.obj	\
+	$(OBJ)\NewCredIdentitySelector.obj	\
+	$(OBJ)\NewCredIdentitySpecifier.obj	\
+	$(OBJ)\NewCredNavigation.obj	\
+	$(OBJ)\NewCredNoPromptPanel.obj	\
+	$(OBJ)\NewCredPanels.obj	\
+	$(OBJ)\NewCredPersistPanel.obj	\
+	$(OBJ)\NewCredWizard.obj	\
 	$(OBJ)\ControlWindow.obj	\
+	$(OBJ)\DialogWindow.obj		\
 	$(OBJ)\DisplayContainer.obj	\
 	$(OBJ)\DisplayColumn.obj	\
 	$(OBJ)\DisplayColumnList.obj	\

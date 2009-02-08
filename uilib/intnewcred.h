@@ -35,24 +35,6 @@
 
 struct tag_khui_new_creds_type_int;
 
-/*! \brief Page and page navigation */
-typedef enum tag_nc_page {
-    NC_PAGE_NONE = 0,
-    NC_PAGE_IDSPEC,
-    NC_PAGE_CREDOPT_BASIC,
-    NC_PAGE_CREDOPT_ADV,
-    NC_PAGE_PASSWORD,
-    NC_PAGE_PROGRESS,
-
-    NC_PAGET_NEXT,
-    NC_PAGET_PREV,
-    NC_PAGET_FINISH,
-    NC_PAGET_CANCEL,
-    NC_PAGET_END,
-    NC_PAGET_DEFAULT
-} nc_page;
-
-
 /*! \internal
     \brief Privileged interaction panels
 
@@ -66,12 +48,13 @@ typedef struct tag_khui_new_creds_privint_panel {
     khm_int32  magic;
 
     HWND       hwnd;                            /*!< (Invariant) */
+
     wchar_t    caption[KCDB_MAXCCH_SHORT_DESC]; /*!< (Invariant) */
 
     khui_new_creds * nc;        /*!< New Credentials dialog that owns
                                   this panel.  */
-    khm_int32  ctype;
-                                /*!< Credentials type that provided
+
+    khm_int32  ctype;           /*!< Credentials type that provided
                                   this panel, if known. */
 
     /* For basic custom prompting */
@@ -79,8 +62,10 @@ typedef struct tag_khui_new_creds_privint_panel {
                                    instead. (hwnd must be NULL).  This
                                    should only be set to TRUE if all
                                    the prompts have been specified. */
+
     khm_boolean processed;            /*!< This panel has already been
                                          processed. */
+
     wchar_t    *banner;         /*!< Banner text */
     wchar_t    *pname;          /*!< Heading */
     khui_new_creds_prompt ** prompts; /*!< Individual prompts */
@@ -124,116 +109,28 @@ typedef struct tag_khui_new_creds_idpro {
 } khui_new_creds_idpro;
 
 
-
-typedef struct tag_nc_idspec {
-    HWND hwnd;
-
-    khm_boolean initialized;    /* Has the identity provider list been
-                                   initialized? */
-    khm_boolean in_layout;      /* Are we in nc_layout_idspec()?  This
-                                   field is used to suppress event
-                                   handling when we are modifying some
-                                   of the controls. */
-    khm_ssize   idx_current;    /* Index of last provider */
-
-    nc_page     prev_page;      /* Previous page, if we allow back
-                                   navigation */
-} nc_idspec;
-
-
-typedef struct tag_nc_ident_display {
-    khm_handle  hident;
-    HICON       icon;
-    wchar_t     display_string[KCDB_IDENT_MAXCCH_NAME];
-    wchar_t     type_string[KCDB_MAXCCH_SHORT_DESC];
-    wchar_t     status[KCDB_MAXCCH_SHORT_DESC];
-} nc_ident_display;
-
-
-
-typedef struct tag_nc_idsel {
-    HWND        hwnd;
-
-    HFONT       hf_idname;
-    HFONT       hf_type;
-    HFONT       hf_status;
-    COLORREF    cr_idname;
-    COLORREF    cr_idname_dis;
-    COLORREF    cr_type;
-    COLORREF    cr_status;
-    COLORREF    cr_status_err;
-
-    nc_ident_display id;
-} nc_idsel;
-
-
-
-#define NC_PRIVINT_PANEL -1
-
 typedef struct tag_nc_privint {
-    HWND        hwnd_basic;     /*!< Handle to Basic window */
-    HWND        hwnd_advanced;  /*!< Handle to Advanced window */
-    HWND        hwnd_noprompts; /*!< Handle to no-prompt dialog */
-    HWND        hwnd_persist;   /*!< Handle to save password dialog */
-
     khui_new_creds_privint_panel * legacy_panel;
                                 /*!< Legacy privileged interaction
-                                   panel.  Only created if
-                                   necessary. */
+                                  panel.  Only created if
+                                  necessary. */
+
 
     struct {
         khui_new_creds_privint_panel * current_panel;
         khm_boolean show_blank; /*!< Show a blank panel instead of the
-                                   tail of this queue. */
+                                  tail of this queue. */
         QDCL(khui_new_creds_privint_panel);
     } shown;                    /*!< Queue of privileged interaction
-                                   panels that have been shown.  The
-                                   last displayed, or to be displayed,
-                                   panel is always at the bottom of
-                                   the queue. */
+                                  panels that have been shown.  The
+                                  last displayed, or to be displayed,
+                                  panel is always at the bottom of the
+                                  queue. */
 
     khm_boolean initialized;    /*!< Has the tab control been
-                                   initialized? */
-    HWND        hwnd_current;   /*!< Handle to currently selected
-                                   panel window */
-    int         idx_current;    /*!< Index of currently selected panel
-                                   in nc or NC_PRIVINT_PANEL if it's
-                                   the privileged interaction
-                                   panel. */
-
-    int         noprompt_flags; /*!< Flags used by hwnd_noprompts.
-                                   Combination of NC_NPF_* values. */
-
-    /* The marquee is running */
-#define NC_NPF_MARQUEE       0x0001
+                                  initialized? */
 } nc_privint;
 
-
-
-typedef struct tag_nc_nav {
-    HWND        hwnd;           /*!< Child dialog */
-
-    khm_int32   transitions;    /*!< Combination of NC_TRANS_* */
-#define NC_TRANS_NEXT        0x0001L
-#define NC_TRANS_PREV        0x0002L
-#define NC_TRANS_FINISH      0x0004L
-#define NC_TRANS_ABORT       0x0008L
-#define NC_TRANS_SHOWCLOSEIF 0x0010L
-#define NC_TRANS_CLOSE       0x0020L
-#define NC_TRANS_RETRY       0x0040L
-
-    khm_int32   state;          /*!< State flags */
-#define NC_NAVSTATE_PREEND     0x0001L
-#define NC_NAVSTATE_NOCLOSE    0x0002L
-#define NC_NAVSTATE_OKTOFINISH 0x0004L
-#define NC_NAVSTATE_CANCELLED  0x0008L
-
-} nc_nav;
-
-typedef struct tag_nc_progress {
-    HWND        hwnd;           /*!< Child dialog */
-    HWND        hwnd_container; /*!< Container of alert windows */
-} nc_progress;
 
 
 /*! \brief Notification data for the WMNC_IDENTITY_STATE notification
@@ -246,6 +143,7 @@ typedef struct tag_nc_identity_state_notification {
                                    defined in khnewcred.h */
     khm_int32       progress;
 } nc_identity_state_notification;
+
 
 
 /*! \internal
@@ -333,8 +231,7 @@ typedef struct tag_khui_new_creds {
     void               *res_ident_aux;
                                 /*!< Auxilliary field which is
                                   reserved for use by the identity
-                                  provider during the course of
-                                  conducting this dialog. */
+                                  provider. */
 
     /* --- Fields above this should be kept as is for backwards
            compatibility --- */
@@ -356,27 +253,8 @@ typedef struct tag_khui_new_creds {
                                 /*!< identity which will be used to
                                   store privileged credentials. */
 
-
-    /* New Identity Wizard components*/
-    nc_idspec           idspec; /*!< Identity specifier */
-    nc_idsel            idsel;  /*!< Identity selector */
     nc_privint          privint; /*!< Privileged interaction */
-    nc_nav              nav;     /*!< Navigation */
-    nc_progress         progress; /*!< Progress window */
 
-    /* Mode and sequence */
-    nc_page             page;   /*!< Current wizard page */
-
-    /* Behavior */
-    khm_boolean         flashing_enabled;
-                                /*!< The window maybe still flashing
-                                    from the last call to
-                                    FlashWindowEx(). */
-    khm_boolean         force_topmost;
-                                /*!< Force New Credentials window to
-                                  the top */
-    khm_boolean         is_modal;
-                                /*!< Is this a modal dialog? */
     struct tag_khui_new_creds * parent;
                                 /*!< If this new credentials operation
                                    was intiated by another new
@@ -386,9 +264,14 @@ typedef struct tag_khui_new_creds {
                                    from another new credentials
                                    operation), this field is used to
                                    point to the parent. */
+
     khm_int32           n_children;
                                 /*!< Number of child operations that
-                                   we are waiting for. */
+                                  we are waiting for. */
+
+    void                *wizard;
+                                /*!< Used to hold a pointer to the
+                                  dialog data structure. */
 
 } khui_new_creds;
 

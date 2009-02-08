@@ -43,6 +43,9 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c);
 void khm_prep_newcredwnd(HWND hwnd);
 void khm_show_newcredwnd(HWND hwnd);
 void khm_nc_track_progress_of_this_task(khui_new_creds * nc);
+HWND khm_create_custom_prompter_dialog(khui_new_creds * nc,
+                                       HWND parent,
+                                       khui_new_creds_privint_panel * p);
 
 #ifdef __cplusplus
 }

@@ -44,6 +44,7 @@
 #include<khhelp.h>
 #include<intaction.h>
 #include<intalert.h>
+#include<intnewcred.h>
 
 #include "resource.h"
 #include "appglobal.h"

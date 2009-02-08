@@ -27,6 +27,11 @@
 #include "khmapp.h"
 #include <assert.h>
 
+#if _WIN32_WINNT >= 0x0501
+#include<uxtheme.h>
+#include<tmschema.h>
+#endif
+
 namespace nim
 {
 
@@ -71,6 +76,7 @@ namespace nim
         c_empty = c_background;
         c_text         .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT));
         c_text_selected.SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_SEL));
+        c_text_error   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_ERR));
 
         b_watermark =   Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_LOGO_SHADE));
         b_credwnd =     LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST), L"PNG");
@@ -453,6 +459,175 @@ namespace nim
         DrawImageByIndex(g, b_meter_renew, Point(extents.X, extents.Y), frame, sz_meter);
     }
 
+    void KhmDraw::DrawDropDownButton(HWND hwnd, HDC hdc,
+                                     DrawState state, RECT * client)
+    {
+        RECT r;
+
+        GetClientRect(hwnd, &r);
+        SetRect(&r, sz_margin.Width, sz_margin.Height,
+                (r.right - r.left) - sz_margin.Width,
+                (r.bottom - r.top) - sz_margin.Height);
+
+        if (state & DrawStateSelected)
+            OffsetRect(&r, sz_margin.Width / 2, sz_margin.Height / 2);
+
+        {
+            RECT   sr;
+#if _WIN32_WINNT >= 0x0501
+            HTHEME ht = OpenThemeData(hwnd, L"TOOLBAR");
+
+            if (ht) {
+                SIZE sz = { 32, 0 };
+
+                CopyRect(&sr, &r);
+                GetThemePartSize(ht, hdc, TP_SPLITBUTTONDROPDOWN, TS_NORMAL,
+                                 &sr, TS_MIN, &sz);
+                sr.left = sr.right - (sz.cx + sz_margin.Width * 3);
+
+                if (state & DrawStateHotTrack)
+                    DrawThemeBackground(ht, hdc,
+                                        TP_SEPARATOR,
+                                        TS_NORMAL, &sr, NULL);
+                DrawThemeBackground(ht, hdc,
+                                    TP_SPLITBUTTONDROPDOWN,
+                                    TS_NORMAL, &sr, NULL);
+                CloseThemeData(ht);
+
+                r.right = sr.left - sz_margin.Width;
+            } else {
+#endif
+                int mx = sz_icon_sm.Width / 2;
+                POINT p[3] = {{ -1, 0 }, { 1, 0 }, { 0, 1 }};
+                int i;
+
+                CopyRect(&sr, &r);
+                sr.left = sr.right - (sz_margin.Width * 3 + mx);
+                for (i=0; i < ARRAYLENGTH(p); i++) {
+                    p[i].x = (sr.left + sr.right + p[i].x * mx) / 2;
+                    p[i].y = (sr.top + sr.bottom + p[i].y * mx) / 2;
+                }
+                DrawEdge(hdc, &sr, EDGE_ETCHED, BF_LEFT);
+                Polygon(hdc, p, ARRAYLENGTH(p));
+
+                r.right = sr.left - sz_margin.Width;
+#if _WIN32_WINNT >= 0x0501
+            }
+#endif
+        }
+
+        if (client)
+            CopyRect(client, &r);
+    }
+
+    void KhmDraw::DrawIdentityItem(HDC hdc, const RECT& extents,
+                                   DrawState state,
+                                   HICON icon,
+                                   const std::wstring& title,
+                                   const std::wstring& subtitle,
+                                   const std::wstring& aux)
+    {
+        RECT r, tr;
+        SIZE s;
+        COLORREF cr_title, cr_subtitle, cr_aux;
+        HFONT hf_old = NULL;
+
+        r = extents;
+
+        if ((state & (DrawStateHotTrack | DrawStateSelected)) &&
+            !(state & DrawStateDisabled)) {
+
+            cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_HIGHLIGHTTEXT);
+
+            if (!(state & DrawStateNoBackground)) {
+                HBRUSH hbr;
+
+                hbr = GetSysColorBrush(COLOR_HIGHLIGHT);
+                FillRect(hdc, &r, hbr);
+            }
+        } else {
+            if (!(state & DrawStateNoBackground)) {
+                HBRUSH hbr;
+
+                hbr = GetSysColorBrush(COLOR_MENU);
+                FillRect(hdc, &r, hbr);
+            }
+
+            if (state & DrawStateDisabled) {
+                cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_GRAYTEXT);
+            } else {
+                if (state & DrawStateWarning) {
+                    cr_title = GetSysColor(COLOR_MENUTEXT);
+                    cr_subtitle = c_text_error.ToCOLORREF();
+                } else {
+                    cr_title = GetSysColor(COLOR_MENUTEXT);
+                    cr_subtitle = GetSysColor(COLOR_MENUTEXT);
+                }
+                cr_aux = GetSysColor(COLOR_MENUTEXT);
+            }
+        }
+
+        /* Identity icon */
+        if (icon)
+            DrawIconEx(hdc, r.left, r.top, icon, 0, 0, 0,
+                       NULL, DI_DEFAULTSIZE | DI_NORMAL);
+
+        r.left += GetSystemMetrics(SM_CXICON) + sz_margin.Width;
+
+        SetBkMode(hdc, TRANSPARENT);
+
+        CopyRect(&tr, &r);
+        tr.bottom = (r.bottom + r.top) / 2;
+
+        /* Auxilliary String */
+        if (!(state & DrawStateSkipAux) && aux.length() > 0) {
+            if (hf_old == NULL)
+                hf_old = SelectFont(hdc, hf_normal);
+            else
+                SelectFont(hdc, hf_normal);
+
+            SetTextColor(hdc, cr_aux);
+            DrawText(hdc, aux.c_str(), (int) aux.length(),
+                     &tr, DT_SINGLELINE | DT_RIGHT | DT_VCENTER);
+
+            GetTextExtentPoint32(hdc, aux.c_str(), (int) aux.length(), &s);
+
+            tr.right -= s.cx + sz_margin.Width;
+        }
+
+        /* Title String */
+        if (title.length() > 0) {
+            if (hf_old == NULL)
+                hf_old = SelectFont(hdc, hf_header);
+            else
+                SelectFont(hdc, hf_header);
+
+            SetTextColor(hdc, cr_title);
+            DrawText(hdc, title.c_str(), (int) title.length(),
+                     &tr, DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS);
+        }
+
+        /* Subtitle String */
+        if (subtitle.length() > 0) {
+            if (hf_old == NULL)
+                hf_old = SelectFont(hdc, hf_normal);
+            else
+                SelectFont(hdc, hf_normal);
+
+            CopyRect(&tr, &r);
+            tr.top += (r.bottom - r.top) / 2;
+
+            SetTextColor(hdc, cr_subtitle);
+            DrawText(hdc, subtitle.c_str(), (int) subtitle.length(),
+                     &tr, DT_SINGLELINE | DT_LEFT | DT_WORD_ELLIPSIS);
+        }
+
+        if (hf_old != NULL) {
+            SelectFont(hdc, hf_old);
+        }
+    }
+
+
     std::wstring LoadStringResource(UINT res_id, HINSTANCE inst)
     {
         wchar_t str[2048] = L"";
@@ -464,10 +639,23 @@ namespace nim
     HICON LoadIconResource(UINT res_id, bool small_icon,
                            bool shared, HINSTANCE inst)
     {
-        return (HICON) LoadImage(inst, MAKEINTRESOURCE(res_id), IMAGE_ICON,
-                                 GetSystemMetrics((small_icon)? SM_CXSMICON : SM_CXICON),
-                                 GetSystemMetrics((small_icon)? SM_CYSMICON : SM_CYICON),
-                                 LR_DEFAULTCOLOR | ((shared)? LR_SHARED : 0));
+        HICON ricon = NULL;
+        khm_size cb = sizeof(ricon);
+
+        if (!shared ||
+            KHM_FAILED(khui_cache_get_resource(inst, res_id, KHM_RESTYPE_ICON,
+                                               &ricon, &cb))) {
+
+            ricon = (HICON) LoadImage(inst, MAKEINTRESOURCE(res_id), IMAGE_ICON,
+                                      GetSystemMetrics((small_icon)? SM_CXSMICON : SM_CXICON),
+                                      GetSystemMetrics((small_icon)? SM_CYSMICON : SM_CYICON),
+                                      LR_DEFAULTCOLOR | ((shared)? LR_SHARED : 0));
+            if (shared && ricon != NULL) {
+                khui_cache_add_resource(inst, res_id, KHM_RESTYPE_ICON, &ricon, sizeof(ricon));
+            }
+        }
+
+        return ricon;
     }
 
     HBITMAP LoadImageResource(UINT res_id, bool shared,

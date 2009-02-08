@@ -108,6 +108,10 @@ namespace nim {
 #define HANDLE_WM_MOUSELEAVE(hwnd, wParam, lParam, fn) \
     ((fn)((hwnd)), 0L)
 #endif
+#ifndef HANDLE_WM_HELP
+#define HANDLE_WM_HELP(hwnd, wParam, lParam, fn) \
+    (LRESULT)(fn)((hwnd), (HELPINFO *)(LPARAM) lParam)
+#endif
 
     LRESULT CALLBACK
     ControlWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -135,6 +139,8 @@ namespace nim {
             HANDLE_MSG(hwnd, WM_NOTIFY, cw->HandleNotify);
             HANDLE_MSG(hwnd, WM_SETFOCUS, cw->HandleSetFocus);
             HANDLE_MSG(hwnd, WM_KILLFOCUS, cw->HandleKillFocus);
+            HANDLE_MSG(hwnd, WM_ACTIVATE, cw->HandleActivate);
+            HANDLE_MSG(hwnd, WM_HELP, cw->HandleHelp);
 #ifdef KMQ_WM_DISPATCH
             HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, cw->HandleDispatch);
 #endif

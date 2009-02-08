@@ -14,12 +14,29 @@
 #define NOINITVTABLE __declspec(novtable)
 #endif
 
+/* Flag combinations for SetWindowPos/DeferWindowPos */
+
+/* Move+Size+ZOrder */
+#define SWP_MOVESIZEZ (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_SHOWWINDOW)
+
+/* Move+Size */
+#define SWP_MOVESIZE  (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_SHOWWINDOW|SWP_NOZORDER)
+
+/* Size */
+#define SWP_SIZEONLY (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOMOVE|SWP_NOZORDER)
+
+/* Hide */
+#define SWP_HIDEONLY (SWP_NOACTIVATE|SWP_HIDEWINDOW|SWP_NOMOVE|SWP_NOSIZE|SWP_NOOWNERZORDER|SWP_NOZORDER)
+
+/* Show */
+#define SWP_SHOWONLY (SWP_NOACTIVATE|SWP_SHOWWINDOW|SWP_NOMOVE|SWP_NOSIZE|SWP_NOOWNERZORDER|SWP_NOZORDER)
+
 using namespace Gdiplus;
 
 namespace nim {
 
     class ControlWindow {
-    protected:
+    public:
         HWND  hwnd;
 
     protected:
@@ -67,6 +84,16 @@ namespace nim {
         virtual void OnKillFocus(HWND hwnd_new) { }
 
         virtual LRESULT OnNotify(int id, NMHDR * pnmh) { return 0; }
+
+        virtual void OnActivate(UINT state, HWND hwndActDeact, BOOL fMinimized) { }
+
+        virtual void OnClose() { DestroyWindow(hwnd); }
+
+        virtual LRESULT OnHelp( HELPINFO * hlp ) { return 0; }
+
+        virtual LRESULT OnDrawItem( DRAWITEMSTRUCT * lpDrawItem) { return 0; }
+
+        virtual LRESULT OnMeasureItem( MEASUREITEMSTRUCT * lpMeasureItem) { return 0; }
 
 #ifdef KMQ_WM_DISPATCH
         virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype, khm_ui_4 uparam,
@@ -141,6 +168,26 @@ namespace nim {
             OnKillFocus(hwnd_new);
         }
 
+        void HandleActivate(HWND hwnd, UINT state, HWND hwndActDeact, BOOL fMinimized) {
+            OnActivate(state, hwndActDeact, fMinimized);
+        }
+
+        void HandleOnClose(HWND hwnd) {
+            OnClose();
+        }
+
+        LRESULT HandleMeasureItem(HWND hwnd, MEASUREITEMSTRUCT * lpMeasureItem) {
+            return OnMeasureItem(lpMeasureItem);
+        }
+
+        LRESULT HandleDrawItem(HWND hwnd, DRAWITEMSTRUCT * lpDrawItem) {
+            return OnDrawItem(lpDrawItem);
+        }
+
+        LRESULT HandleHelp(HWND hwnd, HELPINFO * info) {
+            return OnHelp(info);
+        }
+
         void HandleOnPaint(HWND hwnd);
 
         void HandleOnDestroy(HWND hwnd);
@@ -169,6 +216,92 @@ namespace nim {
             ControlWindow * cw;
             LPVOID          createParams;
         };
+    };
+
+    class DialogWindow : public ControlWindow {
+    protected:
+        const HINSTANCE hInstance;
+        const LPCTSTR   templateName;
+        INT_PTR bHandled;
+        bool  is_modal;
+
+    public:
+        DialogWindow(LPCTSTR _templateName, HINSTANCE _hInstance) :
+            hInstance(_hInstance), templateName(_templateName) {
+            bHandled = 0;
+            is_modal = false;
+        }
+
+        HWND Create(HWND parent, LPARAM param = 0);
+
+        INT_PTR DoModal(HWND parent, LPARAM param = 0);
+
+        LONG_PTR SetDlgResult(LONG_PTR rv) {
+#pragma warning(push)
+#pragma warning(disable: 4244)
+            // VC++ 2005 on 32-bit archs reports C4244 when converting
+            // rv from LONG_PTR to LONG and then back to LONG_PTR
+            // because clearly we are losing precision that way.
+            return SetWindowLongPtr(hwnd, DWLP_MSGRESULT, rv);
+#pragma warning(pop)
+        }
+
+        void DoDefault() {
+            bHandled = FALSE;
+        }
+
+        HWND GetItem(int nID) {
+            return ::GetDlgItem(hwnd, nID);
+        }
+
+        BOOL SetItemText(int nID, LPCTSTR text) {
+            return ::SetDlgItemText(hwnd, nID, text);
+        }
+
+        UINT GetItemText(int nIDDlgItem, LPTSTR lpString, int nMaxCount) {
+            return ::GetDlgItemText(hwnd, nIDDlgItem, lpString, nMaxCount);
+        }
+
+        LRESULT SendItemMessage(int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
+            return SendDlgItemMessage(hwnd, nIDDlgItem, Msg, wParam, lParam);
+        }
+
+        BOOL CheckButton(int nIDButton, UINT uCheck) {
+            return CheckDlgButton(hwnd, nIDButton, uCheck);
+        }
+
+    public:
+        virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam) { return FALSE; }
+
+        virtual void OnClose() { DoDefault(); }
+
+        virtual LRESULT OnHelp(HELPINFO * info) { DoDefault(); return 0; }
+
+#ifdef KHUI_WM_NC_NOTIFY
+        virtual void OnDeriveFromPrivCred(khui_collect_privileged_creds_data * pcd) { }
+
+        virtual void OnCollectPrivCred(khui_collect_privileged_creds_data * pcd) { }
+
+        virtual void OnProcessComplete(int has_error) { }
+
+        virtual void OnSetPrompts() { }
+
+        virtual void OnIdentityStateChange(nc_identity_state_notification * isn) { }
+
+        virtual void OnNewIdentity() { }
+
+        virtual void OnDialogActivate() { }
+
+        virtual void OnDialogSetup() { }
+#endif
+
+    private:
+        static INT_PTR CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+#ifdef KHUI_WM_NC_NOTIFY
+        void HandleNcNotify(HWND hwnd, khui_wm_nc_notifications code,
+                            int sParam, void * vParam);
+#endif
     };
 
     class NOINITVTABLE TimerQueueClient {

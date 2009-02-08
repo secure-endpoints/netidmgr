@@ -44,6 +44,7 @@ namespace nim {
         DrawStateDisabled     = (1L << 4),
         DrawStateFocusRect    = (1L << 5),
         DrawStateNoBackground = (1L << 6),
+        DrawStateSkipAux      = (1L << 7),
 
         DrawStateExpired      = (1L << 16),
         DrawStateCritial      = (1L << 17),
@@ -77,7 +78,8 @@ namespace nim {
         Color   c_expired;      // Expired background color
 
         Color   c_text;          // Normal text color
-        Color   c_text_selected; // selected text color
+        Color   c_text_selected; // Selected text color
+        Color   c_text_error;    // Error text color
 
         Image  *b_credwnd; // Credentials window widget images (small icon size)
         Image  *b_watermark;    // Credentials window watermark
@@ -164,6 +166,16 @@ namespace nim {
         void DrawProgressBar(Graphics& g, const Rect& extents, int progress);
 
         void DrawFocusRect(Graphics& g, const Rect& extents);
+
+        void DrawDropDownButton(HWND hwnd, HDC hdc,
+                                DrawState state, RECT * client);
+
+        void DrawIdentityItem(HDC hdc, const RECT& extents,
+                              DrawState state,
+                              HICON icon,
+                              const std::wstring& title,
+                              const std::wstring& subtitle,
+                              const std::wstring& aux);
     };
 
     typedef enum DrawTextStyle {
@@ -316,7 +328,7 @@ namespace nim {
     }
 
     HICON
-    LoadIconResource(UINT res_id, bool small_icon,
+    LoadIconResource(UINT res_id, bool small_icon = false,
                      bool shared = true, HINSTANCE inst = khm_hInstance);
 
     HBITMAP
