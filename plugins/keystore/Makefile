@@ -341,7 +341,7 @@ MSI=$(DEST)\$(DLLBASENAME).msi
 
 install: all "$(MSI)"
 
-$(MSI): "$(OBJ)\installer.wixobj"
+$(MSI): "$(OBJ)\installer.wixobj" "$(OBJ)\keystore_fragment.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
 		"$(WIXDIR)\WixUI.wixlib"		\
 		-loc lang\en_us\installer.wxl 		\
@@ -358,6 +358,16 @@ $(OBJ)\installer.wixobj: installer.wxs
 		"-dDestDir=$(DEST)"		\
 		-dPluginList=$(PLUGINLIST)	\
 		-dModuleName=$(MODULENAME)
+
+$(OBJ)\keystore_fragment.wixobj: keystore_fragment.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** \
+		-dProductVersion=$(VERLIST)	\
+		-dDllBaseName=$(DLLBASENAME)	\
+		"-dDestDir=$(DEST)"		\
+		-dPluginList=$(PLUGINLIST)	\
+		-dModuleName=$(MODULENAME)
+
+fragment: $(OBJ)\keystore_fragment.wixobj
 
 clean::
 	$(RM) "$(OBJ)\installer.wixobj"
