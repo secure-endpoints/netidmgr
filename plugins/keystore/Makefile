@@ -200,6 +200,14 @@ if exist "$@.manifest" $(RM) "$@.manifest"
 
 # End of manifest handling
 
+# Code signing
+
+!ifdef CODESIGN
+_CODESIGN=$(CODESIGN) $@
+!else
+_CODESIGN=
+!endif
+
 
 # Now for the actual build stuff
 
@@ -266,6 +274,7 @@ $(DLL): $(OBJFILES) $(DLLRESFILE)
 	$(DLLGUILINK) $(LIBFILES)
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)
+	$(_CODESIGN)
 
 clean::
 	$(RM) $(DLL)
@@ -286,6 +295,7 @@ $(LANGDLL): $(OBJ)\langres_$(LANG).res $(OBJ)\version_$(LANG).res
 	$(DLLRESLINK)
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)
+	$(_CODESIGN)
 
 clean::
 	$(RM) $(LANGDLL)
