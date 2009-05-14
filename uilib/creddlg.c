@@ -445,6 +445,11 @@ khui_cw_set_response(khui_new_creds * c,
     return KHM_ERROR_SUCCESS;
 }
 
+
+/*******************************************************
+  New identity creation
+ *******************************************************/
+
 /* called with c->cs held */
 static khui_new_creds_idpro *
 cw_find_idpro(khui_new_creds * c,

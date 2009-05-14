@@ -2,6 +2,7 @@
 #pragma once
 
 namespace nim {
+
     enum NewCredPage {
         NC_PAGE_NONE = 0,
         NC_PAGE_IDSPEC,
@@ -46,9 +47,9 @@ namespace nim {
 
         NewCredPanels                   m_privint;
 
-        NewCredPage     page;
+        NewCredPage                     page;
 
-        bool            flashing_enabled;
+        bool                            flashing_enabled;
 
     public:
         NewCredWizard(khui_new_creds * _nc):
@@ -110,9 +111,42 @@ namespace nim {
 
         void UpdateLayout();
 
-        void ResizeWindow();
-
         void PrepCredTypes();
-    };
 
+        void PositionSelf();
+
+    public:
+        static NewCredWizard * FromNC(khui_new_creds * _nc) {
+            return reinterpret_cast<NewCredWizard *>(_nc->wizard);
+        }
+
+    private:
+
+        class NewCredLayout {
+            NewCredWizard * w;
+            HDWP dwp;
+            RECT r_pos;
+            HWND hwnd_last;
+
+        public:
+            enum Slot {
+                Hidden,
+                Header,
+                ContentNoHeader,
+                ContentNormal,
+                ContentLarge,
+                Footer
+            };
+
+            NewCredLayout(NewCredWizard * w, int nWindows);
+
+            void AddPanel(ControlWindow * cwnd, Slot slot);
+
+            void HidePanel(ControlWindow * cwnd) {
+                AddPanel(cwnd, Hidden);
+            }
+
+            BOOL Commit();
+        };
+    };
 }

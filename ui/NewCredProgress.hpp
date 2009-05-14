@@ -9,6 +9,10 @@ namespace nim {
         NewCredProgress(khui_new_creds * _nc) :
             DialogWindow( MAKEINTRESOURCE(IDD_NC_PROGRESS), khm_hInstance ),
             nc(_nc) { }
+
+        HWND UpdateLayout() {
+            return NULL;
+        }
     };
 
 }

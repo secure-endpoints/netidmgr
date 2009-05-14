@@ -21,6 +21,8 @@ namespace nim {
                                 /*< Previous page, if we allow back
                                   navigation */
 
+        friend class NewCredWizard;
+
     public:
         NewCredIdentitySpecifier(khui_new_creds * _nc):
             nc(_nc),
@@ -29,7 +31,7 @@ namespace nim {
 
         void Initialize(HWND hwnd);
 
-        void UpdateLayout();
+        HWND UpdateLayout();
 
         bool ProcessNewIdentity();
 

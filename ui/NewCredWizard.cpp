@@ -1,67 +1,19 @@
 
 #include "khmapp.h"
+#include "NewCredWizard.hpp"
+#if _WIN32_WINNT >= 0x0501
+#include <uxtheme.h>
+#endif
+#include <assert.h>
 
-namespace {
+namespace nim {
 
-    BOOL NewCredWizard::OnInitDialog(HWND hwndFocus, LPARAM lParam)
+    void NewCredWizard::PositionSelf()
     {
-        int x, y;
-        int width, height;
         RECT r;
         HWND hwnd_parent = NULL;
-
-        nc->hwnd = hwnd;
-
-        assert(nc != NULL);
-        assert(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-               nc->subtype == KHUI_NC_SUBTYPE_PASSWORD ||
-               nc->subtype == KHUI_NC_SUBTYPE_IDSPEC ||
-               nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID ||
-               nc->subtype == KHUI_NC_SUBTYPE_CONFIG_ID ||
-               nc->subtype == KHUI_NC_SUBTYPE_ACQDERIVED);
-
-        nc->nav.hwnd =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_NAV),
-                              hwnd, nc_nav_dlg_proc, (LPARAM) nc);
-
-        nc->idsel.hwnd =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_IDSEL),
-                              hwnd, nc_idsel_dlg_proc, (LPARAM) nc);
-
-        nc->privint.hwnd_basic =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_PRIVINT_BASIC),
-                              hwnd, nc_privint_basic_dlg_proc, (LPARAM) nc);
-
-        nc->privint.hwnd_advanced =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_PRIVINT_ADVANCED),
-                              hwnd, nc_privint_advanced_dlg_proc, (LPARAM) nc);
-
-        nc->privint.hwnd_noprompts =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_NOPROMPTS),
-                              hwnd, nc_noprompts_dlg_proc, (LPARAM) nc);
-
-        nc->privint.hwnd_persist =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_PERSIST),
-                              nc->privint.hwnd_advanced, nc_persist_dlg_proc, (LPARAM) nc);
-#if _WIN32_WINNT >= 0x0501
-        EnableThemeDialogTexture(nc->privint.hwnd_persist, ETDT_ENABLETAB);
-#endif
-
-        nc->idspec.hwnd =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_IDSPEC),
-                              hwnd, nc_idspec_dlg_proc, (LPARAM) nc);
-
-        nc->progress.hwnd =
-            CreateDialogParam(khm_hInstance,
-                              MAKEINTRESOURCE(IDD_NC_PROGRESS),
-                              hwnd, nc_progress_dlg_proc, (LPARAM) nc);
+        int x, y;
+        int width, height;
 
         /* Position the dialog */
 
@@ -87,9 +39,10 @@ namespace {
         x = (r.right + r.left)/2 - width / 2;
         y = (r.top + r.bottom)/2 - height / 2;
 
-        /* we want to check if the entire rect is visible on the screen.
-           If the main window is visible and in basic mode, we might end
-           up with a rect that is partially outside the screen. */
+        /* we want to check if the entire rect is visible on the
+           screen.  If the main window is visible and in basic mode,
+           we might end up with a rect that is partially outside the
+           screen. */
         {
             RECT r;
 
@@ -103,8 +56,31 @@ namespace {
         }
 
         MoveWindow(hwnd, x, y, width, height, FALSE);
+    }
 
-        if (nc->is_modal) {
+    BOOL NewCredWizard::OnInitDialog(HWND hwndFocus, LPARAM lParam)
+    {
+        Hold();
+
+        nc->hwnd = hwnd;
+
+        assert(nc != NULL);
+        assert(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+               nc->subtype == KHUI_NC_SUBTYPE_PASSWORD ||
+               nc->subtype == KHUI_NC_SUBTYPE_IDSPEC ||
+               nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID ||
+               nc->subtype == KHUI_NC_SUBTYPE_CONFIG_ID ||
+               nc->subtype == KHUI_NC_SUBTYPE_ACQDERIVED);
+
+        m_nav     .Create(hwnd);
+        m_idsel   .Create(hwnd);
+        m_privint .Create(hwnd);
+        m_idspec  .Create(hwnd);
+        m_progress.Create(hwnd);
+
+        PositionSelf();
+
+        if (is_modal) {
             switch (nc->subtype) {
             case KHUI_NC_SUBTYPE_ACQPRIV_ID:
                 if (khm_cred_begin_new_cred_op()) {
@@ -131,7 +107,7 @@ namespace {
     void NewCredWizard::OnDestroy(void)
     {
         khm_del_dialog(hwnd);
-        delete this;
+        Release();
     }
 
     LRESULT NewCredWizard::OnHelp(HELPINFO * hlp)
@@ -175,7 +151,7 @@ namespace {
             DWORD id;
             int i;
 
-            hw_ctrl = hlp->hItemHandle;
+            hw_ctrl = (HWND) hlp->hItemHandle;
 
             id = GetWindowLong(hw_ctrl, GWL_ID);
             for (i=0; ctxids[i] != 0; i += 2)
@@ -210,7 +186,7 @@ namespace {
             FLASHWINFO fi;
             DWORD_PTR ex_style;
 
-            if (nc && nc->flashing_enabled) {
+            if (nc && flashing_enabled) {
                 ZeroMemory(&fi, sizeof(fi));
 
                 fi.cbSize = sizeof(fi);
@@ -219,7 +195,7 @@ namespace {
 
                 FlashWindowEx(&fi);
 
-                nc->flashing_enabled = FALSE;
+                flashing_enabled = false;
             }
 
             ex_style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
@@ -258,8 +234,6 @@ namespace {
     {
         khui_new_creds * nc_child;
 
-        pcd = (khui_collect_privileged_creds_data *) vParam;
-
         khui_cw_create_cred_blob(&nc_child);
         nc_child->subtype = KHUI_NC_SUBTYPE_ACQPRIV_ID;
         khui_context_create(&nc_child->ctx,
@@ -274,7 +248,7 @@ namespace {
     void NewCredWizard::OnProcessComplete(int has_error)
     {
         if (nc->n_children != 0)
-            return TRUE;
+            return;
 
         nc->response &= ~KHUI_NC_RESPONSE_PROCESSING;
 
@@ -288,9 +262,11 @@ namespace {
             NotifyTypes( WMNC_DIALOG_PROCESS_COMPLETE, 0, TRUE);
 
             if (has_error) {
-                nc->nav.transitions = NC_TRANS_RETRY | NC_TRANS_CLOSE | NC_TRANS_PREV;
-                nc_layout_nav(nc);
-                return TRUE;
+                m_nav.SetAllControls(NewCredNavigation::Retry |
+                                     NewCredNavigation::Close |
+                                     NewCredNavigation::Prev);
+                m_nav.UpdateLayout();
+                return;
             } if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
                   nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
                 Navigate( NC_PAGE_CREDOPT_BASIC);
@@ -308,9 +284,9 @@ namespace {
     {
         nc->privint.initialized = FALSE;
 
-        if (nc->page == NC_PAGE_PASSWORD ||
-            nc->page == NC_PAGE_CREDOPT_ADV ||
-            nc->page == NC_PAGE_CREDOPT_BASIC) {
+        if (page == NC_PAGE_PASSWORD ||
+            page == NC_PAGE_CREDOPT_ADV ||
+            page == NC_PAGE_CREDOPT_BASIC) {
 
             UpdateLayout();
         }
@@ -329,13 +305,13 @@ namespace {
 
             assert(FALSE);
 
-            LoadString(khm_hInstance, IDS_NC_NPR_CHOOSE, buf, ARRAYLENGTH(buf));
-            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, buf);
-            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
+            LoadStringResource(buf, IDS_NC_NPR_CHOOSE);
+            m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
+            m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
 
             nflags &= ~KHUI_CWNIS_READY;
 
-            nc_privint_set_progress(nc, 0, FALSE);
+            m_privint.m_noprompts.SetProgress(0, false);
 
         } else if (nflags & KHUI_CWNIS_VALIDATED) {
 
@@ -343,59 +319,56 @@ namespace {
 
             if (idflags & KCDB_IDENT_FLAG_VALID) {
 
-                LoadString(khm_hInstance, IDS_NC_NPR_CLICKFINISH, buf, ARRAYLENGTH(buf));
-                SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, buf);
-                SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
+                LoadStringResource(buf, IDS_NC_NPR_CLICKFINISH);
+                m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
+                m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
                 if (notif->state_string)
-                    nc_idsel_set_status_string(nc, notif->state_string);
+                    m_idsel.SetStatus(notif->state_string);
                 else
-                    nc_idsel_set_status_string(nc, L"");
+                    m_idsel.SetStatus(L"");
             
             } else {
                 /* The identity may have KCDB_IDENT_FLAG_INVALID or
                    KCDB_IDENT_FLAG_UNKNOWN set. */
 
-                if ((idflags & KCDB_IDENT_FLAG_INVALID) == KCDB_IDENT_FLAG_INVALID) {
-                    LoadString(khm_hInstance, IDS_NC_INVALIDID, buf, ARRAYLENGTH(buf));
-                } else {
-                    LoadString(khm_hInstance, IDS_NC_UNKNOWNID, buf, ARRAYLENGTH(buf));
-                }
-                nc_idsel_set_status_string(nc, buf);
+                LoadStringResource(buf, ((idflags & KCDB_IDENT_FLAG_INVALID)? IDS_NC_INVALIDID : IDS_NC_UNKNOWNID));
+                m_idsel.SetStatus(buf);
 
                 if (notif->state_string)
-                    SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, notif->state_string);
+                    m_privint.m_noprompts.SetItemText(IDC_TEXT, notif->state_string);
                 else
-                    SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, L"");
-                SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
+                    m_privint.m_noprompts.SetItemText(IDC_TEXT, L"");
+                m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
 
                 nflags &= ~KHUI_CWNIS_VALIDATED;
             }
 
-            nc_privint_set_progress(nc, 0, FALSE);
+            m_privint.m_noprompts.SetProgress(0, false);
+
         } else {
-            LoadString(khm_hInstance, IDS_NC_NPR_VALIDATING, buf, ARRAYLENGTH(buf));
-            SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT, buf);
+            LoadStringResource(buf, IDS_NC_NPR_VALIDATING);
+            m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
 
             if (notif->state_string)
-                SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, notif->state_string);
+                m_privint.m_noprompts.SetItemText(IDC_TEXT2, notif->state_string);
             else
-                SetDlgItemText(nc->privint.hwnd_noprompts, IDC_TEXT2, L"");
+                m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
 
             if (nflags & KHUI_CWNIS_NOPROGRESS) {
-                nc_privint_set_progress(nc, 0, FALSE);
+                m_privint.m_noprompts.SetProgress(0, false);
             } else {
-                nc_privint_set_progress(nc, notif->progress, TRUE);
+                m_privint.m_noprompts.SetProgress(notif->progress, true);
             }
         }
 
         if (nflags & KHUI_CWNIS_READY) {
-            nc->nav.transitions |= NC_TRANS_FINISH;
-            nc->nav.state |= NC_NAVSTATE_OKTOFINISH;
-            nc_layout_nav(nc);
+            m_nav.EnableControl(NewCredNavigation::Finish);
+            m_nav.EnableState(NewCredNavigation::OkToFinish);
+            m_nav.UpdateLayout();
         } else {
-            nc->nav.transitions &= ~NC_TRANS_FINISH;
-            nc->nav.state &= ~NC_NAVSTATE_OKTOFINISH;
-            nc_layout_nav(nc);
+            m_nav.DisableControl(NewCredNavigation::Finish);
+            m_nav.DisableState(NewCredNavigation::OkToFinish);
+            m_nav.UpdateLayout();
         }
 
     }
@@ -473,7 +446,7 @@ namespace {
             assert(FALSE);
         }
 
-        ShowWindow(hwnd, SW_SHOWNORMAL);
+        ShowWindow(SW_SHOWNORMAL);
 
         t = 0;
         /* bring the window to the top, if necessary */
@@ -514,7 +487,7 @@ namespace {
                 
                 FlashWindowEx(&fi);
 
-                nc->flashing_enabled = TRUE;
+                flashing_enabled = true;
             }
 
         } else {
@@ -533,10 +506,11 @@ namespace {
            We should now create the dialogs using these.
         */
 
-        assert(nc->privint.hwnd_advanced != NULL);
+        assert(m_privint.m_advanced.hwnd != NULL);
 
         if(nc->n_types > 0) {
             khm_size i;
+
             for(i=0; i < nc->n_types;i++) {
                 khui_new_creds_by_type * t;
 
@@ -548,7 +522,7 @@ namespace {
                     /* Create the dialog panel */
                     t->hwnd_panel =
                         CreateDialogParam(t->h_module, t->dlg_template,
-                                          nc->privint.hwnd_advanced,
+                                          m_privint.m_advanced.hwnd,
                                           t->dlg_proc, (LPARAM) nc);
 
                     assert(t->hwnd_panel);
@@ -565,32 +539,34 @@ namespace {
 
     BOOL NewCredWizard::OnPosChanging(LPWINDOWPOS wpos)
     {
-        if (nc == NULL || nc->privint.hwnd_current == NULL)
+        if (nc == NULL || m_privint.hwnd_current == NULL)
             return FALSE;
 
-        SendMessage(nc->privint.hwnd_current, KHUI_WM_NC_NOTIFY, 
+        SendMessage(m_privint.hwnd_current, KHUI_WM_NC_NOTIFY, 
                     MAKEWPARAM(0, WMNC_DIALOG_MOVE), (LPARAM) nc);
+
+        return FALSE;
     }
 
     void NewCredWizard::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
     {
-        if (code == BN_CLICKED) {
+        if (codeNotify == BN_CLICKED) {
             switch (id) {
             case IDCANCEL:
                 Navigate( NC_PAGET_CANCEL);
-                return TRUE;
+                return;
 
             case IDOK:
                 Navigate( NC_PAGET_DEFAULT);
-                return TRUE;
+                return;
             }
         }
     
-        if (hwndCtl != 0) {
+        if (hwndCtl != NULL) {
             HWND owner = GetParent(hwndCtl);
             if (owner != NULL && owner != hwnd) {
-                FORWARD_WM_COMMAND(owner, id, hwndCtl, code, PostMessage);
-                return TRUE;
+                FORWARD_WM_COMMAND(owner, id, hwndCtl, codeNotify, PostMessage);
+                return;
             }
         }
     }
@@ -607,56 +583,56 @@ namespace {
             return;
 
         case NC_PAGE_IDSPEC:
-            nc->idspec.prev_page = nc->page;
-            nc->page = NC_PAGE_IDSPEC;
+            m_idspec.prev_page = page;
+            page = NC_PAGE_IDSPEC;
             if (nc->subtype == KHUI_NC_SUBTYPE_IDSPEC) {
-                nc->nav.transitions = NC_TRANS_FINISH;
+                m_nav.SetAllControls(NewCredNavigation::Finish);
             } else {
-                nc->nav.transitions = NC_TRANS_NEXT;
+                m_nav.SetAllControls(NewCredNavigation::Next);
             }
-            if (nc->idspec.prev_page != NC_PAGE_NONE)
-                nc->nav.transitions |= NC_TRANS_PREV;
+            if (m_idspec.prev_page != NC_PAGE_NONE)
+                m_nav.EnableControl(NewCredNavigation::Prev);
             break;
 
         case NC_PAGE_CREDOPT_BASIC:
-            nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
-            nc->page = NC_PAGE_CREDOPT_BASIC;
+            m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+            page = NC_PAGE_CREDOPT_BASIC;
             break;
 
         case NC_PAGE_CREDOPT_ADV:
-            nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
-            nc->page = NC_PAGE_CREDOPT_ADV;
+            m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+            page = NC_PAGE_CREDOPT_ADV;
             break;
 
         case NC_PAGE_PASSWORD:
-            nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
-            nc->page = NC_PAGE_PASSWORD;
+            m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+            page = NC_PAGE_PASSWORD;
             break;
 
         case NC_PAGE_PROGRESS:
-            nc->nav.transitions = NC_TRANS_ABORT;
-            nc->page = NC_PAGE_PROGRESS;
+            m_nav.SetAllControls(NewCredNavigation::Abort);
+            page = NC_PAGE_PROGRESS;
             break;
 
         case NC_PAGET_NEXT:
-            switch (nc->page) {
+            switch (page) {
             case NC_PAGE_IDSPEC:
-                if (nc_idspec_process(nc)) {
+                if (m_idspec.ProcessNewIdentity()) {
 
                     switch (nc->subtype) {
                     case KHUI_NC_SUBTYPE_NEW_CREDS:
-                        nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
-                        nc->page = NC_PAGE_CREDOPT_ADV;
+                        m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+                        page = NC_PAGE_CREDOPT_ADV;
                         break;
                         
                     case KHUI_NC_SUBTYPE_ACQPRIV_ID:
-                        nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
-                        nc->page = NC_PAGE_CREDOPT_BASIC;
+                        m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+                        page = NC_PAGE_CREDOPT_BASIC;
                         break;
 
                     case KHUI_NC_SUBTYPE_PASSWORD:
-                        nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
-                        nc->page = NC_PAGE_PASSWORD;
+                        m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+                        page = NC_PAGE_PASSWORD;
                         break;
 
                     default:
@@ -682,7 +658,7 @@ namespace {
                     if (p == NULL)
                         khui_cw_get_next_privint(nc, &p);
                     nc->privint.shown.current_panel = p;
-                    nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
+                    m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                 }
                 break;
 
@@ -692,11 +668,11 @@ namespace {
             break;
 
         case NC_PAGET_PREV:
-            switch (nc->page) {
+            switch (page) {
             case NC_PAGE_IDSPEC:
-                if (nc->idspec.prev_page != NC_PAGE_NONE) {
-                    nc->page = nc->idspec.prev_page;
-                    nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
+                if (m_idspec.prev_page != NC_PAGE_NONE) {
+                    page = m_idspec.prev_page;
+                    m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                 }
                 break;
 
@@ -710,7 +686,7 @@ namespace {
                     if (p)
                         p = QPREV(p);
                     nc->privint.shown.current_panel = p;
-                    nc->nav.transitions &= ~(NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF);
+                    m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                 }
                 break;
 
@@ -718,14 +694,14 @@ namespace {
                 {
                     if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
                         nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
-                        nc->page = NC_PAGE_CREDOPT_BASIC;
+                        page = NC_PAGE_CREDOPT_BASIC;
                     else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD)
-                        nc->page = NC_PAGE_PASSWORD;
+                        page = NC_PAGE_PASSWORD;
                     else {
                         assert(FALSE);
                     }
 
-                    nc->nav.transitions = 0;
+                    m_nav.SetAllControls(0);
                 }
                 break;
 
@@ -737,8 +713,8 @@ namespace {
         case NC_PAGET_FINISH:
             switch (nc->subtype) {
             case KHUI_NC_SUBTYPE_IDSPEC:
-                assert(nc->page == NC_PAGE_IDSPEC);
-                if (nc_idspec_process(nc)) {
+                assert(page == NC_PAGE_IDSPEC);
+                if (m_idspec.ProcessNewIdentity()) {
                     nc->result = KHUI_NC_RESULT_PROCESS;
                     khm_cred_dispatch_process_message(nc);
                 }
@@ -750,8 +726,8 @@ namespace {
                 nc->result = KHUI_NC_RESULT_PROCESS;
                 NotifyTypes( WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
                 khm_cred_dispatch_process_message(nc);
-                nc->nav.transitions = NC_TRANS_ABORT | NC_TRANS_SHOWCLOSEIF;
-                nc->page = NC_PAGE_PROGRESS;
+                m_nav.SetAllControls(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+                page = NC_PAGE_PROGRESS;
                 break;
 
             default:
@@ -760,12 +736,12 @@ namespace {
             break;
 
         case NC_PAGET_CANCEL:
-            if (nc->nav.state & NC_NAVSTATE_CANCELLED)
+            if (m_nav.IsState(NewCredNavigation::Cancelled))
                 break;
 
-            if (nc->nav.state & NC_NAVSTATE_PREEND) {
+            if (m_nav.IsState(NewCredNavigation::PreEnd)) {
 
-                nc->nav.state &= ~NC_NAVSTATE_NOCLOSE;
+                m_nav.DisableState(NewCredNavigation::NoClose);
                 Navigate( NC_PAGET_END);
                 return;
 
@@ -774,23 +750,25 @@ namespace {
                 nc->result = KHUI_NC_RESULT_CANCEL;
                 NotifyTypes( WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
                 khm_cred_dispatch_process_message(nc);
-                nc->nav.transitions = 0;
-                nc->page = NC_PAGE_PROGRESS;
-                nc->nav.state |= NC_NAVSTATE_CANCELLED;
+                m_nav.SetAllControls(0);
+                page = NC_PAGE_PROGRESS;
+                m_nav.EnableState(NewCredNavigation::Cancelled);
             }
             break;
 
         case NC_PAGET_END:
-            if ((nc->nav.state & NC_NAVSTATE_NOCLOSE) &&
-                !(nc->nav.state & NC_NAVSTATE_CANCELLED)) {
+            if (m_nav.IsState(NewCredNavigation::NoClose) &&
+                !m_nav.IsState(NewCredNavigation::Cancelled)) {
 
-                nc->nav.state |= NC_NAVSTATE_PREEND;
-                nc->nav.transitions = NC_TRANS_CLOSE;
-                nc->page = NC_PAGE_PROGRESS;
+                m_nav.EnableState(NewCredNavigation::PreEnd);
+                m_nav.SetAllControls(NewCredNavigation::Close);
+                page = NC_PAGE_PROGRESS;
 
             } else {
                 khm_size i;
-                if (nc->is_modal) {
+
+                Hold();
+                if (is_modal) {
                     if (nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
                         /* prevent the collector credential set from being
                            destroyed */
@@ -798,14 +776,16 @@ namespace {
                     }
                     for (i=0; i < nc->n_types; i++)
                         if (nc->types[i].nct->hwnd_panel) {
-                            DestroyWindow(nc->types[i].nct->hwnd_panel);
+                            ::DestroyWindow(nc->types[i].nct->hwnd_panel);
                             nc->types[i].nct->hwnd_panel = NULL;
                         }
-                    EndDialog(nc->hwnd, nc->result);
+                    EndDialog(nc->result);
                 } else {
-                    DestroyWindow(nc->hwnd);
+                    DestroyWindow();
                 }
                 kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, (void *) nc);
+                Release();
+
                 return;
 
             }
@@ -814,11 +794,11 @@ namespace {
         case NC_PAGET_DEFAULT:
             {
                 new_page = 
-                    (nc->nav.transitions & NC_TRANS_NEXT)?   NC_PAGET_NEXT :
-                    (nc->nav.transitions & NC_TRANS_FINISH)? NC_PAGET_FINISH :
-                    (nc->nav.transitions & NC_TRANS_RETRY)?  NC_PAGET_FINISH :
-                    (nc->nav.transitions & NC_TRANS_CLOSE)?  NC_PAGET_CANCEL :
-                    (nc->nav.transitions & NC_TRANS_ABORT)?  NC_PAGET_CANCEL :
+                    (m_nav.IsControlEnabled(NewCredNavigation::Next))?   NC_PAGET_NEXT :
+                    (m_nav.IsControlEnabled(NewCredNavigation::Finish))? NC_PAGET_FINISH :
+                    (m_nav.IsControlEnabled(NewCredNavigation::Retry))?  NC_PAGET_FINISH :
+                    (m_nav.IsControlEnabled(NewCredNavigation::Close))?  NC_PAGET_CANCEL :
+                    (m_nav.IsControlEnabled(NewCredNavigation::Abort))?  NC_PAGET_CANCEL :
                     NC_PAGET_CANCEL;
                 Navigate( new_page);
                 return;
@@ -893,7 +873,7 @@ namespace {
         }
 
         nc->privint.initialized = FALSE;
-        nc->nav.state &= ~NC_NAVSTATE_OKTOFINISH;
+        m_nav.DisableState(NewCredNavigation::OkToFinish);
 
         if (nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
             nc->persist_privcred = TRUE;
@@ -931,13 +911,13 @@ namespace {
 
         if (notify_ui) {
 
-            nc_layout_idsel(nc);
+            m_idsel.UpdateLayout();
 
-            if (nc->page == NC_PAGE_CREDOPT_ADV ||
-                nc->page == NC_PAGE_CREDOPT_BASIC ||
-                nc->page == NC_PAGE_PASSWORD) {
+            if (page == NC_PAGE_CREDOPT_ADV ||
+                page == NC_PAGE_CREDOPT_BASIC ||
+                page == NC_PAGE_PASSWORD) {
 
-                nc_layout_privint(nc);
+                m_privint.UpdateLayout();
 
             }
         }
@@ -947,7 +927,7 @@ namespace {
     {
         khm_size i;
         
-        for (i=0; i < c->n_types; i++) {
+        for (i=0; i < nc->n_types; i++) {
             if (nc->types[i].nct->hwnd_panel == NULL)
                 continue;
 
@@ -963,236 +943,200 @@ namespace {
 
     void NewCredWizard::EnableControls(bool enable)
     {
-        EnableWindow(nc->nav.hwnd, enable);
-        EnableWindow(nc->idsel.hwnd, enable);
+        //EnableWindow(m_nav.hwnd, enable);
+        //EnableWindow(m_idsel.hwnd, enable);
+    }
+
+    NewCredWizard::NewCredLayout::NewCredLayout(NewCredWizard * _w, int nWindows)
+    {
+        dwp = BeginDeferWindowPos(nWindows);
+        w = _w;
+        SetRectEmpty(&r_pos);
+        hwnd_last = HWND_TOP;
+    }
+
+    void NewCredWizard::NewCredLayout::AddPanel(ControlWindow * cwnd, Slot slot)
+    {
+        RECT r = {0, 0, 0, 0};
+
+        assert(dwp != NULL);
+
+        switch (slot) {
+        case Hidden:
+            break;              // nothing to do
+
+        case Header:
+            ::GetWindowRect(w->GetItem(IDC_NC_R_IDSEL), &r);
+            break;
+
+        case ContentNoHeader:
+            {
+                RECT r_1, r_2;
+
+                ::GetWindowRect(w->GetItem(IDC_NC_R_IDSEL), &r_1);
+                ::GetWindowRect(w->GetItem(IDC_NC_R_MAIN), &r_2);
+                UnionRect(&r, &r_1, &r_2);
+            }
+            break;
+
+        case ContentNormal:
+            ::GetWindowRect(w->GetItem(IDC_NC_R_MAIN), &r);
+            break;
+
+        case ContentLarge:
+            ::GetWindowRect(w->GetItem(IDC_NC_R_MAIN_LG), &r);
+            break;
+
+        case Footer:
+            ::GetWindowRect(w->GetItem(IDC_NC_R_NAV), &r);
+            break;
+
+        default:
+            assert(FALSE);
+        }
+
+        OffsetRect(&r, r_pos.left - r.left, r_pos.bottom - r.top);
+
+        r_pos.right = __max(r_pos.right, r.right);
+        r_pos.bottom = r.bottom;
+
+        dwp = DeferWindowPos(dwp, cwnd->hwnd, hwnd_last,
+                             r.left, r.top, r.right - r.left, r.bottom - r.top,
+                             ((slot == Hidden)? SWP_HIDEONLY : SWP_MOVESIZEZ));
+        if (slot != Hidden)
+            hwnd_last = cwnd->hwnd;
+    }
+
+    BOOL NewCredWizard::NewCredLayout::Commit()
+    {
+        BOOL rv;
+        DWORD style;
+        DWORD exstyle;
+
+        assert(dwp != NULL);
+
+        rv = EndDeferWindowPos(dwp);
+        dwp = NULL;
+
+        style = GetWindowLong(w->hwnd, GWL_STYLE);
+        exstyle = GetWindowLong(w->hwnd, GWL_EXSTYLE);
+
+        AdjustWindowRectEx(&r_pos, style, FALSE, exstyle);
+
+        SetWindowPos(w->hwnd, NULL, 0, 0,
+                     r_pos.right - r_pos.left, r_pos.bottom - r_pos.top,
+                     SWP_SIZEONLY);
+
+        return rv;
     }
 
     void NewCredWizard::UpdateLayout()
     {
-        RECT r_idsel;
-        RECT r_main;
-        RECT r_main_lg;
-        RECT r_nav_lg;
-        RECT r_nav_sm;
-
-        RECT r;
-        HDWP dwp = NULL;
-        BOOL drv;
         HWND nextctl = NULL;
+        NewCredLayout layout(this, 6);
 
-#define dlg_item(id) GetDlgItem(nc->hwnd, id)
-
-        GetWindowRect(dlg_item(IDC_NC_R_IDSEL), &r_idsel);
-        MapWindowPoints(NULL, nc->hwnd, (LPPOINT) &r_idsel, 2);
-        GetWindowRect(dlg_item(IDC_NC_R_MAIN), &r_main);
-        MapWindowPoints(NULL, nc->hwnd, (LPPOINT) &r_main, 2);
-        GetWindowRect(dlg_item(IDC_NC_R_MAIN_LG), &r_main_lg);
-        MapWindowPoints(NULL, nc->hwnd, (LPPOINT) &r_main_lg, 2);
-        GetWindowRect(dlg_item(IDC_NC_R_NAV), &r_nav_lg);
-        MapWindowPoints(NULL, nc->hwnd, (LPPOINT) &r_nav_lg, 2);
-
-        CopyRect(&r_nav_sm, &r_nav_lg);
-        OffsetRect(&r_nav_sm, 0, r_main_lg.top - r_nav_sm.top);
-        UnionRect(&r, &r_main, &r_main_lg);
-        CopyRect(&r_main_lg, &r);
-
-        switch (nc->page) {
+        switch (page) {
         case NC_PAGE_IDSPEC:
 
             khui_cw_lock_nc(nc);
-
-            dwp = BeginDeferWindowPos(7);
-
-            UnionRect(&r, &r_idsel, &r_main);
-            dwp = DeferWindowPos(dwp, nc->idspec.hwnd,
-                                 dlg_item(IDC_NC_R_IDSEL),
-                                 rect_coords(r), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->nav.hwnd,
-                                 dlg_item(IDC_NC_R_NAV),
-                                 rect_coords(r_nav_sm), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->idsel.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_basic, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_advanced, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->progress.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            drv = EndDeferWindowPos(dwp);
-
             nc->mode = KHUI_NC_MODE_MINI;
-            ResizeWindow();
+
+            layout.AddPanel(&m_idspec, NewCredLayout::ContentNoHeader);
+            layout.AddPanel(&m_nav, NewCredLayout::Footer);
+            layout.HidePanel(&m_idsel);
+            layout.HidePanel(&m_privint.m_basic);
+            layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_progress);
+            layout.Commit();
 
             khui_cw_unlock_nc(nc);
 
-            nextctl = nc_layout_idspec(nc);
-            nc_layout_nav(nc);
+            nextctl = m_idspec.UpdateLayout();
+            m_nav.UpdateLayout();
 
             break;
 
         case NC_PAGE_CREDOPT_BASIC:
 
             khui_cw_lock_nc(nc);
-
-            dwp = BeginDeferWindowPos(7);
-
-            dwp = DeferWindowPos(dwp, nc->idsel.hwnd,
-                                 dlg_item(IDC_NC_R_IDSEL),
-                                 rect_coords(r_idsel), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_basic,
-                                 dlg_item(IDC_NC_R_MAIN),
-                                 rect_coords(r_main), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->nav.hwnd,
-                                 dlg_item(IDC_NC_R_NAV),
-                                 rect_coords(r_nav_sm), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_advanced, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->idspec.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->progress.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            drv = EndDeferWindowPos(dwp);
-
             nc->mode = KHUI_NC_MODE_MINI;
-            ResizeWindow();
+
+            layout.AddPanel(&m_idsel, NewCredLayout::Header);
+            layout.AddPanel(&m_privint.m_basic, NewCredLayout::ContentNormal);
+            layout.AddPanel(&m_nav, NewCredLayout::Footer);
+            layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_idspec);
+            layout.HidePanel(&m_progress);
+            layout.Commit();
 
             khui_cw_unlock_nc(nc);
 
-            nc_layout_idsel(nc);
-            nextctl = nc_layout_privint(nc);
-            nc_layout_nav(nc);
+            m_idsel.UpdateLayout();
+            nextctl = m_privint.UpdateLayout();
+            m_nav.UpdateLayout();
 
             break;
 
         case NC_PAGE_CREDOPT_ADV:
 
             khui_cw_lock_nc(nc);
-
-            dwp = BeginDeferWindowPos(7);
-
-            dwp = DeferWindowPos(dwp, nc->idsel.hwnd,
-                                 dlg_item(IDC_NC_R_IDSEL),
-                                 rect_coords(r_idsel), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_advanced,
-                                 dlg_item(IDC_NC_R_MAIN),
-                                 rect_coords(r_main_lg), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->nav.hwnd,
-                                 dlg_item(IDC_NC_R_NAV),
-                                 rect_coords(r_nav_lg), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_basic, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->idspec.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->progress.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            drv = EndDeferWindowPos(dwp);
-
             nc->mode = KHUI_NC_MODE_EXPANDED;
-            ResizeWindow();
+
+            layout.AddPanel(&m_idsel, NewCredLayout::Header);
+            layout.AddPanel(&m_privint.m_advanced, NewCredLayout::ContentLarge);
+            layout.AddPanel(&m_nav, NewCredLayout::Footer);
+            layout.HidePanel(&m_privint.m_basic);
+            layout.HidePanel(&m_idspec);
+            layout.HidePanel(&m_progress);
+            layout.Commit();
 
             khui_cw_unlock_nc(nc);
 
-            nc_layout_idsel(nc);
-            nextctl = nc_layout_privint(nc);
-            nc_layout_nav(nc);
+            m_idsel.UpdateLayout();
+            nextctl = m_privint.UpdateLayout();
+            m_nav.UpdateLayout();
 
             break;
 
         case NC_PAGE_PASSWORD:
 
             khui_cw_lock_nc(nc);
-
-            dwp = BeginDeferWindowPos(7);
-
-            dwp = DeferWindowPos(dwp, nc->idsel.hwnd,
-                                 dlg_item(IDC_NC_R_IDSEL),
-                                 rect_coords(r_idsel), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_basic,
-                                 dlg_item(IDC_NC_R_MAIN),
-                                 rect_coords(r_main), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->nav.hwnd,
-                                 dlg_item(IDC_NC_R_NAV),
-                                 rect_coords(r_nav_sm), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_advanced, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->idspec.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-        
-            dwp = DeferWindowPos(dwp, nc->progress.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            drv = EndDeferWindowPos(dwp);
-
             nc->mode = KHUI_NC_MODE_MINI;
-            ResizeWindow();
+
+            layout.AddPanel(&m_idsel, NewCredLayout::Header);
+            layout.AddPanel(&m_privint.m_basic, NewCredLayout::ContentNormal);
+            layout.AddPanel(&m_nav, NewCredLayout::Footer);
+            layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_idspec);
+            layout.HidePanel(&m_progress);
+            layout.Commit();
 
             khui_cw_unlock_nc(nc);
 
-            nc_layout_idsel(nc);
-            nextctl = nc_layout_privint(nc);
-            nc_layout_nav(nc);
+            m_idsel.UpdateLayout();
+            nextctl = m_privint.UpdateLayout();
+            m_nav.UpdateLayout();
 
             break;
 
         case NC_PAGE_PROGRESS:
 
             khui_cw_lock_nc(nc);
-
-            dwp = BeginDeferWindowPos(7);
-
-            dwp = DeferWindowPos(dwp, nc->idsel.hwnd,
-                                 dlg_item(IDC_NC_R_IDSEL),
-                                 rect_coords(r_idsel), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->progress.hwnd,
-                                 dlg_item(IDC_NC_R_MAIN),
-                                 rect_coords(r_main), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->nav.hwnd,
-                                 dlg_item(IDC_NC_R_NAV),
-                                 rect_coords(r_nav_sm), SWP_MOVESIZEZ);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_basic, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->privint.hwnd_advanced, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            dwp = DeferWindowPos(dwp, nc->idspec.hwnd, NULL, 0, 0, 0, 0,
-                                 SWP_HIDEONLY);
-
-            drv = EndDeferWindowPos(dwp);
-
             nc->mode = KHUI_NC_MODE_MINI;
-            ResizeWindow();
+
+            layout.AddPanel(&m_idsel, NewCredLayout::Header);
+            layout.AddPanel(&m_progress, NewCredLayout::ContentNormal);
+            layout.AddPanel(&m_nav, NewCredLayout::Footer);
+            layout.HidePanel(&m_privint.m_basic);
+            layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_idspec);
+            layout.Commit();
 
             khui_cw_unlock_nc(nc);
 
-            nc_layout_idsel(nc);
-            nc_layout_progress(nc);
-            nextctl = nc_layout_nav(nc);
+            m_idsel.UpdateLayout();
+            m_progress.UpdateLayout();
+            nextctl = m_nav.UpdateLayout();
 
             break;
 
@@ -1200,48 +1144,9 @@ namespace {
             assert(FALSE);
         }
 
-#undef dlg_item
-
         if (nextctl)
-            PostMessage(nc->hwnd, WM_NEXTDLGCTL, (WPARAM) nextctl, TRUE);
+            PostMessage(hwnd, WM_NEXTDLGCTL, (WPARAM) nextctl, TRUE);
     }
-
-    void NewCredWizard::ResizeWindow()
-    {
-        RECT r;
-        DWORD style;
-        DWORD exstyle;
-
-        if (nc->mode == KHUI_NC_MODE_MINI) {
-            int t;
-            RECT r1, r2;
-
-            GetWindowRect(GetDlgItem(nc->hwnd, IDC_NC_R_IDSEL), &r1);
-            GetWindowRect(GetDlgItem(nc->hwnd, IDC_NC_R_MAIN_LG), &r2);
-            t = r2.top;
-            GetWindowRect(GetDlgItem(nc->hwnd, IDC_NC_R_NAV), &r2);
-            OffsetRect(&r2, 0, t - r2.top);
-
-            UnionRect(&r, &r1, &r2);
-        } else {
-            RECT r1, r2;
-
-            GetWindowRect(GetDlgItem(nc->hwnd, IDC_NC_R_IDSEL), &r1);
-            GetWindowRect(GetDlgItem(nc->hwnd, IDC_NC_R_NAV), &r2);
-
-            UnionRect(&r, &r1, &r2);
-        }
-
-        style = GetWindowLong(nc->hwnd, GWL_STYLE);
-        exstyle = GetWindowLong(nc->hwnd, GWL_EXSTYLE);
-
-        AdjustWindowRectEx(&r, style, FALSE, exstyle);
-
-        SetWindowPos(nc->hwnd, NULL, 0, 0,
-                     r.right - r.left, r.bottom - r.top,
-                     SWP_SIZEONLY);
-    }
-
 
     static int __cdecl
     tab_sort_func(const void * v1, const void * v2)

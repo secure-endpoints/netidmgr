@@ -384,7 +384,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "Identity Selector",IDC_NC_R_IDSEL,0,0,370,30,NOT WS_VISIBLE | WS_BORDER
     LTEXT           "Main Content (Mini)",IDC_NC_R_MAIN,0,30,370,120,NOT WS_VISIBLE | WS_BORDER
-    LTEXT           "Main Content (Extension)",IDC_NC_R_MAIN_LG,0,150,370,94,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "Main Content (Extension)",IDC_NC_R_MAIN_LG,0,30,370,214,NOT WS_VISIBLE | WS_BORDER
     LTEXT           "Navigation",IDC_NC_R_NAV,0,244,370,25,NOT WS_VISIBLE | WS_BORDER
 END
 

@@ -126,74 +126,22 @@ namespace nim {
         return do_persist;
     }
 
-    void NewCredPanels::InitializeTabControl(HWND hw_tab, khui_new_creds_privint_panel * p)
-    {
-        wchar_t desc[KCDB_MAXCCH_SHORT_DESC] = L"";
-        khm_size i;
-
-        TabCtrl_DeleteAllItems(hw_tab);
-
-        khui_cw_lock_nc(nc);
-
-#pragma warning(push)
-#pragma warning(disable: 4204)
-
-        if (p != NULL) {
-            TCITEM tci = { TCIF_PARAM | TCIF_TEXT, 0, 0, p->caption, 0, 0, NC_PRIVINT_PANEL };
-            TabCtrl_InsertItem(hw_tab, 0, &tci);
-        }
-
-        for (i=0; i < nc->n_types; i++) {
-            TCITEM tci = { TCIF_PARAM | TCIF_TEXT, 0, 0, nc->types[i].nct->name,
-                           0, 0, i };
-
-            /* All the enabled types are at the front of the list */
-            if (nc->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)
-                break;
-
-            if (!tci.pszText) {
-                khm_size cb;
-
-                cb = sizeof(desc);
-                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->types[i].nct->type),
-                                  KCDB_RES_DESCRIPTION, KCDB_RFS_SHORT,
-                                  NULL, NULL, desc, &cb);
-                tci.pszText = desc;
-            }
-
-            TabCtrl_InsertItem(hw_tab, i + 1, &tci);
-        }
-
-#pragma warning(pop)
-
-        nc->privint.initialized = TRUE;
-        khui_cw_unlock_nc(nc);
-
-        TabCtrl_SetCurSel(hw_tab, 0);
-    }
-
     HWND NewCredPanels::UpdateLayout()
     {
-        HWND hw;
         HWND hw_r_p = NULL;
         HWND hw_target = NULL;
-        HWND hw_tab = NULL;
         RECT r_p;
-	RECT r_persist = {0,0,0,0};
-        bool adv;
+        RECT r_persist = {0,0,0,0};
+        bool advanced;
         bool do_persist = false;
         khm_handle  parent_id = NULL;
         khui_new_creds_privint_panel * p;
+        DialogWindow * dw;
 
-        adv = (reinterpret_cast<NewCredWizard *>(nc->wizard)->page == NC_PAGE_CREDOPT_ADV);
+        advanced = (NewCredWizard::FromNC(nc)->page == NC_PAGE_CREDOPT_ADV);
 
-        if (adv) {
-            hw = m_advanced.hwnd;
-            hw_tab = GetDlgItem(hw, IDC_NC_TAB);
-            assert(hw_tab != NULL);
-        } else {
-            hw = m_basic.hwnd;
-        }
+        dw = ((advanced)? static_cast<DialogWindow *>(&m_advanced) :
+              static_cast<DialogWindow *>(&m_basic));
 
         PurgeDeletedShownPanels();
 
@@ -208,14 +156,12 @@ namespace nim {
 
         /* Fill in some blanks */
         if (p && p->hwnd == NULL && p->use_custom)
-            p->hwnd = khm_create_custom_prompter_dialog(nc, hw, p);
+            p->hwnd = khm_create_custom_prompter_dialog(nc, dw->hwnd, p);
 
         if (p && p->caption[0] == L'\0')
             LoadStringResource(p->caption, IDS_NC_IDENTITY);
 
-        if (adv) {
-            TCITEM tci;
-            int ctab;
+        if (advanced) {
             int panel_idx;
 
             /* Everytime there's a change in the order of the
@@ -225,16 +171,9 @@ namespace nim {
                housing the panels. */
 
             if (!nc->privint.initialized)
-                InitializeTabControl(hw_tab, p);
+                m_advanced.InitializeTabs();
 
-            ctab = TabCtrl_GetCurSel(hw_tab);
-
-            ZeroMemory(&tci, sizeof(tci));
-
-            tci.mask = TCIF_PARAM;
-            TabCtrl_GetItem(hw_tab, ctab, &tci);
-
-            panel_idx = (int) tci.lParam;
+            panel_idx = m_advanced.GetCurrentTabId();
 
             khui_cw_lock_nc(nc);
 
@@ -275,7 +214,8 @@ namespace nim {
 
             assert(nc->persist_identity);
 
-            LoadString(khm_hInstance, IDS_NC_PERSIST, format, ARRAYLENGTH(format));
+            LoadStringResource(format, IDS_NC_PERSIST);
+
             cb = sizeof(idname);
             kcdb_get_resource(nc->persist_identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
                               idname, &cb);
@@ -285,7 +225,7 @@ namespace nim {
             kcdb_get_resource(nc->persist_identity, KCDB_RES_ICON_NORMAL, 0, NULL, NULL,
                               &hicon, &cb);
 
-            if (adv) {
+            if (advanced) {
 
                 m_persist.SetItemText(IDC_PERSIST, msgtext);
 
@@ -301,7 +241,7 @@ namespace nim {
                 SetWindowPos(m_basic.GetItem(IDC_PERSIST), NULL, 0,0,0,0, SWP_SHOWONLY);
             }
         } else {
-            if (adv) {
+            if (advanced) {
                 SetWindowPos(m_persist.hwnd, NULL, 0,0,0,0, SWP_HIDEONLY);
             } else {
                 SetWindowPos(m_basic.GetItem(IDC_PERSIST), NULL, 0,0,0,0, SWP_HIDEONLY);
@@ -312,14 +252,11 @@ namespace nim {
             hw_target = m_noprompts.hwnd;
         }
 
-        hw_r_p = GetDlgItem(hw, IDC_NC_R_PROMPTS);
+        hw_r_p = dw->GetItem(IDC_NC_R_PROMPTS);
         assert(hw_r_p != NULL);
 
-        if (adv) {
-            GetWindowRect(hw_tab, &r_p);
-            MapWindowRect(NULL, hw, &r_p);
-
-            TabCtrl_AdjustRect(hw_tab, FALSE, &r_p);
+        if (advanced) {
+            m_advanced.GetTabPlacement(r_p);
 
             if (do_persist) {
                 RECT r;
@@ -332,7 +269,7 @@ namespace nim {
             }
         } else {
             GetWindowRect(hw_r_p, &r_p);
-            MapWindowRect(NULL, hw, &r_p);
+            MapWindowRect(NULL, dw->hwnd, &r_p);
         }
 
         /* One thing to be careful about when dealing with third-party
@@ -353,35 +290,48 @@ namespace nim {
             }
         }
 
-        SetParent(hw_target, hw);
+        SetParent(hw_target, dw->hwnd);
 
         if (hw_target != m_noprompts.hwnd)
             SetWindowPos(m_noprompts.hwnd, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
 
         SetWindowPos(hw_target, hw_r_p, rect_coords(r_p), SWP_MOVESIZEZ);
-        if (adv && do_persist) {
+        if (advanced && do_persist) {
             SetWindowPos(m_persist.hwnd, hw_target, rect_coords(r_persist), SWP_MOVESIZEZ);
         }
 
-        CheckDlgButton(hw, IDC_NC_MAKEDEFAULT,
-                       ((idf & KCDB_IDENT_FLAG_DEFAULT)? BST_CHECKED : BST_UNCHECKED));
-        EnableWindow(GetDlgItem(hw, IDC_NC_MAKEDEFAULT),
-                     !(idf & KCDB_IDENT_FLAG_DEFAULT));
+        {
+            khm_int32 idf = 0;
+            khm_handle vid = NULL;
+
+            khui_cw_get_primary_id(nc, &vid);
+
+            if (vid) {
+                kcdb_identity_get_flags(vid, &idf);
+                kcdb_identity_release(vid);
+            }
+
+            dw->CheckButton(IDC_NC_MAKEDEFAULT,
+                            ((idf & KCDB_IDENT_FLAG_DEFAULT)? BST_CHECKED : BST_UNCHECKED));
+            dw->EnableItem(IDC_NC_MAKEDEFAULT, !(idf & KCDB_IDENT_FLAG_DEFAULT));
+        }
 
         /* if there are more privileged interaction panels to be
            displayed, we enable the Next button.  If not, we enable
            the Finish button. */
-        nc->nav.transitions &= ~(NC_TRANS_NEXT | NC_TRANS_PREV);
-        if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
-            nc->nav.transitions |= NC_TRANS_NEXT;
-        if (p && QPREV(p))
-            nc->nav.transitions |= NC_TRANS_PREV;
-        if (nc->nav.state & NC_NAVSTATE_OKTOFINISH)
-            nc->nav.transitions |= NC_TRANS_FINISH;
 
-        if (hw_target != NULL && (hw = GetNextDlgTabItem(hw_target, NULL, FALSE)) != NULL)
-            return hw;
+        NewCredWizard::FromNC(nc)->m_nav.CheckControls();
+
+        if (hw_target != NULL)
+            return GetNextDlgTabItem(hw_target, NULL, FALSE);
         return NULL;
     }
 
+    void NewCredPanels::Create(HWND parent)
+    {
+        m_basic.Create(parent);
+        m_advanced.Create(parent);
+        m_noprompts.Create(parent);
+        m_persist.Create(parent);
+    }
 }

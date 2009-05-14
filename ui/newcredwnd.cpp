@@ -47,18 +47,18 @@ extern "C"
 void
 khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 {
-    khui_new_creds * nc;
-    NewCredWizard * w;
+    khui_new_creds * nc = tnc;
 
-    if (reinterpret_cast<NewCredWizard *>(tnc->wizard)->m_progress.hwnd == NULL &&
-        tnc->parent)
-        nc = tnc->parent;
-    else
-        nc = tnc;
+    if (tnc->parent != NULL) {
+        AutoRef<NewCredWizard> pw(NewCredWizard::FromNC(tnc));
 
-    w = reinterpret_cast<NewCredWizard *>(nc->wizard);
+        if (!pw.IsNull() && pw->m_progress.hwnd == NULL)
+            nc = tnc->parent;
+    }
 
-    if (w->m_progress.hwnd != NULL) {
+    AutoRef<NewCredWizard> w(NewCredWizard::FromNC(nc));
+
+    if (!w.IsNull() && w->m_progress.hwnd != NULL) {
 
         khui_alert * a = NULL;
         RECT r_pos;
@@ -72,7 +72,7 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
             {
                 HWND hw_rect;
 
-                hw_rect = GetDlgItem(w->m_progress.hwnd, IDC_CONTAINER);
+                hw_rect = w->m_progress.GetItem(IDC_CONTAINER);
                 GetWindowRect(hw_rect, &r_pos);
                 MapWindowPoints(HWND_DESKTOP, w->m_progress.hwnd, (LPPOINT) &r_pos,
                                 sizeof(RECT)/sizeof(POINT));
@@ -100,6 +100,8 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 /************************************************************
  *                   Custom prompter                        *
  ************************************************************/
+
+#define rect_coords(r) r.left, r.top, (r.right - r.left), (r.bottom - r.top)
 
 static void
 nc_layout_custom_prompter(HWND hwnd, khui_new_creds_privint_panel * p, BOOL create)
@@ -397,8 +399,6 @@ khm_create_custom_prompter_dialog(khui_new_creds * nc,
 extern "C"
 INT_PTR khm_do_modal_newcredwnd(HWND parent, khui_new_creds * c)
 {
-    NewCredWizard * ncw;
-
     wchar_t wtitle[256];
 
     khui_cw_lock_nc(c);
@@ -421,16 +421,15 @@ INT_PTR khm_do_modal_newcredwnd(HWND parent, khui_new_creds * c)
     }
     khui_cw_unlock_nc(c);
 
-    ncw = new NewCredWizard(c);
+    AutoRef<NewCredWizard> ncw(new NewCredWizard(c), RefCount::TakeOwnership);
+    INT_PTR rv = ncw->DoModal(parent);
 
-    return ncw->DoModal(parent);
+    return rv;
 }
 
 extern "C"
 HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
 {
-    NewCredWizard * ncw;
-
     wchar_t wtitle[256];
     HWND hwnd;
 
@@ -461,13 +460,11 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
 
     khui_cw_unlock_nc(c);
 
-    ncw = new NewCredWizard(c);
+    AutoRef<NewCredWizard> ncw(new NewCredWizard(c), RefCount::TakeOwnership);
 
     hwnd = ncw->Create(parent);
 
     assert(hwnd != NULL);
-
-    // ncw will delete itself when the dialog is done.
 
     return hwnd;
 }

@@ -57,7 +57,7 @@ extern "C" {
 
 /* void Cls_OnKhuiNcNotify(HWND hwnd, khui_wm_nc_notification code, int sParam, void * vparam)  */
 #define HANDLE_KHUI_WM_NC_NOTIFY(hwnd, wParam, lParam, fn) \
-    ((fn)((hwnd), HIWORD(wParam), LOWORD(wParam), (void *)(LPARAM)(lParam)), 0L)
+    ((fn)((hwnd), (khui_wm_nc_notification)HIWORD(wParam), LOWORD(wParam), (void *)(LPARAM)(lParam)), 0L)
 #define FORWARD_KHUI_WM_NC_NOTIFY(hwnd, code, sParam, nc) \
     (void)(fn)((hwnd), KHUI_WM_NC_NOTIFY, MAKEWPARAM(sParam, code), (LPARAM) (nc))
 

@@ -4586,7 +4586,10 @@ namespace nim {
         }
 
         Buffer& operator = (const Buffer& that) {
-            return Assign(that.h);
+            if (this != &that)
+                return Assign(that.h);
+            else
+                return *this;
         }
 
         Buffer& operator = (khm_handle _h) {
@@ -4695,7 +4698,9 @@ namespace nim {
         ~CredentialType() { }
 
         CredentialType& operator = (const CredentialType& that) {
-            ctype = that.ctype;
+            if (this != &that) {
+                ctype = that.ctype;
+            }
             return *this;
         }
 
@@ -4778,7 +4783,10 @@ namespace nim {
         }
 
         IdentityProvider& operator = (const IdentityProvider& that) {
-            return Assign(that.h);
+            if (this != &that)
+                return Assign(that.h);
+            else
+                return *this;
         }
 
         IdentityProvider& operator = (khm_handle _h) {
@@ -4869,7 +4877,10 @@ namespace nim {
         }
 
         Identity& operator = (const Identity& that) {
-            return Assign(that.h);
+            if (this != &that)
+                return Assign(that.h);
+            else
+                return *this;
         }
 
         Identity& operator = (khm_handle _h) {
@@ -5040,7 +5051,10 @@ namespace nim {
         }
 
         Credential& operator = (const Credential& that) {
-            return Assign(that.h);
+            if (this != &that)
+                return Assign(that.h);
+            else
+                return *this;
         }
 
         Credential& operator = (khm_handle _h) {
@@ -5190,7 +5204,10 @@ namespace nim {
         }
 
         CredentialSet& operator = (const CredentialSet& that) {
-            return Assign(that.h);
+            if (this != &that)
+                return Assign(that.h);
+            else
+                return *this;
         }
 
         CredentialSet& operator = (khm_handle _h) {

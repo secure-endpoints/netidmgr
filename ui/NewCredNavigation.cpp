@@ -13,64 +13,63 @@ namespace nim {
 
         dwp = BeginDeferWindowPos(8);
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDC_BACK), NULL, 0, 0, 0, 0,
-                             ((transitions & NC_TRANS_PREV) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDC_BACK), NULL, 0, 0, 0, 0,
+                             ((IsControlEnabled(Prev)) ?
                               SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDC_NEXT), NULL, 0, 0, 0, 0,
-                             ((transitions & NC_TRANS_NEXT) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDC_NEXT), NULL, 0, 0, 0, 0,
+                             ((IsControlEnabled(Next)) ?
                               SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDC_FINISH), NULL, 0, 0, 0, 0,
-                             ((transitions & NC_TRANS_FINISH) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDC_FINISH), NULL, 0, 0, 0, 0,
+                             ((IsControlEnabled(Finish)) ?
                               SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDC_RETRY), NULL, 0, 0, 0, 0,
-                             ((transitions & NC_TRANS_RETRY) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDC_RETRY), NULL, 0, 0, 0, 0,
+                             ((IsControlEnabled(Retry)) ?
                               SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDC_NC_ABORT), NULL, 0, 0, 0, 0,
-                             ((transitions & NC_TRANS_ABORT) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDC_NC_ABORT), NULL, 0, 0, 0, 0,
+                             ((IsControlEnabled(Abort)) ?
                               SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDCANCEL), NULL, 0, 0, 0, 0,
-                             (!(transitions & NC_TRANS_ABORT) &&
-                              !(transitions & NC_TRANS_CLOSE)) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDCANCEL), NULL, 0, 0, 0, 0,
+                             (!(IsControlEnabled(Abort)) &&
+                              !(IsControlEnabled(Close))) ?
                              SWP_SHOWONLY : SWP_HIDEONLY);
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDC_NC_CLOSE), NULL, 0, 0, 0, 0,
-                             (transitions & NC_TRANS_CLOSE) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDC_NC_CLOSE), NULL, 0, 0, 0, 0,
+                             (IsControlEnabled(Close)) ?
                              SWP_SHOWONLY : SWP_HIDEONLY);
 
-        dwp = DeferWindowPos(dwp, GetDlgItem(hwnd, IDC_CLOSEIF), NULL, 0, 0, 0, 0,
-                             ((transitions & NC_TRANS_SHOWCLOSEIF) ?
+        dwp = DeferWindowPos(dwp, GetItem(IDC_CLOSEIF), NULL, 0, 0, 0, 0,
+                             ((IsControlEnabled(ShowCloseIf)) ?
                               SWP_SHOWONLY : SWP_HIDEONLY));
 
-        if (transitions & NC_TRANS_SHOWCLOSEIF) {
+        if (IsControlEnabled(ShowCloseIf)) {
             khm_int32 t = 1;
 
             khc_read_int32(NULL, CFG_CLOSE_AFTER_PROCESS_END, &t);
 
             CheckDlgButton(hwnd, IDC_CLOSEIF, ((t)? BST_CHECKED: BST_UNCHECKED));
             if (t)
-                state &= ~NC_NAVSTATE_NOCLOSE;
+                m_state &= ~NoClose;
             else
-                state |= NC_NAVSTATE_NOCLOSE;
+                m_state |= NoClose;
         }
 
         EndDeferWindowPos(dwp);
 
-        return GetDlgItem(hwnd,
-                          (transitions & NC_TRANS_NEXT)? IDC_NEXT :
-                          (transitions & NC_TRANS_FINISH)? IDC_FINISH :
-                          (transitions & NC_TRANS_CLOSE)? IDC_NC_CLOSE :
-                          (transitions & NC_TRANS_ABORT)? IDC_NC_ABORT :
-                          IDCANCEL);
+        return GetItem((IsControlEnabled(Next))? IDC_NEXT :
+                       (IsControlEnabled(Finish))? IDC_FINISH :
+                       (IsControlEnabled(Close))? IDC_NC_CLOSE :
+                       (IsControlEnabled(Abort))? IDC_NC_ABORT :
+                       IDCANCEL);
     }
 
     void NewCredNavigation::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
     {
-        NewCredWizard * w = reinterpret_cast<NewCredWizard *>(nc->wizard);
+        NewCredWizard *w  = NewCredWizard::FromNC(nc);
 
         if (codeNotify == BN_CLICKED) {
             switch (id) {
@@ -100,13 +99,35 @@ namespace nim {
                     should_close = (IsDlgButtonChecked(hwnd, IDC_CLOSEIF) == BST_CHECKED);
 
                     if (should_close)
-                        state &= ~NC_NAVSTATE_NOCLOSE;
+                        DisableState(NoClose);
                     else
-                        state |= NC_NAVSTATE_NOCLOSE;
+                        EnableState(NoClose);
                     khc_write_int32(NULL, CFG_CLOSE_AFTER_PROCESS_END, should_close);
                 }
                 return;
             }
         }
+    }
+
+    void NewCredNavigation::CheckControls()
+    {
+        khui_new_creds_privint_panel * p;
+
+        DisableControl(Next | Prev | Finish);
+
+        khui_cw_lock_nc(nc);
+
+        p = nc->privint.shown.current_panel;
+
+        if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
+            EnableControl(Next);
+
+        if (p && QPREV(p))
+            EnableControl(Prev);
+
+        if (IsState(OkToFinish))
+            EnableControl(Finish);
+
+        khui_cw_unlock_nc(nc);
     }
 }

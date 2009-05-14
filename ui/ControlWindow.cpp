@@ -39,6 +39,11 @@ namespace nim {
         return ::ShowWindow(hwnd, nCmdShow);
     }
 
+    BOOL ControlWindow::DestroyWindow()
+    {
+        return ::DestroyWindow(hwnd);
+    }
+
     void ControlWindow::HandleOnPaint(HWND hwnd)
     {
         RECT r = {0,0,0,0};
@@ -84,8 +89,8 @@ namespace nim {
 
     void ControlWindow::HandleOnDestroy(HWND hwnd)
     {
-        hwnd = NULL;
         OnDestroy();
+        hwnd = NULL;
     }
 
 #ifdef KMQ_WM_DISPATCH
@@ -116,9 +121,7 @@ namespace nim {
     LRESULT CALLBACK
     ControlWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
-        ControlWindow *cw = NULL;
-
-        cw = (ControlWindow *)(LONG_PTR) GetWindowLongPtr(hwnd, GWLP_USERDATA);
+        AutoRef<ControlWindow> cw ((ControlWindow *)(LONG_PTR) GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
         switch(uMsg) {
             HANDLE_MSG(hwnd, WM_CREATE, HandleOnCreate);

@@ -73,7 +73,7 @@ namespace nim {
             initialized = TRUE;
     }
 
-    void NewCredIdentitySpecifier::UpdateLayout()
+    HWND NewCredIdentitySpecifier::UpdateLayout()
     {
         HWND hw_list;
         khm_ssize idx;
@@ -172,6 +172,8 @@ namespace nim {
         }
 
         in_layout = FALSE;
+
+        return hw_list;
     }
 
     bool NewCredIdentitySpecifier::ProcessNewIdentity()

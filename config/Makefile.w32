@@ -188,7 +188,11 @@ ldebug=$(ldebug) /DEBUG
 cdebug=$(cdebug) -Zi
 
 # Optimization
+!ifndef NODEBUG
+copt=
+!else
 copt=/Os /O2
+!endif
 
 # C++ Run-time type info
 !ifndef NODEBUG

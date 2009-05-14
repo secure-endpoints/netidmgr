@@ -321,7 +321,7 @@ namespace nim {
 
         } else if (!show_header && hwnd_header != NULL) {
 
-            DestroyWindow(hwnd_header);
+            ::DestroyWindow(hwnd_header);
             hwnd_header = NULL;
 
         }

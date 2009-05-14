@@ -33,6 +33,10 @@
 #error  NIMPRIVATE must be defined for intnewcred.h to be used
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct tag_khui_new_creds_type_int;
 
 /*! \internal
@@ -309,5 +313,9 @@ typedef struct khui_collect_privileged_cred_data {
     khm_handle       target_identity;
     khm_handle       dest_credset;
 } khui_collect_privileged_creds_data;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

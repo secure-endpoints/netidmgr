@@ -30,6 +30,10 @@
 #include<khalerts.h>
 #include<khaction.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*! \addtogroup khui_alert
 
 @{ */
@@ -181,5 +185,9 @@ khui_alert_monitor_progress(khui_alert * alert,
                             khm_int32    monitor_flags);
 
 /*@}*/
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif

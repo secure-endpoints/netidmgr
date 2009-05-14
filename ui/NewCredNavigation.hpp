@@ -3,25 +3,75 @@ namespace nim {
     class NewCredNavigation : public DialogWindow {
         khui_new_creds * nc;
 
-        khm_int32       transitions; /*!< Combination of NC_TRANS_* */
-#define NC_TRANS_NEXT           0x0001L
-#define NC_TRANS_PREV           0x0002L
-#define NC_TRANS_FINISH         0x0004L
-#define NC_TRANS_ABORT          0x0008L
-#define NC_TRANS_SHOWCLOSEIF    0x0010L
-#define NC_TRANS_CLOSE          0x0020L
-#define NC_TRANS_RETRY          0x0040L
+        int             m_controls; /*!< Combination of enum Controls */
 
-        khm_int32       state;  /*!< State flags */
-#define NC_NAVSTATE_PREEND      0x0001L
-#define NC_NAVSTATE_NOCLOSE     0x0002L
-#define NC_NAVSTATE_OKTOFINISH  0x0004L
-#define NC_NAVSTATE_CANCELLED   0x0008L
+        int             m_state; /*!< State flags */
+
+    public:
+
+        enum Controls {
+            Next        = (1L<<0),
+            Prev        = (1L<<1),
+            Finish      = (1L<<2),
+            Abort       = (1L<<3),
+            ShowCloseIf = (1L<<4),
+            Close       = (1L<<5),
+            Retry       = (1L<<6)
+        };
+
+        enum States {
+            PreEnd      = (1L<<0),
+            NoClose     = (1L<<1),
+            OkToFinish  = (1L<<2),
+            Cancelled   = (1L<<3)
+        };
 
     public:
         NewCredNavigation( khui_new_creds * _nc ) :
             DialogWindow(MAKEINTRESOURCE(IDD_NC_NAV), khm_hInstance),
-            nc(_nc) {}
+            nc(_nc),
+            m_controls(0),
+            m_state(0)
+        {}
+
+        void CheckControls();
+
+        khm_int32 EnableControl(int t) {
+            m_controls |= t;
+            return m_controls;
+        }
+
+        khm_int32 DisableControl(int t) {
+            m_controls &= ~t;
+            return m_controls;
+        }
+
+        khm_int32 SetAllControls(int t) {
+            m_controls = t;
+            return m_controls;
+        }
+
+        bool IsControlEnabled(int t) {
+            return (m_controls & t) == t;
+        }
+
+        khm_int32 EnableState(int s) {
+            m_state |= s;
+            return m_state;
+        }
+
+        khm_int32 DisableState(int s) {
+            m_state &= ~s;
+            return m_state;
+        }
+
+        khm_int32 SetAllState(int s) {
+            return (m_state = s);
+        }
+
+        bool IsState(int t) {
+            return (m_state & t) == t;
+        }
 
         HWND UpdateLayout();
 

@@ -46,7 +46,7 @@ namespace nim {
 
         void    OnCommand(int id, HWND hwndCtl, UINT codeNotify);
 
-        LRESULT OnDrawItem( DRAWITEMSTRUCT * lpDrawItem );
+        LRESULT OnDrawItem( const DRAWITEMSTRUCT * lpDrawItem );
 
         LRESULT OnMeasureItem( MEASUREITEMSTRUCT * lpMeasureItem );
     };

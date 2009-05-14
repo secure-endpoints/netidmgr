@@ -35,15 +35,17 @@ namespace nim {
             m_advanced(_nc),
             m_basic(_nc),
             m_noprompts(_nc),
-            m_persist(_nc)
+            m_persist(_nc),
+            hwnd_current(NULL),
+            idx_current(NC_PRIVINT_PANEL)
         {}
+
+        void Create(HWND parent);
 
         void PurgeDeletedShownPanels();
 
         HWND UpdateLayout();
 
         bool IsSavePasswordAllowed();
-
-        void InitializeTabControl(HWND hw_tab, khui_new_creds_privint_panel * p);
     };
 }

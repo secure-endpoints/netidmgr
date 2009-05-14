@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\netidmgr\ui\lang\en_us\khapp.rc
+// Used by C:\work\netidmgrcpp\ui\lang\en_us\khapp.rc
 //
 #define IDC_NC_ABORT                    3
 #define IDC_NC_CLOSE                    4

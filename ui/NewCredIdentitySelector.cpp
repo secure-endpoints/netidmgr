@@ -30,10 +30,10 @@ namespace nim {
         }
         khui_cw_unlock_nc(nc);
 
-        EnableWindow(GetDlgItem(hwnd, IDC_IDSEL),
-                     (reinterpret_cast<NewCredWizard *>(nc->wizard)->page != NC_PAGE_PROGRESS));
+        EnableWindow(GetItem(IDC_IDSEL),
+                     NewCredWizard::FromNC(nc)->page != NC_PAGE_PROGRESS);
 
-        InvalidateRect(hwnd, NULL, TRUE);
+        Invalidate();
     }
 
     void        NewCredIdentitySelector::SetStatus(const wchar_t * status)
@@ -44,7 +44,7 @@ namespace nim {
             else
                 m_current->status = L"";
 
-            InvalidateRect(hwnd, NULL, TRUE);
+            Invalidate();
         }
     }
 
@@ -166,7 +166,8 @@ namespace nim {
             case CDDS_POSTPAINT:
                 DrawState ds =
                     static_cast<DrawState>
-                    (((pcd->uItemState & CDIS_SELECTED)? DrawStateSelected : DrawStateNone) |
+                    (DrawStateNoBackground |
+                     ((pcd->uItemState & CDIS_SELECTED)? DrawStateSelected : DrawStateNone) |
                      ((pcd->uItemState & CDIS_HOT)? DrawStateHotTrack : DrawStateHotTrack));
                 RECT r;
 
@@ -199,7 +200,7 @@ namespace nim {
             ShowIdentitySelector();
     }
 
-    LRESULT     NewCredIdentitySelector::OnDrawItem( DRAWITEMSTRUCT * lpd )
+    LRESULT     NewCredIdentitySelector::OnDrawItem( const DRAWITEMSTRUCT * lpd )
     {
         IdentityDisplayData * d;
         RECT r, tr;

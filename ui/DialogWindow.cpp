@@ -8,7 +8,7 @@ namespace nim {
         LPARAM user_param;
     };
 
-    HWND DialogWindow::Create(HWND parent, LPARAM param = 0)
+    HWND DialogWindow::Create(HWND parent, LPARAM param)
     {
         DialogWindowCreateData d;
 
@@ -47,7 +47,7 @@ namespace nim {
 
         dw->hwnd = hwnd;
 
-        return cw->OnInitDialog(hwnd_focus, pd->user_param);
+        return dw->OnInitDialog(hwnd_focus, pd->user_param);
     }
 
 #ifdef KHUI_WM_NC_NOTIFY
@@ -61,8 +61,13 @@ namespace nim {
 #define HANDLE_WMNC_DIALOG_ACTIVATE(s, v, fn)           ((fn)())
 #define HANDLE_WMNC_DIALOG_SETUP(s, v, fn)              ((fn)())
 
+#define HANDLE_WM_HELP(hwnd, wParam, lParam, fn)    \
+    ((fn)((hwnd), (LPHELPINFO)(lParam)),0L)
+#define FORWARD_WM_HELP(hwnd, lphi, fn)                             \
+    (void)(fn)((hwnd),WM_HELP,(WPARAM)0,(LPARAM)(LPHELPINFO)(lphi))
+
     void DialogWindow::HandleNcNotify(HWND hwnd, khui_wm_nc_notifications code,
-                                      inst sParam, void * vParam)
+                                      int sParam, void * vParam)
     {
 #define HANDLE_NCMSG(c, fn)                        \
         case c: HANDLE_##c(sParam, vParam, fn); break
@@ -84,26 +89,41 @@ namespace nim {
 
 #undef HANDLE_MSG
 #define HANDLE_MSG(hwnd, message, fn)                                   \
-    case (message): SetDlgReturn( HANDLE_##message((hwnd), (wParam), (lParam), (fn)) ); break
+    case (message): ::SetWindowLongPtr( hwnd, DWLP_MSGRESULT, (LONG_PTR) HANDLE_##message((hwnd), (wParam), (lParam), (fn)) ); break
 
     INT_PTR CALLBACK DialogWindow::DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
-        DialogWindow * dw = NULL;
+        AutoRef<DialogWindow> dw (static_cast<DialogWindow *>((void *)(LONG_PTR) GetWindowLongPtr(hwnd, DWLP_USER)));
 
-        dw = (DialogWindow *)(LONG_PTR) GetWindowLongPtr(hwnd, DWLP_USER);
-        bHandled = TRUE;
+        if (dw.IsNull()) {
+            if (uMsg == WM_INITDIALOG)
+                return HANDLE_WM_INITDIALOG(hwnd, wParam, lParam, HandleOnInitDialog);
+            return FALSE;
+        }
+
+        if (uMsg == WM_DESTROY) {
+            // WM_DESTROY gets special handling because we permit the
+            // OnDestroy() handler to free the DialogWindow object.
+
+            HANDLE_WM_DESTROY(hwnd, wParam, lParam, dw->HandleOnDestroy);
+            return TRUE;
+        }
+
+        dw->bHandled = TRUE;
 
         switch (uMsg) {
-        case WM_INITDIALOG: return HANDLE_WM_INITDIALOG(hwnd, wParam, lParam, HandleOnInitDialog);
-            HANDLE_MSG(hwnd, WM_DESTROY, dw->HandleOnDestroy);
+#pragma warning(push)
+#pragma warning(disable: 4244)
+
             HANDLE_MSG(hwnd, WM_CLOSE, dw->HandleOnClose);
-            HANDLE_MSG(hwnd, WM_COMMAND, dw->HandleOnCommand);
-            HANDLE_MSG(hwnd, WM_ACTIVATE, dw->HandleOnActivate);
+            HANDLE_MSG(hwnd, WM_COMMAND, dw->HandleCommand);
+            HANDLE_MSG(hwnd, WM_ACTIVATE, dw->HandleActivate);
             HANDLE_MSG(hwnd, WM_WINDOWPOSCHANGING, dw->HandlePosChanging);
             HANDLE_MSG(hwnd, WM_WINDOWPOSCHANGED, dw->HandlePosChanged);
-            HANDLE_MSG(hwnd, WM_HELP, dw->HandleOnHelp);
+            HANDLE_MSG(hwnd, WM_HELP, dw->HandleHelp);
             HANDLE_MSG(hwnd, WM_DRAWITEM, dw->HandleDrawItem);
             HANDLE_MSG(hwnd, WM_MEASUREITEM, dw->HandleMeasureItem);
+            HANDLE_MSG(hwnd, WM_NOTIFY, dw->HandleNotify);
 #ifdef KHUI_WM_NC_NOTIFY
             HANDLE_MSG(hwnd, KHUI_WM_NC_NOTIFY, dw->HandleNcNotify);
 #endif
@@ -111,10 +131,12 @@ namespace nim {
             HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, dw->HandleDispatch);
 #endif
         default:
-            bHandled = FALSE;
+            dw->bHandled = FALSE;
+
+#pragma warning(pop)
         }
 
-        return bHandled;
+        return dw->bHandled;
     }
 
 } // namespace nim

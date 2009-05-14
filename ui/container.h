@@ -35,7 +35,84 @@ using namespace Gdiplus;
 
 namespace nim {
 
-    class ControlWindow {
+    class RefCount {
+        LONG refcount;
+
+    public:
+        RefCount() : refcount(1) { }
+
+        RefCount(bool initially_held) : refcount((initially_held)? 1 : 0) { }
+
+        virtual ~RefCount() { }
+
+        void Hold() {
+            InterlockedIncrement(&refcount);
+        }
+
+        void Release() {
+            if (InterlockedDecrement(&refcount) == 0) {
+                Dispose();
+            }
+        }
+
+        virtual void Dispose() {
+            delete this;
+        }
+
+        enum RefCountType {
+            HoldReference = 0,
+            TakeOwnership = 1,
+        };
+    };
+
+    template<class T>
+    class AutoRef {
+        T *pT;
+
+    public:
+        AutoRef(T *_pT, RefCount::RefCountType rtype = RefCount::HoldReference) {
+            pT = _pT;
+            if (pT && rtype == RefCount::HoldReference)
+                pT->Hold();
+        }
+
+        AutoRef(const AutoRef<T>& that) {
+            pT = that.pT;
+            if (pT)
+                pT->Hold();
+        }
+
+        ~AutoRef() {
+            if (pT) {
+                pT->Release();
+                pT = NULL;
+            }
+        }
+
+        T& operator * () {
+            return *pT;
+        }
+
+        T* operator -> () {
+            return pT;
+        }
+
+        T* operator = (T * _pT) {
+            if (pT)
+                pT->Release();
+            pT = _pT;
+            if (pT)
+                pT->Hold();
+
+            return pT;
+        }
+
+        bool IsNull() {
+            return pT == NULL;
+        }
+    };
+
+    class ControlWindow : virtual public RefCount {
     public:
         HWND  hwnd;
 
@@ -43,10 +120,10 @@ namespace nim {
         static ATOM window_class;
 
     public:
-        ControlWindow(): hwnd(NULL) { }
+        ControlWindow(): RefCount(true), hwnd(NULL) { }
 
         virtual ~ControlWindow() {
-            if (hwnd) DestroyWindow(hwnd);
+            if (hwnd) DestroyWindow();
         }
 
         /* Message handlers */
@@ -87,11 +164,11 @@ namespace nim {
 
         virtual void OnActivate(UINT state, HWND hwndActDeact, BOOL fMinimized) { }
 
-        virtual void OnClose() { DestroyWindow(hwnd); }
+        virtual void OnClose() { DestroyWindow(); }
 
         virtual LRESULT OnHelp( HELPINFO * hlp ) { return 0; }
 
-        virtual LRESULT OnDrawItem( DRAWITEMSTRUCT * lpDrawItem) { return 0; }
+        virtual LRESULT OnDrawItem( const DRAWITEMSTRUCT * lpDrawItem) { return 0; }
 
         virtual LRESULT OnMeasureItem( MEASUREITEMSTRUCT * lpMeasureItem) { return 0; }
 
@@ -180,7 +257,7 @@ namespace nim {
             return OnMeasureItem(lpMeasureItem);
         }
 
-        LRESULT HandleDrawItem(HWND hwnd, DRAWITEMSTRUCT * lpDrawItem) {
+        LRESULT HandleDrawItem(HWND hwnd, const DRAWITEMSTRUCT * lpDrawItem) {
             return OnDrawItem(lpDrawItem);
         }
 
@@ -206,6 +283,12 @@ namespace nim {
         HWND Create(HWND parent, const Rect & extents, int id, LPVOID createParams = NULL);
 
         BOOL ShowWindow(int nCmdShow = SW_SHOW);
+
+        BOOL DestroyWindow();
+
+        BOOL Invalidate() {
+            return ::InvalidateRect(hwnd, NULL, TRUE);
+        }
 
         static void RegisterWindowClass(void);
 
@@ -235,6 +318,10 @@ namespace nim {
         HWND Create(HWND parent, LPARAM param = 0);
 
         INT_PTR DoModal(HWND parent, LPARAM param = 0);
+
+        BOOL EndDialog(INT_PTR result) {
+            return ::EndDialog(hwnd, result);
+        }
 
         LONG_PTR SetDlgResult(LONG_PTR rv) {
 #pragma warning(push)
@@ -270,6 +357,14 @@ namespace nim {
             return CheckDlgButton(hwnd, nIDButton, uCheck);
         }
 
+        UINT IsButtonChecked(int nIDButton) {
+            return IsDlgButtonChecked(hwnd, nIDButton);
+        }
+
+        BOOL EnableItem(int nID, BOOL bEnable = TRUE) {
+            return EnableWindow(GetItem(nID), bEnable);
+        }
+
     public:
         virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam) { return FALSE; }
 
@@ -297,6 +392,8 @@ namespace nim {
 
     private:
         static INT_PTR CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+        static INT_PTR CALLBACK HandleOnInitDialog(HWND hwnd, HWND hwnd_focus, LPARAM lParam);
 
 #ifdef KHUI_WM_NC_NOTIFY
         void HandleNcNotify(HWND hwnd, khui_wm_nc_notifications code,
@@ -598,7 +695,7 @@ namespace nim {
         bool    mouse_track  : 1;
 
     public:
-        DisplayContainer() {
+        DisplayContainer(): ControlWindow() {
             dbuffer = 0; show_header = false; hwnd_header = NULL;
             header_height = 0;
             mouse_element = NULL; mouse_dblclk = false;
@@ -770,7 +867,7 @@ namespace nim {
 
         ~WithTooltips() {
             if (hwnd_tooltip)
-                DestroyWindow(hwnd_tooltip);
+                ::DestroyWindow(hwnd_tooltip);
             hwnd_tooltip = NULL;
         }
 

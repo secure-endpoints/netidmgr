@@ -10,6 +10,8 @@ namespace nim {
             DialogWindow(MAKEINTRESOURCE(IDD_NC_PERSIST), khm_hInstance)
         {}
 
+        BOOL OnCreate(LPVOID createParams);
+
         void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
     };
 }
