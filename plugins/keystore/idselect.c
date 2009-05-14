@@ -267,42 +267,57 @@ idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
    Runs in UI thread */
 khm_int32 KHMAPI 
-idsel_factory(HWND hwnd_parent, HWND * phwnd_return) {
+idsel_factory(HWND hwnd_parent, khui_identity_selector * u) {
 
-    HWND hw_dlg;
+    if (hwnd_parent) {
+        HWND hw_dlg;
+        wchar_t display_name[KHUI_MAXCCH_NAME] = L"";
+        khm_handle csp_p = NULL;
+        khm_int32 allow_create = 0;
 
-    hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_IDSPEC),
-                          hwnd_parent, idspec_dlg_proc);
+        if (KHM_FAILED(kmm_get_plugin_config(IDPROV_NAMEW, 0, &csp_p)) ||
+            KHM_FAILED(khc_read_int32(csp_p, L"AllowMultipleKeystores", &allow_create)) ||
+            allow_create == 0) {
+            if (csp_p)
+                khc_close_space(csp_p);
+            return KHM_ERROR_INVALID_OPERATION;
+        }
 
-#ifdef DEBUG
-    assert(hw_dlg);
-#endif
-    *phwnd_return = hw_dlg;
-
-    return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
-}
-
-khm_int32
-handle_kmsg_ident_get_idsel_factory(kcdb_idsel_factory * pcb)
-{
-    khm_handle csp_p = NULL;
-    khm_int32 allow_create = 0;
-
-    if (KHM_FAILED(kmm_get_plugin_config(IDPROV_NAMEW, 0, &csp_p)) ||
-        KHM_FAILED(khc_read_int32(csp_p, L"AllowMultipleKeystores", &allow_create)) ||
-        allow_create == 0) {
-        if (csp_p)
+        if (csp_p) {
             khc_close_space(csp_p);
-        return KHM_ERROR_INVALID_OPERATION;
+            csp_p = NULL;
+        }
+
+        hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_IDSPEC),
+                              hwnd_parent, idspec_dlg_proc);
+
+        assert(hw_dlg);
+
+        u->hwnd_selector = hw_dlg;
+
+        LoadString(hResModule, IDS_ID_INSTANCE, display_name, ARRAYLENGTH(display_name));
+        u->display_name = PWCSDUP(display_name);
+
+        u->icon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_IDENTITY),
+                            IMAGE_ICON, 0, 0,
+                            LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
+
+        return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
+
+    } else {
+
+        if (u->display_name) {
+            PFREE(u->display_name);
+            u->display_name = NULL;
+        }
+
+        if (u->icon) {
+            DestroyIcon(u->icon);
+            u->icon = NULL;
+        }
+
+        return KHM_ERROR_SUCCESS;
     }
-
-    if (csp_p) {
-        khc_close_space(csp_p);
-        csp_p = NULL;
-    }
-
-    *pcb = idsel_factory;
-
-    return KHM_ERROR_SUCCESS;
 }
+
 
