@@ -60,8 +60,6 @@ namespace nim {
 
     BOOL NewCredWizard::OnInitDialog(HWND hwndFocus, LPARAM lParam)
     {
-        Hold();
-
         nc->hwnd = hwnd;
 
         assert(nc != NULL);
@@ -107,7 +105,6 @@ namespace nim {
     void NewCredWizard::OnDestroy(void)
     {
         khm_del_dialog(hwnd);
-        Release();
     }
 
     LRESULT NewCredWizard::OnHelp(HELPINFO * hlp)

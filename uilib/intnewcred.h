@@ -95,22 +95,9 @@ typedef struct tag_khui_new_creds_type_int {
                                         credentials type? */
 
     QDCL(khui_new_creds_privint_panel); /*!< Queue of privileged
-                                           interaction panels */
+                                          interaction panels */
 } khui_new_creds_type_int;
 
-
-
-/*! \internal
-    \brief Identity Provider for a new credentials operation
-
-    Internal structure for keeping track of identity providers during
-    new credentials operation */
-typedef struct tag_khui_new_creds_idpro {
-    khm_handle h;               /*!< Handle to identity provider */
-    HWND       hwnd_panel;      /*!< Identity selector panel */
-    kcdb_idsel_factory cb;      /*!< Identity selector factory */
-    void *     data;            /*!< Provider data */
-} khui_new_creds_idpro;
 
 
 typedef struct tag_nc_privint {
@@ -240,11 +227,11 @@ typedef struct tag_khui_new_creds {
     /* --- Fields above this should be kept as is for backwards
            compatibility --- */
 
-    khui_new_creds_idpro *providers;
-                                /*!< Identity providers */
-    khm_size            n_providers;
+    khui_identity_selector *selectors;
+                                /*!< Identity Selectors */
+    khm_size            n_selectors;
                                 /*!< Number of identity providers */
-    khm_size            nc_providers;
+    khm_size            nc_selectors;
                                 /*!< Internal */
 
     khm_handle          cs_privcred;
@@ -280,19 +267,6 @@ typedef struct tag_khui_new_creds {
 } khui_new_creds;
 
 #define KHUI_NC_MAGIC 0x84270427
-
-KHMEXP khm_int32 KHMAPI
-khui_cw_find_provider(khui_new_creds * c,
-                      khm_handle h_idpro,
-                      khui_new_creds_idpro ** p);
-
-KHMEXP khm_int32 KHMAPI
-khui_cw_add_provider(khui_new_creds * c,
-                     khm_handle       h_idpro);
-
-KHMEXP khm_int32 KHMAPI
-khui_cw_del_provider(khui_new_creds * c,
-                     khm_handle       h_idpro);
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_peek_next_privint(khui_new_creds * c,

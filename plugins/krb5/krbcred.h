@@ -285,4 +285,7 @@ k5_ids_tab_dlgproc(HWND hwnd,
                    WPARAM wParam,
                    LPARAM lParam);
 
+khm_int32 KHMAPI 
+k5_idselector_factory(HWND hwnd_parent, khui_identity_selector * u);
+
 #endif

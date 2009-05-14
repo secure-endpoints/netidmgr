@@ -617,40 +617,47 @@ k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* Identity Selector control factory
 
    Runs in UI thread */
-static khm_int32 KHMAPI 
-idsel_factory(HWND hwnd_parent, HWND * phwnd_return) {
+khm_int32 KHMAPI 
+k5_idselector_factory(HWND hwnd_parent, khui_identity_selector * u) {
 
-    HWND hw_dlg;
+    if (hwnd_parent) {
+        HWND hw_dlg;
+        wchar_t display_name[KHUI_MAXCCH_NAME] = L"";
 
-    hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_NC_KRB5_IDSEL),
-                          hwnd_parent, k5_idspec_dlg_proc);
+        hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_NC_KRB5_IDSEL),
+                              hwnd_parent, k5_idspec_dlg_proc);
 
-#ifdef DEBUG
-    assert(hw_dlg);
-#endif
-    *phwnd_return = hw_dlg;
+        assert(hw_dlg);
 
-    return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
+        LoadString(hResModule, IDS_ID_INSTANCE, display_name, ARRAYLENGTH(display_name));
+
+        u->hwnd_selector = hw_dlg;
+        u->icon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_KERBEROS),
+                            IMAGE_ICON, 0, 0,
+                            LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
+        u->display_name = PWCSDUP(display_name);
+
+        return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
+
+    } else {
+
+        if (u->display_name) {
+            PFREE(u->display_name);
+            u->display_name = NULL;
+        }
+
+        if (u->icon) {
+            DestroyIcon(u->icon);
+            u->icon = NULL;
+        }
+
+        return KHM_ERROR_SUCCESS;
+    }
 }
 
 /************************************************************/
 /*         Message Handler for KMSG_IDENT messages          */
 /************************************************************/
-
-static khm_int32
-k5_ident_get_idsel_factory(khm_int32 msg_type,
-                           khm_int32 msg_subtype,
-                           khm_ui_4 uparam,
-                           void * vparam)
-{
-    kcdb_idsel_factory * pcb;
-
-    pcb = (kcdb_idsel_factory *) vparam;
-
-    *pcb = idsel_factory;
-
-    return KHM_ERROR_SUCCESS;
-}
 
 static khm_int32
 k5_validate_name(const wchar_t * name)
@@ -1536,12 +1543,6 @@ k5_msg_ident(khm_int32 msg_type,
     case KMSG_IDENT_ENUM_KNOWN:
         /* TODO: handle KMSG_IDENT_ENUM_KNOWN */
         break;
-
-    case KMSG_IDENT_GET_IDSEL_FACTORY:
-        return k5_ident_get_idsel_factory(msg_type,
-                                          msg_subtype,
-                                          uparam,
-                                          vparam);
 
     case KMSG_IDENT_NOTIFY_CREATE:
         return k5_ident_notify_create(msg_type,

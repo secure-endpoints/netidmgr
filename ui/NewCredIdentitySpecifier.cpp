@@ -28,28 +28,22 @@ namespace nim {
             LVITEM lvi;
             ZeroMemory(&lvi, sizeof(lvi));
 
-            for (i=0; i < nc->n_providers; i++) {
-                HICON icon;
-                wchar_t caption[KHUI_MAXCCH_SHORT_DESC];
-                khm_size cb;
+            khui_cw_lock_nc(nc);
 
-                lvi.mask = LVIF_TEXT | LVIF_PARAM | LVIF_IMAGE;
+            for (i=0; i < nc->n_selectors; i++) {
+                if (KHM_FAILED(nc->selectors[i].factory_cb(hwnd,
+                                                           &nc->selectors[i])) ||
+                    nc->selectors[i].display_name == NULL)
+                    continue;
 
-                cb = sizeof(icon);
-                if (KHM_FAILED(kcdb_get_resource(nc->providers[i].h,
-                                                 KCDB_RES_ICON_NORMAL,
-                                                 0, NULL, NULL, &icon, &cb)))
-                    lvi.mask &= ~LVIF_IMAGE;
-                else {
-                    lvi.iImage = ImageList_AddIcon(ilist, icon);
+                lvi.mask = LVIF_TEXT | LVIF_PARAM;
+
+                if (nc->selectors[i].icon) {
+                    lvi.mask |= LVIF_IMAGE;
+                    lvi.iImage = ImageList_AddIcon(ilist, nc->selectors[i].icon);
                 }
 
-                cb = sizeof(caption);
-                if (KHM_FAILED(kcdb_get_resource(nc->providers[i].h,
-                                                 KCDB_RES_DISPLAYNAME,
-                                                 KCDB_RFS_SHORT, NULL, NULL, caption, &cb)))
-                    caption[0] = L'\0';
-                lvi.pszText = caption;
+                lvi.pszText = nc->selectors[i].display_name;
 
                 lvi.lParam = i;
 
@@ -58,6 +52,8 @@ namespace nim {
 
                 ListView_InsertItem(hw_list, &lvi);
             }
+
+            khui_cw_unlock_nc(nc);
 
             /* And select the first item */
 
@@ -70,7 +66,7 @@ namespace nim {
             ListView_SetItem(hw_list, &lvi);
             
             idx_current = -1;
-            initialized = TRUE;
+            initialized = true;
     }
 
     HWND NewCredIdentitySpecifier::UpdateLayout()
@@ -82,15 +78,7 @@ namespace nim {
 
         in_layout = TRUE;
 
-        if (nc->n_providers == 0) {
-            for (IdentityProvider::Enumeration e = IdentityProvider::Enum();
-                 !e.AtEnd(); ++e) {
-
-                khui_cw_add_provider(nc, *e);
-            }
-        }
-
-        assert(nc->n_providers > 0);
+        assert(nc->n_selectors > 0);
 
         /* If the identity provider list hasn't been initialized, we
            should do so now. */
@@ -120,10 +108,10 @@ namespace nim {
         if (idx != idx_current) {
 
             if (idx_current >= 0 &&
-                idx_current < (khm_ssize) nc->n_providers) {
+                idx_current < (khm_ssize) nc->n_selectors) {
 
-                if (nc->providers[idx_current].hwnd_panel != NULL) {
-                    SetWindowPos(nc->providers[idx_current].hwnd_panel, NULL,
+                if (nc->selectors[idx_current].hwnd_selector != NULL) {
+                    SetWindowPos(nc->selectors[idx_current].hwnd_selector, NULL,
                                  0, 0, 0, 0, SWP_HIDEONLY);
                 }
 
@@ -134,32 +122,16 @@ namespace nim {
 
             }
 
-            if (idx >= 0 && idx < (khm_ssize) nc->n_providers) {
+            if (idx >= 0 && idx < (khm_ssize) nc->n_selectors &&
+                nc->selectors[idx].hwnd_selector != NULL) {
                 HWND hw_r;
                 RECT r;
-
-                if (nc->providers[idx].hwnd_panel == NULL) {
-
-                    if (nc->providers[idx].cb == NULL) {
-                        kcdb_identpro_get_idsel_factory(nc->providers[idx].h,
-                                                        &nc->providers[idx].cb);
-                        assert(nc->providers[idx].cb != NULL);
-                    }
-
-                    if (nc->providers[idx].cb != NULL) {
-
-                        idx_current = idx;
-                        (*nc->providers[idx].cb)(hwnd,
-                                                 &nc->providers[idx].hwnd_panel);
-                        assert(nc->providers[idx].hwnd_panel);
-                    }
-                }
 
                 hw_r = GetDlgItem(hwnd, IDC_NC_R_IDSPEC);
                 GetWindowRect(hw_r, &r);
                 MapWindowPoints(NULL, hwnd, (LPPOINT) &r, sizeof(r)/sizeof(POINT));
 
-                SetWindowPos(nc->providers[idx].hwnd_panel, hw_r,
+                SetWindowPos(nc->selectors[idx].hwnd_selector, hw_r,
                              r.left, r.top, r.right - r.left, r.bottom - r.top,
                              SWP_MOVESIZEZ);
             } else {
@@ -178,17 +150,16 @@ namespace nim {
 
     bool NewCredIdentitySpecifier::ProcessNewIdentity()
     {
-        khui_new_creds_idpro * p;
-
         if (idx_current >= 0 &&
-            idx_current < (khm_ssize) nc->n_providers) {
+            idx_current < (khm_ssize) nc->n_selectors) {
             khm_handle ident = NULL;
+            khui_identity_selector * p;
 
-            p = &nc->providers[idx_current];
+            p = &nc->selectors[idx_current];
 
-            assert(p->hwnd_panel);
+            assert(p->hwnd_selector);
 
-            SendMessage(p->hwnd_panel, KHUI_WM_NC_NOTIFY, MAKEWPARAM(0, WMNC_IDSEL_GET_IDENT),
+            SendMessage(p->hwnd_selector, KHUI_WM_NC_NOTIFY, MAKEWPARAM(0, WMNC_IDSEL_GET_IDENT),
                         (LPARAM) &ident);
 
             if (ident) {

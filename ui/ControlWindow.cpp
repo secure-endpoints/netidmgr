@@ -84,6 +84,8 @@ namespace nim {
 
         cw->hwnd = hwnd;
 
+        cw->Hold();
+
         return cw->OnCreate(cp->createParams);
     }
 
@@ -91,6 +93,7 @@ namespace nim {
     {
         OnDestroy();
         hwnd = NULL;
+        Release();
     }
 
 #ifdef KMQ_WM_DISPATCH

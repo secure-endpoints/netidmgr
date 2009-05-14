@@ -490,14 +490,6 @@
  */
 #define KMSG_CRED_DESTROY_CREDS     32
 
-#if 0
-/*! \brief Parse an identity
-
-    \note May be sent to individual credential subscriptions.
- */
-#define KMSG_CRED_IDENT_PARSE       65
-#endif
-
 /*! \brief A property page is being launced
 
     Handlers of this message should determine whether or not they
@@ -853,23 +845,6 @@
   \see ::kcdb_resource_request
  */
 #define KMSG_IDENT_RESOURCE_REQ         14
-
-/*! \brief Retrieve identity selector callback function
-
-  When the Network Identity Manager application needs to perform an
-  identity selection, it will request an identity selector callback
-  from the identity provider.  This callback is then responsible for
-  creating and managing the dialog that will be presented to the user
-  for the purpose of selecting an identity.
-
-  Message parameters:
-
-  - \a uparam : Not used
-
-  - \a vparam : pointer to a ::khui_idsel_factory which will
-       receive the callback.
- */
-#define KMSG_IDENT_GET_IDSEL_FACTORY   15
 
 /*! \brief Notification of configuration space creation
 

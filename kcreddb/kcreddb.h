@@ -735,7 +735,7 @@ typedef struct tag_kcdb_resource_request {
 
 /*@}*/
 
-/*! \name Identity Provider Data Structures
+/*! \name Identity Provider Data Structures and Types
 @{*/
 
 /*! \brief Name transfer structure
@@ -764,8 +764,6 @@ typedef struct tag_kcdb_ident_name_xfer {
                                      kherror.h, though it is not
                                      always. */
 } kcdb_ident_name_xfer;
-
-typedef khm_int32 (KHMCALLBACK * kcdb_idsel_factory)(HWND, HWND *);
 
 /*@}*/
 
@@ -1026,13 +1024,6 @@ kcdb_identpro_update(khm_handle identity);
 KHMEXP khm_int32 KHMAPI 
 kcdb_identpro_get_ui_cb(void * rock);
 #pragma deprecated(kcdb_identpro_get_ui_cb)
-
-/*! \brief Obtain the UI callback
-
-    \see ::KMSG_IDENT_GET_IDSEL_CB
- */
-KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_get_idsel_factory(khm_handle vidpro, kcdb_idsel_factory * pcb);
 
 /*! \brief Notify an identity provider of the creation of a new identity 
 

@@ -1362,6 +1362,8 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 d->nct.dlg_template = MAKEINTRESOURCE(IDD_NC_KRB5);
 
             khui_cw_add_type(nc, &d->nct);
+
+            khui_cw_add_selector(nc, k5_idselector_factory, NULL);
         }
         break;
 

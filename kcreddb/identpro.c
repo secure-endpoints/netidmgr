@@ -1126,27 +1126,6 @@ kcdb_identpro_notify_config_create(khm_handle identity)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_get_idsel_factory(khm_handle vidpro, kcdb_idsel_factory * pf)
-{
-    khm_handle sub;
-    khm_int32 rv;
-
-    if (!kcdb_is_active_identpro(vidpro))
-        return KHM_ERROR_INVALID_PARAM;
-
-    sub = identpro_get_sub(vidpro);
-
-    if (sub != NULL) {
-        rv = kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_GET_IDSEL_FACTORY,
-                              0, pf);
-    } else {
-        rv = KHM_ERROR_NO_PROVIDER;
-    }
-
-    return rv;
-}
-
 #pragma warning(push)
 #pragma warning(disable: 4995)
 

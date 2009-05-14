@@ -47,6 +47,8 @@ namespace nim {
 
         dw->hwnd = hwnd;
 
+        dw->Hold();
+
         return dw->OnInitDialog(hwnd_focus, pd->user_param);
     }
 

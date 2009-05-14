@@ -77,12 +77,18 @@ khui_cw_destroy_cred_blob(khui_new_creds *c)
     khui_cw_clear_all_privints(c);
 
     EnterCriticalSection(&c->cs);
+
+    assert(c->n_types == 0);
+
     for (i=0; i < c->n_identities; i++) {
         kcdb_identity_release(c->identities[i]);
     }
-    for (i=0; i < c->n_providers; i++) {
-        kcdb_identpro_release(c->providers[i].h);
+
+    for (i=0; i < c->n_selectors; i++) {
+        if (c->selectors[i].factory_cb != NULL)
+            c->selectors[i].factory_cb(NULL, &c->selectors[i]);
     }
+
     khui_context_release(&c->ctx);
     LeaveCriticalSection(&c->cs);
     DeleteCriticalSection(&c->cs);
@@ -90,8 +96,8 @@ khui_cw_destroy_cred_blob(khui_new_creds *c)
     if (c->identities)
         PFREE(c->identities);
 
-    if (c->providers)
-        PFREE(c->providers);
+    if (c->selectors)
+        PFREE(c->selectors);
 
     if (c->types)
         PFREE(c->types);
@@ -291,7 +297,7 @@ khui_cw_add_type(khui_new_creds * c,
     ZeroMemory(&c->types[c->n_types], sizeof(c->types[0]));
     c->types[c->n_types].nct = t;
     if (t->name)
-        c->types[c->n_types].display_name = t->name;
+        c->types[c->n_types].display_name = PWCSDUP(t->name);
     else {
         khm_size cb = 0;
         wchar_t * s = NULL;
@@ -326,23 +332,28 @@ khui_cw_del_type(khui_new_creds * c,
     ASSERT_NC(c);
 
     EnterCriticalSection(&c->cs);
+
     for(i=0; i < c->n_types; i++) {
         if(c->types[i].nct->type == type_id)
             break;
     }
+
     if(i >= c->n_types) {
         LeaveCriticalSection(&c->cs);
         return KHM_ERROR_NOT_FOUND;
     }
-    if (c->types[i].display_name != c->types[i].nct->name) {
+
+    if (c->types[i].display_name != NULL) {
         PFREE((void *) c->types[i].display_name);
         c->types[i].display_name = NULL;
     }
 
     c->n_types--;
+
     for(;i < c->n_types; i++) {
         c->types[i] = c->types[i+1];
     }
+
     LeaveCriticalSection(&c->cs);
     return KHM_ERROR_SUCCESS;
 }
@@ -451,74 +462,57 @@ khui_cw_set_response(khui_new_creds * c,
  *******************************************************/
 
 /* called with c->cs held */
-static khui_new_creds_idpro *
-cw_find_idpro(khui_new_creds * c,
-              khm_handle h_idpro)
+static khui_identity_selector *
+cw_find_selector(khui_new_creds * c,
+                 khui_idsel_factory cb,
+                 void * cb_data)
 {
     khm_size i;
 
-    for (i=0; i < c->n_providers; i++) {
-        if (kcdb_identpro_is_equal(h_idpro, c->providers[i].h))
-            return &c->providers[i];
+    for (i=0; i < c->n_selectors; i++) {
+        if (cb == c->selectors[i].factory_cb &&
+            cb_data == c->selectors[i].factory_cb_data)
+            return &c->selectors[i];
     }
 
     return NULL;
 }
 
-KHMEXP khm_int32 KHMAPI
-khui_cw_find_provider(khui_new_creds * c,
-                      khm_handle h_idpro,
-                      khui_new_creds_idpro ** p)
-{
-    ASSERT_NC(c);
-
-    EnterCriticalSection(&c->cs);
-    *p = cw_find_idpro(c, h_idpro);
-    LeaveCriticalSection(&c->cs);
-
-    return ((*p) != NULL)? KHM_ERROR_SUCCESS : KHM_ERROR_NOT_FOUND;
-}
-
-#define NC_N_PROVIDERS 4
+#define NC_N_SELECTORS 4
 
 KHMEXP khm_int32 KHMAPI
-khui_cw_add_provider(khui_new_creds * c,
-                     khm_handle       h_idpro)
+khui_cw_add_selector(khui_new_creds * c,
+                     khui_idsel_factory factory_cb,
+                     void * factory_cb_data)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
     ASSERT_NC(c);
 
     EnterCriticalSection(&c->cs);
-    if (cw_find_idpro(c, h_idpro) != NULL) {
+
+    if (cw_find_selector(c, factory_cb, factory_cb_data)) {
         rv = KHM_ERROR_EXISTS;
         goto _exit;
     }
 
-    if (c->nc_providers < c->n_providers + 1) {
-        c->nc_providers = UBOUNDSS(c->n_providers + 1, NC_N_PROVIDERS, NC_N_PROVIDERS);
-        c->providers = PREALLOC(c->providers, sizeof(c->providers[0]) * c->nc_providers);
-#ifdef DEBUG
-        assert (c->nc_providers >= c->n_providers + 1);
-#endif
+    if (c->nc_selectors < c->n_selectors + 1) {
+        c->nc_selectors = UBOUNDSS(c->n_selectors + 1, NC_N_SELECTORS, NC_N_SELECTORS);
+        c->selectors = PREALLOC(c->selectors, sizeof(c->selectors[0]) * c->nc_selectors);
     }
 
-#ifdef DEBUG
-    assert(c->nc_providers >= c->n_providers + 1);
-    assert(c->providers != NULL);
-#endif
+    assert(c->nc_selectors >= c->n_selectors + 1);
+    assert(c->selectors != NULL);
 
-    ZeroMemory(&c->providers[c->n_providers], sizeof(c->providers[0]));
+    memset(&c->selectors[c->n_selectors], 0, sizeof(c->selectors[0]));
 
-    c->providers[c->n_providers].h = h_idpro;
-    rv = kcdb_identpro_get_idsel_factory(h_idpro, &c->providers[c->n_providers].cb);
-    if (c->providers[c->n_providers].cb == NULL) {
-        goto _exit;
-    }
+    c->selectors[c->n_selectors].hwnd_selector = NULL;
+    c->selectors[c->n_selectors].display_name = NULL;
+    c->selectors[c->n_selectors].icon = NULL;
+    c->selectors[c->n_selectors].factory_cb_data = factory_cb_data;
+    c->selectors[c->n_selectors].factory_cb = factory_cb;
 
-    kcdb_identpro_hold(h_idpro);
-
-    c->n_providers++;
+    c->n_selectors++;
 
  _exit:
     LeaveCriticalSection(&c->cs);
@@ -526,79 +520,9 @@ khui_cw_add_provider(khui_new_creds * c,
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI
-khui_cw_del_provider(khui_new_creds * c,
-                     khm_handle       h_idpro)
-{
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-    khui_new_creds_idpro * p;
-    khm_size idx;
-
-    ASSERT_NC(c);
-
-    EnterCriticalSection(&c->cs);
-    p = cw_find_idpro(c, h_idpro);
-    if (p == NULL) {
-        rv = KHM_ERROR_NOT_FOUND;
-        goto _exit;
-    }
-
-#ifdef DEBUG
-    assert(c->n_providers > 0);
-#endif
-
-    c->n_providers--;
-    idx = c->providers - p;
-    if (idx < c->n_providers) {
-        MoveMemory(&c->providers[idx], &c->providers[idx+1],
-                   (c->n_providers - idx) * sizeof(c->providers[0]));
-    }
-
- _exit:
-    LeaveCriticalSection(&c->cs);
-
-    return rv;
-}
-
-KHMEXP khm_int32 KHMAPI
-khui_cw_set_provider_data(khui_new_creds * c,
-                          khm_handle h_idpro,
-                          void * data)
-{
-    khui_new_creds_idpro * p;
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-
-    ASSERT_NC(c);
-
-    EnterCriticalSection(&c->cs);
-    p = cw_find_idpro(c, h_idpro);
-    if (p == NULL) {
-        rv = KHM_ERROR_NOT_FOUND;
-    } else {
-        p->data = data;
-    }
-    LeaveCriticalSection(&c->cs);
-
-    return rv;
-}
-
-KHMEXP void * KHMAPI
-khui_cw_get_provider_data(khui_new_creds * c,
-                          khm_handle h_idpro)
-{
-    void * rv = NULL;
-    khui_new_creds_idpro * p;
-
-    ASSERT_NC(c);
-
-    EnterCriticalSection(&c->cs);
-    p = cw_find_idpro(c, h_idpro);
-    if (p != NULL)
-        rv = p->data;
-    LeaveCriticalSection(&c->cs);
-
-    return rv;
-}
+/**********************************************************/
+/*     Communication with the New Credentials Wizard      */
+/**********************************************************/
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notification,

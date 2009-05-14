@@ -26,7 +26,10 @@ namespace nim {
     public:
         NewCredIdentitySpecifier(khui_new_creds * _nc):
             nc(_nc),
-            DialogWindow(MAKEINTRESOURCE(IDD_NC_IDSPEC), khm_hInstance)
+            DialogWindow(MAKEINTRESOURCE(IDD_NC_IDSPEC), khm_hInstance),
+            initialized(false),
+            in_layout(false),
+            prev_page(NC_PAGE_NONE)
         {}
 
         void Initialize(HWND hwnd);

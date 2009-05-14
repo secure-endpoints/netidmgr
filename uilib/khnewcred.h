@@ -972,6 +972,88 @@ khui_cw_set_response(khui_new_creds * c,
                      khm_int32 type,
                      khm_int32 response);
 
+typedef struct khui_identity_selector khui_identity_selector;
+
+/*!\ brief Identity Selector Factory Callback
+
+     Used by identity providers and credentials providers during the
+     new credentials operation to specify identity selector dialogs.
+
+     On a successful invocation, the callback must fill in the \a
+     hwnd_selector, \a display_name and \a icon fields of the
+     structure.  The \a hwnd_selector window handle must be created as
+     a child window of the \a parent window.  The \a parent handle
+     will always be non-NULL.
+
+     If the call cannot be completed successfully, the callback
+     function should return a non-zero error value.  Otherwise it
+     should return ::KHM_ERROR_SUCCESS.
+
+     Once invoked successfully, the consumer of the identity selector
+     will invoke the callback again with a NULL \a parent value.  The
+     contents of the structure will be the same as they were when the
+     previous call to the callback function returned.  In this
+     invocation, the callback function is expected to clean up any
+     resources allocated during the previous invocation, such as space
+     allocated for \a display_name and \a icon.  If the \a
+     hwnd_selector is non-NULL after this call, the consumer will
+     destroy the window corresponding to \a hwnd_selector.
+
+     \param[in] parent On first invocation, this will be the parent
+         window of the identity selector dialog.  The dialog should be
+         created as a child window and will be placed on this parent
+         window.  On the second invocation, this parameter will be
+         NULL.
+
+     \param[in] u_data Pointer to a ::khui_identity_selector structure
+         that must be filled in by the factory.
+
+     \see khui_cw_add_selector(), ::khui_identity_selector
+*/
+typedef khm_int32 (KHMCALLBACK * khui_idsel_factory)(HWND parent,
+                                                     khui_identity_selector * u_data);
+
+typedef struct khui_identity_selector {
+    HWND                hwnd_selector;
+
+    wchar_t            *display_name;
+
+    HICON               icon;
+
+    void               *factory_cb_data;
+
+    khui_idsel_factory  factory_cb;
+
+} khui_identity_selector;
+
+/*! \brief Add an identity selector
+
+    The new credentials wizard relies on the providers to specify the
+    identity selector factory to be used for specifying new
+    identities.  This function can be used by credentials providers or
+    identity provders to specify the factory callback and any
+    associated user parameter.
+
+    \param[in] c A ::khui_new_creds handle which receives the identity
+        selector.
+
+    \param[in] factory_cb The identity selector factory.
+
+    \param[in] factory_cb_data Custom parameter for the callback.
+
+    \see ::khui_idsel_factory
+
+    \note Providers should call this function when handling the
+        ::KMSG_CRED_NEW_CREDS message.  Calling it later may result in
+        the identity selector not being used by the new credentials
+        wizard.
+
+ */
+KHMEXP khm_int32 KHMAPI
+khui_cw_add_selector(khui_new_creds * c,
+                     khui_idsel_factory factory_cb,
+                     void * factory_cb_data);
+
 KHMEXP khui_action_context * KHMAPI
 khui_cw_get_ctx(khui_new_creds * c);
 
