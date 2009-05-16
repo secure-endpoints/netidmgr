@@ -57,8 +57,8 @@ NETIDMGR_VERSION=$(NETIDMGR_VERSION_MAJOR).$(NETIDMGR_VERSION_MINOR).$(NETIDMGR_
 NETIDMGR_VERSIONC=$(NETIDMGR_VERSION_MAJOR),$(NETIDMGR_VERSION_MINOR),$(NETIDMGR_VERSION_PATCH),$(NETIDMGR_VERSION_AUX)
 
 # Source information
-NETIDMGR_SRC_COMPANY_1033=Massachusetts Institute of Technology
-NETIDMGR_SRC_COPYRIGHT_1033=(C) 2005-2007 Massachusetts Institute of Technology
+NETIDMGR_SRC_COMPANY_1033=Secure Endpoints Inc.
+NETIDMGR_SRC_COPYRIGHT_1033=(C) 2009 Secure Endpoints Inc.
 
 # Choose the default build type if one is not set
 !if ("$(KH_BUILD)" != "DEBUG") && ("$(KH_BUILD)" != "RETAIL")
@@ -71,6 +71,10 @@ KH_BUILD=DEBUG
 
 !if "$(KH_BUILD)"=="DEBUG" && defined(NODEBUG) && "$(NODEBUG)"=="1"
 ! error The Khimaira build configuration is set for DEBUG while the Platform SDK build environment is set to RETAIL.
+!endif
+
+!if "$(KH_BUILD)"=="RETAIL" && !defined(NODEBUG)
+! error The Khimaira build configuration is set for RETAIL wihle the Platform SDK build environment is set to DEBUG
 !endif
 
 # The default release type is PRIVATE if no other type is specified
