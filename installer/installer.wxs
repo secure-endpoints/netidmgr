@@ -775,6 +775,8 @@
 
     </Feature>
 
+    <Icon Id="NIMIcon" SourceFile="$(var.SrcDir)\ui\images\id.ico" />
+
     <!-- We are registering this product in HKLM. We are only
          installing this for all users. -->
     <Property Id="ALLUSERS">1</Property>
@@ -782,6 +784,7 @@
     <Property Id="ARPCONTACT">$(loc.ARPContact)</Property>
     <Property Id="ARPURLINFOABOUT">$(loc.ARPURLInfo)</Property>
     <Property Id="ARPHELPLINK">$(loc.ARPURLHelp)</Property>
+    <Property Id="ARPPRODUCTICON">NIMIcon</Property>
 
     <Property Id="INSTALLLEVEL">3</Property>
 
