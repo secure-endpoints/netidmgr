@@ -263,8 +263,14 @@ void kmqint_post(kmq_msg_subscription * s, kmq_message * m, khm_boolean try_send
                the message queue. */
             m->refcount++;
             m->nSent++;
+            LeaveCriticalSection(&cs_kmq_msg);
+            LeaveCriticalSection(&cs_kmq_types);
+
             rv = s->recipient.cb(m->type, m->subtype, 
                                  m->uparam, m->vparam);
+
+            EnterCriticalSection(&cs_kmq_types);
+            EnterCriticalSection(&cs_kmq_msg);
             m->refcount--;
             if(KHM_SUCCEEDED(rv))
                 m->nCompleted++;
@@ -310,6 +316,10 @@ void kmqint_post(kmq_msg_subscription * s, kmq_message * m, khm_boolean try_send
                the message is sent. */
 
             m->refcount++;
+            m->refcount++;
+
+            LeaveCriticalSection(&cs_kmq_msg);
+            LeaveCriticalSection(&cs_kmq_types);
 
             /* the kmq_wm_begin()/kmq_wm_end() and kmq_wm_dispatch()
                handlers decrement the reference count on the message
@@ -317,6 +327,10 @@ void kmqint_post(kmq_msg_subscription * s, kmq_message * m, khm_boolean try_send
             SendMessage(s->recipient.hwnd, KMQ_WM_DISPATCH, 
                         m->type, (LPARAM) m);
 
+            EnterCriticalSection(&cs_kmq_types);
+            EnterCriticalSection(&cs_kmq_msg);
+
+            m->refcount--;
             m->nSent++;
 
         } else {

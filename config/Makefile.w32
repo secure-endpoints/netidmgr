@@ -337,4 +337,11 @@ if exist $@.manifest $(RM) $@.manifest
 
 # End of manifest handling
 
+# Code signing
+!ifdef CODESIGN
+_CODESIGN=$(CODESIGN) $@
+!else
+_CODESIGN=
+!endif
+
 !endif

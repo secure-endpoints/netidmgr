@@ -66,6 +66,7 @@ $(DLLFILE): $(OBJFILES) $(VERRESFILE)
 	$(DLLGUILINK) $(LIBFILES) $(SDKLIBFILES) $(SCLIB)
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)
+	$(_CODESIGN)
 
 all: mkdirs $(MSGRESFILE) $(DLLFILE) lang
 
@@ -83,6 +84,7 @@ lang:: $(LANGDLL)
 
 $(LANGDLL): $(OBJ)\langres_$(LANG).res $(OBJ)\langres_ver_$(LANG).res
 	$(DLLRESLINK)
+	$(_CODESIGN)
 
 $(OBJ)\langres_$(LANG).res: lang\$(LANG)\langres.rc
 	$(RC2RES)

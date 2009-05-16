@@ -39,6 +39,7 @@ $(MSIFILE): "$(OBJ)\installer.wixobj"
 		-loc lang\$(LANG)\installer.wxl 	\
 		-loc "$(WIXDIR)\WixUI_en-us.wxl" 	\
 		$**
+	$(_CODESIGN)
 
 !ifdef NODEBUG
 KSDBG=release
