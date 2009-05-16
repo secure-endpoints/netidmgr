@@ -1105,9 +1105,10 @@ namespace nim {
 
         std::wstring GetString(const wchar_t * name, const wchar_t * def = L"") {
             khm_size cb = 0;
+            int n_tries_left = 5;
 
-            last_error = khc_read_string(csp, name, NULL, &cb);
-            if (last_error == KHM_ERROR_TOO_LONG) {
+            while ((last_error = khc_read_string(csp, name, NULL, &cb)) == KHM_ERROR_TOO_LONG &&
+                   n_tries_left > 0) {
                 wchar_t * wbuffer = NULL;
 
                 wbuffer = static_cast<wchar_t *>(PMALLOC(cb));
@@ -1119,6 +1120,7 @@ namespace nim {
                 }
 
                 PFREE(wbuffer);
+                n_tries_left--;
             }
 
             return std::wstring(def);

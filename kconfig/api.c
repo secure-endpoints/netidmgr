@@ -449,9 +449,6 @@ khc_shadow_space(khm_handle upper, khm_handle lower)
         return KHM_ERROR_NOT_READY;
 
     if(!khc_is_handle(upper)) {
-#ifdef DEBUG
-        DebugBreak();
-#endif
         return KHM_ERROR_INVALID_PARAM;
     }
 
@@ -802,9 +799,6 @@ khc_close_space(khm_handle csp)
         return KHM_ERROR_NOT_READY;
 
     if(!khc_is_handle(csp)) {
-#ifdef DEBUG
-        DebugBreak();
-#endif
         return KHM_ERROR_INVALID_PARAM;
     }
 
@@ -975,7 +969,7 @@ khcint_get_parent_config_space(khm_handle pconf,
         *ppconf = pconf;
     }
 
-    return KHM_ERROR_SUCCESS;
+    return (*ppconf != NULL)? KHM_ERROR_SUCCESS : KHM_ERROR_NOT_FOUND;
 }
 
 khm_int32
