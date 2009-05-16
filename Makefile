@@ -225,6 +225,15 @@ installer: pinstaller
 	$(CD) ..
 	$(ECHO) -- Done with $@
 
+parchive:
+
+archive: parchive
+	$(ECHO) -- Creating archive
+	$(CD) installer
+	$(RMAKE) ARCHIVE=1
+	$(CD) ..
+	$(ECHO) -- Done with archive
+
 clean::
 	$(MAKECMD) /nologo CLEANRUN=1
 

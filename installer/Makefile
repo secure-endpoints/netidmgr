@@ -31,7 +31,25 @@ LANG=en_us
 
 MSIFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
 
+ZIPFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
+
+!if "$(ARCHIVE)" != ""
+!if "$(ZIP)" == ""
+TARGET=no-zip
+!else
+TARGET=$(ZIPFILE)
+!endif
+!else
 !if exist("$(WIXDIR)\candle.exe")
+TARGET=mkdirs $(MSIFILE)
+!else
+TARGET=no-wix
+!endif
+!endif
+
+all: $(TARGET)
+
+# MSI
 
 $(MSIFILE): "$(OBJ)\installer.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
@@ -51,28 +69,61 @@ KSDBG=release
 KSDBG=debug
 !endif
 
+KSBIN=$(KEYSTORE)\dest\$(CPU)_$(KSDBG)
+
 $(OBJ)\installer.wixobj: installer.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
 		-dProductVersion=$(NETIDMGR_VERSION)	\
 		-dBinDir=$(BINDIR)			\
 		-dLibDir=$(LIBDIR)			\
+!ifndef NODEBUG
+		-dDebug=1					\
+!endif
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)			\
-		-dKeystoreBinDir=$(KEYSTORE)\dest\$(CPU)_$(KSDBG)
+		-dKeystoreBinDir=$(KSBIN)
 
-all: mkdirs $(MSIFILE)
+# MSI but not WIX
 
-!else
-
-install:
+no-wix:
 	$(ECHO) Please set the WIXDIR environment variable as documented in Makefile.
 	.\candle.exe -?
 
-all: install
+# ZIP
 
+ZIPSRC=			\
+	$(BINDIR)\netidmgr.exe	\
+	$(BINDIR)\netidmgr.pdb	\
+	$(BINDIR)\netidmgr.chm	\
+	$(BINDIR)\krb5cred.dll	\
+	$(BINDIR)\krb5cred.pdb	\
+	$(BINDIR)\krb5cred_en_us.dll
+
+!if exist($(BINDIR)\krb4cred.dll)
+ZIPSRC=$(ZIPSRC) $(BINDIR)\krb4cred.dll $(BINDIR)\krb4cred.pdb $(BINDIR)\krb4cred_en_us.dll
 !endif
 
+!if exist($(BINDIR)\nidmgr32.dll)
+ZIPSRC=$(ZIPSRC) $(BINDIR)\nidmgr32.dll $(BINDIR)\nidmgr32.pdb
+!elseif exist($(BINDIR)\nidmgr64.dll)
+ZIPSRC=$(ZIPSRC) $(BINDIR)\nidmgr64.dll $(BINDIR)\nidmgr64.pdb
+!else
+! error nidmgr32.dll or nidmgr64 must be built
+!endif
+
+!if exist($(KSBIN)\keystore.dll)
+ZIPSRC=$(ZIPSRC) $(KSBIN)\keystore.dll $(KSBIN)\keystore.pdb $(KSBIN)\keystore_en_us.dll
+!endif
+
+$(ZIPFILE): $(ZIPSRC)
+	"$(ZIP)" a $(ZIPFILE) -tzip $(ZIPSRC)
+
+# ZIP but $(ZIP) isn't specified
+
+no-zip:
+	$(ECHO) Please set the ZIP environment variable to point to the location of 7z.exe
 
 clean::
 	$(RM) $(MSIFILE)
+	$(RM) $(ZIPFILE)
 	$(RM) $(OBJ)\installer.wixobj
