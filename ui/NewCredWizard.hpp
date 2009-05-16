@@ -10,6 +10,7 @@ namespace nim {
         NC_PAGE_CREDOPT_ADV,
         NC_PAGE_PASSWORD,
         NC_PAGE_PROGRESS,
+        NC_PAGE_CREDOPT_WIZ,
 
         NC_PAGET_NEXT,
         NC_PAGET_PREV,

@@ -246,6 +246,12 @@ typedef struct tag_khui_new_creds {
 
     nc_privint          privint; /*!< Privileged interaction */
 
+    khm_boolean         ignore_errors;
+                                /*!< Don't report errors in separate
+                                   alert boxes.  Usually set when
+                                   there's already a UI for reporting
+                                   errors to the user. */
+
     struct tag_khui_new_creds * parent;
                                 /*!< If this new credentials operation
                                    was intiated by another new

@@ -112,6 +112,7 @@ namespace nim {
     void NewCredNavigation::CheckControls()
     {
         khui_new_creds_privint_panel * p;
+        AutoRef<NewCredWizard> cw (NewCredWizard::FromNC(nc));
 
         DisableControl(Next | Prev | Finish);
 
@@ -119,15 +120,42 @@ namespace nim {
 
         p = nc->privint.shown.current_panel;
 
-        if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
-            EnableControl(Next);
+        if (cw->page == NC_PAGE_CREDOPT_WIZ) {
 
-        if (p && QPREV(p))
-            EnableControl(Prev);
+            if (cw->m_privint.idx_current == NC_PRIVINT_PANEL) {
+
+                if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
+                    EnableControl(Next);
+
+                if (p && QPREV(p) ||
+                    (nc->n_types > 0 && !(nc->types[0].nct->flags & KHUI_NCT_FLAG_DISABLED)))
+                    EnableControl(Prev);
+
+            } else {
+
+                int idx = cw->m_privint.idx_current;
+
+                if ((idx + 1 < (int) nc->n_types &&
+                     !(nc->types[idx + 1].nct->flags & KHUI_NCT_FLAG_DISABLED)) ||
+                    p)
+                    EnableControl(Next);
+
+                if (idx > 0)
+                    EnableControl(Prev);
+
+            }
+
+        } else {
+            if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
+                EnableControl(Next);
+
+            if (p && QPREV(p))
+                EnableControl(Prev);
+        }
+
+        khui_cw_unlock_nc(nc);
 
         if (IsState(OkToFinish))
             EnableControl(Finish);
-
-        khui_cw_unlock_nc(nc);
     }
 }

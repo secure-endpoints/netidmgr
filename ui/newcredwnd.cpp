@@ -92,6 +92,8 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
         khui_alert_add_to_container(w->m_progress.hwnd_container, a);
 
         khui_alert_release(a);
+
+        nc->ignore_errors = TRUE;
     }
 }
 

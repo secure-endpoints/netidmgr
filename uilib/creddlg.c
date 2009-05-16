@@ -190,7 +190,7 @@ khui_cw_set_primary_id(khui_new_creds * c,
     if((c->n_identities > 0 && c->identities[0] == id) ||
        (c->n_identities == 0 && id == NULL)) {
         LeaveCriticalSection(&c->cs);
-        return KHM_ERROR_SUCCESS;
+        return KHM_ERROR_DUPLICATE;
     }
 
     for(i=0; i<c->n_identities; i++) {

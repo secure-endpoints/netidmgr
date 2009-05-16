@@ -485,6 +485,17 @@ BEGIN
     LTEXT           "Saving your password in this location allows you to obtain credentials for multiple identities using this single key store.  You may be asked to enter a password for the keystore.",IDC_STATIC,46,28,296,18
 END
 
+IDD_NC_PRIVINT_WIZARD DIALOGEX 0, 0, 370, 214
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Static",IDC_NC_R_PROMPTS,9,26,349,172,NOT WS_VISIBLE | WS_BORDER | NOT WS_GROUP
+    CONTROL         "Make this the default identity",IDC_NC_MAKEDEFAULT,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,204,109,10
+    LTEXT           "",IDC_PANELNAME,9,3,349,11,NOT WS_VISIBLE,WS_EX_STATICEDGE
+END
+ 
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -708,6 +719,17 @@ BEGIN
         RIGHTMARGIN, 342
         TOPMARGIN, 7
         BOTTOMMARGIN, 46
+    END
+
+    IDD_NC_PRIVINT_WIZARD, DIALOG
+    BEGIN
+        LEFTMARGIN, 6
+        RIGHTMARGIN, 363
+        VERTGUIDE, 9
+        VERTGUIDE, 358
+        TOPMARGIN, 3
+        BOTTOMMARGIN, 198
+        HORZGUIDE, 26
     END
 END
 #endif    // APSTUDIO_INVOKED

@@ -3,6 +3,7 @@
 
 #include "NewCredAdvancedPanel.hpp"
 #include "NewCredBasicPanel.hpp"
+#include "NewCredIdentityConfigWizard.hpp"
 #include "NewCredNoPromptPanel.hpp"
 #include "NewCredPersistPanel.hpp"
 
@@ -20,6 +21,8 @@ namespace nim {
 
         NewCredPersistPanel     m_persist;
 
+        NewCredIdentityConfigWizard m_cfgwiz;
+
         HWND                    hwnd_current;
                                 /*!< Handle to currently selected
                                   panel window */
@@ -36,6 +39,7 @@ namespace nim {
             m_basic(_nc),
             m_noprompts(_nc),
             m_persist(_nc),
+            m_cfgwiz(_nc),
             hwnd_current(NULL),
             idx_current(NC_PRIVINT_PANEL)
         {}

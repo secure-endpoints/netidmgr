@@ -132,16 +132,29 @@ namespace nim {
         HWND hw_target = NULL;
         RECT r_p;
         RECT r_persist = {0,0,0,0};
-        bool advanced;
         bool do_persist = false;
         khm_handle  parent_id = NULL;
         khui_new_creds_privint_panel * p;
         DialogWindow * dw;
+        const NewCredPage page = NewCredWizard::FromNC(nc)->page;
 
-        advanced = (NewCredWizard::FromNC(nc)->page == NC_PAGE_CREDOPT_ADV);
+        switch (page) {
+        case NC_PAGE_CREDOPT_BASIC:
+            dw = static_cast<DialogWindow *>(&m_basic);
+            break;
 
-        dw = ((advanced)? static_cast<DialogWindow *>(&m_advanced) :
-              static_cast<DialogWindow *>(&m_basic));
+        case NC_PAGE_CREDOPT_ADV:
+            dw = static_cast<DialogWindow *>(&m_advanced);
+            break;
+
+        case NC_PAGE_CREDOPT_WIZ:
+            dw = static_cast<DialogWindow *>(&m_cfgwiz);
+            break;
+
+        default:
+            assert(false);
+            return NULL;
+        }
 
         PurgeDeletedShownPanels();
 
@@ -161,7 +174,7 @@ namespace nim {
         if (p && p->caption[0] == L'\0')
             LoadStringResource(p->caption, IDS_NC_IDENTITY);
 
-        if (advanced) {
+        if (page == NC_PAGE_CREDOPT_ADV) {
             int panel_idx;
 
             /* Everytime there's a change in the order of the
@@ -185,6 +198,45 @@ namespace nim {
                 assert(panel_idx >= 0 && (khm_size) panel_idx < nc->n_types);
                 hw_target = nc->types[panel_idx].nct->hwnd_panel;
                 do_persist = false;
+            }
+
+            khui_cw_unlock_nc(nc);
+
+            if (hw_target != hwnd_current && hwnd_current != NULL)
+                SetWindowPos(hwnd_current, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
+
+            hwnd_current = hw_target;
+            idx_current = panel_idx;
+
+        } if (page == NC_PAGE_CREDOPT_WIZ) {
+            int panel_idx;
+
+            khui_cw_lock_nc(nc);
+
+            panel_idx = idx_current;
+
+            for (; panel_idx >= 0 &&
+                     panel_idx < (int) nc->n_types &&
+                     (nc->types[panel_idx].nct->flags & KHUI_NCT_FLAG_DISABLED) ;
+                 panel_idx++)
+                ;
+
+            if (panel_idx != NC_PRIVINT_PANEL &&
+                (panel_idx < 0 || panel_idx >= (int) nc->n_types)) {
+                panel_idx = NC_PRIVINT_PANEL;
+            }
+
+            if (panel_idx == NC_PRIVINT_PANEL) {
+                hw_target = (p)? p->hwnd : NULL;
+                if (p->caption)
+                    m_cfgwiz.SetItemText(IDC_PANELNAME, p->caption);
+                SetWindowPos(m_cfgwiz.GetItem(IDC_PANELNAME), NULL,
+                             0, 0, 0, 0, SWP_SHOWONLY);
+            } else {
+                hw_target = nc->types[panel_idx].nct->hwnd_panel;
+                do_persist = false;
+                SetWindowPos(m_cfgwiz.GetItem(IDC_PANELNAME), NULL,
+                             0, 0, 0, 0, SWP_HIDEONLY);
             }
 
             khui_cw_unlock_nc(nc);
@@ -225,7 +277,7 @@ namespace nim {
             kcdb_get_resource(nc->persist_identity, KCDB_RES_ICON_NORMAL, 0, NULL, NULL,
                               &hicon, &cb);
 
-            if (advanced) {
+            if (page == NC_PAGE_CREDOPT_ADV || page == NC_PAGE_CREDOPT_WIZ) {
 
                 m_persist.SetItemText(IDC_PERSIST, msgtext);
 
@@ -241,7 +293,7 @@ namespace nim {
                 SetWindowPos(m_basic.GetItem(IDC_PERSIST), NULL, 0,0,0,0, SWP_SHOWONLY);
             }
         } else {
-            if (advanced) {
+            if (page == NC_PAGE_CREDOPT_ADV || page == NC_PAGE_CREDOPT_WIZ) {
                 SetWindowPos(m_persist.hwnd, NULL, 0,0,0,0, SWP_HIDEONLY);
             } else {
                 SetWindowPos(m_basic.GetItem(IDC_PERSIST), NULL, 0,0,0,0, SWP_HIDEONLY);
@@ -255,21 +307,21 @@ namespace nim {
         hw_r_p = dw->GetItem(IDC_NC_R_PROMPTS);
         assert(hw_r_p != NULL);
 
-        if (advanced) {
+        if (page == NC_PAGE_CREDOPT_ADV) {
             m_advanced.GetTabPlacement(r_p);
-
-            if (do_persist) {
-                RECT r;
-
-                r_persist = r_p;
-
-                GetClientRect(m_persist.hwnd, &r);
-                r_p.bottom -= r.bottom - r.top;            
-                r_persist.top = r_p.bottom;
-            }
         } else {
             GetWindowRect(hw_r_p, &r_p);
             MapWindowRect(NULL, dw->hwnd, &r_p);
+        }
+
+        if (do_persist && page != NC_PAGE_CREDOPT_BASIC) {
+            RECT r;
+
+            r_persist = r_p;
+
+            GetClientRect(m_persist.hwnd, &r);
+            r_p.bottom -= r.bottom - r.top;
+            r_persist.top = r_p.bottom;
         }
 
         /* One thing to be careful about when dealing with third-party
@@ -296,7 +348,8 @@ namespace nim {
             SetWindowPos(m_noprompts.hwnd, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
 
         SetWindowPos(hw_target, hw_r_p, rect_coords(r_p), SWP_MOVESIZEZ);
-        if (advanced && do_persist) {
+        if (page != NC_PAGE_CREDOPT_BASIC && do_persist) {
+            SetParent(m_persist.hwnd, dw->hwnd);
             SetWindowPos(m_persist.hwnd, hw_target, rect_coords(r_persist), SWP_MOVESIZEZ);
         }
 
@@ -329,9 +382,10 @@ namespace nim {
 
     void NewCredPanels::Create(HWND parent)
     {
-        m_basic.Create(parent);
-        m_advanced.Create(parent);
-        m_noprompts.Create(parent);
-        m_persist.Create(parent);
+        m_basic     .Create(parent);
+        m_advanced  .Create(parent);
+        m_cfgwiz    .Create(parent);
+        m_noprompts .Create(parent);
+        m_persist   .Create(parent);
     }
 }

@@ -283,6 +283,7 @@ namespace nim {
 
         if (page == NC_PAGE_PASSWORD ||
             page == NC_PAGE_CREDOPT_ADV ||
+            page == NC_PAGE_CREDOPT_WIZ ||
             page == NC_PAGE_CREDOPT_BASIC) {
 
             UpdateLayout();
@@ -416,7 +417,7 @@ namespace nim {
                 if (idflags & KCDB_IDENT_FLAG_CONFIG) {
                     Navigate( NC_PAGE_CREDOPT_BASIC);
                 } else {
-                    Navigate( NC_PAGE_CREDOPT_ADV);
+                    Navigate( NC_PAGE_CREDOPT_WIZ);
                 }
             } else {
                 /* No primary identity.  We have to open with the
@@ -601,6 +602,11 @@ namespace nim {
             page = NC_PAGE_CREDOPT_ADV;
             break;
 
+        case NC_PAGE_CREDOPT_WIZ:
+            m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+            page = NC_PAGE_CREDOPT_WIZ;
+            break;
+
         case NC_PAGE_PASSWORD:
             m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
             page = NC_PAGE_PASSWORD;
@@ -619,9 +625,10 @@ namespace nim {
                     switch (nc->subtype) {
                     case KHUI_NC_SUBTYPE_NEW_CREDS:
                         m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
-                        page = NC_PAGE_CREDOPT_ADV;
+                        m_privint.idx_current = 0;
+                        page = NC_PAGE_CREDOPT_WIZ;
                         break;
-                        
+
                     case KHUI_NC_SUBTYPE_ACQPRIV_ID:
                         m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                         page = NC_PAGE_CREDOPT_BASIC;
@@ -659,6 +666,37 @@ namespace nim {
                 }
                 break;
 
+            case NC_PAGE_CREDOPT_WIZ:
+                {
+                    int idx;
+
+                    idx = m_privint.idx_current;
+
+                    if (idx == NC_PRIVINT_PANEL) {
+                        khui_new_creds_privint_panel * p;
+
+                        p = nc->privint.shown.current_panel;
+                        if (p) {
+                            p->processed = TRUE;
+                            p = QNEXT(p);
+                        }
+                        if (p == NULL)
+                            khui_cw_get_next_privint(nc, &p);
+                        nc->privint.shown.current_panel = p;
+                        m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+                    } else {
+                        if (idx + 1 < (int) nc->n_types &&
+                            !(nc->types[idx + 1].nct->flags & KHUI_NCT_FLAG_DISABLED))
+                            idx ++;
+                        else
+                            idx = NC_PRIVINT_PANEL;
+                        m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+                    }
+
+                    m_privint.idx_current = idx;
+                }
+                break;
+
             default:
                 assert(FALSE);
             }
@@ -683,6 +721,38 @@ namespace nim {
                     if (p)
                         p = QPREV(p);
                     nc->privint.shown.current_panel = p;
+                    m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
+                }
+                break;
+
+            case NC_PAGE_CREDOPT_WIZ:
+                {
+                    int idx = m_privint.idx_current;
+
+                    if (idx == NC_PRIVINT_PANEL) {
+                        khui_new_creds_privint_panel * p;
+
+                        p = nc->privint.shown.current_panel;
+                        if (p)
+                            p = QPREV(p);
+                        nc->privint.shown.current_panel = p;
+                        if (p == NULL) {
+                            int i;
+
+                            for (i = 0; i < (int) nc->n_types; i++)
+                                if (nc->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)
+                                    break;
+
+                            i--;
+                            m_privint.idx_current = i;
+                        }
+                    } else {
+                        if (idx > 0)
+                            idx --;
+
+                        m_privint.idx_current = idx;
+                    }
+
                     m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                 }
                 break;
@@ -884,9 +954,10 @@ namespace nim {
         khui_cw_unlock_nc(nc);
 
         NotifyTypes( WMNC_IDENTITY_CHANGE, (LPARAM) nc, TRUE);
-        PrepCredTypes();
 
         khui_cw_lock_nc(nc);
+
+        PrepCredTypes();
 
         /* The currently selected privileged interaction panel also need
            to be reset.  However, we let nc_layout_privint() handle that
@@ -912,6 +983,7 @@ namespace nim {
 
             if (page == NC_PAGE_CREDOPT_ADV ||
                 page == NC_PAGE_CREDOPT_BASIC ||
+                page == NC_PAGE_CREDOPT_WIZ ||
                 page == NC_PAGE_PASSWORD) {
 
                 m_privint.UpdateLayout();
@@ -1030,7 +1102,7 @@ namespace nim {
     void NewCredWizard::UpdateLayout()
     {
         HWND nextctl = NULL;
-        NewCredLayout layout(this, 6);
+        NewCredLayout layout(this, 7);
 
         switch (page) {
         case NC_PAGE_IDSPEC:
@@ -1043,6 +1115,7 @@ namespace nim {
             layout.HidePanel(&m_idsel);
             layout.HidePanel(&m_privint.m_basic);
             layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_privint.m_cfgwiz);
             layout.HidePanel(&m_progress);
             layout.Commit();
 
@@ -1062,6 +1135,7 @@ namespace nim {
             layout.AddPanel(&m_privint.m_basic, NewCredLayout::ContentNormal);
             layout.AddPanel(&m_nav, NewCredLayout::Footer);
             layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_privint.m_cfgwiz);
             layout.HidePanel(&m_idspec);
             layout.HidePanel(&m_progress);
             layout.Commit();
@@ -1083,6 +1157,30 @@ namespace nim {
             layout.AddPanel(&m_privint.m_advanced, NewCredLayout::ContentLarge);
             layout.AddPanel(&m_nav, NewCredLayout::Footer);
             layout.HidePanel(&m_privint.m_basic);
+            layout.HidePanel(&m_privint.m_cfgwiz);
+            layout.HidePanel(&m_idspec);
+            layout.HidePanel(&m_progress);
+            layout.Commit();
+
+            khui_cw_unlock_nc(nc);
+
+            m_idsel.UpdateLayout();
+            nextctl = m_privint.UpdateLayout();
+            m_nav.UpdateLayout();
+
+            break;
+
+        case NC_PAGE_CREDOPT_WIZ:
+
+            khui_cw_lock_nc(nc);
+
+            nc->mode = KHUI_NC_MODE_EXPANDED;
+
+            layout.AddPanel(&m_idsel, NewCredLayout::Header);
+            layout.AddPanel(&m_privint.m_cfgwiz, NewCredLayout::ContentLarge);
+            layout.AddPanel(&m_nav, NewCredLayout::Footer);
+            layout.HidePanel(&m_privint.m_basic);
+            layout.HidePanel(&m_privint.m_advanced);
             layout.HidePanel(&m_idspec);
             layout.HidePanel(&m_progress);
             layout.Commit();
@@ -1104,6 +1202,7 @@ namespace nim {
             layout.AddPanel(&m_privint.m_basic, NewCredLayout::ContentNormal);
             layout.AddPanel(&m_nav, NewCredLayout::Footer);
             layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_privint.m_cfgwiz);
             layout.HidePanel(&m_idspec);
             layout.HidePanel(&m_progress);
             layout.Commit();
@@ -1126,6 +1225,7 @@ namespace nim {
             layout.AddPanel(&m_nav, NewCredLayout::Footer);
             layout.HidePanel(&m_privint.m_basic);
             layout.HidePanel(&m_privint.m_advanced);
+            layout.HidePanel(&m_privint.m_cfgwiz);
             layout.HidePanel(&m_idspec);
             layout.Commit();
 

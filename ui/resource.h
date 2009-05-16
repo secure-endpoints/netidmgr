@@ -234,6 +234,7 @@
 #define IDS_NC_REN_FAILED_TITLE         226
 #define IDD_NC_PERSIST                  226
 #define IDS_CW_DEFAULT                  227
+#define IDD_NC_PRIVINT_WIZARD           227
 #define IDS_ACTION_OPT_PLUGINS          228
 #define IDS_NC_SETDEF                   229
 #define IDS_WT_ACQ_PRIV_ID              230
@@ -450,6 +451,7 @@
 #define IDC_PERSIST                     1187
 #define IDC_LIST1                       1189
 #define IDC_CFGLIST                     1190
+#define IDC_PANELNAME                   1191
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -465,7 +467,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        238
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1191
+#define _APS_NEXT_CONTROL_VALUE         1192
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

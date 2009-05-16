@@ -1021,7 +1021,7 @@ khcint_read_value_from_cspace(khm_handle pconf,
     }
 
  done:
-    if(conf != pconf)
+    if(conf != pconf && conf != NULL)
         khc_close_space(conf);
 
     return rv;

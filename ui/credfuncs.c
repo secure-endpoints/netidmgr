@@ -344,7 +344,7 @@ kmsg_cred_completion(kmq_message *m)
         if(!khm_cred_dispatch_process_level(nc)) {
             int has_error = 0;
 
-            if(kherr_is_error()) {
+            if(kherr_is_error() && !nc->ignore_errors) {
                 khui_alert * alert;
                 kherr_event * evt;
                 kherr_context * ctx;
