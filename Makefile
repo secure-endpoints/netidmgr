@@ -196,6 +196,17 @@ doctarget=doc
 finale: krb5plugin $(doctarget)
 	$(ECHO) -- Done.
 
+!if exist( plugins\keystore )
+finale: keystore
+
+keystore: ui
+	$(ECHO) -- Entering $@
+	$(CD) plugins\keystore
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1
+	$(CD) ..\..
+	$(ECHO) -- Done with $@
+!endif
+
 pdoc:
 
 doc: pdoc

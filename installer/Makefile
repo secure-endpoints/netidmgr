@@ -41,6 +41,10 @@ $(MSIFILE): "$(OBJ)\installer.wixobj"
 		$**
 	$(_CODESIGN)
 
+!ifndef KEYSTORE
+KEYSTORE=$(SRC)\plugins\keystore
+!endif
+
 !ifdef NODEBUG
 KSDBG=release
 !else
