@@ -40,13 +40,20 @@ $(MSIFILE): "$(OBJ)\installer.wixobj"
 		-loc "$(WIXDIR)\WixUI_en-us.wxl" 	\
 		$**
 
+!ifdef NODEBUG
+KSDBG=release
+!else
+KSDBG=debug
+!endif
+
 $(OBJ)\installer.wixobj: installer.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
 		-dProductVersion=$(NETIDMGR_VERSION)	\
 		-dBinDir=$(BINDIR)			\
 		-dLibDir=$(LIBDIR)			\
 		-dSrcDir=$(SRC)				\
-		-dClVer=$(KH_CLVER)
+		-dClVer=$(KH_CLVER)			\
+		-dKeystoreBinDir=$(KEYSTORE)\dest\$(CPU)_$(KSDBG)
 
 all: mkdirs $(MSIFILE)
 

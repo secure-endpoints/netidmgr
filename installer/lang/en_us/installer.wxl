@@ -76,4 +76,8 @@
 
   <String Id="FeatureDebugDesc">Debugging symbols for all the binaries.</String>
 
+  <String Id="FeatureKeystoreTitle">Keystore</String>
+
+  <String Id="FeatureKeystoreDesc">Installs the Keystore Module which provides credential and identity support for Keystores to Network Identity Manager.  MIT Kerberos for Windows must be installed for this module to function properly.</String>
+
 </WixLocalization>
