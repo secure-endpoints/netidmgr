@@ -347,7 +347,13 @@ namespace nim {
         if (hw_target != m_noprompts.hwnd)
             SetWindowPos(m_noprompts.hwnd, NULL, 0, 0, 0, 0, SWP_HIDEONLY);
 
-        SetWindowPos(hw_target, hw_r_p, rect_coords(r_p), SWP_MOVESIZEZ);
+        /* We are moving the window to the top of the list inside the
+           child dialog because we want the dialog to be drawn before
+           the tab control in advanced mode.  Some child dialogs with
+           clip-siblings set will not behave properly unless they are
+           above the tab control. */
+        SetWindowPos(hw_target, HWND_TOP, rect_coords(r_p), SWP_MOVESIZEZ);
+
         if (page != NC_PAGE_CREDOPT_BASIC && do_persist) {
             SetParent(m_persist.hwnd, dw->hwnd);
             SetWindowPos(m_persist.hwnd, hw_target, rect_coords(r_persist), SWP_MOVESIZEZ);
