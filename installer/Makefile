@@ -47,15 +47,19 @@ $(OBJ)\installer.wixobj: installer.wxs
 		-dLibDir=$(LIBDIR)			\
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)
+
+all: mkdirs $(MSIFILE)
+
 !else
 
 install:
 	$(ECHO) Please set the WIXDIR environment variable as documented in Makefile.
 	.\candle.exe -?
 
+all: install
+
 !endif
 
-all: mkdirs $(MSIFILE)
 
 clean::
 	$(RM) $(MSIFILE)

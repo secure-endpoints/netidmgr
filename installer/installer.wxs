@@ -88,9 +88,13 @@
 
   <?define CodePage="1252" ?>
 
+  <?if $(var.Platform)="Intel" ?>
   <?define IncludeW2k="yes" ?>
   <?define IncludeDebugSyms="yes" ?>
   <?define IncludeKrb4="yes" ?>
+  <?elseif $(var.Platform)="x64" ?>
+  <?define IncludeDebugSyms="yes" ?>
+  <?endif?>
 
   <!-- Sanity checks -->
   <?if $(var.Platform) != "Intel"?>
@@ -123,461 +127,465 @@
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="$(var.ProgramFilesFolder)">
         <Directory Id="dirCompany" SourceName="."
-                   Name="$(loc.CompanyDirShortName)"
-                   LongName="$(loc.CompanyDirName)">
-          <Directory Id="APPDIR"
-                     Name="$(loc.ProductDirShortName)"
-                     LongName="$(loc.ProductDirName)"
-                     FileSource="$(var.BinDir)">
+                   Name="MIT"
+                   LongName="MIT">
+          <Directory Id="dirAppClass" SourceName="."
+                     Name="Kerberos"
+                     LongName="Kerberos">
+            <Directory Id="APPDIR"
+                       Name="bin"
+                       LongName="bin"
+                       FileSource="$(var.BinDir)">
 
-            <!-- NIDMGR32.DLL / NIDMGR64.DLL -->
+              <!-- NIDMGR32.DLL / NIDMGR64.DLL -->
 
-            <Component Win64="$(var.Win64)"
-                       Id="nim_dll"
-                       Guid="$(var.nim_dll_guid)"
-                       DiskId="1" Transitive="yes">
-	      <File Id="fil_nidmgr32_dll"
-                    LongName="$(var.nim_dll_name)"
-                    Name="$(var.nim_dll_name)"
-                    KeyPath="yes" />
-              <Condition>VersionNT &gt; 500</Condition>
-            </Component>
+              <Component Win64="$(var.Win64)"
+                         Id="nim_dll"
+                         Guid="$(var.nim_dll_guid)"
+                         DiskId="1" Transitive="yes">
+	        <File Id="fil_nidmgr32_dll"
+                      LongName="$(var.nim_dll_name)"
+                      Name="$(var.nim_dll_name)"
+                      KeyPath="yes" />
+                <Condition>VersionNT &gt; 500</Condition>
+              </Component>
 
-            <?ifdef IncludeDebugSyms?>
-            <Component Id="nim_dll_pdb"
-                       Guid="$(var.nim_dll_pdb_guid)"
-                       DiskId="1" Transitive="yes">
-              <File Id="fil_nidmgr32_pdb"
-                    LongName="$(var.nim_dll_pdb_name)"
-                    Name="$(var.nim_dll_pdb_name)"
-                    KeyPath="yes" />
-              <Condition>VersionNT &gt; 500</Condition>
-            </Component>
-            <?endif?>
+              <?ifdef IncludeDebugSyms?>
+              <Component Id="nim_dll_pdb"
+                         Guid="$(var.nim_dll_pdb_guid)"
+                         DiskId="1" Transitive="yes">
+                <File Id="fil_nidmgr32_pdb"
+                      LongName="$(var.nim_dll_pdb_name)"
+                      Name="$(var.nim_dll_pdb_name)"
+                      KeyPath="yes" />
+                <Condition>VersionNT &gt; 500</Condition>
+              </Component>
+              <?endif?>
 
-            <!-- NIDMGR32.DLL for Windows 2000 -->
+              <!-- NIDMGR32.DLL for Windows 2000 -->
 
-            <?ifdef IncludeW2k ?>
-            <Component Win64="$(var.Win64)"
-                       Id="nim_dll_w2k"
-                       Guid="$(var.nim_dll_w2k_guid)"
-                       DiskId="1" Transitive="yes">
-              <File Id="fil_nidmgr32_dll_w2k"
-                    LongName="$(var.nim_dll_name)"
-                    Name="$(var.nim_dll_name)"
-                    KeyPath="yes"
-                    src="$(var.BinDir)W2K\nidmgr32.dll" />
-              <Condition>VersionNT &lt;= 500</Condition>
-            </Component>
+              <?ifdef IncludeW2k ?>
+              <Component Win64="$(var.Win64)"
+                         Id="nim_dll_w2k"
+                         Guid="$(var.nim_dll_w2k_guid)"
+                         DiskId="1" Transitive="yes">
+                <File Id="fil_nidmgr32_dll_w2k"
+                      LongName="$(var.nim_dll_name)"
+                      Name="$(var.nim_dll_name)"
+                      KeyPath="yes"
+                      src="$(var.BinDir)W2K\nidmgr32.dll" />
+                <Condition>VersionNT &lt;= 500</Condition>
+              </Component>
 
-            <?ifdef IncludeDebugSyms ?>
-            <Component Id="nim_dll_pdb_w2k"
-                       Guid="D11697E3-8B52-48A6-8DD8-C24157BD38F0"
-                       DiskId="1" Transitive="yes">
-              <File Id="fil_nidmgr32_pdb_w2k"
-                    LongName="$(var.nim_dll_pdb_name)"
-                    Name="$(var.nim_dll_pdb_name)"
-                    KeyPath="yes"
-                    src="$(var.BinDir)W2K\nidmgr32.pdb" />
-              <Condition>VersionNT &lt;= 500</Condition>
-            </Component>
-            <?endif?>
+              <?ifdef IncludeDebugSyms ?>
+              <Component Id="nim_dll_pdb_w2k"
+                         Guid="D11697E3-8B52-48A6-8DD8-C24157BD38F0"
+                         DiskId="1" Transitive="yes">
+                <File Id="fil_nidmgr32_pdb_w2k"
+                      LongName="$(var.nim_dll_pdb_name)"
+                      Name="$(var.nim_dll_pdb_name)"
+                      KeyPath="yes"
+                      src="$(var.BinDir)W2K\nidmgr32.pdb" />
+                <Condition>VersionNT &lt;= 500</Condition>
+              </Component>
+              <?endif?>
 
-            <?endif?>
+              <?endif?>
 
-            <!-- KRB5CRED.DLL -->
+              <!-- KRB5CRED.DLL -->
 
-            <Component Win64="$(var.Win64)"
-                       Id="krb5cred_dll"
-                       Guid="$(var.krb5cred_dll_guid)"
-                       DiskId="1">
-	      <File Id="fil_krb5cred_dll"
-                    LongName="krb5cred.dll"
-                    Name="krb5cred.dll"
-                    KeyPath="yes" />
+              <Component Win64="$(var.Win64)"
+                         Id="krb5cred_dll"
+                         Guid="$(var.krb5cred_dll_guid)"
+                         DiskId="1">
+	        <File Id="fil_krb5cred_dll"
+                      LongName="krb5cred.dll"
+                      Name="krb5cred.dll"
+                      KeyPath="yes" />
 
-              <Registry Id="reg_krb5cred_1"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb5"
-                        Action="createKeyAndRemoveKeyOnUninstall" />
-              <Registry Id="reg_krb5cred_2"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb5"
-                        Name="ImagePath"
-                        Type="string"
-                        Value="[#fil_krb5cred_dll]" />
-              <Registry Id="reg_krb5cred_3"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb5"
-                        Name="PluginList"
-                        Type="string"
-                        Value="Krb5Cred,Krb5Ident" />
-              <Registry Id="reg_krb5cred_4"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
-                        Action="createKeyAndRemoveKeyOnUninstall" />
-              <Registry Id="reg_krb5cred_5"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
-                        Name="Module"
-                        Type="string"
-                        Value="MITKrb5" />
-              <Registry Id="reg_krb5cred_6"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
-                        Name="Description"
-                        Type="string"
-                        Value="Kerberos v5 Credentials Provider" />
-              <Registry Id="reg_krb5cred_7"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
-                        Name="Type"
-                        Type="integer"
-                        Value="1" />
-              <Registry Id="reg_krb5cred_8"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
-                        Name="Flags"
-                        Type="integer"
-                        Value="0" />
-              <Registry Id="reg_krb5cred_9"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
-                        Action="createKeyAndRemoveKeyOnUninstall" />
-              <Registry Id="reg_krb5cred_a"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
-                        Name="Module"
-                        Type="string"
-                        Value="MITKrb5" />
-              <Registry Id="reg_krb5cred_b"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
-                        Name="Description"
-                        Type="string"
-                        Value="Kerberos v5 Identity Provider" />
-              <Registry Id="reg_krb5cred_c"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
-                        Name="Dependencies"
-                        Type="string"
-                        Value="Krb5Cred" />
-              <Registry Id="reg_krb5cred_d"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
-                        Name="Type"
-                        Type="integer"
-                        Value="2" />
-              <Registry Id="reg_krb5cred_e"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
-                        Name="Flags"
-                        Type="integer"
-                        Value="0" />
-            </Component>
+                <Registry Id="reg_krb5cred_1"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb5"
+                          Action="createKeyAndRemoveKeyOnUninstall" />
+                <Registry Id="reg_krb5cred_2"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb5"
+                          Name="ImagePath"
+                          Type="string"
+                          Value="[#fil_krb5cred_dll]" />
+                <Registry Id="reg_krb5cred_3"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb5"
+                          Name="PluginList"
+                          Type="string"
+                          Value="Krb5Cred,Krb5Ident" />
+                <Registry Id="reg_krb5cred_4"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
+                          Action="createKeyAndRemoveKeyOnUninstall" />
+                <Registry Id="reg_krb5cred_5"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
+                          Name="Module"
+                          Type="string"
+                          Value="MITKrb5" />
+                <Registry Id="reg_krb5cred_6"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
+                          Name="Description"
+                          Type="string"
+                          Value="Kerberos v5 Credentials Provider" />
+                <Registry Id="reg_krb5cred_7"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
+                          Name="Type"
+                          Type="integer"
+                          Value="1" />
+                <Registry Id="reg_krb5cred_8"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred"
+                          Name="Flags"
+                          Type="integer"
+                          Value="0" />
+                <Registry Id="reg_krb5cred_9"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
+                          Action="createKeyAndRemoveKeyOnUninstall" />
+                <Registry Id="reg_krb5cred_a"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
+                          Name="Module"
+                          Type="string"
+                          Value="MITKrb5" />
+                <Registry Id="reg_krb5cred_b"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
+                          Name="Description"
+                          Type="string"
+                          Value="Kerberos v5 Identity Provider" />
+                <Registry Id="reg_krb5cred_c"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
+                          Name="Dependencies"
+                          Type="string"
+                          Value="Krb5Cred" />
+                <Registry Id="reg_krb5cred_d"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
+                          Name="Type"
+                          Type="integer"
+                          Value="2" />
+                <Registry Id="reg_krb5cred_e"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident"
+                          Name="Flags"
+                          Type="integer"
+                          Value="0" />
+              </Component>
 
-            <Component Win64="$(var.Win64)"
-                       Id="krb5cred_en_us_dll"
-                       Guid="$(var.krb5cred_en_us_dll_guid)"
-                       DiskId="1">
-	      <File Id="fil_krb5cred_en_us_dll"
-                    LongName="krb5cred_en_us.dll"
-                    Name="krb5cenu.dll"
-                    KeyPath="yes" />
-            </Component>
+              <Component Win64="$(var.Win64)"
+                         Id="krb5cred_en_us_dll"
+                         Guid="$(var.krb5cred_en_us_dll_guid)"
+                         DiskId="1">
+	        <File Id="fil_krb5cred_en_us_dll"
+                      LongName="krb5cred_en_us.dll"
+                      Name="krb5cenu.dll"
+                      KeyPath="yes" />
+              </Component>
 
-            <?ifdef IncludeDebugSyms ?>
-            <Component Id="krb5cred_dll_pdb"
-                       Guid="$(var.krb5cred_dll_pdb_guid)"
-                       DiskId="1">
-              <File Id="fil_krb5cred_dll_pdb"
-                    LongName="krb5cred.pdb"
-                    Name="krb5cred.pdb"
-                    KeyPath="yes" />
-            </Component>
-            <?endif?>
+              <?ifdef IncludeDebugSyms ?>
+              <Component Id="krb5cred_dll_pdb"
+                         Guid="$(var.krb5cred_dll_pdb_guid)"
+                         DiskId="1">
+                <File Id="fil_krb5cred_dll_pdb"
+                      LongName="krb5cred.pdb"
+                      Name="krb5cred.pdb"
+                      KeyPath="yes" />
+              </Component>
+              <?endif?>
 
-            <!-- KRB4CRED.DLL -->
+              <!-- KRB4CRED.DLL -->
 
-            <?ifdef IncludeKrb4?>
-            <Component Win64="$(var.Win64)"
-                       Id="krb4cred_dll"
-                       Guid="$(var.krb4cred_dll_guid)"
-                       DiskId="1">
-	      <File Id="fil_krb4cred_dll"
-                    LongName="krb4cred.dll"
-                    Name="krb4cred.dll"
-                    KeyPath="yes" />
+              <?ifdef IncludeKrb4?>
+              <Component Win64="$(var.Win64)"
+                         Id="krb4cred_dll"
+                         Guid="$(var.krb4cred_dll_guid)"
+                         DiskId="1">
+	        <File Id="fil_krb4cred_dll"
+                      LongName="krb4cred.dll"
+                      Name="krb4cred.dll"
+                      KeyPath="yes" />
 
-              <Registry Id="reg_krb4cred_1"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4"
-                        Action="createKeyAndRemoveKeyOnUninstall" />
-              <Registry Id="reg_krb4cred_2"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4"
-                        Name="ImagePath"
-                        Type="string"
-                        Value="[#fil_krb4cred_dll]" />
-              <Registry Id="reg_krb4cred_3"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4"
-                        Name="PluginList"
-                        Type="string"
-                        Value="Krb4Cred" />
-              <Registry Id="reg_krb4cred_4"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
-                        Action="createKeyAndRemoveKeyOnUninstall" />
-              <Registry Id="reg_krb4cred_5"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
-                        Name="Module"
-                        Type="string"
-                        Value="MITKrb4" />
-              <Registry Id="reg_krb4cred_6"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
-                        Name="Description"
-                        Type="string"
-                        Value="Kerberos v4 Credentials Provider"
-                        />
-              <Registry Id="reg_krb4cred_7"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
-                        Name="Dependencies"
-                        Type="string"
-                        Value="Krb5Cred"
-                        />
-              <Registry Id="reg_krb4cred_8"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
-                        Name="Type"
-                        Type="integer"
-                        Value="1"
-                        />
-              <Registry Id="reg_krb4cred_9"
-                        Root="HKLM"
-                        Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
-                        Name="Flags"
-                        Type="integer"
-                        Value="0"
-                        />
-            </Component>
+                <Registry Id="reg_krb4cred_1"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4"
+                          Action="createKeyAndRemoveKeyOnUninstall" />
+                <Registry Id="reg_krb4cred_2"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4"
+                          Name="ImagePath"
+                          Type="string"
+                          Value="[#fil_krb4cred_dll]" />
+                <Registry Id="reg_krb4cred_3"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4"
+                          Name="PluginList"
+                          Type="string"
+                          Value="Krb4Cred" />
+                <Registry Id="reg_krb4cred_4"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
+                          Action="createKeyAndRemoveKeyOnUninstall" />
+                <Registry Id="reg_krb4cred_5"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
+                          Name="Module"
+                          Type="string"
+                          Value="MITKrb4" />
+                <Registry Id="reg_krb4cred_6"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
+                          Name="Description"
+                          Type="string"
+                          Value="Kerberos v4 Credentials Provider"
+                          />
+                <Registry Id="reg_krb4cred_7"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
+                          Name="Dependencies"
+                          Type="string"
+                          Value="Krb5Cred"
+                          />
+                <Registry Id="reg_krb4cred_8"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
+                          Name="Type"
+                          Type="integer"
+                          Value="1"
+                          />
+                <Registry Id="reg_krb4cred_9"
+                          Root="HKLM"
+                          Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred"
+                          Name="Flags"
+                          Type="integer"
+                          Value="0"
+                          />
+              </Component>
 
-            <Component Win64="$(var.Win64)"
-                       Id="krb4cred_en_us_dll"
-                       Guid="$(var.krb4cred_en_us_dll_guid)"
-                       DiskId="1"
-                       >
-	      <File Id="fil_krb4cred_en_us_dll"
-                    LongName="krb4cred_en_us.dll"
-                    Name="krb4cenu.dll"
-                    KeyPath="yes"
-                    />
-            </Component>
+              <Component Win64="$(var.Win64)"
+                         Id="krb4cred_en_us_dll"
+                         Guid="$(var.krb4cred_en_us_dll_guid)"
+                         DiskId="1"
+                         >
+	        <File Id="fil_krb4cred_en_us_dll"
+                      LongName="krb4cred_en_us.dll"
+                      Name="krb4cenu.dll"
+                      KeyPath="yes"
+                      />
+              </Component>
 
-            <?ifdef IncludeDebugSyms ?>
-            <Component Id="krb4cred_dll_pdb"
-                       Guid="$(var.krb4cred_dll_pdb_guid)"
-                       DiskId="1">
-              <File Id="fil_krb4cred_dll_pdb"
-                    LongName="krb4cred.pdb"
-                    Name="krb4cred.pdb"
-                    KeyPath="yes" />
-            </Component>
-            <?endif?>
+              <?ifdef IncludeDebugSyms ?>
+              <Component Id="krb4cred_dll_pdb"
+                         Guid="$(var.krb4cred_dll_pdb_guid)"
+                         DiskId="1">
+                <File Id="fil_krb4cred_dll_pdb"
+                      LongName="krb4cred.pdb"
+                      Name="krb4cred.pdb"
+                      KeyPath="yes" />
+              </Component>
+              <?endif?>
 
-            <?endif?>
+              <?endif?>
 
-            <!-- NETIDMGR.EXE -->
+              <!-- NETIDMGR.EXE -->
 
-            <Component Win64="$(var.Win64)"
-                       Id="netidmgr_exe"
-                       Guid="$(var.netidmgr_exe_guid)"
-                       DiskId="1"
-                       Transitive="yes"
-                       >
-	      <File Id="fil_netidmgr_exe"
-                    LongName="netidmgr.exe"
-                    Name="netidmgr.exe"
-                    KeyPath="yes"
-                    />
+              <Component Win64="$(var.Win64)"
+                         Id="netidmgr_exe"
+                         Guid="$(var.netidmgr_exe_guid)"
+                         DiskId="1"
+                         Transitive="yes"
+                         >
+	        <File Id="fil_netidmgr_exe"
+                      LongName="netidmgr.exe"
+                      Name="netidmgr.exe"
+                      KeyPath="yes"
+                      />
 
-              <Registry Id="reg_ts_netidmgr_0"
-                        Root="HKLM"
-                        Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
-                        Action="createKeyAndRemoveKeyOnUninstall"
-                        />
-              <Registry Id="reg_ts_netidmgr_1"
-                        Root="HKLM"
-                        Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
-                        Name="Flags"
-                        Type="integer"
-                        Value="1032"
-                        />
+                <Registry Id="reg_ts_netidmgr_0"
+                          Root="HKLM"
+                          Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
+                          Action="createKeyAndRemoveKeyOnUninstall"
+                          />
+                <Registry Id="reg_ts_netidmgr_1"
+                          Root="HKLM"
+                          Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
+                          Name="Flags"
+                          Type="integer"
+                          Value="1032"
+                          />
 
-              <Shortcut Id="sc_netidmgr_exe"
-                        Advertise="no"
-                        Directory="dirShortcut"
-                        LongName="Network Identity Manager.lnk"
-                        Name="netidmgr.lnk"
-                        Target="[dirbin]netidmgr.exe"
-                        Show="minimized"
-                        WorkingDirectory="dirbin"
-                        />
-              <Condition>VersionNT &gt; 500</Condition>
-            </Component>
+                <Shortcut Id="sc_netidmgr_exe"
+                          Advertise="no"
+                          Directory="dirShortcut"
+                          LongName="Network Identity Manager.lnk"
+                          Name="netidmgr.lnk"
+                          Target="[dirbin]netidmgr.exe"
+                          Show="minimized"
+                          WorkingDirectory="dirbin"
+                          />
+                <Condition>VersionNT &gt; 500</Condition>
+              </Component>
 
-            <?ifdef IncludeDebugSyms ?>
-            <Component Id="netidmgr_pdb"
-                       Guid="$(var.netidmgr_pdb_guid)"
-                       DiskId="1">
-              <File Id="fil_netidmgr_pdb"
-                    LongName="netidmgr.pdb"
-                    Name="netidmgr.pdb"
-                    KeyPath="yes" />
-            </Component>
-            <?endif?>
+              <?ifdef IncludeDebugSyms ?>
+              <Component Id="netidmgr_pdb"
+                         Guid="$(var.netidmgr_pdb_guid)"
+                         DiskId="1">
+                <File Id="fil_netidmgr_pdb"
+                      LongName="netidmgr.pdb"
+                      Name="netidmgr.pdb"
+                      KeyPath="yes" />
+              </Component>
+              <?endif?>
 
-            <!-- NETIDMGR.CHM -->
+              <!-- NETIDMGR.CHM -->
 
-            <Component Id="netidmgr_chm"
-                       Guid="068C6FC6-6475-4CCC-B80D-F748C6F5C77D"
-                       DiskId="1">
-	      <File Id="fil_netidmgr_chm"
-                    LongName="netidmgr.chm"
-                    Name="netidmgr.chm"
-                    KeyPath="yes"
-                    />
+              <Component Id="netidmgr_chm"
+                         Guid="068C6FC6-6475-4CCC-B80D-F748C6F5C77D"
+                         DiskId="1">
+	        <File Id="fil_netidmgr_chm"
+                      LongName="netidmgr.chm"
+                      Name="netidmgr.chm"
+                      KeyPath="yes"
+                      />
 
-              <Shortcut Id="sc_netidmgr_chm"
-                        Advertise="no"
-                        Directory="dirShortcut"
-                        LongName="Network Identity Manager Documentation.lnk"
-                        Name="netidchm.lnk"
-                        Target="[dirbin]netidmgr.chm"
-                        WorkingDirectory="dirbin"
-                        />
-            </Component>
+                <Shortcut Id="sc_netidmgr_chm"
+                          Advertise="no"
+                          Directory="dirShortcut"
+                          LongName="Network Identity Manager Documentation.lnk"
+                          Name="netidchm.lnk"
+                          Target="[dirbin]netidmgr.chm"
+                          WorkingDirectory="dirbin"
+                          />
+              </Component>
 
-            <!-- NETIDMGR.EXE for Windows 2000 -->
+              <!-- NETIDMGR.EXE for Windows 2000 -->
 
-            <?ifdef IncludeW2k ?>
-            <Component Win64="$(var.Win64)"
-                       Id="netidmgr_exe_w2k"
-                       Guid="$(var.netidmgr_exe_w2k_guid)"
-                       DiskId="1"
-                       Transitive="yes"
-                       >
+              <?ifdef IncludeW2k ?>
+              <Component Win64="$(var.Win64)"
+                         Id="netidmgr_exe_w2k"
+                         Guid="$(var.netidmgr_exe_w2k_guid)"
+                         DiskId="1"
+                         Transitive="yes"
+                         >
 
-	      <File Id="fil_netidmgr_exe_w2k"
-                    LongName="netidmgr.exe"
-                    Name="netidmgr.exe"
-                    KeyPath="yes"
-                    src="$(var.BinDir)W2K\netidmgr.exe"
-                    />
+	        <File Id="fil_netidmgr_exe_w2k"
+                      LongName="netidmgr.exe"
+                      Name="netidmgr.exe"
+                      KeyPath="yes"
+                      src="$(var.BinDir)W2K\netidmgr.exe"
+                      />
 
-              <Registry Id="reg_ts_netidmgr_0_w2k"
-                        Root="HKLM"
-                        Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
-                        Action="createKeyAndRemoveKeyOnUninstall"
-                        />
+                <Registry Id="reg_ts_netidmgr_0_w2k"
+                          Root="HKLM"
+                          Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
+                          Action="createKeyAndRemoveKeyOnUninstall"
+                          />
 
-              <Registry Id="reg_ts_netidmgr_1_w2k"
-                        Root="HKLM"
-                        Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
-                        Name="Flags"
-                        Type="integer"
-                        Value="1032"
-                        />
+                <Registry Id="reg_ts_netidmgr_1_w2k"
+                          Root="HKLM"
+                          Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr"
+                          Name="Flags"
+                          Type="integer"
+                          Value="1032"
+                          />
 
-              <Shortcut Id="sc_netidmgr_exe_w2k"
-                        Advertise="no"
-                        Directory="dirShortcut"
-                        LongName="Network Identity Manager.lnk"
-                        Name="netidmgr.lnk"
-                        Target="[dirbin]netidmgr.exe"
-                        Show="minimized"
-                        WorkingDirectory="dirbin"
-                        />
+                <Shortcut Id="sc_netidmgr_exe_w2k"
+                          Advertise="no"
+                          Directory="dirShortcut"
+                          LongName="Network Identity Manager.lnk"
+                          Name="netidmgr.lnk"
+                          Target="[dirbin]netidmgr.exe"
+                          Show="minimized"
+                          WorkingDirectory="dirbin"
+                          />
 
-              <Condition>VersionNT &lt;= 500</Condition>
-            </Component>
+                <Condition>VersionNT &lt;= 500</Condition>
+              </Component>
 
-            <?ifdef IncludeDebugSyms ?>
-            <Component Id="netidmgr_w2k_pdb"
-                       Guid="$(var.netidmgr_w2k_pdb_guid)"
-                       DiskId="1">
-              <File Id="fil_netidmgr_w2k_pdb"
-                    LongName="netidmgr.pdb"
-                    Name="netidmgr.pdb"
-                    KeyPath="yes"
-                    src="$(var.BinDir)W2K\netidmgr.pdb" />
-            </Component>
-            <?endif?>
+              <?ifdef IncludeDebugSyms ?>
+              <Component Id="netidmgr_w2k_pdb"
+                         Guid="$(var.netidmgr_w2k_pdb_guid)"
+                         DiskId="1">
+                <File Id="fil_netidmgr_w2k_pdb"
+                      LongName="netidmgr.pdb"
+                      Name="netidmgr.pdb"
+                      KeyPath="yes"
+                      src="$(var.BinDir)W2K\netidmgr.pdb" />
+              </Component>
+              <?endif?>
 
-            <?endif?>
+              <?endif?>
 
-            <!-- NETIDMGR Startup Shortcut -->
+              <!-- NETIDMGR Startup Shortcut -->
 
-            <Component Win64="$(var.Win64)"
-                       Id="csc_NetIDMgrStartup"
-                       Guid="$(var.netidmgr_startup_guid)"
-                       DiskId="1"
-                       >
+              <Component Win64="$(var.Win64)"
+                         Id="csc_NetIDMgrStartup"
+                         Guid="$(var.netidmgr_startup_guid)"
+                         DiskId="1"
+                         >
 
-              <Registry Id="reg_sc_nidmgr_marker"
-                        Root="HKLM"
-                        Key="SOFTWARE\Secure Endpoints\NetIDMgr\$(var.ProductVersion)"
-                        Name="NetIDMgrAutoStart"
-                        Type="integer"
-                        Value="1"
-                        KeyPath="yes"
-                        />
+                <Registry Id="reg_sc_nidmgr_marker"
+                          Root="HKLM"
+                          Key="SOFTWARE\Secure Endpoints\NetIDMgr\$(var.ProductVersion)"
+                          Name="NetIDMgrAutoStart"
+                          Type="integer"
+                          Value="1"
+                          KeyPath="yes"
+                          />
 
-              <Shortcut Id="sc_netidmgr_exe_startup"
-                        Advertise="no"
-                        Directory="StartupFolder"
-                        LongName="Network Identity Manager.lnk"
-                        Name="netidmgr.lnk"
-                        Target="[dirbin]netidmgr.exe"
-                        Show="minimized"
-                        />
-            </Component>
+                <Shortcut Id="sc_netidmgr_exe_startup"
+                          Advertise="no"
+                          Directory="StartupFolder"
+                          LongName="Network Identity Manager.lnk"
+                          Name="netidmgr.lnk"
+                          Target="[dirbin]netidmgr.exe"
+                          Show="minimized"
+                          />
+              </Component>
 
-            <!-- Runtime -->
+              <!-- Runtime -->
 
-    	    <?ifdef env.CommonProgramFiles6432?>
+    	      <?ifdef env.CommonProgramFiles6432?>
               <?define CPF="$(env.CommonProgramFiles(x86)"?>
-    	    <?else?>
+    	      <?else?>
     	      <?define CPF="$(env.CommonProgramFiles)"?>
-    	    <?endif?>
+    	      <?endif?>
 
-            <?if $(var.ClVer)=vc7 ?>
-            <?error Not supported?>
+              <?if $(var.ClVer)=vc7 ?>
+              <?error Not supported?>
 
-            <?elseif $(var.ClVer)=vc8 ?>
-            <!-- VC++ 14.00 -->
-            <?if $(var.Platform) = "x64" ?>
-            <Merge Id="VCRT" DiskId="1" Language="0"
-                   src="$(var.CPF)\Merge Modules\Microsoft_VC80_CRT_x86_x64.msm" />
-            <?elseif $(var.Platform) = "Intel" ?>
-            <Merge Id="VCRT" DiskId="1" Language="0"
-                   src="$(var.CPF)\Merge Modules\Microsoft_VC80_CRT_x86.msm" />
-            <?endif?>
+              <?elseif $(var.ClVer)=vc8 ?>
+              <!-- VC++ 14.00 -->
+              <?if $(var.Platform) = "x64" ?>
+              <Merge Id="VCRT" DiskId="1" Language="0"
+                     src="$(var.CPF)\Merge Modules\Microsoft_VC80_CRT_x86_x64.msm" />
+              <?elseif $(var.Platform) = "Intel" ?>
+              <Merge Id="VCRT" DiskId="1" Language="0"
+                     src="$(var.CPF)\Merge Modules\Microsoft_VC80_CRT_x86.msm" />
+              <?endif?>
 
-            <?elseif $(var.ClVer)=vc9 ?>
-            <!-- VC++ 15.00 -->
-            <?if $(var.Platform) = "x64" ?>
-            <Merge Id="VCRT" DiskId="1" Language="0" src="$(var.CPF)\Merge Modules\Microsoft_VC90_CRT_x86_x64.msm" />
-            <?elseif $(var.Platform) = "Intel" ?>
-            <Merge Id="VCRT" DiskId="1" Language="0" src="$(var.CPF)\Merge Modules\Microsoft_VC90_CRT_x86.msm" />
-            <?endif?>
-            <?endif?>
+              <?elseif $(var.ClVer)=vc9 ?>
+              <!-- VC++ 15.00 -->
+              <?if $(var.Platform) = "x64" ?>
+              <Merge Id="VCRT" DiskId="1" Language="0" src="$(var.CPF)\Merge Modules\Microsoft_VC90_CRT_x86_x64.msm" />
+              <?elseif $(var.Platform) = "Intel" ?>
+              <Merge Id="VCRT" DiskId="1" Language="0" src="$(var.CPF)\Merge Modules\Microsoft_VC90_CRT_x86.msm" />
+              <?endif?>
+              <?endif?>
 
-            <!-- /NetIDMgr -->
+              <!-- /NetIDMgr -->
 
+            </Directory>
           </Directory>
         </Directory>
       </Directory>
@@ -658,10 +666,14 @@
                Level="3">
         <ComponentRef Id="netidmgr_pdb" />
         <ComponentRef Id="nim_dll_pdb" />
+        <ComponentRef Id="krb5cred_dll_pdb" />
+        <?ifdef IncludeW2k ?>
         <ComponentRef Id="nim_dll_pdb_w2k" />
         <ComponentRef Id="netidmgr_w2k_pdb" />
-        <ComponentRef Id="krb5cred_dll_pdb" />
+        <?endif?>
+        <?ifdef IncludeKrb4 ?>
         <ComponentRef Id="krb4cred_dll_pdb" />
+        <?endif?>
       </Feature>
       <?endif?>
 
