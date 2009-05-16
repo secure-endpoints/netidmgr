@@ -47,46 +47,46 @@
   <?define ProgramFilesFolder="ProgramFilesFolder" ?>
   <?define Win64="no" ?>
 
-  <?define nim_dll_guid="EEBA3A0D-CE3D-42F1-8854-D7F63F597202"?>
-  <?define nim_dll_name="nidmgr32.dll"?>
-  <?define nim_dll_pdb_name="nidmgr32.pdb"?>
+  <?define nim_dll_guid="EEBA3A0D-CE3D-42F1-8854-D7F63F597202" ?>
+  <?define nim_dll_name="nidmgr32.dll" ?>
+  <?define nim_dll_pdb_name="nidmgr32.pdb" ?>
   <?define nim_dll_pdb_guid="B346E489-0AC7-4877-8538-CD02FCE70B01" ?>
-  <?define nim_dll_w2k_guid="33F42D7C-03CE-465F-9E0A-5F486FE64B04"?>
-  <?define krb5cred_dll_guid="27A7723A-F0D9-4F06-892C-54F0AC6014C3"?>
+  <?define nim_dll_w2k_guid="33F42D7C-03CE-465F-9E0A-5F486FE64B04" ?>
+  <?define krb5cred_dll_guid="27A7723A-F0D9-4F06-892C-54F0AC6014C3" ?>
   <?define krb5cred_dll_pdb_guid="1E61E8B2-8664-4F2A-97EC-815BE284B20B" ?>
-  <?define krb5cred_en_us_dll_guid="EA9ABE05-A85B-43BB-8741-50D3C3128632"?>
-  <?define krb4cred_dll_guid="E3B86954-9D5D-4929-A5E6-B22ED03E6D6C"?>
+  <?define krb5cred_en_us_dll_guid="EA9ABE05-A85B-43BB-8741-50D3C3128632" ?>
+  <?define krb4cred_dll_guid="E3B86954-9D5D-4929-A5E6-B22ED03E6D6C" ?>
   <?define krb4cred_dll_pdb_guid="745CD28A-A94E-422C-BE70-1BF869071661" ?>
-  <?define krb4cred_en_us_dll_guid="3FF40A29-E2C3-40F3-B81C-2948494BE4B0"?>
-  <?define netidmgr_exe_guid="AEB06D67-B4F3-45B1-AC1E-5C1AFF747756"?>
+  <?define krb4cred_en_us_dll_guid="3FF40A29-E2C3-40F3-B81C-2948494BE4B0" ?>
+  <?define netidmgr_exe_guid="AEB06D67-B4F3-45B1-AC1E-5C1AFF747756" ?>
   <?define netidmgr_pdb_guid="CAFAF255-D68E-4796-9DEC-2175AFADE234" ?>
-  <?define netidmgr_exe_w2k_guid="0F85D4F3-7897-4FE3-8501-AD0C383CCB4F"?>
+  <?define netidmgr_exe_w2k_guid="0F85D4F3-7897-4FE3-8501-AD0C383CCB4F" ?>
   <?define netidmgr_w2k_pdb_guid="F88A600D-937F-4676-917F-BA85AE9FC9B0" ?>
-  <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3"?>
-  <?define debug_guid="C8468854-8261-4781-8119-A612636841E3"?>
-  <?define keystore_dll_guid="99ADD93D-DA26-4220-8BD4-E90350A1F4EC"?>
-  <?define keystore_en_us_dll_guid="8AC01EFD-45C8-4D35-BD81-CC9390DCB72E"?>
-  <?define keystore_pdb_guid="90335557-6406-48F8-9E62-DB65F80B693C"?>
+  <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
+  <?define debug_guid="C8468854-8261-4781-8119-A612636841E3" ?>
+  <?define keystore_dll_guid="99ADD93D-DA26-4220-8BD4-E90350A1F4EC" ?>
+  <?define keystore_en_us_dll_guid="8AC01EFD-45C8-4D35-BD81-CC9390DCB72E" ?>
+  <?define keystore_pdb_guid="90335557-6406-48F8-9E62-DB65F80B693C" ?>
 
   <?elseif $(var.Platform)="x64" ?>
 
   <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
   <?define Win64="yes" ?>
 
-  <?define nim_dll_guid="8538212A-9BD5-4d62-BF29-36D853385F0A"?>
-  <?define nim_dll_name="nidmgr64.dll"?>
-  <?define nim_dll_pdb_name="nidmgr64.pdb"?>
+  <?define nim_dll_guid="8538212A-9BD5-4d62-BF29-36D853385F0A" ?>
+  <?define nim_dll_name="nidmgr64.dll" ?>
+  <?define nim_dll_pdb_name="nidmgr64.pdb" ?>
   <?define nim_dll_pdb_guid="4FBFD25C-03E0-4FF4-AA5F-4672951355A6" ?>
-  <?define krb5cred_dll_guid="CC182AB1-E333-4501-8DEA-5A8D4FD36D0D"?>
+  <?define krb5cred_dll_guid="CC182AB1-E333-4501-8DEA-5A8D4FD36D0D" ?>
   <?define krb5cred_dll_pdb_guid="4CB8869D-8FCC-4295-B42B-BB86382FF931" ?>
-  <?define krb5cred_en_us_dll_guid="223B7E9D-290F-40b8-89B3-F8337A8E082D"?>
-  <?define netidmgr_exe_guid="487545C9-F145-4fb9-8610-5652A6C3FE48"?>
+  <?define krb5cred_en_us_dll_guid="223B7E9D-290F-40b8-89B3-F8337A8E082D" ?>
+  <?define netidmgr_exe_guid="487545C9-F145-4fb9-8610-5652A6C3FE48" ?>
   <?define netidmgr_pdb_guid="A49E9D37-06DB-44F2-90EF-33D6635ED881" ?>
-  <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0"?>
-  <?define debug_guid="F3432C85-89D9-4bd6-BD82-4ED49A118338"?>
-  <?define keystore_dll_guid="B315857C-CA82-43D6-AE03-C8CFE178469C"?>
-  <?define keystore_en_us_dll_guid="DD7A9BDC-1E53-4782-88F0-29CD67D355E3"?>
-  <?define keystore_pdb_guid="CAEC1004-5563-4A55-8E3F-AF0B2E3BA9AB"?>
+  <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0" ?>
+  <?define debug_guid="F3432C85-89D9-4bd6-BD82-4ED49A118338" ?>
+  <?define keystore_dll_guid="B315857C-CA82-43D6-AE03-C8CFE178469C" ?>
+  <?define keystore_en_us_dll_guid="DD7A9BDC-1E53-4782-88F0-29CD67D355E3" ?>
+  <?define keystore_pdb_guid="CAEC1004-5563-4A55-8E3F-AF0B2E3BA9AB" ?>
 
   <?else?>
   <?error Unknown value for Platform variable ?>
