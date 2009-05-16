@@ -247,7 +247,7 @@ FtIntervalMsToRepChange(const FILETIME * pft)
     long l;
 
     ift = FtToInt(pft);
-    ms = ift / 10000i64;
+    ms = ift / 10000i64 - 1;
     
     if(ms < 0 || ift == _I64_MAX)
         return -1;
@@ -259,16 +259,16 @@ FtIntervalMsToRepChange(const FILETIME * pft)
 
     if (d > 0) {
         /* rep change at next hour change */
-        l = (long) (ms % (3600*1000i64));
+        l = (long) (ms % (3600*1000i64)) + 1;
     } else if (h > 0) {
         /* rep change at next minute change */
-        l = (long) (ms % (60*1000i64));
+        l = (long) (ms % (60*1000i64)) + 1;
     } else if (m > 5) {
         /* rep change at next minute change */
-        l = (long) (ms % (60*1000i64));
+        l = (long) (ms % (60*1000i64)) + 1;
     } else {
         /* rep change at next second change */
-        l = (long) (ms % 1000);
+        l = (long) (ms % 1000) + 1;
     }
 
     return l;

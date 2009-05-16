@@ -144,13 +144,17 @@ kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
     config_flags &= ~KHM_FLAG_CREATE;
 
     if((plugin == NULL) ||
+
        (plugin->dependencies && 
         KHM_FAILED(multi_string_length_cch(plugin->dependencies, 
                                            KMM_MAXCCH_DEPS, &cch))) ||
+
        FAILED(StringCchLength(plugin->module, KMM_MAXCCH_NAME, &cch)) ||
+
        (plugin->description &&
         FAILED(StringCchLength(plugin->description,
                                KMM_MAXCCH_DESC, &cch))) ||
+
        FAILED(StringCchLength(plugin->name, KMM_MAXCCH_NAME, &cch)))
     {
         return KHM_ERROR_INVALID_PARAM;
@@ -162,7 +166,7 @@ kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
 
 #define CKRV if(KHM_FAILED(rv)) goto _exit
 
-    rv = kmm_get_plugin_config(plugin->name, 
+    rv = kmm_get_plugin_config(plugin->name,
                                config_flags | KHM_FLAG_CREATE, &csp_plugin);
     CKRV;
 

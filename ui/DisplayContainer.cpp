@@ -253,7 +253,8 @@ namespace nim {
             DisplayElement::OnPaint(ig, client_b, client_clip);
         }
 
-        g.DrawImage(dbuffer, b.X, b.Y, 0, 0, b.Width, b.Height, UnitPixel);
+        g.DrawImage(dbuffer, clip.X, clip.Y,
+                    clip.X - b.X, clip.Y - b.Y, clip.Width, clip.Height, UnitPixel);
     }
 
     BOOL DisplayContainer::OnCreate(LPVOID createParams)

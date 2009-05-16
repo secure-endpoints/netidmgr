@@ -235,6 +235,7 @@ kcdb_identity_create_ex(khm_handle vidpro,
     kcdb_identity * id_tmp = NULL;
     kcdb_identity   id_query;
     khm_boolean     create_config = FALSE;
+    khm_boolean     create_ident = FALSE;
 
     if (!result || !name || !kcdb_is_active_identpro(vidpro))
         return KHM_ERROR_INVALID_PARAM;
@@ -261,6 +262,7 @@ kcdb_identity_create_ex(khm_handle vidpro,
     }
 
     create_config = !!(flags & KCDB_IDENT_FLAG_CONFIG);
+    create_ident = !!(flags & KCDB_IDENT_FLAG_CREATE);
     flags &= ~(KCDB_IDENT_FLAG_CREATE | KCDB_IDENT_FLAG_CONFIG);
 
     /* nope. create it */
@@ -335,7 +337,8 @@ kcdb_identity_create_ex(khm_handle vidpro,
 
         if (KHM_SUCCEEDED(kcdb_identity_get_config((khm_handle) id,
                                                    KCONF_FLAG_SHADOW |
-                                                   ((create_config)? KHM_FLAG_CREATE : 0),
+                                                   ((create_config)? KHM_FLAG_CREATE : 0) |
+                                                   ((create_ident)? KHM_PERM_WRITE : 0),
                                                    &h_cfg))) {
             /* don't need to set the KCDB_IDENT_FLAG_CONFIG flags
                since kcdb_identity_get_config() sets it for us. */
@@ -402,8 +405,10 @@ kcdb_identity_create(const wchar_t *name,
     pc = wcschr(name, L':');
 
     if (pc == NULL) {
-        if (KHM_FAILED(kcdb_identpro_find(L"Krb5Ident", &vidpro)))
+        if (KHM_FAILED(kcdb_identpro_find(L"Krb5Ident", &vidpro))) {
+            /* TODO: This needs to be handled in a more graceful manner */
             return KHM_ERROR_NO_PROVIDER;
+        }
 
         StringCbCopy(id_name, sizeof(id_name), name);
     } else {
@@ -1021,7 +1026,7 @@ kcdb_identity_get_config(khm_handle vid,
             goto _exit;
         }
 
-        if (flags & KHM_FLAG_CREATE) {
+        if (flags & (KHM_FLAG_CREATE | KHM_PERM_WRITE)) {
             khm_size cb;
 
             if (khc_value_exists(hident, L"Name") & KCONF_FLAG_USER) {
@@ -1071,7 +1076,7 @@ kcdb_identity_get_config(khm_handle vid,
                 /* The serial number field doesn't exist. Create */
                 khc_write_int64(hident, L"IdentSerial", id->serial);
             }
-        } /* flags & KHM_FLAG_CREATE */
+        } /* flags & KHM_FLAG_CREATE | KHM_PERM_WRITE */
 
         if (khc_value_exists(hident, L"Name") & KCONF_FLAG_USER) {
             id->flags |= KCDB_IDENT_FLAG_CONFIG;

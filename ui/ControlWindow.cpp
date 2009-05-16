@@ -51,9 +51,9 @@ namespace nim {
         PAINTSTRUCT ps;
         bool has_update_rect = !!GetUpdateRect(hwnd, &r, FALSE);
 
-        if (has_update_rect)
+        if (has_update_rect) {
             hdc = BeginPaint(hwnd, &ps);
-        else {
+        } else {
             hdc = GetDC(hwnd);
             ::GetClientRect(hwnd, &r);
         }

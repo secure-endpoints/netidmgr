@@ -27,9 +27,7 @@
 
 #include "kmminternal.h"
 #include<process.h>
-#ifdef DEBUG
 #include<assert.h>
-#endif
 
 static LONG pending_modules = 0;
 static LONG pending_plugins = 0;
@@ -41,6 +39,8 @@ kmmint_check_completion(void) {
     if (pending_modules == 0 &&
         pending_plugins == 0 &&
         InterlockedIncrement(&startup_signal) == 1) {
+
+        assert(!load_done);
 
         load_done = TRUE;
 
@@ -347,32 +347,20 @@ void kmmint_init_plugin(kmm_plugin_i * p) {
     }
 
     if(KHM_FAILED(kmm_get_plugin_config(p->p.name, 0, &csp_plugin))) {
-        if(KHM_FAILED(kmm_register_plugin(&(p->p), 0))) {
-            _report_mr0(KHERR_ERROR, MSG_IP_NOT_REGISTERED);
-
-            p->state = KMM_PLUGIN_STATE_FAIL_NOT_REGISTERED;
-            goto _exit;
-        }
-        
-        if(KHM_FAILED(kmm_get_plugin_config(p->p.name, 0, &csp_plugin))) {
-            _report_mr0(KHERR_ERROR, MSG_IP_NOT_REGISTERED);
-
-            p->state = KMM_PLUGIN_STATE_FAIL_NOT_REGISTERED;
-            goto _exit;
-        }
+        /* We used to create the configuration space and write the
+           registration information in this case.  However this is not
+           a good idea since this prevents installers from performing
+           upgrades that conflict with the plug-in registration
+           information in the user's registry. */
+        csp_plugin = NULL;
     }
 
-    if (KHM_SUCCEEDED(khc_read_int32(csp_plugin, L"Disabled", &t)) && t) {
+    if (csp_plugin &&
+        KHM_SUCCEEDED(khc_read_int32(csp_plugin, L"Disabled", &t)) && t) {
         p->flags |= KMM_PLUGIN_FLAG_DISABLED;
         p->state = KMM_PLUGIN_STATE_FAIL_DISABLED;
         goto _exit;
     }
-
-#if 0
-    /*TODO: check the failure count and act accordingly */
-    if(KHM_SUCCEEDED(khc_read_int32(csp_plugin, L"FailureCount", &t)) && (t > 0)) {
-    }
-#endif
 
     EnterCriticalSection(&cs_kmm);
 
@@ -380,23 +368,9 @@ void kmmint_init_plugin(kmm_plugin_i * p) {
     p->n_unresolved = 0;
     
     do {
-        wchar_t * deps = NULL;
         wchar_t * d;
-        khm_size sz = 0;
 
-        if(khc_read_multi_string(csp_plugin, L"Dependencies", 
-                                 NULL, &sz) != KHM_ERROR_TOO_LONG)
-            break;
-
-        deps = PMALLOC(sz);
-        if(KHM_FAILED(khc_read_multi_string(csp_plugin, L"Dependencies", 
-                                            deps, &sz))) {
-            if(deps)
-                PFREE(deps);
-            break;
-        }
-
-        for(d = deps; d && *d; d = multi_string_next(d)) {
+        for(d = p->p.dependencies; d && *d; d = multi_string_next(d)) {
             kmm_plugin_i * pd;
             int i;
 
@@ -434,8 +408,6 @@ void kmmint_init_plugin(kmm_plugin_i * p) {
         if(p->n_unresolved > 0) {
             p->state = KMM_PLUGIN_STATE_HOLD;
         }
-
-        PFREE(deps);
 
     } while(FALSE);
 
@@ -489,18 +461,8 @@ _exit:
                 _dupstr(p->p.name), _int32(p->state));
     _end_task();
 
-
-#ifdef ASYNC_PLUGIN_UNLOAD_ON_FAILURE
-
-    kmm_hold_plugin(kmm_handle_from_plugin(p));
-
-    kmq_post_message(KMSG_KMM, KMSG_KMM_I_REG, KMM_REG_EXIT_PLUGIN, (void *) p);
-
-#else
-
     kmmint_exit_plugin(p);
 
-#endif
 }
 
 /*! \internal

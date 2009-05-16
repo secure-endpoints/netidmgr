@@ -18,11 +18,11 @@ namespace nim
 
         ~CwCredentialRow() {}
 
-        virtual bool Represents(const Credential& _credential) {
+        bool Represents(const Credential& _credential) {
             return credential == _credential;
         }
 
-        virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
+        void UpdateLayoutPre(Graphics& g, Rect& layout) {
 
             WithColumnAlignment::UpdateLayoutPre(g, layout);
 
@@ -40,6 +40,23 @@ namespace nim
                                                       FTSE_INTERVAL, i);
                         break;
 
+                    case KCDB_ATTR_NAME:
+                        {
+                            std::wstring wc = credential.GetAttribStringObj(KCDB_ATTR_DISPLAY_NAME);
+
+                            if (wc.length() > 0)
+                                e = new CwStaticCellElement(wc, i);
+                            else
+                                e = new CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
+                        }
+                        break;
+
+                    case KCDB_ATTR_ID_NAME:
+                    case KCDB_ATTR_ID:
+                    case KCDB_ATTR_ID_DISPLAY_NAME:
+                        e = new CwStaticCellElement(credential.GetAttribStringObj(KCDB_ATTR_ID_DISPLAY_NAME), i);
+                        break;
+
                     default:
                         e = new CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
                     }
@@ -50,11 +67,11 @@ namespace nim
             }
         }
 
-        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
+        void UpdateLayoutPost(Graphics& g, const Rect& layout) {
             DisplayElement::UpdateLayoutPost(g, layout);
         }
 
-        virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
+        void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
             g_theme->DrawCredWindowNormalBackground(g, bounds, GetDrawState());
         }
 
