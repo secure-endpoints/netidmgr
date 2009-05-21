@@ -305,8 +305,8 @@ namespace nim {
     protected:
         const HINSTANCE hInstance;
         const LPCTSTR   templateName;
-        INT_PTR bHandled;
-        bool  is_modal;
+        INT_PTR         bHandled;
+        bool            is_modal;
 
     public:
         DialogWindow(LPCTSTR _templateName, HINSTANCE _hInstance) :

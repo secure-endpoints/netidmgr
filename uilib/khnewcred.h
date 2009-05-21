@@ -1168,15 +1168,6 @@ KHMEXP khm_boolean KHMAPI
 khui_cw_type_succeeded(khui_new_creds * c,
                        khm_int32 type);
 
-KHMEXP khm_int32 KHMAPI
-khui_cw_set_provider_data(khui_new_creds * c,
-                          khm_handle h_idpro,
-                          void * data);
-
-KHMEXP void * KHMAPI
-khui_cw_get_provider_data(khui_new_creds * c,
-                          khm_handle h_idpro);
-
 /*! \brief Add a row of controls to the identity specifier area
 
     Only for use by identity provider callbacks that wish to add an

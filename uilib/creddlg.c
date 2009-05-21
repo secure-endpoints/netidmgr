@@ -394,14 +394,15 @@ khui_cw_enable_type(khui_new_creds * c,
 
     EnterCriticalSection(&c->cs);
     if(KHM_SUCCEEDED(khui_cw_find_type(c, type, &t))) {
-        if(enable) {
+        if(enable && (t->flags & KHUI_NCT_FLAG_DISABLED)) {
             t->flags &= ~KHUI_NCT_FLAG_DISABLED;
+            c->privint.initialized = FALSE;
         }
-        else {
+        else if (!enable && !(t->flags & KHUI_NCT_FLAG_DISABLED)) {
             t->flags |= KHUI_NCT_FLAG_DISABLED;
+            c->privint.initialized = FALSE;
         }
     }
-    c->privint.initialized = FALSE;
     LeaveCriticalSection(&c->cs);
 
     return (t)?KHM_ERROR_SUCCESS:KHM_ERROR_NOT_FOUND;
@@ -743,6 +744,7 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
 {
     khui_new_creds_privint_panel *p, *np;
     khm_size i;
+    khm_boolean do_set_prompts = FALSE;
 
     ASSERT_NC(c);
 
@@ -755,6 +757,7 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
             khui_cw_free_privint(p);
+            do_set_prompts = TRUE;
         }
     }
 
@@ -766,12 +769,14 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
             khui_cw_free_privint(p);
+            do_set_prompts = TRUE;
         }
     }
     LeaveCriticalSection(&c->cs);
 
-    PostMessage(c->hwnd, KHUI_WM_NC_NOTIFY, 
-                MAKEWPARAM(0, WMNC_SET_PROMPTS), (LPARAM) c);
+    if (do_set_prompts)
+        PostMessage(c->hwnd, KHUI_WM_NC_NOTIFY, 
+                    MAKEWPARAM(0, WMNC_SET_PROMPTS), (LPARAM) c);
 
     return KHM_ERROR_SUCCESS;
 }

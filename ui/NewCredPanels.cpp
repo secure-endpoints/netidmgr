@@ -35,7 +35,7 @@ namespace nim {
     {
         khm_int32 idf = 0;
         khm_handle parent_id = NULL;
-        bool do_persist = false;
+        bool allow_persist = false;
 
         /* Decide whether we want to allow saving privileged credentials.
            We do so if the all of the following is true:
@@ -108,7 +108,7 @@ namespace nim {
                 break;
             }
 
-            do_persist = true;
+            allow_persist = true;
 
             khui_cw_lock_nc(nc);
             if (nc->persist_identity)
@@ -123,7 +123,7 @@ namespace nim {
             kcdb_identity_release(parent_id);
         }
 
-        return do_persist;
+        return allow_persist;
     }
 
     HWND NewCredPanels::UpdateLayout()
@@ -132,7 +132,7 @@ namespace nim {
         HWND hw_target = NULL;
         RECT r_p;
         RECT r_persist = {0,0,0,0};
-        bool do_persist = false;
+        bool allow_persist = false;
         khm_handle  parent_id = NULL;
         khui_new_creds_privint_panel * p;
         DialogWindow * dw;
@@ -158,7 +158,7 @@ namespace nim {
 
         PurgeDeletedShownPanels();
 
-        do_persist = IsSavePasswordAllowed();
+        allow_persist = IsSavePasswordAllowed();
 
         p = nc->privint.shown.current_panel;
 
@@ -197,7 +197,7 @@ namespace nim {
                    credentials type */
                 assert(panel_idx >= 0 && (khm_size) panel_idx < nc->n_types);
                 hw_target = nc->types[panel_idx].nct->hwnd_panel;
-                do_persist = false;
+                allow_persist = false;
             }
 
             khui_cw_unlock_nc(nc);
@@ -208,18 +208,22 @@ namespace nim {
             hwnd_current = hw_target;
             idx_current = panel_idx;
 
-        } if (page == NC_PAGE_CREDOPT_WIZ) {
+        } else if (page == NC_PAGE_CREDOPT_WIZ) {
             int panel_idx;
 
             khui_cw_lock_nc(nc);
 
             panel_idx = idx_current;
 
+            // Skip over any disabled panels
+
             for (; panel_idx >= 0 &&
                      panel_idx < (int) nc->n_types &&
                      (nc->types[panel_idx].nct->flags & KHUI_NCT_FLAG_DISABLED) ;
                  panel_idx++)
                 ;
+
+            // Default to the privileged interaction panel
 
             if (panel_idx != NC_PRIVINT_PANEL &&
                 (panel_idx < 0 || panel_idx >= (int) nc->n_types)) {
@@ -234,7 +238,7 @@ namespace nim {
                              0, 0, 0, 0, SWP_SHOWONLY);
             } else {
                 hw_target = nc->types[panel_idx].nct->hwnd_panel;
-                do_persist = false;
+                allow_persist = false;
                 SetWindowPos(m_cfgwiz.GetItem(IDC_PANELNAME), NULL,
                              0, 0, 0, 0, SWP_HIDEONLY);
             }
@@ -257,7 +261,7 @@ namespace nim {
             m_basic.SetItemText(IDC_BORDER, (p && p->caption)? p->caption: L"");
         }
 
-        if (do_persist) {
+        if (allow_persist) {
             HICON hicon;
             wchar_t idname[KCDB_IDENT_MAXCCH_NAME] = L"";
             wchar_t msgtext[KCDB_MAXCCH_NAME];
@@ -314,7 +318,7 @@ namespace nim {
             MapWindowRect(NULL, dw->hwnd, &r_p);
         }
 
-        if (do_persist && page != NC_PAGE_CREDOPT_BASIC) {
+        if (allow_persist && page != NC_PAGE_CREDOPT_BASIC) {
             RECT r;
 
             r_persist = r_p;
@@ -354,7 +358,7 @@ namespace nim {
            above the tab control. */
         SetWindowPos(hw_target, HWND_TOP, rect_coords(r_p), SWP_MOVESIZEZ);
 
-        if (page != NC_PAGE_CREDOPT_BASIC && do_persist) {
+        if (page != NC_PAGE_CREDOPT_BASIC && allow_persist) {
             SetParent(m_persist.hwnd, dw->hwnd);
             SetWindowPos(m_persist.hwnd, hw_target, rect_coords(r_persist), SWP_MOVESIZEZ);
         }
