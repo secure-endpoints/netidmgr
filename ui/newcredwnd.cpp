@@ -52,11 +52,11 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
     if (tnc->parent != NULL) {
         AutoRef<NewCredWizard> pw(NewCredWizard::FromNC(tnc));
 
-        if (!pw.IsNull() && pw->m_progress.hwnd == NULL)
+        if (pw.IsNull() || pw->m_progress.hwnd == NULL)
             nc = tnc->parent;
     }
 
-    AutoRef<NewCredWizard> w(NewCredWizard::FromNC(nc));
+    AutoRef<NewCredWizard> w (NewCredWizard::FromNC(nc));
 
     if (!w.IsNull() && w->m_progress.hwnd != NULL) {
 
