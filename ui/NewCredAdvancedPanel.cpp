@@ -29,7 +29,7 @@ namespace nim {
 
         khui_cw_lock_nc(nc);
 
-        p = nc->privint.shown.current_panel;
+        p = khui_cw_get_current_privint_panel(nc);
 
 #pragma warning(push)
 #pragma warning(disable: 4204)

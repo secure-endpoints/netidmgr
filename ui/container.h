@@ -381,7 +381,7 @@ namespace nim {
 
         virtual void OnSetPrompts() { }
 
-        virtual void OnIdentityStateChange(nc_identity_state_notification * isn) { }
+        virtual void OnIdentityStateChange(const nc_identity_state_notification * isn) { }
 
         virtual void OnNewIdentity() { }
 

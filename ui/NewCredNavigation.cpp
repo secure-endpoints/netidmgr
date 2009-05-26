@@ -69,7 +69,7 @@ namespace nim {
 
     void NewCredNavigation::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
     {
-        NewCredWizard *w  = NewCredWizard::FromNC(nc);
+        AutoRef<NewCredWizard> w (NewCredWizard::FromNC(nc));
 
         if (codeNotify == BN_CLICKED) {
             switch (id) {
@@ -89,7 +89,12 @@ namespace nim {
             case IDCANCEL:
             case IDC_NC_CLOSE:
             case IDC_NC_ABORT:
-                w->Navigate( NC_PAGET_CANCEL);
+                // These messages can result in the New Credentials
+                // Wizard window being destroyed.  Since we don't have
+                // a great reference counting mechanism, this results
+                // in this being freed and bad things happen.
+                PostMessage(w->hwnd, WM_COMMAND, MAKEWPARAM(IDCANCEL, BN_CLICKED),
+                            (LPARAM) hwndCtl);
                 return;
 
             case IDC_CLOSEIF:
@@ -118,7 +123,7 @@ namespace nim {
 
         khui_cw_lock_nc(nc);
 
-        p = nc->privint.shown.current_panel;
+        p = khui_cw_get_current_privint_panel(nc);
 
         if (cw->page == NC_PAGE_CREDOPT_WIZ) {
 
@@ -155,7 +160,7 @@ namespace nim {
 
         khui_cw_unlock_nc(nc);
 
-        if (IsState(OkToFinish))
+        if (khui_cw_is_ready(nc))
             EnableControl(Finish);
     }
 }

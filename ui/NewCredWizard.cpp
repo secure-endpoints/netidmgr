@@ -60,6 +60,7 @@ namespace nim {
 
     BOOL NewCredWizard::OnInitDialog(HWND hwndFocus, LPARAM lParam)
     {
+        khui_cw_lock_nc(nc);
         nc->hwnd = hwnd;
 
         assert(nc != NULL);
@@ -69,6 +70,7 @@ namespace nim {
                nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID ||
                nc->subtype == KHUI_NC_SUBTYPE_CONFIG_ID ||
                nc->subtype == KHUI_NC_SUBTYPE_ACQDERIVED);
+        khui_cw_unlock_nc(nc);
 
         m_nav     .Create(hwnd);
         m_idsel   .Create(hwnd);
@@ -79,7 +81,7 @@ namespace nim {
         PositionSelf();
 
         if (is_modal) {
-            switch (nc->subtype) {
+            switch (khui_cw_get_subtype(nc)) {
             case KHUI_NC_SUBTYPE_ACQPRIV_ID:
                 if (khm_cred_begin_new_cred_op()) {
                     kmq_post_message(KMSG_CRED, KMSG_CRED_ACQPRIV_ID, 0,
@@ -97,7 +99,9 @@ namespace nim {
             khm_add_dialog(hwnd);
         }
 
+        khui_cw_lock_nc(nc);
         SetWindowText(hwnd, nc->window_title);
+        khui_cw_unlock_nc(nc);
 
         return TRUE;
     }
@@ -136,8 +140,10 @@ namespace nim {
         HWND hw = NULL;
         HWND hw_ctrl;
 
-        if (nc->subtype != KHUI_NC_SUBTYPE_NEW_CREDS &&
-            nc->subtype != KHUI_NC_SUBTYPE_PASSWORD)
+        khui_nc_subtype subtype = khui_cw_get_subtype(nc);
+
+        if (subtype != KHUI_NC_SUBTYPE_NEW_CREDS &&
+            subtype != KHUI_NC_SUBTYPE_PASSWORD)
             return TRUE;
 
         if (hlp->iContextType != HELPINFO_WINDOW)
@@ -219,7 +225,9 @@ namespace nim {
         kcdb_credset_collect(cs_privcred, pcd->dest_credset, NULL, KCDB_CREDTYPE_ALL, NULL);
         khui_cw_set_privileged_credential_collector(nc_child, cs_privcred);
         nc_child->parent = nc;
+        khui_cw_lock_nc(nc);
         nc->n_children++;
+        khui_cw_unlock_nc(nc);
         if (khm_cred_begin_new_cred_op()) {
             kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
         } else {
@@ -237,15 +245,21 @@ namespace nim {
                             KHUI_SCOPE_IDENT,
                             pcd->target_identity,
                             -1, NULL);
+        khui_cw_lock_nc(nc);
         nc->persist_privcred = TRUE;
+        khui_cw_unlock_nc(nc);
         khui_cw_set_privileged_credential_collector(nc_child, pcd->dest_credset);
         khm_do_modal_newcredwnd(nc->hwnd, nc_child);
     }
 
     void NewCredWizard::OnProcessComplete(int has_error)
     {
-        if (nc->n_children != 0)
+        khui_cw_lock_nc(nc);
+
+        if (nc->n_children != 0) {
+            khui_cw_unlock_nc(nc);
             return;
+        }
 
         nc->response &= ~KHUI_NC_RESPONSE_PROCESSING;
 
@@ -256,6 +270,8 @@ namespace nim {
             /* reset state */
             nc->result = KHUI_NC_RESULT_CANCEL;
 
+            khui_cw_unlock_nc(nc);
+
             NotifyTypes( WMNC_DIALOG_PROCESS_COMPLETE, 0, TRUE);
 
             if (has_error) {
@@ -264,22 +280,29 @@ namespace nim {
                                      NewCredNavigation::Prev);
                 m_nav.UpdateLayout();
                 return;
-            } if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-                  nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
+            }
+
+            khui_nc_subtype subtype = khui_cw_get_subtype(nc);
+
+            if (subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+                subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
                 Navigate( NC_PAGE_CREDOPT_BASIC);
             } else if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD) {
                 Navigate( NC_PAGE_PASSWORD);
             } else {
                 assert(FALSE);
             }
+        } else {
+            khui_cw_unlock_nc(nc);
+            Navigate( NC_PAGET_END);
         }
-
-        Navigate( NC_PAGET_END);
     }
 
     void NewCredWizard::OnSetPrompts()
     {
+        khui_cw_lock_nc(nc);
         nc->privint.initialized = FALSE;
+        khui_cw_unlock_nc(nc);
 
         if (page == NC_PAGE_PASSWORD ||
             page == NC_PAGE_CREDOPT_ADV ||
@@ -292,82 +315,89 @@ namespace nim {
 
     void NewCredWizard::OnIdentityStateChange(const nc_identity_state_notification * notif)
     {
-        khm_int32 idflags;
-        wchar_t buf[80];
         khm_int32 nflags;
 
         nflags = notif->flags;
 
+        // If there are no identities, we don't accept identity state notifications.
+        khui_cw_lock_nc(nc);
+
         if (nc->n_identities == 0) {
-            /* no identities */
+            wchar_t buf[80];
 
             assert(FALSE);
-
             LoadStringResource(buf, IDS_NC_NPR_CHOOSE);
             m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
             m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
-
-            nflags &= ~KHUI_CWNIS_READY;
-
             m_privint.m_noprompts.SetProgress(0, false);
+            khui_cw_unlock_nc(nc);
+            goto done;
 
-        } else if (nflags & KHUI_CWNIS_VALIDATED) {
+        }
 
-            kcdb_identity_get_flags(nc->identities[0], &idflags);
+        khui_cw_unlock_nc(nc);
 
-            if (idflags & KCDB_IDENT_FLAG_VALID) {
+        // If the notification is from the identity credentials type,
+        // then we update the identity state on the m_noprompts
+        // dialog.  This way, the provider can notify the user of the
+        // identity validation status.
 
-                LoadStringResource(buf, IDS_NC_NPR_CLICKFINISH);
-                m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
-                m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
-                if (notif->state_string)
-                    m_idsel.SetStatus(notif->state_string);
-                else
-                    m_idsel.SetStatus(L"");
-            
-            } else {
-                /* The identity may have KCDB_IDENT_FLAG_INVALID or
-                   KCDB_IDENT_FLAG_UNKNOWN set. */
+        if (notif->credtype_panel != NULL && notif->credtype_panel->is_id_credtype) {
 
-                LoadStringResource(buf, ((idflags & KCDB_IDENT_FLAG_INVALID)? IDS_NC_INVALIDID : IDS_NC_UNKNOWNID));
-                m_idsel.SetStatus(buf);
+            // Finished validating the identity
+            if (nflags & KHUI_CWNIS_VALIDATED) {
 
-                if (notif->state_string)
-                    m_privint.m_noprompts.SetItemText(IDC_TEXT, notif->state_string);
-                else
-                    m_privint.m_noprompts.SetItemText(IDC_TEXT, L"");
-                m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
+                khm_int32 idflags;
 
-                nflags &= ~KHUI_CWNIS_VALIDATED;
-            }
+                kcdb_identity_get_flags(nc->identities[0], &idflags);
 
-            m_privint.m_noprompts.SetProgress(0, false);
+                if (idflags & KCDB_IDENT_FLAG_VALID) {
+                    wchar_t buf[80];
 
-        } else {
-            LoadStringResource(buf, IDS_NC_NPR_VALIDATING);
-            m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
+                    LoadStringResource(buf, IDS_NC_NPR_CLICKFINISH);
+                    m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
+                    m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
+                    m_idsel.SetStatus( (notif->state_string)? notif->state_string : L"");
 
-            if (notif->state_string)
-                m_privint.m_noprompts.SetItemText(IDC_TEXT2, notif->state_string);
-            else
-                m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
+                } else {
+                    wchar_t buf[80];
 
-            if (nflags & KHUI_CWNIS_NOPROGRESS) {
+                    /* The identity may have KCDB_IDENT_FLAG_INVALID
+                       or KCDB_IDENT_FLAG_UNKNOWN set. */
+
+                    LoadStringResource(buf,
+                                       ((idflags & KCDB_IDENT_FLAG_INVALID)?
+                                        IDS_NC_INVALIDID : IDS_NC_UNKNOWNID));
+                    m_idsel.SetStatus(buf);
+                    m_privint.m_noprompts.SetItemText(IDC_TEXT,
+                                                      (notif->state_string)? notif->state_string : L"");
+                    m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
+                    nflags &= ~KHUI_CWNIS_VALIDATED;
+                }
+
                 m_privint.m_noprompts.SetProgress(0, false);
+
             } else {
-                m_privint.m_noprompts.SetProgress(notif->progress, true);
+                wchar_t buf[80];
+
+                LoadStringResource(buf, IDS_NC_NPR_VALIDATING);
+                m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
+
+                m_privint.m_noprompts.SetItemText(IDC_TEXT2,
+                                                  (notif->state_string)? notif->state_string : L"");
+
+                if (nflags & KHUI_CWNIS_NOPROGRESS) {
+                    m_privint.m_noprompts.SetProgress(0, false);
+                } else {
+                    m_privint.m_noprompts.SetProgress(notif->progress, true);
+                }
             }
         }
 
-        if (nflags & KHUI_CWNIS_READY) {
-            m_nav.EnableControl(NewCredNavigation::Finish);
-            m_nav.EnableState(NewCredNavigation::OkToFinish);
-            m_nav.UpdateLayout();
-        } else {
-            m_nav.DisableControl(NewCredNavigation::Finish);
-            m_nav.DisableState(NewCredNavigation::OkToFinish);
-            m_nav.UpdateLayout();
-        }
+    done:
+
+        m_nav.CheckControls();
+        m_nav.UpdateLayout();
 
     }
 
@@ -654,14 +684,14 @@ namespace nim {
                 {
                     khui_new_creds_privint_panel * p;
 
-                    p = nc->privint.shown.current_panel;
+                    p = khui_cw_get_current_privint_panel(nc);
                     if (p) {
                         p->processed = TRUE;
                         p = QNEXT(p);
                     }
                     if (p == NULL)
                         khui_cw_get_next_privint(nc, &p);
-                    nc->privint.shown.current_panel = p;
+                    khui_cw_set_current_privint_panel(nc, p);
                     m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                 }
                 break;
@@ -675,14 +705,14 @@ namespace nim {
                     if (idx == NC_PRIVINT_PANEL) {
                         khui_new_creds_privint_panel * p;
 
-                        p = nc->privint.shown.current_panel;
+                        p = khui_cw_get_current_privint_panel(nc);
                         if (p) {
                             p->processed = TRUE;
                             p = QNEXT(p);
                         }
                         if (p == NULL)
                             khui_cw_get_next_privint(nc, &p);
-                        nc->privint.shown.current_panel = p;
+                        khui_cw_set_current_privint_panel(nc, p);
                         m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                     } else {
                         if (idx + 1 < (int) nc->n_types &&
@@ -717,10 +747,10 @@ namespace nim {
                 {
                     khui_new_creds_privint_panel * p;
 
-                    p = nc->privint.shown.current_panel;
+                    p = khui_cw_get_current_privint_panel(nc);
                     if (p)
                         p = QPREV(p);
-                    nc->privint.shown.current_panel = p;
+                    khui_cw_set_current_privint_panel(nc, p);
                     m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                 }
                 break;
@@ -732,10 +762,10 @@ namespace nim {
                     if (idx == NC_PRIVINT_PANEL) {
                         khui_new_creds_privint_panel * p;
 
-                        p = nc->privint.shown.current_panel;
+                        p = khui_cw_get_current_privint_panel(nc);
                         if (p)
                             p = QPREV(p);
-                        nc->privint.shown.current_panel = p;
+                        khui_cw_set_current_privint_panel(nc, p);
                         if (p == NULL) {
                             int i;
 
@@ -814,7 +844,9 @@ namespace nim {
 
             } else {
 
+                khui_cw_lock_nc(nc);
                 nc->result = KHUI_NC_RESULT_CANCEL;
+                khui_cw_unlock_nc(nc);
                 NotifyTypes( WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
                 khm_cred_dispatch_process_message(nc);
                 m_nav.SetAllControls(0);
@@ -940,7 +972,6 @@ namespace nim {
         }
 
         nc->privint.initialized = FALSE;
-        m_nav.DisableState(NewCredNavigation::OkToFinish);
 
         if (nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID)
             nc->persist_privcred = TRUE;

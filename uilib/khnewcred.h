@@ -1101,7 +1101,10 @@ khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notifica
  */
 #define KHUI_CWNIS_READY      0x00000004
 
-/*! \brief Use a marquee instead of a progress value */
+/*! \brief Use a marquee instead of a progress value
+
+  \see khui_cw_notify_identity_state()
+ */
 #define KHUI_CWNIS_MARQUEE    (-1)
 
 /*! \brief Notify identity state changes
@@ -1120,6 +1123,13 @@ khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notifica
   should call this function instead.
 
   \param[in] c Pointer to new credentials structure
+
+  \param[in] owner The owner of the notification.  If the notification
+      is from a credentials type panel, then this should be the window
+      handle of the credentials type panel.  If the notification is
+      from a privileged interaction panle, then this should be the
+      window handle of the privileged interaction panel.  If this is
+      NULL, the notification fails.
 
   \param[in] state_string A localized NULL-terminated string not
       exceeding KHUI_MAXCCH_BANNER characters including the
@@ -1148,6 +1158,7 @@ khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notifica
  */
 KHMEXP khm_int32 KHMAPI
 khui_cw_notify_identity_state(khui_new_creds * c,
+                              HWND owner,
                               const wchar_t * state_string,
                               khm_int32 flags,
                               khm_int32 progress);

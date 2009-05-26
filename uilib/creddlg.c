@@ -35,7 +35,10 @@
 
 #define CW_ALLOC_INCR 8
 
-#define ASSERT_NC(c) assert((c) && (c)->magic == KHUI_NC_MAGIC)
+#define IS_NC(c) ((c) && (c)->magic == KHUI_NC_MAGIC)
+#define ASSERT_NC(c) assert(IS_NC(c))
+#define IS_PP(p) ((p) && (p)->magic == KHUI_NEW_CREDS_PRIVINT_PANEL_MAGIC)
+#define ASSERT_PP(p) assert(IS_PP(p))
 
 static void
 cw_free_prompts(khui_new_creds_privint_panel * pp);
@@ -315,6 +318,7 @@ khui_cw_add_type(khui_new_creds * c,
         }
         c->types[c->n_types].display_name = s;
     }
+    c->types[c->n_types].identity_state = KHUI_CWNIS_READY;
     c->type_subs[c->n_types] = kcdb_credtype_get_sub(t->type);
     t->nc = c;
     c->n_types ++;
@@ -549,12 +553,78 @@ khui_cw_notify_dialog(khui_new_creds * c, enum khui_wm_nc_notifications notifica
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_notify_identity_state(khui_new_creds * c,
+                              HWND owner,
                               const wchar_t * state_string,
                               khm_int32 flags,
                               khm_int32 progress)
 {
     nc_identity_state_notification notif;
 
+    ASSERT_NC(c);
+
+    if (owner == NULL)
+        return KHM_ERROR_INVALID_PARAM;
+
+    notif.credtype_panel = NULL;
+    notif.privint_panel = NULL;
+
+    EnterCriticalSection(&c->cs);
+    do {
+        khui_new_creds_privint_panel * p = NULL;
+        khm_size i;
+
+        for (i=0; i < c->n_types; i++) {
+            if (c->types[i].nct->hwnd_panel == owner) {
+                if (c->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)
+                    continue;
+                notif.credtype_panel = &c->types[i];
+                break;
+            }
+        }
+
+        if (notif.credtype_panel != NULL)
+            break;
+
+        for (p = QTOP(&c->privint.shown); p; p = QNEXT(p)) {
+            ASSERT_PP(p);
+            if (p->hwnd == owner) {
+                notif.privint_panel = p;
+                break;
+            }
+        }
+
+        if (notif.privint_panel != NULL)
+            break;
+
+        for (i=0; i < c->n_types; i++) {
+
+            /* A disabled credentials type panel can still ask for a
+               privileged interaction panel to be shown.  Therefore we
+               don't test for the DISABLED flag here. */
+
+            for (p = QTOP(&c->types[i]); p; p = QNEXT(p)) {
+                ASSERT_PP(p);
+                if (p->hwnd == owner) {
+                    notif.privint_panel = p;
+                    break;
+                }
+            }
+        }
+
+    } while (FALSE);
+
+    if (notif.credtype_panel)
+        notif.credtype_panel->identity_state = flags;
+    if (notif.privint_panel)
+        notif.privint_panel->identity_state = flags;
+
+    LeaveCriticalSection(&c->cs);
+
+    if (notif.privint_panel == NULL && notif.credtype_panel == NULL)
+        return KHM_ERROR_INVALID_PARAM;
+
+    notif.magic = KHUI_NC_IDENTITY_STATE_NOTIF_MAGIC;
+    notif.owner = owner;
     notif.state_string = state_string;
     notif.flags = flags;
     notif.progress = progress;
@@ -564,6 +634,43 @@ khui_cw_notify_identity_state(khui_new_creds * c,
                 (LPARAM) &notif);
 
     return KHM_ERROR_SUCCESS;
+}
+
+KHMEXP khm_boolean KHMAPI
+khui_cw_is_ready(khui_new_creds * c)
+{
+    khm_boolean ready = TRUE;
+
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+    {
+        khui_new_creds_privint_panel * p;
+        khm_size i;
+
+        for (i=0; i < c->n_types && ready; i++) {
+            if (c->types[i].nct->flags & KHUI_NCT_FLAG_DISABLED)
+                continue;
+
+            if ((c->types[i].identity_state & KHUI_CWNIS_READY) == 0)
+                ready = FALSE;
+
+            for (p = QTOP(&c->types[i]); p && ready; p = QNEXT(p)) {
+                ASSERT_PP(p);
+
+                if ((p->identity_state & KHUI_CWNIS_READY) == 0)
+                    ready = FALSE;
+            }
+        }
+
+        for (p = QTOP(&c->privint.shown); p && ready; p = QNEXT(p)) {
+            if ((p->identity_state & KHUI_CWNIS_READY) == 0)
+                ready = FALSE;
+        }
+    }
+    LeaveCriticalSection(&c->cs);
+
+    return ready;
 }
 
 /************************************************************/
@@ -581,6 +688,7 @@ cw_create_privint_panel(HWND hwnd,
 
     p->magic = KHUI_NEW_CREDS_PRIVINT_PANEL_MAGIC;
     p->hwnd = hwnd;
+    p->identity_state = KHUI_CWNIS_READY;
     if (caption)
         StringCbCopy(p->caption, sizeof(p->caption), caption);
 
@@ -590,14 +698,16 @@ cw_create_privint_panel(HWND hwnd,
 KHMEXP khm_int32 KHMAPI
 khui_cw_free_privint(khui_new_creds_privint_panel * pp)
 {
+    ASSERT_PP(pp);
+
     if (pp->hwnd) {
         DestroyWindow(pp->hwnd);
         pp->hwnd = NULL;
     }
 
-    pp->magic = 0;
-
     cw_free_prompts(pp);
+
+    pp->magic = 0;
 
     PFREE(pp);
 
@@ -650,7 +760,8 @@ khui_cw_peek_next_privint(khui_new_creds * c,
     khm_size i;
     ASSERT_NC(c);
 
-    if (ppp) *ppp = NULL;
+    if (ppp)
+        *ppp = NULL;
 
     EnterCriticalSection(&c->cs);
     if (c->privint.legacy_panel &&
@@ -719,11 +830,14 @@ khui_cw_get_next_privint(khui_new_creds * c,
     if (pp) {
         khui_new_creds_privint_panel * q;
 
+        ASSERT_PP(pp);
         for (q = QTOP(&c->privint.shown); q; q = QNEXT(q)) {
             if (pp == q)
                 break;
         }
-        assert(q == NULL || q == c->privint.legacy_panel);
+
+        assert(q == NULL);
+
         if (q == NULL)
             QPUT(&c->privint.shown, pp);
         c->privint.shown.show_blank = FALSE;
@@ -752,6 +866,7 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
 
     for (p = QTOP(&c->privint.shown); p; p = np) {
         np = QNEXT(p);
+        ASSERT_PP(p);
         if (p->ctype == ctype) {
             QDEL(&c->privint.shown, p);
             if (c->privint.shown.current_panel == p)
@@ -766,6 +881,7 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
             continue;
         while (QTOP(&c->types[i])) {
             QGET(&c->types[i], &p);
+            ASSERT_PP(p);
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
             khui_cw_free_privint(p);
@@ -809,6 +925,62 @@ khui_cw_clear_all_privints(khui_new_creds * c)
     LeaveCriticalSection(&c->cs);
 
     return KHM_ERROR_SUCCESS;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_purge_deleted_shown_panels(khui_new_creds * c)
+{
+    khui_new_creds_privint_panel * p;
+    khui_new_creds_privint_panel * np;
+
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+    for (p = QTOP(&c->privint.shown); p; p = np) {
+        np = QNEXT(p);
+        ASSERT_PP(p);
+
+        if (!IsWindow(p->hwnd)) {
+            QDEL(&c->privint.shown, p);
+
+            if (c->privint.shown.current_panel == p)
+                c->privint.shown.current_panel = NULL;
+
+            p->hwnd = NULL;
+            khui_cw_free_privint(p);
+        }
+    }
+    LeaveCriticalSection(&c->cs);
+
+    return KHM_ERROR_SUCCESS;
+}
+
+KHMEXP khui_new_creds_privint_panel * KHMAPI
+khui_cw_get_current_privint_panel(khui_new_creds * c)
+{
+    khui_new_creds_privint_panel * p;
+
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+    p = c->privint.shown.current_panel;
+    LeaveCriticalSection(&c->cs);
+
+    return p;
+}
+
+KHMEXP void KHMAPI
+khui_cw_set_current_privint_panel(khui_new_creds * c,
+                                  khui_new_creds_privint_panel * p)
+{
+
+    ASSERT_NC(c);
+    assert(p == NULL || IS_PP(p));
+
+    EnterCriticalSection(&c->cs);
+    c->privint.shown.current_panel = p;
+    LeaveCriticalSection(&c->cs);
+
 }
 
 /************************************************************/
@@ -890,6 +1062,8 @@ static void
 cw_free_prompts(khui_new_creds_privint_panel * p)
 {
     khm_size i;
+
+    ASSERT_PP(p);
 
     if(p->banner != NULL) {
         PFREE(p->banner);

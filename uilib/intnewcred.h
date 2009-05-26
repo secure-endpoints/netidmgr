@@ -61,6 +61,10 @@ typedef struct tag_khui_new_creds_privint_panel {
     khm_int32  ctype;           /*!< Credentials type that provided
                                   this panel, if known. */
 
+    khm_int32  identity_state;  /*!< Last reported identity state
+                                   (reported through
+                                   khui_cw_notify_identity_state()) */
+
     /* For basic custom prompting */
     khm_boolean use_custom;     /*!< Use custom prompting
                                    instead. (hwnd must be NULL).  This
@@ -93,6 +97,7 @@ typedef struct tag_khui_new_creds_type_int {
     const wchar_t * display_name;    /*!< Display name */
     khm_boolean is_id_credtype;      /*!< Is this the identity
                                         credentials type? */
+    khm_int32  identity_state;  /*!< Identity state.  The state returned by a call to khui_cw_notify_identity_state() */
 
     QDCL(khui_new_creds_privint_panel); /*!< Queue of privileged
                                           interaction panels */
@@ -106,7 +111,6 @@ typedef struct tag_nc_privint {
                                   panel.  Only created if
                                   necessary. */
 
-
     struct {
         khui_new_creds_privint_panel * current_panel;
         khm_boolean show_blank; /*!< Show a blank panel instead of the
@@ -114,9 +118,11 @@ typedef struct tag_nc_privint {
         QDCL(khui_new_creds_privint_panel);
     } shown;                    /*!< Queue of privileged interaction
                                   panels that have been shown.  The
-                                  last displayed, or to be displayed,
-                                  panel is always at the bottom of the
-                                  queue. */
+                                  panels follow in chronological order
+                                  from QTOP() to QBOTTOM().
+                                  current_panel should always be
+                                  pointing at one of these panels in
+                                  the queue. */
 
     khm_boolean initialized;    /*!< Has the tab control been
                                   initialized? */
@@ -129,13 +135,42 @@ typedef struct tag_nc_privint {
   \see khui_cw_notify_identity_state()
 */
 typedef struct tag_nc_identity_state_notification {
-    const wchar_t * state_string;
-    khm_int32       flags;      /*!< Combination of KHUI_CWNIS_* flags
+    khm_int32      magic; /*!< == KHUI_NC_IDENTITY_STATE_NOTIF_MAGIC */
+
+    HWND           owner;       /*!< Owner of the state notification.
+                                   For credentials type panels, this
+                                   can be the window handle of the
+                                   credentials type panel.  For
+                                   privileged interaction panels, this
+                                   can be the window handle of the
+                                   privileged interaction panel. */
+
+    const wchar_t *state_string;
+                                /*!< Localized string describing the
+                                   current state or reason why the
+                                   identity is not ready for
+                                   credentials acquisition. */
+
+    khm_int32      flags;      /*!< Combination of KHUI_CWNIS_* flags
                                    defined in khnewcred.h */
-    khm_int32       progress;
+
+    khm_int32      progress;   /*!< 0..100 inclusive.  The progress
+                                   that has been made so far on this
+                                   operation. */
+
+    khui_new_creds_privint_panel *privint_panel;
+                                /*!< If the \a owner is a privileged
+                                   interaction panel, then this will
+                                   receive a pointer to the panel. */
+
+    khui_new_creds_type_int      *credtype_panel;
+                                /*!< If the \a owner is a credtype
+                                   panel, then this will receive a
+                                   pointer t othe credtype panel. */
+
 } nc_identity_state_notification;
 
-
+#define KHUI_NC_IDENTITY_STATE_NOTIF_MAGIC 0xcA1c2013
 
 /*! \internal
     \brief New Credentials Operation Data
@@ -287,6 +322,19 @@ khui_cw_free_privint(khui_new_creds_privint_panel * pp);
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_clear_all_privints(khui_new_creds * c);
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_purge_deleted_shown_panels(khui_new_creds * c);
+
+KHMEXP khui_new_creds_privint_panel * KHMAPI
+khui_cw_get_current_privint_panel(khui_new_creds * c);
+
+KHMEXP void KHMAPI
+khui_cw_set_current_privint_panel(khui_new_creds * c,
+                                  khui_new_creds_privint_panel * p);
+
+KHMEXP khm_boolean KHMAPI
+khui_cw_is_ready(khui_new_creds * c);
 
 typedef struct khui_collect_privileged_cred_data {
     khui_new_creds * nc;

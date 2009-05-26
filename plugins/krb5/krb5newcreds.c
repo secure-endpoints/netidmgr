@@ -116,7 +116,8 @@ k5_force_password_change(k5_dlg_data * d) {
     d->pwd_change = TRUE;
     d->sync = TRUE;
 
-    khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
+    khui_cw_notify_identity_state(d->nct.nc, d->nct.hwnd_panel, NULL,
+                                  KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
 
     return TRUE;
 }
@@ -1499,12 +1500,14 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 if (clear_prompts) {
                     khui_cw_clear_prompts(nc);
                     if (!foreign_identity)
-                        khui_cw_notify_identity_state(nc, NULL, 0, KHUI_CWNIS_MARQUEE);
+                        khui_cw_notify_identity_state(nc, d->nct.hwnd_panel,
+                                                      NULL, 0, KHUI_CWNIS_MARQUEE);
                 }
             } else {
                 khui_cw_clear_prompts(nc);
                 if (!foreign_identity)
-                    khui_cw_notify_identity_state(nc, NULL, 0, KHUI_CWNIS_MARQUEE);
+                    khui_cw_notify_identity_state(nc, d->nct.hwnd_panel,
+                                                  NULL, 0, KHUI_CWNIS_MARQUEE);
             }
 
             if(ident && !foreign_identity) {

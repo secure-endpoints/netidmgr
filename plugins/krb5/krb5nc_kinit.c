@@ -626,7 +626,9 @@ kinit_prompter(krb5_context context,
 
         assert(FALSE);
 
-        khui_cw_notify_identity_state(kt->nc, NULL,
+        khui_cw_notify_identity_state(kt->nc,
+                                      kt->nct->hwnd_panel,
+                                      NULL,
                                       KHUI_CWNIS_READY |
                                       KHUI_CWNIS_NOPROGRESS |
                                       KHUI_CWNIS_VALIDATED, 0);
@@ -761,7 +763,7 @@ kinit_prompter(krb5_context context,
         kcdb_identity_set_flags(kt->identity,
                                 KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT,
                                 KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
-        khui_cw_notify_identity_state(kt->nc, L"",
+        khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel, L"",
                                       KHUI_CWNIS_VALIDATED |
                                       KHUI_CWNIS_READY, 0);
 
@@ -872,7 +874,7 @@ kinit_task_proc(void * vparam)
         kcdb_identity_set_flags(kt->identity,
                                 KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT,
                                 KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
-        khui_cw_notify_identity_state(kt->nc, L"",
+        khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel, L"",
                                       KHUI_CWNIS_VALIDATED |
                                       KHUI_CWNIS_READY, 0);
 
@@ -963,7 +965,7 @@ kinit_task_proc(void * vparam)
             kcdb_identity_set_flags(kt->identity,
                                     KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT,
                                     KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
-            khui_cw_notify_identity_state(kt->nc, L"",
+            khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel, L"",
                                           KHUI_CWNIS_READY |
                                           KHUI_CWNIS_VALIDATED, 0);
             khui_cw_clear_prompts(kt->nc);
@@ -975,7 +977,7 @@ kinit_task_proc(void * vparam)
                                     KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_EXPORT);
             k5_force_password_change(kt->dlg_data);
             LoadString(hResModule, IDS_K5ERR_KEY_EXPIRED, msg, ARRAYLENGTH(msg));
-            khui_cw_notify_identity_state(kt->nc, msg,
+            khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel, msg,
                                           KHUI_CWNIS_READY |
                                           KHUI_CWNIS_VALIDATED, 0);
             break;
@@ -986,7 +988,8 @@ kinit_task_proc(void * vparam)
                                     KCDB_IDENT_FLAG_INVALID);
             khui_cw_clear_prompts(kt->nc);
             khm_err_describe(kt->kinit_code, msg, sizeof(msg), NULL, NULL);
-            khui_cw_notify_identity_state(kt->nc, msg, KHUI_CWNIS_VALIDATED, 0);
+            khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel,
+                                          msg, KHUI_CWNIS_VALIDATED, 0);
             break;
 
         default:
@@ -995,7 +998,8 @@ kinit_task_proc(void * vparam)
                                     KCDB_IDENT_FLAG_UNKNOWN);
             khui_cw_clear_prompts(kt->nc);
             khm_err_describe(kt->kinit_code, msg, sizeof(msg), NULL, NULL);
-            khui_cw_notify_identity_state(kt->nc, msg, KHUI_CWNIS_VALIDATED, 0);
+            khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel,
+                                          msg, KHUI_CWNIS_VALIDATED, 0);
         }
     }
 

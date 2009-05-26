@@ -46,8 +46,6 @@ namespace nim {
 
         void Create(HWND parent);
 
-        void PurgeDeletedShownPanels();
-
         HWND UpdateLayout();
 
         bool IsSavePasswordAllowed();

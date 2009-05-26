@@ -7,30 +7,6 @@
 
 namespace nim {
 
-    void NewCredPanels::PurgeDeletedShownPanels()
-    {
-        khui_new_creds_privint_panel * p;
-        khui_new_creds_privint_panel * np;
-
-        for (p = QTOP(&nc->privint.shown); p; p = np) {
-            np = QNEXT(p);
-
-            if (!IsWindow(p->hwnd)) {
-                QDEL(&nc->privint.shown, p);
-
-                if (nc->privint.shown.current_panel == p)
-                    nc->privint.shown.current_panel = NULL;
-
-                if (hwnd_current == p->hwnd) {
-                    hwnd_current = NULL;
-                }
-
-                p->hwnd = NULL;
-                khui_cw_free_privint(p);
-            }
-        }
-    }
-
     bool NewCredPanels::IsSavePasswordAllowed()
     {
         khm_int32 idf = 0;
@@ -55,12 +31,14 @@ namespace nim {
         */
 
         khui_cw_lock_nc(nc);
+
         assert(nc->n_identities > 0);
 
         if (nc->n_identities > 0) {
             kcdb_identity_get_flags(nc->identities[0], &idf);
             kcdb_identity_get_parent(nc->identities[0], &parent_id);
         }
+
         khui_cw_unlock_nc(nc);
 
         do {
@@ -80,9 +58,17 @@ namespace nim {
                 break;
 
             /* 3. */
+            khui_cw_lock_nc(nc);
+
             if (QTOP(&nc->privint.shown) != NULL &&
-                QTOP(&nc->privint.shown) != nc->privint.shown.current_panel)
+                QTOP(&nc->privint.shown) != nc->privint.shown.current_panel) {
+
+                khui_cw_unlock_nc(nc);
                 break;
+
+            }
+
+            khui_cw_unlock_nc(nc);
 
             /* 4. */
             if (KHM_SUCCEEDED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_KEY_STORE | KCDB_IDENT_FLAG_DEFAULT,
@@ -111,10 +97,12 @@ namespace nim {
             allow_persist = true;
 
             khui_cw_lock_nc(nc);
+
             if (nc->persist_identity)
                 kcdb_identity_release(nc->persist_identity);
 
             nc->persist_identity = h_ks;
+
             khui_cw_unlock_nc(nc);
 
         } while (FALSE);
@@ -156,15 +144,17 @@ namespace nim {
             return NULL;
         }
 
-        PurgeDeletedShownPanels();
+        khui_cw_purge_deleted_shown_panels(nc);
+        if (!IsWindow(hwnd_current))
+            hwnd_current = NULL;
 
         allow_persist = IsSavePasswordAllowed();
 
-        p = nc->privint.shown.current_panel;
+        p = khui_cw_get_current_privint_panel(nc);
 
         if (p == NULL) {
             khui_cw_get_next_privint(nc, &p);
-            nc->privint.shown.current_panel = p;
+            khui_cw_set_current_privint_panel(nc, p);
         }
 
         /* Fill in some blanks */

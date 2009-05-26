@@ -22,8 +22,7 @@ namespace nim {
         enum States {
             PreEnd      = (1L<<0),
             NoClose     = (1L<<1),
-            OkToFinish  = (1L<<2),
-            Cancelled   = (1L<<3)
+            Cancelled   = (1L<<2)
         };
 
     public:
