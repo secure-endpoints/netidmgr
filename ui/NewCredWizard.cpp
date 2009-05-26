@@ -212,7 +212,7 @@ namespace nim {
 
     void NewCredWizard::OnDeriveFromPrivCred(khui_collect_privileged_creds_data * pcd)
     {
-        khui_new_creds * nc_child;
+        khui_new_creds * nc_child = NULL;
         khm_handle cs_privcred = NULL;
 
         khui_cw_create_cred_blob(&nc_child);

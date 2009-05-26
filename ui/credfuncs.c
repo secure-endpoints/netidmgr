@@ -294,7 +294,9 @@ kmsg_cred_completion(kmq_message *m)
     case KMSG_CRED_PREPROCESS_ID:
         nc = (khui_new_creds *) m->vparam;
 
+        nc->original_subtype = KHUI_NC_SUBTYPE_ACQDERIVED;
         nc->subtype = KHUI_NC_SUBTYPE_RENEW_CREDS;
+
         khm_cred_dispatch_process_message(nc);
         break;
 
@@ -1193,6 +1195,7 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     /* Describe the context */
     if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
        nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
+
         cbsize = sizeof(wsinsert);
         kcdb_get_resource(nc->identities[0],
                           KCDB_RES_DISPLAYNAME,
@@ -1205,21 +1208,25 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
         cbsize = sizeof(wsinsert);
 
         if (nc->ctx.scope == KHUI_SCOPE_IDENT)
-            kcdb_identity_get_name(nc->ctx.identity, wsinsert, &cbsize);
+            kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
         else if (nc->ctx.scope == KHUI_SCOPE_CREDTYPE) {
             if (nc->ctx.identity != NULL)
-                kcdb_identity_get_name(nc->ctx.identity, wsinsert, 
-                                       &cbsize);
+                kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
             else
-                kcdb_credtype_get_name(nc->ctx.cred_type, wsinsert,
-                                       &cbsize);
+                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->ctx.cred_type),
+                                  KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
         } else if (nc->ctx.scope == KHUI_SCOPE_CRED) {
-            kcdb_cred_get_name(nc->ctx.cred, wsinsert, &cbsize);
+            kcdb_get_resource(nc->ctx.cred, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
         } else {
             StringCbCopy(wsinsert, sizeof(wsinsert), L"(?)");
         }
 
-        _report_sr1(KHERR_NONE, IDS_CTX_PROC_RENEW_CREDS, 
+        _report_sr1(KHERR_NONE, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
+                                 IDS_CTX_NEW_CREDS :IDS_CTX_PROC_RENEW_CREDS), 
                     _cstr(wsinsert));
         _resolve();
     } else if (nc->subtype == KMSG_CRED_PASSWORD) {

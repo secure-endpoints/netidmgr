@@ -262,6 +262,21 @@ typedef struct tag_khui_new_creds {
     /* --- Fields above this should be kept as is for backwards
            compatibility --- */
 
+    khui_nc_subtype     original_subtype;
+                                /*!< The subtype of the new
+                                  credentials operation may change
+                                  during the course of operation due
+                                  to backwards compatibility issues.
+                                  I.e. KHUI_NC_SUBTYPE_ACQDERIVED will
+                                  switch to
+                                  KHUI_NC_SUBTYPE_RENEW_CREDS after
+                                  KMSG_CRED_PREPROCESS_ID is
+                                  issued. This field is used to figure
+                                  out the original value of the
+                                  subtype field.  If this value is 0,
+                                  then it should be assumed that the
+                                  subtype is unchanged. */
+
     khui_identity_selector *selectors;
                                 /*!< Identity Selectors */
     khm_size            n_selectors;
