@@ -125,7 +125,8 @@ namespace nim {
 
         p = khui_cw_get_current_privint_panel(nc);
 
-        if (cw->page == NC_PAGE_CREDOPT_WIZ) {
+        switch (cw->page) {
+        case NC_PAGE_CREDOPT_WIZ:
 
             if (cw->m_privint.idx_current == NC_PRIVINT_PANEL) {
 
@@ -149,8 +150,14 @@ namespace nim {
                     EnableControl(Prev);
 
             }
+            break;
 
-        } else {
+        case NC_PAGE_PROGRESS:
+            if (p)
+                EnableControl(Prev);
+            break;
+
+        default:
             if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
                 EnableControl(Next);
 
@@ -160,7 +167,7 @@ namespace nim {
 
         khui_cw_unlock_nc(nc);
 
-        if (khui_cw_is_ready(nc))
+        if (khui_cw_is_ready(nc) && !IsControlEnabled(Retry))
             EnableControl(Finish);
     }
 }

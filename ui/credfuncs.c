@@ -342,9 +342,9 @@ kmsg_cred_completion(kmq_message *m)
            there were any errors reported.  Otherwise we dispatch
            another set of messages. */
         if(!khm_cred_dispatch_process_level(nc)) {
-            int has_error = 0;
+            int has_error = kherr_is_error();
 
-            if(kherr_is_error() && !nc->ignore_errors) {
+            if(has_error && !nc->ignore_errors) {
                 khui_alert * alert;
                 kherr_event * evt;
                 kherr_context * ctx;
@@ -352,8 +352,6 @@ kmsg_cred_completion(kmq_message *m)
                 wchar_t w_idname[KCDB_IDENT_MAXCCH_NAME];
                 wchar_t ws_title[ARRAYLENGTH(ws_tfmt) + KCDB_IDENT_MAXCCH_NAME];
                 khm_size cb;
-
-                has_error = 1;
 
                 /* For renewals, we suppress the error message for the
                    following case:
