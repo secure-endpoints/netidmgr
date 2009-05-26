@@ -72,6 +72,7 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 #pragma warning(disable: 4244)
     SetWindowLongPtr(hwnd, DWLP_USER, (LPARAM) d);
 #pragma warning(pop)
+    SetProp(hwnd, L"KeyStoreIndex", (HANDLE) d->cur_idx);
 
     if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
         ks = d->ks;
@@ -128,6 +129,43 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     return FALSE;
 }
 
+void
+privint_CheckIfReady(HWND hwnd)
+{
+    struct nc_dialog_data * d;
+    khm_boolean is_ready = FALSE;
+    keystore_t * ks;
+
+    d = (struct nc_dialog_data *)GetWindowLongPtr(hwnd, DWLP_USER);
+    assert(d);
+
+    if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
+        ks = d->ks;
+    else
+        ks = d->aks[(int) GetProp(hwnd, L"KeyStoreIndex")];
+
+    do {
+        if (ks_is_keystore_locked(ks) &&
+            GetWindowTextLength(GetDlgItem(hwnd, IDC_PASSWORD)) <= 0)
+            break;
+
+        if (IsDlgButtonChecked(hwnd, IDC_CHPW) == BST_CHECKED) {
+            wchar_t pw1[KHUI_MAXCCH_PASSWORD] = L"";
+            wchar_t pw2[KHUI_MAXCCH_PASSWORD] = L"";
+
+            if (GetDlgItemText(hwnd, IDC_NEWPW1, pw1, ARRAYLENGTH(pw1)) == 0 ||
+                GetDlgItemText(hwnd, IDC_NEWPW2, pw2, ARRAYLENGTH(pw2)) == 0 ||
+                wcscmp(pw1, pw2))
+                break;
+        }
+
+        is_ready = TRUE;
+    } while (FALSE);
+
+    khui_cw_notify_identity_state(d->nct.nc, hwnd, NULL,
+                                  ((is_ready)? KHUI_CWNIS_READY : 0) | KHUI_CWNIS_NOPROGRESS, 0);
+}
+
 INT_PTR
 privint_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
 {
@@ -144,6 +182,10 @@ privint_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
             ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_HIDE);
         }
     }
+
+    if (code == EN_CHANGE)
+        privint_CheckIfReady(hwnd);
+
     return FALSE;
 }
 
@@ -151,6 +193,7 @@ INT_PTR
 privint_WM_DESTROY(HWND hwnd)
 {
     SetWindowLongPtr(hwnd, DWLP_USER, (LPARAM) 0);
+    RemoveProp(hwnd, L"KeyStoreIndex");
 
     return TRUE;
 }
@@ -292,7 +335,8 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
         khm_size cb = sizeof(status);
 
         kcdb_identity_get_attr(identity, KCDB_ATTR_STATUS, NULL, status, &cb);
-        khui_cw_notify_identity_state(d->nct.nc, status, KHUI_CWNIS_VALIDATED | KHUI_CWNIS_NOPROGRESS, 0);
+        khui_cw_notify_identity_state(d->nct.nc, d->nct.hwnd_panel,
+                                      status, KHUI_CWNIS_VALIDATED | KHUI_CWNIS_NOPROGRESS, 0);
         kcdb_identity_release(identity);
 
         return TRUE;
@@ -310,6 +354,7 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
 
         khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
                                        hw_privint, caption);
+        privint_CheckIfReady(hw_privint);
     }
 
     d->hw_privint = hw_privint;
@@ -318,7 +363,8 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
 
     kcdb_identity_release(identity);
 
-    khui_cw_notify_identity_state(d->nct.nc, NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
+    khui_cw_notify_identity_state(d->nct.nc, d->nct.hwnd_panel,
+                                  NULL, KHUI_CWNIS_READY | KHUI_CWNIS_NOPROGRESS, 0);
     creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
     d->foreign_id = FALSE;
 
@@ -362,6 +408,7 @@ creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
                                               (LPARAM) d);
         khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
                                        d->hw_privints[i], d->aks[i]->display_name);
+        privint_CheckIfReady(d->hw_privints[i]);
     }
 
     d->nct.type_deps[0] = id_type;
@@ -422,6 +469,7 @@ creddlg_WMNC_COLLECT_PRIVCRED(HWND hwnd, struct nc_dialog_data * d)
 
             khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
                                            hw_privint, caption);
+            privint_CheckIfReady(hw_privint);
         }
 
         d->hw_privint = hw_privint;
