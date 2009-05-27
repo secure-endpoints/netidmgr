@@ -946,6 +946,23 @@ void khm_cred_change_password(wchar_t * title)
     }
 }
 
+LRESULT
+khm_cred_collect_privileged_creds(khui_collect_privileged_creds_data * pcpcd)
+{
+    khui_new_creds * nc_child;
+
+    khui_cw_create_cred_blob(&nc_child);
+    nc_child->subtype = KHUI_NC_SUBTYPE_ACQPRIV_ID;
+    khui_context_create(&nc_child->ctx,
+                        KHUI_SCOPE_IDENT,
+                        pcpcd->target_identity,
+                        -1, NULL);
+    nc_child->persist_privcred = TRUE;
+    khui_cw_set_privileged_credential_collector(nc_child, pcpcd->dest_credset);
+    return khm_do_modal_newcredwnd(pcpcd->hwnd_parent, nc_child);
+}
+
+
 void
 khm_cred_obtain_new_creds_for_ident(khm_handle ident, wchar_t * title)
 {

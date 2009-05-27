@@ -1324,6 +1324,7 @@ khui_cw_get_prompt_value(khui_new_creds * c,
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_collect_privileged_credentials(khui_new_creds * c,
+                                       HWND hwnd_parent,
                                        khm_handle identity,
                                        khm_handle dest_credset);
 

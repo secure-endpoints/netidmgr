@@ -352,9 +352,10 @@ KHMEXP khm_boolean KHMAPI
 khui_cw_is_ready(khui_new_creds * c);
 
 typedef struct khui_collect_privileged_cred_data {
-    khui_new_creds * nc;
-    khm_handle       target_identity;
-    khm_handle       dest_credset;
+    khui_new_creds *nc;
+    HWND            hwnd_parent;
+    khm_handle      target_identity;
+    khm_handle      dest_credset;
 } khui_collect_privileged_creds_data;
 
 #ifdef __cplusplus

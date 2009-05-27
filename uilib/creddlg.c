@@ -28,7 +28,8 @@
 #define NIMPRIVATE
 
 #include<khuidefs.h>
-#include<intnewcred.h>
+#include "intnewcred.h"
+#include "intaction.h"
 #include<utils.h>
 #include<assert.h>
 #include<strsafe.h>
@@ -1471,21 +1472,26 @@ khui_cw_add_control_row(khui_new_creds * c,
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_collect_privileged_credentials(khui_new_creds * c,
+                                       HWND hwnd_parent,
                                        khm_handle identity,
                                        khm_handle dest_credset)
 {
     khui_collect_privileged_creds_data cpcd;
 
-    ASSERT_NC(c);
-
     cpcd.nc = c;
+    cpcd.hwnd_parent = hwnd_parent;
     cpcd.target_identity = identity;
     cpcd.dest_credset = dest_credset;
 
+    if (c) {
+        ASSERT_NC(c);
+        EnterCriticalSection(&c->cs);
+        cpcd.hwnd_parent = c->hwnd;
+        LeaveCriticalSection(&c->cs);
+    }
+
     return (khm_int32)
-        SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
-                    MAKEWPARAM(0, WMNC_COLLECT_PRIVCRED),
-                    (LPARAM) &cpcd);
+        SendMessage(khui_hwnd_main, WM_COMMAND, MAKEWPARAM(KHUI_ACTION_COLL_PRIV, 0), (LPARAM) &cpcd);
 }
 
 KHMEXP khm_int32 KHMAPI
