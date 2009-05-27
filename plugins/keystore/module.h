@@ -298,3 +298,8 @@ destroy_keystore_identity(keystore_t * ks);
 khm_handle
 create_default_keystore(void);
 
+void
+add_identkeys_from_credset(keystore_t * ks, khm_handle credset);
+
+khm_boolean
+get_key_if_necessary(HWND hwnd, keystore_t * ks, int res_reason);

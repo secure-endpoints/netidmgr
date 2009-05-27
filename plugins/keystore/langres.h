@@ -1,18 +1,15 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\keystore\lang\en_us\langres.rc
+// Used by C:\work\netidmgrcpp\plugins\keystore\lang\en_us\langres.rc
 //
 #define IDD_PP_CRED                     106
 #define IDD_PP_IDENT                    107
-#define IDS_PLUGIN_DESC                 109
 #define IDS_CREDPROV_DESC               109
 #define IDS_CT_SHORT_DESC               110
 #define IDI_PLUGIN                      110
 #define IDS_CT_LONG_DESC                111
 #define IDD_NEW_CREDS                   112
-#define IDS_NC_CT_TEMPLATE              112
 #define IDS_CUE_NAME                    112
-#define IDS_NC_CT_TEMPLATE_NL           113
 #define IDD_CONFIG                      113
 #define IDS_CUE_DESC                    113
 #define IDS_GEN_NONE                    114
@@ -22,12 +19,10 @@
 #define IDS_CFG_LONG_DESC               116
 #define IDI_IDENTITY                    116
 #define IDS_CFG_IDS_SHORT_DESC          117
-#define IDD_DIALOG1                     117
 #define IDD_IDSPEC                      117
 #define IDS_CFG_IDS_LONG_DESC           118
 #define IDD_NC_PRIV                     118
 #define IDS_CFG_ID_SHORT_DESC           119
-#define IDB_BITMAP1                     119
 #define IDB_NC_STATE                    119
 #define IDD_PASSWORD                    119
 #define IDS_CFG_ID_LONG_DESC            120
@@ -40,6 +35,7 @@
 #define IDS_ID_DESCRIPTION              123
 #define IDD_CONFIG_ID_O                 123
 #define IDS_ID_INSTANCE                 124
+#define IDD_KEYPROMPT                   124
 #define IDS_ID_TOOLTIP                  125
 #define IDS_NCPRIV_CAPTION              126
 #define IDS_NCLC_ID                     127
@@ -64,6 +60,11 @@
 #define IDS_DEF_KSDESCF                 146
 #define IDS_CFG_KSLIST_C0               147
 #define IDS_CFG_KSLIST_C1               148
+#define IDS_PWR_ADD                     149
+#define IDS_PWR_DEL                     150
+#define IDS_CONF_DEL_TITLE              151
+#define IDS_CONF_DEL_FMT1               152
+#define IDS_CONF_DEL_FMT                153
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041
@@ -84,17 +85,17 @@
 #define IDC_LBL_KSNAME                  1060
 #define IDC_IDICON                      1061
 #define IDC_INFO                        1062
-#define IDC_EDIT2                       1064
 #define IDC_LOCATION                    1064
 #define IDC_KSLIST                      1066
+#define IDC_REASON                      1067
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        120
+#define _APS_NEXT_RESOURCE_VALUE        125
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1067
+#define _APS_NEXT_CONTROL_VALUE         1070
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

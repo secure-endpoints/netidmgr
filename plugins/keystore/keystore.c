@@ -268,7 +268,10 @@ ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
             !wcscmp(idk->identity_name, ks->keys[i]->identity_name)) {
             /* we don't allow a locked key to be replaced by an
                unlocked key or vice versa. */
-            assert(!((ks->keys[i]->flags ^ idk->flags) & IDENTKEY_FLAG_LOCKED));
+            if (((ks->keys[i]->flags ^ idk->flags) & IDENTKEY_FLAG_LOCKED) != 0) {
+                KSUNLOCK(ks);
+                return KHM_ERROR_EXISTS;
+            }
             idk->version = ks->keys[i]->version + 1;
             ks_identkey_free(ks->keys[i]);
             ks->keys[i] = NULL;
@@ -296,30 +299,65 @@ ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
 }
 
 khm_int32
-ks_keystore_remove_identkey(keystore_t * ks, khm_size idx)
+ks_keystore_mark_remove_identkey(keystore_t * ks, khm_size idx)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
     assert(is_keystore_t(ks));
 
     KSLOCK(ks);
-
-    if (idx < ks->n_keys) {
-        ks_identkey_free(ks->keys[idx]);
-        ks->n_keys--;
-        while (idx < ks->n_keys) {
-            ks->keys[idx] = ks->keys[idx + 1];
-            idx++;
-        }
-    } else {
+    if (idx < ks->n_keys)
+        ks->keys[idx]->flags |= IDENTKEY_FLAG_DELETED;
+    else
         rv = KHM_ERROR_NOT_FOUND;
-    }
-    ks->flags |= KS_FLAG_MODIFIED;
-    GetSystemTimeAsFileTime(&ks->ft_mtime);
-
     KSUNLOCK(ks);
 
     return rv;
+}
+
+khm_int32
+ks_keystore_purge_removed_identkeys(keystore_t * ks)
+{
+    khm_int32 rv = KHM_ERROR_NOT_FOUND;
+    khm_size idx;
+
+    assert(is_keystore_t(ks));
+
+    KSLOCK(ks);
+    for (idx = 0; idx < ks->n_keys; ++idx) {
+        khm_size ridx;
+
+        if (!(ks->keys[idx]->flags & IDENTKEY_FLAG_DELETED))
+            continue;
+
+        ks_identkey_free(ks->keys[idx]);
+        ks->n_keys--;
+
+        for (ridx = idx; ridx < ks->n_keys; ++ridx) {
+            ks->keys[ridx] = ks->keys[ridx + 1];
+        }
+
+        --idx;
+        rv = KHM_ERROR_SUCCESS;
+
+        ks->flags |= KS_FLAG_MODIFIED;
+        GetSystemTimeAsFileTime(&ks->ft_mtime);
+    }
+    KSUNLOCK(ks);
+
+    return rv;
+}
+
+khm_int32
+ks_keystore_remove_identkey(keystore_t * ks, khm_size idx)
+{
+    khm_int32 rv;
+
+    rv = ks_keystore_mark_remove_identkey(ks, idx);
+    if (KHM_FAILED(rv))
+        return rv;
+
+    return ks_keystore_purge_removed_identkeys(ks);
 }
 
 khm_int32
@@ -526,6 +564,9 @@ has_encryption_key(keystore_t * ks) {
 
     if (ks->DBenc_key.pbData == NULL)
         return FALSE;
+
+    if (ks->key_refcount > 0)
+        return TRUE;
 
     GetSystemTimeAsFileTime(&ftc);
     if (CompareFileTime(&ftc, &ks->ft_key_expire) > 0) {
@@ -899,4 +940,31 @@ ks_keystore_has_key(keystore_t * ks)
     KSUNLOCK(ks);
 
     return has_key;
+}
+
+khm_boolean
+ks_keystore_hold_key(keystore_t * ks)
+{
+    khm_boolean held = FALSE;
+
+    assert(is_keystore_t(ks));
+    KSLOCK(ks);
+    if (has_encryption_key(ks)) {
+        ks->key_refcount++;
+        held = TRUE;
+    }
+    KSUNLOCK(ks);
+
+    return held;
+}
+
+void
+ks_keystore_release_key(keystore_t * ks)
+{
+    assert(is_keystore_t(ks));
+    KSLOCK(ks);
+    if (has_encryption_key(ks)) {
+        ks->key_refcount--;
+    }
+    KSUNLOCK(ks);
 }

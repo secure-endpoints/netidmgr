@@ -54,10 +54,9 @@ DLLBASENAME=keystore
 # Version info
 # ------------
 
-# TODO: Change the version numbers
 VERMAJOR=0
 VERMINOR=1
-VERAUX  =1
+VERAUX  =3
 VERPATCH=0
 
 # Leave these as-is
@@ -231,6 +230,7 @@ OBJFILES= \
 	$(OBJ)\config_main.obj		\
 	$(OBJ)\config_id.obj		\
 	$(OBJ)\config_ids.obj		\
+	$(OBJ)\unlockdlg.obj	\
 	$(OBJ)\keystore.obj		\
 	$(OBJ)\ks_codec.obj
 

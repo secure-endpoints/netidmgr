@@ -53,6 +53,7 @@ typedef struct tag_identkey {
 
     khm_int32    flags;
 #define IDENTKEY_FLAG_LOCKED   0x00000001
+#define IDENTKEY_FLAG_DELETED  0x00000002
 
 } identkey_t;
 
@@ -78,6 +79,9 @@ typedef struct tag_keystore {
     FILETIME     ft_key_lifetime; /*!< Lifetime of key */
     /* Default lifetime of a keystore master key is 5 minutes */
 #define KS_DEFAULT_KEY_LIFETIME 3000000000i64
+    LONG         key_refcount;  /*!< Number of key references.  If the
+                                  reference count is non-zero, the key
+                                  isn't discarded. */
 
     FILETIME     ft_key_ctime;    /*!< Creation time of key */
     FILETIME     ft_key_expire; /*!< Expiration time for encryption key */
@@ -152,6 +156,12 @@ extern khm_int32
 ks_keystore_remove_identkey(keystore_t * ks, khm_size idx);
 
 extern khm_int32
+ks_keystore_mark_remove_identkey(keystore_t * ks, khm_size idx);
+
+extern khm_int32
+ks_keystore_purge_removed_identkeys(keystore_t * ks);
+
+extern khm_int32
 ks_keystore_get_identkey(keystore_t * ks, khm_size idx, identkey_t **pidk);
 
 extern khm_int32
@@ -179,6 +189,12 @@ ks_keystore_reset_key(keystore_t * ks);
 
 extern khm_boolean
 ks_keystore_has_key(keystore_t * ks);
+
+extern khm_boolean
+ks_keystore_hold_key(keystore_t * ks);
+
+extern void
+ks_keystore_release_key(keystore_t * ks);
 
 extern khm_int32
 ks_keystore_unlock(keystore_t * ks);

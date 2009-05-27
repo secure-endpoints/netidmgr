@@ -97,6 +97,10 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
         }
     }
 
+    Edit_LimitText(GetDlgItem(hwnd, IDC_PASSWORD), KHUI_MAXCCH_PASSWORD);
+    Edit_LimitText(GetDlgItem(hwnd, IDC_NEWPW1), KHUI_MAXCCH_PASSWORD);
+    Edit_LimitText(GetDlgItem(hwnd, IDC_NEWPW2), KHUI_MAXCCH_PASSWORD);
+
     if (ks == NULL) {
         EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), FALSE);
         EnableWindow(GetDlgItem(hwnd, IDC_NEWPW1), FALSE);
@@ -651,7 +655,7 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
     assert(is_keystore_t(d->ks));
 
     kcdb_credset_create(&credset);
-    rv = khui_cw_collect_privileged_credentials(d->nct.nc, NULL, credset);
+    rv = khui_cw_collect_privileged_credentials(d->nct.nc, NULL, NULL, credset);
 
     if (rv == KHUI_NC_RESULT_PROCESS) {
         add_identkeys_from_credset(d->ks, credset);
@@ -926,7 +930,7 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
         GetDlgItemText(hw_privint, IDC_PASSWORD, pw, ARRAYLENGTH(pw));
         StringCbLength(pw, sizeof(pw), &cb);
 
-        if (cb == 0 && ks_keystore_has_key(ks)) {
+        if (cb == 0 && ks_keystore_hold_key(ks)) {
             /* Nothing to do.  We already have a key for this keystore
                and the user wants us to use it. */
         } else if (cb == 0) {
@@ -939,7 +943,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
 
-        } else if (KHM_FAILED(ks_keystore_set_key_password(ks, pw, cb))) {
+        } else if (KHM_FAILED(ks_keystore_set_key_password(ks, pw, cb)) ||
+                   !ks_keystore_hold_key(ks)) {
 
             khui_cw_set_response(nc, credtype_id,
                                  KHUI_NC_RESPONSE_NOEXIT | KHUI_NC_RESPONSE_PENDING);
@@ -949,6 +954,8 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             _report_sr0(KHERR_ERROR, IDS_TBADPASS);
             _end_task();
             return KHM_ERROR_INVALID_PARAM;
+        } else {
+            /* we have a held key */
         }
 
         if (key_source) {
@@ -956,6 +963,7 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
             add_identkeys_from_credset(ks, key_source);
         }
         ks_keystore_lock(ks);
+        ks_keystore_release_key(ks);
         if (ks_keystore_get_flags(ks) & KS_FLAG_MODIFIED)
             save_keystore_with_identity(ks);
         khui_cw_set_response(nc, credtype_id,

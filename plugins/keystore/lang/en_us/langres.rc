@@ -189,9 +189,8 @@ BEGIN
     EDITTEXT        IDC_LOCATION,61,27,281,14,ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "&Identities contained in this keystore:",IDC_STATIC,7,44,118,8
     CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,57,335,88
-    PUSHBUTTON      "&Add new identity ...",IDC_ADDNEW,7,152,79,14,WS_DISABLED
-    PUSHBUTTON      "&Configure",IDC_CONFIGURE,225,152,58,14,WS_DISABLED
-    PUSHBUTTON      "&Remove ...",IDC_REMOVE,287,152,55,14,WS_DISABLED
+    PUSHBUTTON      "&Add new identity ...",IDC_ADDNEW,7,152,79,14
+    PUSHBUTTON      "&Remove ...",IDC_REMOVE,287,152,55,14
 END
 
 IDD_CONFIG_ID_O DIALOGEX 0, 0, 349, 200
@@ -201,6 +200,20 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "&Keystores that contain keys to this identity:",IDC_STATIC,7,7,141,8
     CONTROL         "",IDC_KSLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,23,335,107
+END
+
+IDD_KEYPROMPT DIALOGEX 0, 0, 316, 110
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Enter password for Keystore"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    ICON            "",IDC_IDICON,7,7,20,20
+    LTEXT           "Keystore",IDC_NAME,42,7,267,11
+    LTEXT           "Password",IDC_STATIC,42,25,32,8
+    EDITTEXT        IDC_PASSWORD,99,23,210,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "The keystore requires a password.",IDC_REASON,42,45,267,21,0,WS_EX_STATICEDGE
+    DEFPUSHBUTTON   "OK",IDOK,205,89,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,259,89,50,14
 END
 
 
@@ -315,6 +328,15 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 193
     END
+
+    IDD_KEYPROMPT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        VERTGUIDE, 42
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 103
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -385,6 +407,11 @@ BEGIN
     IDS_DEF_KSDESCF         "Default user keystore for %s"
     IDS_CFG_KSLIST_C0       "KeyStores"
     IDS_CFG_KSLIST_C1       "Location"
+    IDS_PWR_ADD             "Keystore password must be supplied before new passwords can be added to the keystore."
+    IDS_PWR_DEL             "Keystore password must be supplied before stored passwords can be removed."
+    IDS_CONF_DEL_TITLE      "Confirm deletion"
+    IDS_CONF_DEL_FMT1       "Are you sure you want to delete the selected password?"
+    IDS_CONF_DEL_FMT        "Are you sure you want to delete %d passwords?"
 END
 
 #endif    // English (U.S.) resources

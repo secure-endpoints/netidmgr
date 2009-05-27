@@ -57,6 +57,98 @@ typedef struct tag_config_id_dlg_data {
     /* TODO: Add any fields for holding state here */
 } config_id_dlg_data;
 
+void
+config_id_prompt_for_new_identity(HWND hwnd, config_id_dlg_data * d)
+{
+    khm_handle credset = NULL;
+    khm_int32 rv;
+
+    assert(is_keystore_t(d->ks));
+
+    kcdb_credset_create(&credset);
+    rv = khui_cw_collect_privileged_credentials(NULL, hwnd, NULL, credset);
+
+    if (rv == KHUI_NC_RESULT_PROCESS) {
+        add_identkeys_from_credset(d->ks, credset);
+    } else {
+        assert(FALSE);
+    }
+
+    kcdb_credset_delete(credset);
+}
+
+INT_PTR
+config_id_ks_add_new_identkey(HWND hwnd, config_id_dlg_data * d)
+{
+    if (get_key_if_necessary(hwnd, d->ks, IDS_PWR_ADD)) {
+
+        config_id_prompt_for_new_identity(hwnd, d);
+
+        ks_keystore_lock(d->ks);
+        save_keystore_with_identity(d->ks);
+        creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+        ks_keystore_release_key(d->ks);
+    }
+
+    return TRUE;
+}
+
+INT_PTR
+config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
+{
+    HWND hw_list;
+    int n_to_del;
+
+    hw_list = GetDlgItem(hwnd, IDC_IDLIST);
+
+    if ((n_to_del = ListView_GetSelectedCount(hw_list)) == 0)
+        return TRUE;            /* nothing to do */
+
+    if (get_key_if_necessary(hwnd, d->ks, IDS_PWR_DEL)) {
+        int    idx = -1;
+
+        {
+            wchar_t title[64];
+            wchar_t msg[128];
+            wchar_t fmt[128];
+
+            LoadString(hResModule, IDS_CONF_DEL_TITLE, title, ARRAYLENGTH(title));
+
+            if (n_to_del == 1)
+                LoadString(hResModule, IDS_CONF_DEL_FMT1, msg, ARRAYLENGTH(msg));
+            else {
+                LoadString(hResModule, IDS_CONF_DEL_FMT, fmt, ARRAYLENGTH(fmt));
+                StringCbPrintf(msg, sizeof(msg), fmt, n_to_del);
+            }
+
+            if (MessageBox(hwnd, msg, title, MB_YESNO | MB_ICONQUESTION) != IDYES) {
+                ks_keystore_release_key(d->ks);
+                return TRUE;
+            }
+        }
+
+        while ((idx = ListView_GetNextItem(hw_list, idx, LVNI_SELECTED)) != -1) {
+            LVITEM lvi;
+
+            lvi.mask = LVIF_PARAM;
+            lvi.iItem = idx;
+            lvi.iSubItem = 0;
+
+            ListView_GetItem(hw_list, &lvi);
+
+            ks_keystore_mark_remove_identkey(d->ks, lvi.lParam);
+        }
+
+        ks_keystore_purge_removed_identkeys(d->ks);
+        ks_keystore_lock(d->ks);
+        save_keystore_with_identity(d->ks);
+        creddlg_refresh_idlist(hw_list, d->ks);
+        ks_keystore_release_key(d->ks);
+    }
+
+    return TRUE;
+}
+
 INT_PTR CALLBACK
 config_id_ks_dlgproc(HWND hwnd,
                      UINT uMsg,
@@ -93,6 +185,25 @@ config_id_ks_dlgproc(HWND hwnd,
             KSUNLOCK(d->ks);
         }
         return FALSE;
+
+    case WM_COMMAND:
+        d = (config_id_dlg_data *)
+            GetWindowLongPtr(hwnd, DWLP_USER);
+        if (d == NULL || d->ks == NULL)
+            break;
+
+        {
+            int code = HIWORD(wParam);
+            int id = LOWORD(wParam);
+
+            if (code == BN_CLICKED && id == IDC_ADDNEW) {
+                return config_id_ks_add_new_identkey(hwnd, d);
+            } else if (code == BN_CLICKED && id == IDC_REMOVE) {
+                return config_id_ks_delete_identkey(hwnd, d);
+            }
+        }
+
+        return TRUE;
     }
 
     return FALSE;
