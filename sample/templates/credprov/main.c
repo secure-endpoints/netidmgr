@@ -69,7 +69,7 @@ int n_locales = ARRAYLENGTH(locales);
    and register the plugins.
 
 */
-KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
+KHMEXP_EXP khm_int32 KHMAPI init_module(kmm_module h_module) {
 
     khm_int32 rv = KHM_ERROR_SUCCESS;
     kmm_plugin_reg pi;
@@ -134,7 +134,7 @@ KHMEXP khm_int32 KHMAPI init_module(kmm_module h_module) {
    Called by the NetIDMgr module manager when unloading the module.
    This will get called even if the module is being unloaded due to an
    error code returned by init_module().  This callback is required. */
-KHMEXP khm_int32 KHMAPI exit_module(kmm_module h_module) {
+KHMEXP_EXP khm_int32 KHMAPI exit_module(kmm_module h_module) {
 
     /* Unregistering the plugin is not required at this point. */
 

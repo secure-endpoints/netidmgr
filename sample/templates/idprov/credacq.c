@@ -212,6 +212,8 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
 
     khui_cw_add_type(nc, &d->nct);
 
+    khui_cw_add_selector(nc, idsel_factory, NULL);
+
     return KHM_ERROR_SUCCESS;
 }
 

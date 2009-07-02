@@ -127,27 +127,36 @@ idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* Identity Selector control factory
 
    Runs in UI thread */
-khm_int32 KHMAPI 
-idsel_factory(HWND hwnd_parent, HWND * phwnd_return) {
+khm_int32 KHMAPI
+idsel_factory(HWND hwnd_parent, khui_identity_selector * u_data) {
+    wchar_t dn[KHUI_MAXCCH_NAME];
 
-    HWND hw_dlg;
+    if (hwnd_parent) {
 
-    hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_IDSPEC),
-                          hwnd_parent, idspec_dlg_proc);
+        u_data->hwnd_selector = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_IDSPEC),
+                                             hwnd_parent, idspec_dlg_proc);
 
-#ifdef DEBUG
-    assert(hw_dlg);
-#endif
-    *phwnd_return = hw_dlg;
+        assert(u_data->hwnd_selector);
 
-    return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
-}
+        LoadString(hResModule, IDS_ID_INSTANCE, dn, ARRAYLENGTH(dn));
+        u_data->display_name = PWCSDUP(dn);
 
-khm_int32
-handle_kmsg_ident_get_idsel_factory(kcdb_idsel_factory * pcb)
-{
-    *pcb = idsel_factory;
+        u_data->icon = LoadIcon(hResModule, MAKEINTRESOURCE(IDI_IDENTITY));
 
-    return KHM_ERROR_SUCCESS;
+        return (u_data->hwnd_selector ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
+
+    } else {
+        if (u_data->display_name) {
+            PFREE(u_data->display_name);
+            u_data->display_name = NULL;
+        }
+
+        if (u_data->icon) {
+            DestroyIcon(u_data->icon);
+            u_data->icon = NULL;
+        }
+
+        return KHM_ERROR_SUCCESS;
+    }
 }
 
