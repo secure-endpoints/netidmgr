@@ -230,7 +230,8 @@ parchive:
 archive: parchive
 	$(ECHO) -- Creating archive
 	$(CD) installer
-	$(RMAKE) ARCHIVE=1
+	$(RMAKE) ARCHIVE=bin
+	$(RMAKE) ARCHIVE=sdk
 	$(CD) ..
 	$(ECHO) -- Done with archive
 
