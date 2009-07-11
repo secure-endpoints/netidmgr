@@ -372,9 +372,6 @@ handle_kmsg_ident(khm_int32 msg_type,
     case KMSG_IDENT_UPDATE:
         return handle_kmsg_ident_update((khm_handle) vparam);
 
-    case KMSG_IDENT_GET_IDSEL_FACTORY:
-        return handle_kmsg_ident_get_idsel_factory((kcdb_idsel_factory *) vparam);
-
     case KMSG_IDENT_NOTIFY_CREATE:
         return handle_kmsg_ident_notify_create((khm_handle) vparam);
 

@@ -204,8 +204,8 @@ config_dlgproc(HWND hwndDlg,
                LPARAM lParam);
 
 /* in idselect.c */
-khm_int32
-handle_kmsg_ident_get_idsel_factory(kcdb_idsel_factory * pcb);
+khm_int32 KHMCALLBACK
+idsel_factory(HWND hwnd_parent, khui_identity_selector * u);
 
 void
 find_matching_cert(khm_handle buf, PCCERT_CONTEXT *ppCtx, HCERTSTORE *phCertStore);

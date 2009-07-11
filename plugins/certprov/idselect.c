@@ -305,27 +305,41 @@ idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* Identity Selector control factory
 
    Runs in UI thread */
-khm_int32 KHMAPI 
-idsel_factory(HWND hwnd_parent, HWND * phwnd_return) {
+khm_int32 KHMCALLBACK
+idsel_factory(HWND hwnd_parent, khui_identity_selector * u) {
 
-    HWND hw_dlg;
+    if (hwnd_parent) {
 
-    hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_IDSPEC),
-                          hwnd_parent, idspec_dlg_proc);
+	HWND hw_dlg;
+	wchar_t display_name[KHUI_MAXCCH_NAME] = L"";
 
-#ifdef DEBUG
-    assert(hw_dlg);
-#endif
-    *phwnd_return = hw_dlg;
+	hw_dlg = CreateDialog(hResModule, MAKEINTRESOURCE(IDD_IDSPEC),
+			      hwnd_parent, idspec_dlg_proc);
+	assert(hw_dlg);
 
-    return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
-}
+	LoadString(hResModule, IDS_ID_INSTANCE, display_name, ARRAYLENGTH(display_name));
 
-khm_int32
-handle_kmsg_ident_get_idsel_factory(kcdb_idsel_factory * pcb)
-{
-    *pcb = idsel_factory;
+	u->hwnd_selector = hw_dlg;
+	u->icon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_IDENTITY),
+			    IMAGE_ICON, 0, 0,
+			    LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
+	u->display_name = PWCSDUP(display_name);
 
-    return KHM_ERROR_SUCCESS;
+	return (hw_dlg ? KHM_ERROR_SUCCESS : KHM_ERROR_UNKNOWN);
+
+    } else {
+
+	if (u->display_name) {
+	    PFREE(u->display_name);
+	    u->display_name = NULL;
+	}
+
+	if (u->icon) {
+	    DestroyIcon(u->icon);
+	    u->icon = NULL;
+	}
+
+	return KHM_ERROR_SUCCESS;
+    }
 }
 

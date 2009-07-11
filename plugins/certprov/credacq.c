@@ -109,7 +109,7 @@ handle_khui_wm_nc_notify(HWND hwnd, WPARAM wParam, LPARAM lParam) {
                 hprov == h_idprov) {
                 khui_cw_enable_type(d->nct.nc, credtype_id, TRUE);
 
-                khui_cw_notify_identity_state(d->nct.nc, NULL,
+                khui_cw_notify_identity_state(d->nct.nc, NULL, L"",
                                               KHUI_CWNIS_VALIDATED |
                                               KHUI_CWNIS_READY, 0);
             } else {
@@ -237,6 +237,8 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
     d->nct.dlg_template = MAKEINTRESOURCE(IDD_NEW_CREDS);
 
     khui_cw_add_type(nc, &d->nct);
+
+    khui_cw_add_selector(nc, idsel_factory, NULL);
 
     return KHM_ERROR_SUCCESS;
 }
