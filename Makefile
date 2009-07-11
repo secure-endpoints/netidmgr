@@ -207,6 +207,17 @@ keystore: ui
 	$(ECHO) -- Done with $@
 !endif
 
+!if exist( plugins\certprov )
+finale: certprov
+
+certprov: ui
+	$(ECHO) -- Entering $@
+	$(CD) plugins\certprov
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1
+	$(CD) ..\..
+	$(ECHO) -- Done with $@
+!endif
+
 pdoc:
 
 doc: pdoc
