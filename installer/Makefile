@@ -80,8 +80,8 @@ KSBIN=$(KEYSTORE)\dest\$(CPU)_$(KSDBG)
 $(OBJ)\installer.wixobj: installer.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
 		-dProductVersion=$(NETIDMGR_VERSION)	\
-		-dBinDir=$(BINDIR)			\
-		-dLibDir=$(LIBDIR)			\
+		-dBinDir=$(BINDIR)\			\
+		-dLibDir=$(LIBDIR)\			\
 !ifndef NODEBUG
 		-dDebug=1					\
 !endif
