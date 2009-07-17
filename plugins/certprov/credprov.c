@@ -39,6 +39,8 @@ khm_handle g_credset = NULL;
 khm_int32 attr_id_issuer = KCDB_ATTR_INVALID;
 khm_int32 attr_id_serial = KCDB_ATTR_INVALID;
 
+HANDLE h_idprov_event = NULL;
+
 khm_int32
 handle_kmsg_system_init(void)
 {
@@ -48,6 +50,9 @@ handle_kmsg_system_init(void)
     khui_config_node cnode;
     khui_config_node_reg creg;
     khm_int32 rv;
+
+    assert(h_idprov_event == NULL);
+    h_idprov_event = CreateEvent(NULL, TRUE, FALSE, L"Local\\" IDPROV_NAMEW L"Waiter");
 
     /* First and foremost, we need to register a credential type. */
     ZeroMemory(&ct, sizeof(ct));
@@ -74,10 +79,6 @@ handle_kmsg_system_init(void)
     rv = kcdb_credtype_register(&ct, &credtype_id);
     if (KHM_FAILED(rv))
         return rv;
-
-    assert(idprov_sub != NULL);
-
-    kmq_send_sub_msg(idprov_sub, KMSG_MYMSG, KMSG_MYMSG_SET_CTYPE, 0, 0);
 
     /* Register a few attributes that we will be using */
     {
@@ -241,6 +242,11 @@ handle_kmsg_system_exit(void)
         }
 
         khui_cfg_release(cn_idents);
+    }
+
+    if (h_idprov_event != NULL) {
+	CloseHandle(h_idprov_event);
+	h_idprov_event = NULL;
     }
 
     /* TODO: Perform additional uninitialization operations. */
@@ -651,6 +657,11 @@ handle_kmsg_cred (khm_int32 msg_type,
                   void *    vparam)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    assert(h_idprov_event != NULL);
+
+    if (h_idprov_event != NULL)
+	WaitForSingleObject(h_idprov_event, INFINITE);
 
     switch(msg_subtype) {
     case KMSG_CRED_REFRESH:

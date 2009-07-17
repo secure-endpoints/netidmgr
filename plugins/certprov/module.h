@@ -126,9 +126,6 @@
 #include<strsafe.h>
 #endif
 
-#define KMSG_MYMSG            KMSGBASE_USER
-#define KMSG_MYMSG_SET_CTYPE  1
-
 /***************************************************
  Externals
 ***************************************************/
