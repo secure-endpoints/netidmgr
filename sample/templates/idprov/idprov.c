@@ -32,14 +32,25 @@
 khm_handle h_idprov = NULL;
 khm_handle idprov_sub = NULL;
 
+extern HANDLE h_idprov_event;
+
 khm_int32
 handle_kmsg_ident_init(void) {
+
+    assert(h_idprov_event);
+
+    if (h_idprov_event)
+	SetEvent(h_idprov_event);
 
     /* First get a handle to self.  Something is very wrong if we
        can't do that. */
     if (KHM_FAILED(kcdb_identpro_find(IDPROV_NAMEW, &h_idprov))) {
         return KHM_ERROR_UNKNOWN;
     }
+
+    assert(credtype_id > 0);
+
+    kcdb_identity_set_type(credtype_id);
 
     /* TODO: Additional initialization code goes here */
 
@@ -284,29 +295,6 @@ handle_kmsg_system_idprov(khm_int32 msg_type, khm_int32 msg_subtype,
     return KHM_ERROR_SUCCESS;
 }
 
-/* KMSG_MYMSG is defined to be KMSGBASE_USER and does not conflict
-   with any system defined message types.  We are simply using the
-   constant to define our own private message class to communicate
-   with the identity provider.
-
-   Note that if we want to subscribe to custom message classes, then
-   using KMSGBASE_USER as a hardcoded message class is no longer safe.
-   In that case, we'll have to register a custom message class using
-   kmq_register_type().
- */
-khm_int32
-handle_kmsg_mymsg(khm_int32 msg_type, khm_int32 msg_subtype,
-                  khm_ui_4 uparam, void * vparam)
-{
-    if (msg_subtype == KMSG_MYMSG_SET_CTYPE) {
-        assert(credtype_id > 0);
-
-        kcdb_identity_set_type(credtype_id);
-    }
-
-    return KHM_ERROR_SUCCESS;
-}
-
 khm_int32 KHMAPI
 idprov_msg_proc(khm_int32 msg_type, khm_int32 msg_subtype,
                 khm_ui_4 uparam, void * vparam)
@@ -317,9 +305,6 @@ idprov_msg_proc(khm_int32 msg_type, khm_int32 msg_subtype,
 
     case KMSG_IDENT:
         return handle_kmsg_ident(msg_type, msg_subtype, uparam, vparam);
-
-    case KMSG_MYMSG:
-        return handle_kmsg_mymsg(msg_type, msg_subtype, uparam, vparam);
     }
 
     return KHM_ERROR_SUCCESS;
