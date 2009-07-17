@@ -140,12 +140,8 @@ init_module(kmm_module h_module)
     pi.flags = 0;
     pi.msg_proc = credprov_msg_proc;
     pi.description = description;
-
-    /* Our credentials provider depends on the identity provider.  If
-       any other plug-in depends on this credentials type, we can
-       guarantee that the identity provider is initialized by the time
-       the credentials provideer is available. */
     pi.dependencies = NULL;
+
     t = LoadString(hResModule, IDS_CREDPROV_DESC,
                    description, ARRAYLENGTH(description));
     if (!t)

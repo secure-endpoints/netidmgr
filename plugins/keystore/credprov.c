@@ -270,7 +270,6 @@ handle_kmsg_system_exit(void)
 
     DeleteCriticalSection(&cs_ks);
 
-    assert (h_idprov_event != NULL);
     if (h_idprov_event != NULL) {
         CloseHandle(h_idprov_event);
         h_idprov_event = NULL;
