@@ -54,6 +54,7 @@ idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             d = PMALLOC(sizeof(*d));
             ZeroMemory(d, sizeof(*d));
             d->magic = IDSEL_DLG_DATA_MAGIC;
+            d->identity = NULL;
 
 #pragma warning(push)
 #pragma warning(disable: 4244)
