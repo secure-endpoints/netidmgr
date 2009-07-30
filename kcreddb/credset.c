@@ -1225,6 +1225,32 @@ kcdb_cred_comp_generic(khm_handle cred1,
             r = 0;
         }
 
+	if (r == 0 &&
+	    (o->fields[i].attrib == KCDB_ATTR_ID_DISPLAY_NAME ||
+	     o->fields[i].attrib == KCDB_ATTR_ID)) {
+	    khm_handle id1 = NULL;
+	    khm_handle id2 = NULL;
+
+	    wchar_t idname1[KCDB_IDENT_MAXCCH_NAME] = L"";
+	    wchar_t idname2[KCDB_IDENT_MAXCCH_NAME] = L"";
+	    khm_size cb;
+
+	    kcdb_cred_get_identity(cred1, &id1);
+	    kcdb_cred_get_identity(cred2, &id2);
+
+	    r = (((cb = sizeof(idname1)) &&
+
+		  KHM_SUCCEEDED(kcdb_get_resource(id1, KCDB_RES_DISPLAYNAME,
+						  0, NULL, NULL, idname1, &cb)) &&
+
+		  (cb = sizeof(idname2)) &&
+
+		  KHM_SUCCEEDED(kcdb_get_resource(id2, KCDB_RES_DISPLAYNAME,
+						  0, NULL, NULL, idname2, &cb)))?
+
+		 _wcsicmp(idname1, idname2) : 0);
+	}
+
         if (r == 0)
             r = kcdb_creds_comp_attr(cred1,cred2,o->fields[i].attrib);
 
