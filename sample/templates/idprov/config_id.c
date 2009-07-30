@@ -91,6 +91,23 @@ config_id_dlgproc(HWND hwnd,
             /* TODO: apply changes */
 
             return TRUE;
+        } else if (HIWORD(wParam) == WMCFG_INIT_PANEL) {
+	    khm_int32 *prv = (khm_int32 *) lParam;
+
+            /* TODO: handle panel initialization */
+
+	    /* lParam is a pointer to a khm_int32 that must be set to
+	       KHM_ERROR_SUCCESS if this panel should be displayed and
+	       any other value otherwise.
+
+	       This is currently only used for per identity subpanel.
+	       After the panel is created, this message is sent to
+	       poll whether this subpanel is applicable to the current
+	       context (i.e. for this identity) If not (you return a
+	       non-zero value in *prv here), then the panel is
+	       destroyed.
+	    */
+            return TRUE;
         }
         break;
 
