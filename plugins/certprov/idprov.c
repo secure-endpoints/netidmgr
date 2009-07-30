@@ -200,7 +200,7 @@ handle_kmsg_ident_notify_create(khm_handle identity)
            extra parameters, then we can go ahead and finish
            initializing the identity. */
 
-        /* GOING HERE */
+        assert(FALSE);
     }
 
     return KHM_ERROR_SUCCESS;

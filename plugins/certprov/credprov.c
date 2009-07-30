@@ -291,8 +291,8 @@ encode_blob_to_string_int(const BYTE * pData, int ntotalbits,
 
     static const wchar_t map[] =
         L"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ#$";
+    /*              111111111122222222223333333333444444444455555555556666 */
     /*    0123456789012345678901234567890123456789012345678901234567890123 */
-
     bits = 0;
     nbits = 0;
     while (*pcbbuf > 0 && ntotalbits > 0) {
