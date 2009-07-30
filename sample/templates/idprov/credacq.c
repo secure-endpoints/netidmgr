@@ -193,14 +193,12 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
     ZeroMemory(d, sizeof(*d));
 
     d->nct.type = credtype_id;
-    d->nct.ordinal = -1;
+    d->nct.ordinal = (khm_size) -1;
 
     LoadString(hResModule, IDS_CT_SHORT_DESC,
                wshortdesc, ARRAYLENGTH(wshortdesc));
     StringCbLength(wshortdesc, sizeof(wshortdesc), &cb);
-#ifdef DEBUG
     assert(cb > 0);
-#endif
     cb += sizeof(wchar_t);
 
     d->nct.name = malloc(cb);
