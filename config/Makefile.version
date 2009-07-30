@@ -32,7 +32,7 @@ NETIDMGR_VERSION_INC=1
 
 NETIDMGR_VERSION_MAJOR=1
 NETIDMGR_VERSION_MINOR=99
-NETIDMGR_VERSION_PATCH=5
+NETIDMGR_VERSION_PATCH=7
 NETIDMGR_VERSION_AUX=0
 
 # Release description
@@ -74,7 +74,7 @@ KH_BUILD=DEBUG
 !endif
 
 !if "$(KH_BUILD)"=="RETAIL" && !defined(NODEBUG)
-! error The Khimaira build configuration is set for RETAIL wihle the Platform SDK build environment is set to DEBUG
+! error The Khimaira build configuration is set for RETAIL while the Platform SDK build environment is set to DEBUG
 !endif
 
 # The default release type is PRIVATE if no other type is specified
