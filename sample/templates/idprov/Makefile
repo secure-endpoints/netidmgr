@@ -98,6 +98,12 @@ BUILDTYPE=debug
 DEST=$(BUILDROOT)\dest\$(CPU)_$(BUILDTYPE)
 OBJ=$(BUILDROOT)\obj\$(CPU)_$(BUILDTYPE)
 
+!if "$(CPU)"=="AMD64" || "$(CPU)"=="x64"
+NIDMGRLIB=nidmgr64.lib
+!else
+NIDMGRLIB=nidmgr32.lib
+!endif
+
 # If you are building against the NetIDMgr build tree, you can define
 # the environment variable NIDMRAWDIRS.
 
@@ -203,8 +209,8 @@ if exist "$@.manifest" $(RM) "$@.manifest"
 
 DLL=$(DEST)\$(DLLBASENAME).dll
 
-LIBFILES= \
-	$(NIDMLIBDIR)\nidmgr32.lib
+LIBFILES= 				\
+	$(NIDMLIBDIR)\$(NIDMGRLIB)
 
 OBJFILES= \
 	$(OBJ)\credacq.obj		\
