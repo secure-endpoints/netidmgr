@@ -2023,7 +2023,7 @@ kcdb_identity_enum(khm_int32 and_flags,
     for ( id = kcdb_identities;
           id != NULL;
           id = LNEXT(id) ) {
-        if (((id->flags & KCDB_IDENT_FLAG_ACTIVE) == 
+        if (((id->flags & (KCDB_IDENT_FLAG_ACTIVE | KCDB_IDENT_FLAG_NO_NOTIFY)) == 
              KCDB_IDENT_FLAG_ACTIVE) &&
             ((id->flags & and_flags) == eq_flags)) {
             n_idents ++;
@@ -2050,7 +2050,7 @@ kcdb_identity_enum(khm_int32 and_flags,
         for (id = kcdb_identities;
              id != NULL;
              id = LNEXT(id)) {
-            if (((id->flags & KCDB_IDENT_FLAG_ACTIVE) == 
+            if (((id->flags & (KCDB_IDENT_FLAG_ACTIVE | KCDB_IDENT_FLAG_NO_NOTIFY)) == 
                  KCDB_IDENT_FLAG_ACTIVE) &&
                 ((id->flags & and_flags) == eq_flags)) {
                 cb_curr = cch_left * sizeof(wchar_t);
@@ -2098,7 +2098,8 @@ kcdb_identity_begin_enum(khm_int32 and_flags,
 
     n_ids = 0;
     for (id = kcdb_identities; id != NULL; id = LNEXT(id))
-        if ((id->flags & KCDB_IDENT_FLAG_ACTIVE) == KCDB_IDENT_FLAG_ACTIVE &&
+        if ((id->flags & (KCDB_IDENT_FLAG_ACTIVE |
+			  KCDB_IDENT_FLAG_NO_NOTIFY)) == KCDB_IDENT_FLAG_ACTIVE &&
             ((id->flags & and_flags) == eq_flags))
             n_ids ++;
 
@@ -2111,7 +2112,8 @@ kcdb_identity_begin_enum(khm_int32 and_flags,
     kcdbint_enum_alloc(e, n_ids);
 
     for (i=0, id = kcdb_identities; id != NULL; id = LNEXT(id))
-        if ((id->flags & KCDB_IDENT_FLAG_ACTIVE) == KCDB_IDENT_FLAG_ACTIVE &&
+        if ((id->flags & (KCDB_IDENT_FLAG_ACTIVE |
+			  KCDB_IDENT_FLAG_NO_NOTIFY)) == KCDB_IDENT_FLAG_ACTIVE &&
             ((id->flags & and_flags) == eq_flags)) {
 
 #ifdef DEBUG

@@ -282,7 +282,8 @@ Functions, macros etc. for manipulating identities.
 /*! \brief Don't post notifications
 
     No notifications about identity property changes will be generated
-    while this flag is set.
+    while this flag is set.  In addition, the identity will not show
+    up in any enumeration while this flag is set.
  */
 #define KCDB_IDENT_FLAG_NO_NOTIFY   0x00010000L
 
