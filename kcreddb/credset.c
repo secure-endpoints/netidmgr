@@ -1249,6 +1249,9 @@ kcdb_cred_comp_generic(khm_handle cred1,
 						  0, NULL, NULL, idname2, &cb)))?
 
 		 _wcsicmp(idname1, idname2) : 0);
+
+	    kcdb_identity_release(id1);
+	    kcdb_identity_release(id2);
 	}
 
         if (r == 0)
