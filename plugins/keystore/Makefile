@@ -56,7 +56,7 @@ DLLBASENAME=keystore
 
 VERMAJOR=0
 VERMINOR=1
-VERAUX  =3
+VERAUX  =5
 VERPATCH=0
 
 # Leave these as-is
