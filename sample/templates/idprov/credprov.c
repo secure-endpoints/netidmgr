@@ -56,6 +56,8 @@ handle_kmsg_system_init(void)
     ZeroMemory(&ct, sizeof(ct));
     ct.id = KCDB_CREDTYPE_AUTO;
     ct.name = CREDTYPE_NAMEW;
+    ct.short_desc = short_desc;
+    ct.long_desc = long_desc;
 
     short_desc[0] = L'\0';
     LoadString(hResModule, IDS_CT_SHORT_DESC,
