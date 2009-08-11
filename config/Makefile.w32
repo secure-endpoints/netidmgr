@@ -179,6 +179,8 @@ khcwarn=/Wp64
 khcwarn=$(khcwarn) /WX
 !endif
 
+khdefines=$(khdefines) -DISOLATION_AWARE_ENABLED
+
 !if "$(CPU)" == "i386"
 khdefines=$(khdefines) -D_USE_32BIT_TIME_T
 !endif
@@ -320,6 +322,9 @@ etag::
 !ifndef MT
 MT=mt.exe -nologo
 !endif
+
+_VC_MANIFEST_EMBED_EXE_HOST= \
+if exist $@.manifest $(MT) -outputresource:$@;2 -manifest $@.manifest
 
 _VC_MANIFEST_EMBED_EXE= \
 if exist $@.manifest $(MT) -outputresource:$@;1 -manifest $@.manifest
