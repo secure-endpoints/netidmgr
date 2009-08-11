@@ -95,7 +95,9 @@
   <?define CodePage="1252" ?>
 
   <?if $(var.Platform)="Intel" ?>
-  <?define IncludeW2k="yes" ?>
+    <?ifndef NoW2k?>
+      <?define IncludeW2k="yes" ?>
+    <?endif?>
   <?define IncludeDebugSyms="yes" ?>
   <?define IncludeKrb4="yes" ?>
   <?elseif $(var.Platform)="x64" ?>

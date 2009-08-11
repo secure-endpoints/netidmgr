@@ -83,7 +83,10 @@ $(OBJ)\installer.wixobj: installer.wxs
 		-dBinDir=$(BINDIR)\			\
 		-dLibDir=$(LIBDIR)\			\
 !ifndef NODEBUG
-		-dDebug=1					\
+		-dDebug=1				\
+!endif
+!ifdef KH_NO_W2K
+		-dNoW2k=1				\
 !endif
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)			\
