@@ -204,9 +204,14 @@ if exist "$@.manifest" $(RM) "$@.manifest"
 DLL=$(DEST)\$(DLLBASENAME).dll
 
 LIBFILES= \
-	$(NIDMLIBDIR)\nidmgr32.lib	\
 	Crypt32.lib			\
 	Cryptui.lib
+
+!if "$(CPU)"=="AMD64"
+LIBFILES=$(LIBFILES) $(NIDMLIBDIR)\nidmgr64.lib
+!else
+LIBFILES=$(LIBFILES) $(NIDMLIBDIR)\nidmgr32.lib
+!endif
 
 OBJFILES= \
 	$(OBJ)\credacq.obj		\
