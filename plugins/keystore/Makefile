@@ -131,7 +131,10 @@ incflags = -I"$(NIDMINCDIR)" -I"$(OBJ)" -I.
 rincflags = /i "$(NIDMINCDIR)" /i "$(OBJ)" /i .
 
 ldebug = $(ldebug) /DEBUG
-cdebug = $(cdebug) -Os -Zi -WX
+cdebug = $(cdebug) -Os -Zi
+!ifndef KH_NO_WX
+cdebug = $(cdebug) -WX
+!endif
 cwarn = -wd4204
 
 cdefines = $(cdefines) -DUNICODE -D_UNICODE
