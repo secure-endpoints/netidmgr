@@ -236,7 +236,7 @@ multi_string_to_csv(wchar_t * csvbuf,
             quotes = TRUE;
 
         d = (wchar_t *) t;
-        while(d = wcschr(d, L'"')) {
+        while((d = wcschr(d, L'"')) != NULL) {
             cbt += sizeof(wchar_t); /* '"'-> '""' */
             d++;
             quotes = TRUE;

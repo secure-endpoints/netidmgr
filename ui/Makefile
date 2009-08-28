@@ -113,9 +113,9 @@ $(OBJ)\appver.res: appver.rc
 	$(RC2RES)
 
 !if "$(KH_BUILD)"=="RETAIL"
-$(MANIFESTFILE): netidmgr.manifest.$(CPU).$(KH_CLVER)
+$(MANIFESTFILE): netidmgr.$(CPU).manifest
 !else
-$(MANIFESTFILE): netidmgr.manifest.$(CPU).$(KH_CLVER).debug
+$(MANIFESTFILE): netidmgr.$(CPU).manifest
 !endif
 	$(CP) $** $@
 
