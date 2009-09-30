@@ -216,6 +216,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
       ClrBase,KC_INT32,0,"Base reference color"
       ClrSelection,KC_INT32,0,"Background (Selection)"
       ClrBackground,KC_INT32,0,"Background (Normal)"
+      ClrAlertBackground,KC_INT32,0,"Background (Alert)"
       ClrGray,KC_INT32,0,"Background (Gray)"
       ClrHeader,KC_INT32,0,"Header (Normal)"
       ClrHeaderCred,KC_INT32,0,"Header (with credentials)"
@@ -239,6 +240,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
     Default,KC_SPACE,0,Default color scheme
       ClrBase,KC_INT32,"RGB(0,0,0)",
       ClrSelection,KC_INT32,"RGB(67,15,255)",
+      ClrAlertBackground,KC_INT32,"RGB(213,255,5)",
       ClrHeader,KC_INT32,"RGB(255,211,122)",
       ClrHeaderExp,KC_INT32,"RGB(255,47,5)",
       ClrHeaderCrit,KC_INT32,"RGB(255,172,5)",

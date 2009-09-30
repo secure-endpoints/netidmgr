@@ -51,6 +51,7 @@ clr_element_names[] = {
     L"ClrBase",
     L"ClrSelection",
     L"ClrBackground",
+    L"ClrAlertBackground",
     L"ClrGray",
     L"ClrHeader",
     L"ClrHeaderOutline",
@@ -358,7 +359,7 @@ khm_set_element_lfont(khm_ui_element element, const LOGFONT * pfont)
   with the selection color for various elements.
  */
 static const int overlay_color[] = {
-    0, 0, 0, 0,  0, 0,  0, 0, 0, 0, KHM_CLR_SELECTION,
+    0, 0, 0, 0, 0,  0, 0,  0, 0, 0, 0, KHM_CLR_SELECTION,
 
     KHM_CLR_SELECTION,
     KHM_CLR_SELECTION,
