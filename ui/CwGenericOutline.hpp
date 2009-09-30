@@ -10,7 +10,7 @@ namespace nim
     public:
         Credential credential;
         khm_int32  attr_id;
-        CwStaticTextElement * el_text;
+        StaticTextElement * el_text;
 
     public:
         CwGenericOutline(const Credential& _credential, khm_int32 _attr_id, int _column) :
@@ -19,7 +19,7 @@ namespace nim
             CwOutline(_column) {
 
             InsertChildAfter(el_text =
-                             new CwStaticTextElement(credential.GetAttribStringObj(attr_id)));
+                             new StaticTextElement(credential.GetAttribStringObj(attr_id)));
         }
 
         ~CwGenericOutline() {}

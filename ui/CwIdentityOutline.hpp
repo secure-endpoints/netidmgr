@@ -235,12 +235,12 @@ namespace nim
       the default.  It also indicates whether the current identity is
       default.
      */
-    class CwDefaultIdentityElement : public CwButtonT< &KhmDraw::DrawStarWidget > {
+    class CwDefaultIdentityElement : public ButtonElement< &KhmDraw::DrawStarWidget > {
         Identity * pidentity;
 
     public:
         CwDefaultIdentityElement(Identity & _identity) :
-            CwButtonT(Point(0,0)), pidentity(&_identity) {};
+            ButtonElement(Point(0,0)), pidentity(&_identity) {};
 
         bool IsChecked() {
             return !!(pidentity->GetFlags() & KCDB_IDENT_FLAG_DEFAULT);
@@ -275,12 +275,12 @@ namespace nim
       the default.  It also indicates whether the current identity is
       default.
      */
-    class CwSticktyIdentityElement : public CwButtonT< &KhmDraw::DrawStickyWidget > {
+    class CwSticktyIdentityElement : public ButtonElement< &KhmDraw::DrawStickyWidget > {
         Identity * pidentity;
 
     public:
         CwSticktyIdentityElement(Identity& _identity) :
-            CwButtonT(Point(0,0)), pidentity(&_identity) {};
+            ButtonElement(Point(0,0)), pidentity(&_identity) {};
 
         bool IsChecked() {
             return !!(pidentity->GetFlags() & KCDB_IDENT_FLAG_STICKY);
@@ -307,7 +307,7 @@ namespace nim
         }
     };
 
-
+    class CwProgressBarElement : public WithFixedSizePos< ProgressBarElement > { };
 
     /*! \brief  Identity Outline Node
      */
@@ -315,7 +315,7 @@ namespace nim
     {
     public:
         Identity                  identity;
-        CwIconDisplayElement     *el_icon;
+        IconDisplayElement       *el_icon;
         CwDefaultIdentityElement *el_default_id;
         CwIdentityTitleElement   *el_display_name;
         CwIdentityTypeElement    *el_type_name;
@@ -332,9 +332,9 @@ namespace nim
             monitor_progress    = false;
 
             InsertChildAfter(el_icon =
-                             new CwIconDisplayElement(Point(0,0),
-                                                      identity.GetResourceIcon(KCDB_RES_ICON_NORMAL),
-                                                      true));
+                             new IconDisplayElement(Point(0,0),
+						    identity.GetResourceIcon(KCDB_RES_ICON_NORMAL),
+						    true));
 
             InsertChildAfter(el_default_id =
                              new CwDefaultIdentityElement(identity));

@@ -26,7 +26,7 @@ namespace nim
         }
 
         if (expandable && outline_widget == NULL) {
-            outline_widget = new CwExposeControlElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
+            outline_widget = new ExposeControlElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
             InsertChildAfter(outline_widget);
         }
 
