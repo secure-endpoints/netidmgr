@@ -174,7 +174,7 @@ KFWLIBDIR=$(PISMERE)\target\lib\$(CPU)\$(OUTPRE_DBG)
 incflags= -I$(INCDIR) -I$(OBJ) $(kfwincflags)
 rincflags= /i $(INCDIR)
 khdefines=-DUNICODE -D_UNICODE
-khcwarn=/Wp64
+# khcwarn=/Wp64
 !ifndef KH_NO_WX
 khcwarn=$(khcwarn) /WX
 !endif
