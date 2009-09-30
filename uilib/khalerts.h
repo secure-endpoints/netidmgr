@@ -101,7 +101,12 @@ enum khui_alert_flags {
     /*!< Internal. There is a valid target for the alert */
 
     KHUI_ALERT_FLAG_VALID_ERROR     =0x00020000,
-    /*!< Internal. There is a valid error context associated with the alert */
+    /*!< Internal. There is a valid error context associated with the alert
+
+      \deprecated No longer used.  The presence of an error context is
+          enough to determine this.
+     */
+#pragma deprecated("KHUI_ALERT_FLAG_VALID_ERROR")
 
     KHUI_ALERT_FLAG_DISPLAY_WINDOW  =0x01000000,
     /*!< The alert has been displayed in a window */
@@ -405,6 +410,103 @@ khui_alert_unlock(khui_alert * alert);
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+
+namespace nim {
+
+    class Alert {
+	khui_alert * m_alert;
+
+    public:
+	Alert() : m_alert(NULL) {
+	}
+
+	explicit
+	Alert(khui_alert * _alert, bool take_ownership = true) {
+	    m_alert = _alert;
+	    if (!take_ownership)
+		Hold();
+	}
+
+	Alert(const Alert &that) {
+	    m_alert = that.m_alert;
+	    Hold();
+	}
+
+	~Alert() {
+	    Release();
+	    m_alert = NULL;
+	}
+
+	void Hold() {
+	    if (m_alert)
+		khui_alert_hold(m_alert);
+	}
+
+	void Release() {
+	    if (m_alert)
+		khui_alert_release(m_alert);
+	}
+
+	size_t LockIndex() {
+	    return (size_t) m_alert;
+	}
+
+	void Lock() {
+	    if (m_alert)
+		khui_alert_lock(m_alert);
+	}
+
+	void Unlock() {
+	    if (m_alert)
+		khui_alert_unlock(m_alert);
+	}
+
+	khui_alert * operator -> () {
+	    return m_alert;
+	}
+
+	const khui_alert * operator -> () const {
+	    return m_alert;
+	}
+
+	bool IsNull() const {
+	    return m_alert == NULL;
+	}
+
+	Alert& operator = (const Alert& that) {
+	    if (this != &that) {
+		if (m_alert)
+		    Release();
+		m_alert = that.m_alert;
+		if (m_alert)
+		    Hold();
+	    }
+	    return *this;
+	}
+
+	Alert& operator = (khui_alert * a) {
+	    if (m_alert)
+		Release();
+	    m_alert = a;
+	    if (m_alert)
+		Hold();
+	    return *this;
+	}
+
+	operator khui_alert *() const {
+	    return m_alert;
+	}
+
+	bool operator == (const Alert& that) const {
+	    return m_alert == that.m_alert;
+	}
+    };
+
+}
+
 #endif
 
 /*!@}*/

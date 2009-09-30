@@ -38,9 +38,6 @@ extern "C" {
 
 @{ */
 
-typedef struct tag_alerter_wnd_data alerter_wnd_data;
-typedef struct tag_alerter_alert_data alerter_alert_data;
-
 /*! \internal
 
     \brief An alert
@@ -51,7 +48,7 @@ typedef struct tag_alerter_alert_data alerter_alert_data;
  */
 typedef struct tag_khui_alert {
     khm_int32           magic;
-                                /*!< Magic number. Always set to
+				/*!< Magic number. Always set to
                                   KHUI_ALERT_MAGIC */
 
     khm_int32           severity;
@@ -105,25 +102,15 @@ typedef struct tag_khui_alert {
                                   the alert window should provide an
                                   error viewer for the given error
                                   context. */
-#if 0
-    kherr_event *       err_event; 
-                                /*!< If non-NULL at the time the alert
-                                  window is shown, this indicates that
-                                  the alert window should provide an
-                                  error viewer for the given error
-                                  event.  If an \a err_context is also
-                                  given, the error viewer for the
-                                  context will be below this error. */
-#endif
 
     khui_alert_type     alert_type;
-                                /*!< The type of alert. */
+				/*!< The type of alert. */
 
     khui_action_context ctx;    /*!< Context which this alert applies
                                   to. */
 
     khm_int32           response; 
-                                /*!< Once the alert is displayed to
+				/*!< Once the alert is displayed to
                                   the user, when the user clicks one
                                   of the command buttons, the command
                                   ID will be assigned here. */
@@ -136,16 +123,6 @@ typedef struct tag_khui_alert {
                                   displayed on screen.  Also used
                                   internally to determine when to
                                   terminate the modal loop */
-
-    alerter_wnd_data   *wnd_data;
-                                /*!< Window data if the alert is being
-                                   shown in a window. Only valid if \a
-                                   displayed is TRUE. */
-
-    alerter_alert_data *adata;
-                                /*!< Window data if the alert is being
-                                   shown in a window.  Only valid if
-                                   \a displayed is TRUE. */
 
     LDCL(struct tag_khui_alert);
                                 /*!< internal */
