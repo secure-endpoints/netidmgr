@@ -1267,6 +1267,117 @@ kherr_push_new_context(khm_int32 flags)
     LeaveCriticalSection(&cs_error);
 }
 
+/* does the context 'c' use it's own progress marker? If this is
+   false, the progress marker for the context is derived from the
+   progress markers of its children. */
+#define CTX_USES_OWN_PROGRESS(c) ((c)->progress_num != 0 || (c)->progress_denom != 0 || ((c)->flags & KHERR_CF_OWN_PROGRESS))
+
+static void
+set_and_notify_progress_change(kherr_context * c, khm_ui_4 num, khm_ui_4 denom)
+{
+    kherr_context * p;
+
+    c->progress_denom = denom;
+    c->progress_num = num;
+
+    notify_ctx_event(KHERR_CTX_PROGRESS, c);
+
+    for (p = TPARENT(c);
+	 IS_KHERR_CTX(p) && !CTX_USES_OWN_PROGRESS(p);
+	 p = TPARENT(p)) {
+
+	notify_ctx_event(KHERR_CTX_PROGRESS, p);
+    }
+}
+
+KHMEXP void KHMAPI
+kherr_set_progress(khm_ui_4 num, khm_ui_4 denom)
+{
+    kherr_context * c = peek_context();
+    if(IS_KHERR_CTX(c)) {
+        EnterCriticalSection(&cs_error);
+
+        if (num > denom)
+            num = denom;
+
+        if (c->progress_denom != denom ||
+            c->progress_num != denom) {
+
+	    set_and_notify_progress_change(c, num, denom);
+        }
+        LeaveCriticalSection(&cs_error);
+    }
+}
+
+KHMEXP void KHMAPI
+kherr_get_progress(khm_ui_4 * num, khm_ui_4 * denom)
+{
+    kherr_context * c = peek_context();
+    kherr_get_progress_i(c,num,denom);
+}
+
+/* called with cs_error held */
+static void
+get_progress(kherr_context * c, khm_ui_4 * pnum, khm_ui_4 * pdenom)
+{
+    if (CTX_USES_OWN_PROGRESS(c)) {
+        *pnum = c->progress_num;
+        *pdenom = c->progress_denom;
+    } else {
+        khm_ui_4 num = 0;
+        khm_ui_4 denom = 0;
+
+        kherr_context * cc;
+
+        for (cc = TFIRSTCHILD(c);
+             cc;
+             cc = LNEXT(cc)) {
+
+            khm_ui_4 cnum, cdenom;
+
+            assert(IS_KHERR_CTX(cc));
+
+            get_progress(cc, &cnum, &cdenom);
+
+            if (cdenom == 0) {
+                continue;
+            } else {
+                if (cnum > cdenom)
+                    cnum = cdenom;
+
+                if (cdenom != 256) {
+                    cnum = ((long)cnum * 256) / cdenom;
+                    cdenom = 256;
+                }
+            }
+
+            num += cnum;
+            denom += cdenom;
+        }
+
+        *pnum = num;
+        *pdenom = denom;
+    }
+}
+
+KHMEXP void KHMAPI
+kherr_get_progress_i(kherr_context * c, 
+                     khm_ui_4 * num, 
+                     khm_ui_4 * denom)
+{
+    if (num == NULL || denom == NULL)
+        return;
+
+    if(IS_KHERR_CTX(c)) {
+        EnterCriticalSection(&cs_error);
+        get_progress(c, num, denom);
+        LeaveCriticalSection(&cs_error);
+    } else {
+        *num = 0;
+        *denom = 0;
+    }
+}
+
 static kherr_param
 dup_parm(kherr_param p)
 {
@@ -1346,6 +1457,10 @@ kherr_release_context(kherr_context * c)
 	if (IS_KHERR_EVENT(e) && !(e->flags & KHERR_RF_COMMIT)) {
 	    notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
 	    e->flags |= KHERR_RF_COMMIT;
+	}
+
+	if (CTX_USES_OWN_PROGRESS(c)) {
+	    set_and_notify_progress_change(c, 256, 256);
 	}
 
         notify_ctx_event(KHERR_CTX_END, c);
@@ -1435,112 +1550,6 @@ kherr_clear_error_i(kherr_context * c)
         c->err_event = NULL;
         c->flags &= ~KHERR_CF_DIRTY;
         LeaveCriticalSection(&cs_error);
-    }
-}
-
-/* does the context 'c' use it's own progress marker? If this is
-   false, the progress marker for the context is derived from the
-   progress markers of its children. */
-#define CTX_USES_OWN_PROGRESS(c) ((c)->progress_num != 0 || (c)->progress_denom != 0 || ((c)->flags & KHERR_CF_OWN_PROGRESS))
-
-KHMEXP void KHMAPI
-kherr_set_progress(khm_ui_4 num, khm_ui_4 denom)
-{
-    kherr_context * c = peek_context();
-    if(IS_KHERR_CTX(c)) {
-        EnterCriticalSection(&cs_error);
-
-        if (num > denom)
-            num = denom;
-
-        if (c->progress_denom != denom ||
-            c->progress_num != denom) {
-
-            kherr_context * p;
-
-            c->progress_denom = denom;
-            c->progress_num = num;
-
-            notify_ctx_event(KHERR_CTX_PROGRESS, c);
-
-            for (p = TPARENT(c);
-                 IS_KHERR_CTX(p) && !CTX_USES_OWN_PROGRESS(p);
-                 p = TPARENT(p)) {
-
-                notify_ctx_event(KHERR_CTX_PROGRESS, p);
-
-            }
-        }
-        LeaveCriticalSection(&cs_error);
-    }
-}
-
-KHMEXP void KHMAPI
-kherr_get_progress(khm_ui_4 * num, khm_ui_4 * denom)
-{
-    kherr_context * c = peek_context();
-    kherr_get_progress_i(c,num,denom);
-}
-
-/* called with cs_error held */
-static void
-get_progress(kherr_context * c, khm_ui_4 * pnum, khm_ui_4 * pdenom)
-{
-    if (CTX_USES_OWN_PROGRESS(c)) {
-        *pnum = c->progress_num;
-        *pdenom = c->progress_denom;
-    } else {
-        khm_ui_4 num = 0;
-        khm_ui_4 denom = 0;
-
-        kherr_context * cc;
-
-        for (cc = TFIRSTCHILD(c);
-             cc;
-             cc = LNEXT(cc)) {
-
-            khm_ui_4 cnum, cdenom;
-
-            assert(IS_KHERR_CTX(cc));
-
-            get_progress(cc, &cnum, &cdenom);
-
-            if (cdenom == 0) {
-                continue;
-            } else {
-                if (cnum > cdenom)
-                    cnum = cdenom;
-
-                if (cdenom != 256) {
-                    cnum = ((long)cnum * 256) / cdenom;
-                    cdenom = 256;
-                }
-            }
-
-            num += cnum;
-            denom += cdenom;
-        }
-
-        *pnum = num;
-        *pdenom = denom;
-    }
-}
-
-KHMEXP void KHMAPI
-kherr_get_progress_i(kherr_context * c, 
-                     khm_ui_4 * num, 
-                     khm_ui_4 * denom)
-{
-    if (num == NULL || denom == NULL)
-        return;
-
-    if(IS_KHERR_CTX(c)) {
-        EnterCriticalSection(&cs_error);
-        get_progress(c, num, denom);
-        LeaveCriticalSection(&cs_error);
-    } else {
-        *num = 0;
-        *denom = 0;
     }
 }
 
@@ -1698,5 +1707,11 @@ kherr_dup_string(const wchar_t * s)
     StringCbCopy(dest, cb_s, s);
 
     return _tstr(dest);
+}
+
+KHMEXP khm_boolean KHMAPI
+kherr_context_is_equal(kherr_context *c1, kherr_context *c2)
+{
+    return c1 == c2;
 }
 

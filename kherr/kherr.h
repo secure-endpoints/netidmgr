@@ -1182,6 +1182,10 @@ KHMEXP void KHMAPI kherr_evaluate_event(kherr_event * e);
 KHMEXP void KHMAPI kherr_evaluate_last_event(void);
 #define _resolve kherr_evaluate_last_event
 
+/*! \brief Check whether two error context handles refer to the same context
+  */
+KHMEXP khm_boolean KHMAPI kherr_context_is_equal(kherr_context *c1, kherr_context *c2);
+
 /*! \defgroup kherr_fids Standard Facility IDs
 @{*/
 #define KHM_FACILITY_KMM       1
