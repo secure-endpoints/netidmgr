@@ -255,6 +255,8 @@
 #define IDS_PACTION_KEEP                237
 #define IDB_PROGRESS                    237
 #define IDS_PACTION_REMOVE              238
+#define IDD_DIALOG1                     238
+#define IDD_ALERTS                      238
 #define IDS_PACTION_DISCARD             239
 #define IDS_CFG_IT_MOD                  240
 #define IDS_CFG_IT_APP                  241
@@ -465,7 +467,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        238
+#define _APS_NEXT_RESOURCE_VALUE        239
 #define _APS_NEXT_COMMAND_VALUE         40010
 #define _APS_NEXT_CONTROL_VALUE         1192
 #define _APS_NEXT_SYMED_VALUE           101

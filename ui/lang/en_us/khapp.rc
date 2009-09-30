@@ -495,7 +495,16 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,6,204,109,10
     LTEXT           "",IDC_PANELNAME,9,3,349,11,NOT WS_VISIBLE,WS_EX_STATICEDGE
 END
- 
+
+IDD_ALERTS DIALOGEX 0, 0, 339, 180
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Alert"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Alert container",IDC_CONTAINER,7,7,325,145,NOT WS_VISIBLE | WS_BORDER
+    DEFPUSHBUTTON   "Close",IDCANCEL,282,159,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -730,6 +739,14 @@ BEGIN
         TOPMARGIN, 3
         BOTTOMMARGIN, 198
         HORZGUIDE, 26
+    END
+
+    IDD_ALERTS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 332
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 173
     END
 END
 #endif    // APSTUDIO_INVOKED
