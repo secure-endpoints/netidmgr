@@ -159,7 +159,7 @@ namespace nim {
 
             assert(p->hwnd_selector);
 
-            SendMessage(p->hwnd_selector, KHUI_WM_NC_NOTIFY, MAKEWPARAM(0, WMNC_IDSEL_GET_IDENT),
+            ::SendMessage(p->hwnd_selector, KHUI_WM_NC_NOTIFY, MAKEWPARAM(0, WMNC_IDSEL_GET_IDENT),
                         (LPARAM) &ident);
 
             if (ident) {

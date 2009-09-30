@@ -305,7 +305,7 @@ namespace nim {
             assert(hwnd_header != NULL);
 
             HFONT hf = GetHFONT();
-            SendMessage(hwnd_header, WM_SETFONT, (WPARAM) hf, 0);
+            ::SendMessage(hwnd_header, WM_SETFONT, (WPARAM) hf, 0);
             columns.AddColumnsToHeaderControl(hwnd_header);
 
             // Since child elements might depend on what

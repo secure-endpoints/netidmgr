@@ -558,7 +558,7 @@ namespace nim {
         if (nc == NULL || m_privint.hwnd_current == NULL)
             return FALSE;
 
-        SendMessage(m_privint.hwnd_current, KHUI_WM_NC_NOTIFY, 
+        ::SendMessage(m_privint.hwnd_current, KHUI_WM_NC_NOTIFY, 
                     MAKEWPARAM(0, WMNC_DIALOG_MOVE), (LPARAM) nc);
 
         return FALSE;
@@ -581,7 +581,7 @@ namespace nim {
         if (hwndCtl != NULL) {
             HWND owner = GetParent(hwndCtl);
             if (owner != NULL && owner != hwnd) {
-                FORWARD_WM_COMMAND(owner, id, hwndCtl, codeNotify, PostMessage);
+                FORWARD_WM_COMMAND(owner, id, hwndCtl, codeNotify, ::PostMessage);
                 return;
             }
         }
@@ -1020,10 +1020,10 @@ namespace nim {
                 continue;
 
             if (sync) {
-                SendMessage(nc->types[i].nct->hwnd_panel, KHUI_WM_NC_NOTIFY,
+                ::SendMessage(nc->types[i].nct->hwnd_panel, KHUI_WM_NC_NOTIFY,
                             MAKEWPARAM(0, N), lParam);
             } else {
-                PostMessage(nc->types[i].nct->hwnd_panel, KHUI_WM_NC_NOTIFY,
+                ::PostMessage(nc->types[i].nct->hwnd_panel, KHUI_WM_NC_NOTIFY,
                             MAKEWPARAM(0, N), lParam);
             }
         }
@@ -1261,7 +1261,7 @@ namespace nim {
         }
 
         if (nextctl)
-            PostMessage(hwnd, WM_NEXTDLGCTL, (WPARAM) nextctl, TRUE);
+            ::PostMessage(hwnd, WM_NEXTDLGCTL, (WPARAM) nextctl, TRUE);
     }
 
     static int __cdecl

@@ -14,12 +14,12 @@ namespace nim {
             khm_int32 ks_type = KCDB_CREDTYPE_INVALID;
             khm_size cb;
 
-            nc->persist_privcred = (SendMessage(hwndCtl, BM_GETCHECK, 0, 0) == BST_CHECKED);
+            nc->persist_privcred = (::SendMessage(hwndCtl, BM_GETCHECK, 0, 0) == BST_CHECKED);
             cb = sizeof(ks_type);
             kcdb_identity_get_attr(nc->persist_identity, KCDB_ATTR_TYPE, NULL, &ks_type, &cb);
             khui_cw_find_type(nc, ks_type, &t);
             if (t != NULL && t->hwnd_panel != NULL) {
-                SendMessage(t->hwnd_panel, KHUI_WM_NC_NOTIFY,
+                ::SendMessage(t->hwnd_panel, KHUI_WM_NC_NOTIFY,
                             MAKEWPARAM(0, WMNC_COLLECT_PRIVCRED), 0);
             }
         }

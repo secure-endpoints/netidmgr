@@ -93,7 +93,7 @@ namespace nim {
                 // Wizard window being destroyed.  Since we don't have
                 // a great reference counting mechanism, this results
                 // in this being freed and bad things happen.
-                PostMessage(w->hwnd, WM_COMMAND, MAKEWPARAM(IDCANCEL, BN_CLICKED),
+                ::PostMessage(w->hwnd, WM_COMMAND, MAKEWPARAM(IDCANCEL, BN_CLICKED),
                             (LPARAM) hwndCtl);
                 return;
 

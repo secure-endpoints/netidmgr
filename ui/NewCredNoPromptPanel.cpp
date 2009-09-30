@@ -22,7 +22,7 @@ namespace nim {
 
                 hw = GetDlgItem(hwnd, IDC_PROGRESS);
                 SetWindowLong(hw, GWL_STYLE, WS_CHILD|PBS_MARQUEE);
-                SendMessage(hw, PBM_SETMARQUEE, TRUE, MARQUEE_TIMEOUT);
+                ::SendMessage(hw, PBM_SETMARQUEE, TRUE, MARQUEE_TIMEOUT);
                 noprompt_flags |= NC_NPF_MARQUEE;
             }
         } else {
