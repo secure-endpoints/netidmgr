@@ -6,6 +6,7 @@
 #include <gdiplus.h>
 #include <commctrl.h>
 #include <khlist.h>
+#include <assert.h>
 #include <string>
 #include <vector>
 #include <stack>
@@ -112,12 +113,40 @@ namespace nim {
         }
     };
 
+    template <class T>
+    class AutoLock {
+	T *pT;
+	T *pT_aux;
+
+    public:
+	AutoLock(T *_pT): pT(_pT), pT_aux(NULL) {
+	    pT->Lock();
+	}
+
+	AutoLock(T *_pT, T *_pT_aux): pT(_pT), pT_aux(_pT_aux) {
+	    if (pT->LockIndex() < pT_aux->LockIndex()) {
+		pT->Lock();
+		pT_aux->Lock();
+	    } else {
+		pT_aux->Lock();
+		pT->Lock();
+	    }
+	}
+
+	~AutoLock() {
+	    pT->Unlock();
+	    if (pT_aux)
+		pT_aux->Unlock();
+	}
+    };
+
     class ControlWindow : virtual public RefCount {
     public:
         HWND  hwnd;
 
     protected:
         static ATOM window_class;
+	static LONG init_count;
 
     public:
         ControlWindow(): RefCount(true), hwnd(NULL) { }
@@ -167,6 +196,8 @@ namespace nim {
         virtual void OnClose() { DestroyWindow(); }
 
         virtual LRESULT OnHelp( HELPINFO * hlp ) { return 0; }
+
+	virtual void OnWmTimer(UINT id) { }
 
         virtual LRESULT OnDrawItem( const DRAWITEMSTRUCT * lpDrawItem) { return 0; }
 
@@ -265,6 +296,10 @@ namespace nim {
             return OnHelp(info);
         }
 
+	void HandleTimer(HWND hwnd, UINT id) {
+	    return OnWmTimer(id);
+	}
+
         void HandleOnPaint(HWND hwnd);
 
         void HandleOnDestroy(HWND hwnd);
@@ -280,7 +315,7 @@ namespace nim {
         static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
     public:
-        HWND Create(HWND parent, const Rect & extents, int id, LPVOID createParams = NULL);
+        HWND Create(HWND parent, const Rect & extents, int id = 0, LPVOID createParams = NULL);
 
         BOOL ShowWindow(int nCmdShow = SW_SHOW);
 
@@ -289,6 +324,14 @@ namespace nim {
         BOOL Invalidate() {
             return ::InvalidateRect(hwnd, NULL, TRUE);
         }
+
+	BOOL PostMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
+	    return ::PostMessage(hwnd, msg, wParam, lParam);
+	}
+
+	LRESULT SendMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
+	    return ::SendMessage(hwnd, msg, wParam, lParam);
+	}
 
         static void RegisterWindowClass(void);
 
@@ -320,7 +363,12 @@ namespace nim {
         INT_PTR DoModal(HWND parent, LPARAM param = 0);
 
         BOOL EndDialog(INT_PTR result) {
-            return ::EndDialog(hwnd, result);
+	    if (is_modal)
+		return ::EndDialog(hwnd, result);
+	    else {
+		DestroyWindow();
+		return TRUE;
+	    }
         }
 
         LONG_PTR SetDlgResult(LONG_PTR rv) {
@@ -373,6 +421,7 @@ namespace nim {
         virtual LRESULT OnHelp(HELPINFO * info) { DoDefault(); return 0; }
 
 #ifdef KHUI_WM_NC_NOTIFY
+    public:
         virtual void OnDeriveFromPrivCred(khui_collect_privileged_creds_data * pcd) { }
 
         virtual void OnCollectPrivCred(khui_collect_privileged_creds_data * pcd) { }
@@ -577,16 +626,14 @@ namespace nim {
             highlight      = false;
 
             recalc_extents = true; 
-        };
+        }
 
         virtual ~DisplayElement() {
             DeleteAllChildren();
 
-#ifdef assert
             assert(TQPARENT(this) == NULL);
             assert(TQNEXTSIBLING(this) == NULL);
             assert(TQPREVSIBLING(this) == NULL);
-#endif
         }
 
         void   InsertChildAfter(DisplayElement * e, DisplayElement * previous = NULL);
@@ -597,9 +644,9 @@ namespace nim {
 
         void   DeleteAllChildren();
 
-        virtual void NotifyDeleteChild(DisplayElement * e);
+        virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e);
 
-        virtual void NotifyDeleteAllChildren();
+        virtual void NotifyDeleteAllChildren(DisplayElement * _parent);
 
         void   MoveChildAfter(DisplayElement * e, DisplayElement * previous);
 
@@ -704,15 +751,15 @@ namespace nim {
 
         virtual ~DisplayContainer() { if (dbuffer) delete dbuffer; }
 
-        virtual void NotifyDeleteChild(DisplayElement * e) {
+        virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e) {
             if (mouse_element == e)
                 mouse_element = NULL;
-            __super::NotifyDeleteChild(e);
+            __super::NotifyDeleteChild(_parent, e);
         }
 
-        virtual void NotifyDeleteAllChildren() {
+        virtual void NotifyDeleteAllChildren(DisplayElement * _parent) {
             mouse_element = NULL;
-            __super::NotifyDeleteAllChildren();
+            __super::NotifyDeleteAllChildren(_parent);
         }
 
         Point ClientToVirtual(const Point& p) { 
@@ -884,9 +931,9 @@ namespace nim {
                             khm_hInstance, LPSTR_TEXTCALLBACK, 0 };
             ::GetClientRect(hwnd, &ti.rect);
 
-            if (!SendMessage(hwnd_tooltip, TTM_ADDTOOL, 0, (LPARAM) &ti)) {
+            if (!::SendMessage(hwnd_tooltip, TTM_ADDTOOL, 0, (LPARAM) &ti)) {
                 ti.cbSize -= sizeof(void *);
-                SendMessage(hwnd_tooltip, TTM_ADDTOOL, 0, (LPARAM) &ti);
+                ::SendMessage(hwnd_tooltip, TTM_ADDTOOL, 0, (LPARAM) &ti);
             }
             return T::OnCreate(createParams);
         }
@@ -900,9 +947,9 @@ namespace nim {
                     RECT r = { tt_rect.GetLeft(), tt_rect.GetTop(),
                                tt_rect.GetRight(), tt_rect.GetBottom() };
 
-                    SendMessage(hwnd_tooltip, TTM_TRACKACTIVATE, TRUE, (LPARAM) &ti);
-                    SendMessage(hwnd_tooltip, TTM_ADJUSTRECT, TRUE, (LPARAM) &r);
-                    SendMessage(hwnd_tooltip, TTM_TRACKPOSITION, 0, MAKELONG(r.left, r.top));
+                    ::SendMessage(hwnd_tooltip, TTM_TRACKACTIVATE, TRUE, (LPARAM) &ti);
+                    ::SendMessage(hwnd_tooltip, TTM_ADJUSTRECT, TRUE, (LPARAM) &r);
+                    ::SendMessage(hwnd_tooltip, TTM_TRACKPOSITION, 0, MAKELONG(r.left, r.top));
                     shown_tt = true;
                     pt_mouse = p;
                 }
@@ -915,7 +962,7 @@ namespace nim {
                 TOOLINFO ti = { sizeof(TOOLINFO), 0, hwnd, TOOL_ID, {0,0,0,0},
                                 NULL, NULL, 0 };
 
-                SendMessage(hwnd_tooltip, TTM_TRACKACTIVATE, FALSE, (LPARAM) &ti);
+                ::SendMessage(hwnd_tooltip, TTM_TRACKACTIVATE, FALSE, (LPARAM) &ti);
                 shown_tt = false;
             }
             T::OnMouseMove(pt_c, keyflags);
@@ -1191,18 +1238,18 @@ namespace nim {
         WithNavigation() { el_focus = NULL; el_anchor = NULL; }
         ~WithNavigation() { }
 
-        virtual void NotifyDeleteChild(DisplayElement * e) {
+	virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e) {
             if (el_focus == e)
                 el_focus = NULL;
             if (el_anchor == e)
                 el_anchor = NULL;
-            __super::NotifyDeleteChild(e);
+            __super::NotifyDeleteChild(_parent, e);
         }
 
-        virtual void NotifyDeleteAllChildren() {
+        virtual void NotifyDeleteAllChildren(DisplayElement * _parent) {
             el_focus = NULL;
             el_anchor = NULL;
-            __super::NotifyDeleteAllChildren();
+            __super::NotifyDeleteAllChildren(_parent);
         }
 
         typedef enum FocusAction {
