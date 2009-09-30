@@ -5,6 +5,8 @@ namespace nim {
 
     ATOM ControlWindow::window_class = 0;
 
+    LONG ControlWindow::init_count = 0;
+
     void ControlWindow::HandleHScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos)
     {
         OnHScroll(code, pos);
@@ -92,6 +94,7 @@ namespace nim {
     void ControlWindow::HandleOnDestroy(HWND hwnd)
     {
         OnDestroy();
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
         hwnd = NULL;
         Release();
     }
@@ -126,38 +129,46 @@ namespace nim {
     {
         AutoRef<ControlWindow> cw ((ControlWindow *)(LONG_PTR) GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-        switch(uMsg) {
-            HANDLE_MSG(hwnd, WM_CREATE, HandleOnCreate);
-            HANDLE_MSG(hwnd, WM_DESTROY, cw->HandleOnDestroy);
-            HANDLE_MSG(hwnd, WM_COMMAND, cw->HandleCommand);
-            HANDLE_MSG(hwnd, WM_PAINT, cw->HandleOnPaint);
-            HANDLE_MSG(hwnd, WM_WINDOWPOSCHANGING, cw->HandlePosChanging);
-            HANDLE_MSG(hwnd, WM_WINDOWPOSCHANGED, cw->HandlePosChanged);
-            HANDLE_MSG(hwnd, WM_VSCROLL, cw->HandleVScroll);
-            HANDLE_MSG(hwnd, WM_HSCROLL, cw->HandleHScroll);
-            HANDLE_MSG(hwnd, WM_MOUSEMOVE, cw->HandleMouseMove);
-            HANDLE_MSG(hwnd, WM_MOUSEHOVER, cw->HandleMouseHover);
-            HANDLE_MSG(hwnd, WM_MOUSELEAVE, cw->HandleMouseLeave);
-            HANDLE_MSG(hwnd, WM_LBUTTONDOWN, cw->HandleLButtonDown);
-            HANDLE_MSG(hwnd, WM_LBUTTONDBLCLK, cw->HandleLButtonDown);
-            HANDLE_MSG(hwnd, WM_LBUTTONUP, cw->HandleLButtonUp);
-            HANDLE_MSG(hwnd, WM_CONTEXTMENU, cw->HandleContextMenu);
-            HANDLE_MSG(hwnd, WM_NOTIFY, cw->HandleNotify);
-            HANDLE_MSG(hwnd, WM_SETFOCUS, cw->HandleSetFocus);
-            HANDLE_MSG(hwnd, WM_KILLFOCUS, cw->HandleKillFocus);
-            HANDLE_MSG(hwnd, WM_ACTIVATE, cw->HandleActivate);
-            HANDLE_MSG(hwnd, WM_HELP, cw->HandleHelp);
+	if (cw.IsNull()) {
+	    if (uMsg == WM_CREATE)
+		return HANDLE_WM_CREATE(hwnd, wParam, lParam, HandleOnCreate);
+	    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+	}
+
+	switch(uMsg) {
+	    HANDLE_MSG(hwnd, WM_CREATE, HandleOnCreate);
+	    HANDLE_MSG(hwnd, WM_DESTROY, cw->HandleOnDestroy);
+	    HANDLE_MSG(hwnd, WM_COMMAND, cw->HandleCommand);
+	    HANDLE_MSG(hwnd, WM_PAINT, cw->HandleOnPaint);
+	    HANDLE_MSG(hwnd, WM_WINDOWPOSCHANGING, cw->HandlePosChanging);
+	    HANDLE_MSG(hwnd, WM_WINDOWPOSCHANGED, cw->HandlePosChanged);
+	    HANDLE_MSG(hwnd, WM_VSCROLL, cw->HandleVScroll);
+	    HANDLE_MSG(hwnd, WM_HSCROLL, cw->HandleHScroll);
+	    HANDLE_MSG(hwnd, WM_MOUSEMOVE, cw->HandleMouseMove);
+	    HANDLE_MSG(hwnd, WM_MOUSEHOVER, cw->HandleMouseHover);
+	    HANDLE_MSG(hwnd, WM_MOUSELEAVE, cw->HandleMouseLeave);
+	    HANDLE_MSG(hwnd, WM_LBUTTONDOWN, cw->HandleLButtonDown);
+	    HANDLE_MSG(hwnd, WM_LBUTTONDBLCLK, cw->HandleLButtonDown);
+	    HANDLE_MSG(hwnd, WM_LBUTTONUP, cw->HandleLButtonUp);
+	    HANDLE_MSG(hwnd, WM_CONTEXTMENU, cw->HandleContextMenu);
+	    HANDLE_MSG(hwnd, WM_NOTIFY, cw->HandleNotify);
+	    HANDLE_MSG(hwnd, WM_SETFOCUS, cw->HandleSetFocus);
+	    HANDLE_MSG(hwnd, WM_KILLFOCUS, cw->HandleKillFocus);
+	    HANDLE_MSG(hwnd, WM_ACTIVATE, cw->HandleActivate);
+	    HANDLE_MSG(hwnd, WM_HELP, cw->HandleHelp);
+	    HANDLE_MSG(hwnd, WM_TIMER, cw->HandleTimer);
 #ifdef KMQ_WM_DISPATCH
-            HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, cw->HandleDispatch);
+	    HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, cw->HandleDispatch);
 #endif
-        }
+	}
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
     void ControlWindow::RegisterWindowClass(void)
     {
-        assert(window_class == 0);
+	if (InterlockedIncrement(&init_count) != 1)
+	    return;
 
         WNDCLASSEX wx = {
             sizeof(WNDCLASSEX), // cbSize
@@ -179,7 +190,8 @@ namespace nim {
 
     void ControlWindow::UnregisterWindowClass(void)
     {
-        if (window_class != 0) {
+        if (InterlockedDecrement(&init_count) == 0 &&
+	    window_class != 0) {
             UnregisterClass(MAKEINTATOM(window_class), khm_hInstance);
         }
     }
