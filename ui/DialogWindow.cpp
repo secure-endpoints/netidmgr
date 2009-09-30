@@ -104,9 +104,6 @@ namespace nim {
         }
 
         if (uMsg == WM_DESTROY) {
-            // WM_DESTROY gets special handling because we permit the
-            // OnDestroy() handler to free the DialogWindow object.
-
             HANDLE_WM_DESTROY(hwnd, wParam, lParam, dw->HandleOnDestroy);
             return TRUE;
         }
