@@ -40,7 +40,7 @@ namespace nim {
 
     void DisplayElement::DeleteChild(DisplayElement * e)
     {
-        NotifyDeleteChild(e);
+        NotifyDeleteChild(this, e);
         e->DeleteAllChildren();
         TQDELCHILD(this, e);
         delete e;
@@ -49,7 +49,7 @@ namespace nim {
 
     void DisplayElement::DeleteAllChildren()
     {
-        NotifyDeleteAllChildren();
+        NotifyDeleteAllChildren(this);
         for (DisplayElement * e = TQFIRSTCHILD(this); e; e = TQFIRSTCHILD(this)) {
             e->DeleteAllChildren();
             TQDELCHILD(this, e);
@@ -82,17 +82,17 @@ namespace nim {
         }
     }
 
-    void DisplayElement::NotifyDeleteChild(DisplayElement * e)
+    void DisplayElement::NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e)
     {
-        if (owner && owner != dynamic_cast<DisplayContainer *>(this)) {
-            owner->NotifyDeleteChild(e);
+        if (owner != this) {
+            owner->NotifyDeleteChild(_parent, e);
         }
     }
 
-    void DisplayElement::NotifyDeleteAllChildren()
+    void DisplayElement::NotifyDeleteAllChildren(DisplayElement * _parent)
     {
-        if (owner && owner != dynamic_cast<DisplayContainer *>(this)) {
-            owner->NotifyDeleteAllChildren();
+        if (owner != this) {
+            owner->NotifyDeleteAllChildren(_parent);
         }
     }
 
