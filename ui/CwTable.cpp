@@ -2,6 +2,7 @@
 #include<assert.h>
 
 #include "credwnd_base.hpp"
+#include "Notifier.hpp"
 
 namespace nim
 {
@@ -481,9 +482,9 @@ namespace nim
                 else
                     expstate = KHM_NOTIF_OK;
 
-                khm_notify_icon_expstate(expstate);
+		g_notifier->m_icon->SetExpiryState(expstate);
             } else {
-                khm_notify_icon_expstate(KHM_NOTIF_EMPTY);
+		g_notifier->m_icon->SetExpiryState(KHM_NOTIF_EMPTY);
             }
         }
 
@@ -656,9 +657,9 @@ namespace nim
                 Identity identity = provider.GetDefaultIdentity();
 
                 if (static_cast<khm_handle>(identity) == NULL) {
-                    khm_notify_icon_tooltip(LoadStringResource(IDS_NOTIFY_READY).c_str());
+		    g_notifier->m_icon->SetTooltip(LoadStringResource(IDS_NOTIFY_READY).c_str());
                 } else {
-                    khm_notify_icon_tooltip(identity.GetResourceString(KCDB_RES_DISPLAYNAME).c_str());
+		    g_notifier->m_icon->SetTooltip(identity.GetResourceString(KCDB_RES_DISPLAYNAME).c_str());
                 }
             }
             break;

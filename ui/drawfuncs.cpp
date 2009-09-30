@@ -69,6 +69,7 @@ namespace nim
 
         c_selection    .SetFromCOLORREF(khm_get_element_color(KHM_CLR_SELECTION));
         c_background   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_BACKGROUND));
+	c_alert	       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_ALERTBKG));
         c_normal       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER));
         c_warning      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_WARN));
         c_critical     .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_CRIT));
@@ -380,6 +381,31 @@ namespace nim
 
         if (state & DrawStateFocusRect)
             DrawFocusRect(g, extents);
+    }
+
+    void
+    KhmDraw::DrawAlertBackground(Graphics& g, const Rect& extents, DrawState state)
+    {
+	Color c1;
+	Color c2;
+	Rect r = extents;
+
+	r.Width -= 1;
+	r.Height -= 1;
+
+	if (state & DrawStateSelected) {
+	    c1 = c_alert + c_selection * SELECTION_OPACITY;
+	    c2 = c_background + c_selection * SELECTION_OPACITY_END;
+	} else {
+	    c1 = c_alert;
+	    c2 = c_background;
+	}
+
+	LinearGradientBrush br(r, c1, c2, 0, FALSE);
+
+	g.FillRectangle(&br, r);
+	if (state & DrawStateFocusRect)
+	    DrawFocusRect(g, extents);
     }
 
     inline void Next_Frame_And_Refresh(int _Delay, unsigned int Next_Threshold,

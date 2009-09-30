@@ -34,13 +34,11 @@
 #include "khmapp.h"
 
 #include "NewCredWizard.hpp"
+#include "AlertContainer.hpp"
 
 #include<assert.h>
 
 using namespace nim;
-
-
-
 
 
 extern "C"
@@ -60,13 +58,14 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 
     if (!w.IsNull() && w->m_progress.hwnd != NULL) {
 
-        khui_alert * a = NULL;
-        RECT r_pos;
+	AlertContainer * c;
 
         if (tnc == nc) {
-            if (w->m_progress.hwnd_container) {
-                DestroyWindow(w->m_progress.hwnd_container);
-                w->m_progress.hwnd_container = NULL;
+	    RECT r_pos;
+
+            if (!w->m_progress.cw_container.IsNull()) {
+		w->m_progress.cw_container->DestroyWindow();
+                w->m_progress.cw_container = (ControlWindow *) NULL;
             }
 
             {
@@ -78,20 +77,29 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
                                 sizeof(RECT)/sizeof(POINT));
             }
 
-            w->m_progress.hwnd_container = khui_alert_create_container(w->m_progress.hwnd,
-                                                                       &r_pos, 0);
+	    c = new AlertContainer();
+	    w->m_progress.cw_container = c;
+
+	    c->Create(w->m_progress.hwnd, RectFromRECT(&r_pos));
+	    c->ShowWindow();
         }
 
-        khui_alert_create_empty(&a);
-        khui_alert_set_type(a, KHUI_ALERTTYPE_PROGRESSACQ);
-        khui_alert_monitor_progress(a, NULL,
-                                    KHUI_AMP_ADD_CHILDREN |
-                                    KHUI_AMP_SHOW_EVT_ERR |
-                                    KHUI_AMP_SHOW_EVT_WARN);
+	{
+	    khui_alert * _a = NULL;
 
-        khui_alert_add_to_container(w->m_progress.hwnd_container, a);
+	    khui_alert_create_empty(&_a);
 
-        khui_alert_release(a);
+	    Alert a(_a, true);
+
+	    khui_alert_set_type(a, KHUI_ALERTTYPE_PROGRESSACQ);
+
+	    c->Add(a);
+
+	    khui_alert_monitor_progress(a, NULL,
+					KHUI_AMP_ADD_CHILDREN |
+					KHUI_AMP_SHOW_EVT_ERR |
+					KHUI_AMP_SHOW_EVT_WARN);
+	}
 
         nc->ignore_errors = TRUE;
     }

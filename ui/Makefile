@@ -29,55 +29,60 @@ EXEFILE=$(BINDIR)\netidmgr.exe
 
 MANIFESTFILE=$(BINDIR)\netidmgr.exe.static.manifest
 
-OBJFILES= 			\
-	$(OBJ)\main.obj 	\
-	$(OBJ)\mainmenu.obj 	\
-	$(OBJ)\appearance.obj	\
-	$(OBJ)\toolbar.obj 	\
-	$(OBJ)\statusbar.obj 	\
-	$(OBJ)\notifier.obj 	\
-	$(OBJ)\timer.obj	\
-	$(OBJ)\uiconfig.obj 	\
-	$(OBJ)\mainwnd.obj 	\
-	$(OBJ)\htwnd.obj 	\
-	$(OBJ)\passwnd.obj 	\
-	$(OBJ)\propertywnd.obj 	\
-	$(OBJ)\credfuncs.obj 	\
-	$(OBJ)\configwnd.obj	\
-	$(OBJ)\aboutwnd.obj	\
-	$(OBJ)\reqdaemon.obj	\
-	$(OBJ)\addrchange.obj	\
-	$(OBJ)\debugfuncs.obj	\
-	$(OBJ)\taskbar.obj	\
-	$(OBJ)\propertysheet.obj  	\
-	$(OBJ)\windowctl.obj	\
-	$(OBJ)\iconselectwnd.obj	\
-	$(OBJ)\drawfuncs.obj	\
-	$(OBJ)\newcredwnd.obj 	\
-	$(OBJ)\NewCredAdvancedPanel.obj \
-	$(OBJ)\NewCredBasicPanel.obj	\
-	$(OBJ)\NewCredIdentitySelector.obj	\
-	$(OBJ)\NewCredIdentitySpecifier.obj	\
-	$(OBJ)\NewCredNavigation.obj	\
-	$(OBJ)\NewCredNoPromptPanel.obj	\
-	$(OBJ)\NewCredPanels.obj	\
-	$(OBJ)\NewCredPersistPanel.obj	\
-	$(OBJ)\NewCredWizard.obj	\
-	$(OBJ)\ControlWindow.obj	\
-	$(OBJ)\DialogWindow.obj		\
-	$(OBJ)\DisplayContainer.obj	\
-	$(OBJ)\DisplayColumn.obj	\
-	$(OBJ)\DisplayColumnList.obj	\
-	$(OBJ)\DisplayElement.obj	\
-	$(OBJ)\credwnd.obj 	\
-	$(OBJ)\CwOutline.obj	\
-	$(OBJ)\CwOutlineBase.obj	\
-	$(OBJ)\CwTable.obj	\
-	$(OBJ)\cfg_general_wnd.obj	\
-	$(OBJ)\cfg_identities_wnd.obj	\
-	$(OBJ)\cfg_notif_wnd.obj	\
-	$(OBJ)\cfg_plugins_wnd.obj	\
-	$(OBJ)\cfg_appear_wnd.obj
+OBJFILES=				    \
+	$(OBJ)\AlertContainer.obj	    \
+	$(OBJ)\AlertContextMonitor.obj	    \
+	$(OBJ)\AlertElement.obj		    \
+	$(OBJ)\AlertWindow.obj		    \
+	$(OBJ)\ControlWindow.obj	    \
+	$(OBJ)\CwOutline.obj		    \
+	$(OBJ)\CwOutlineBase.obj	    \
+	$(OBJ)\CwTable.obj		    \
+	$(OBJ)\DialogWindow.obj		    \
+	$(OBJ)\DisplayColumn.obj	    \
+	$(OBJ)\DisplayColumnList.obj	    \
+	$(OBJ)\DisplayContainer.obj	    \
+	$(OBJ)\DisplayElement.obj	    \
+	$(OBJ)\NewCredAdvancedPanel.obj	    \
+	$(OBJ)\NewCredBasicPanel.obj	    \
+	$(OBJ)\NewCredIdentitySelector.obj  \
+	$(OBJ)\NewCredIdentitySpecifier.obj \
+	$(OBJ)\NewCredNavigation.obj	    \
+	$(OBJ)\NewCredNoPromptPanel.obj	    \
+	$(OBJ)\NewCredPanels.obj	    \
+	$(OBJ)\NewCredPersistPanel.obj	    \
+	$(OBJ)\NewCredWizard.obj	    \
+	$(OBJ)\NotificationIcon.obj	    \
+	$(OBJ)\Notifier.obj		    \
+	$(OBJ)\aboutwnd.obj		    \
+	$(OBJ)\addrchange.obj		    \
+	$(OBJ)\appearance.obj		    \
+	$(OBJ)\cfg_appear_wnd.obj	    \
+	$(OBJ)\cfg_general_wnd.obj	    \
+	$(OBJ)\cfg_identities_wnd.obj	    \
+	$(OBJ)\cfg_notif_wnd.obj	    \
+	$(OBJ)\cfg_plugins_wnd.obj	    \
+	$(OBJ)\configwnd.obj		    \
+	$(OBJ)\credfuncs.obj		    \
+	$(OBJ)\credwnd.obj		    \
+	$(OBJ)\debugfuncs.obj		    \
+	$(OBJ)\drawfuncs.obj		    \
+	$(OBJ)\htwnd.obj		    \
+	$(OBJ)\iconselectwnd.obj	    \
+	$(OBJ)\main.obj			    \
+	$(OBJ)\mainmenu.obj		    \
+	$(OBJ)\mainwnd.obj		    \
+	$(OBJ)\newcredwnd.obj		    \
+	$(OBJ)\passwnd.obj		    \
+	$(OBJ)\propertysheet.obj	    \
+	$(OBJ)\propertywnd.obj		    \
+	$(OBJ)\reqdaemon.obj		    \
+	$(OBJ)\statusbar.obj		    \
+	$(OBJ)\taskbar.obj		    \
+	$(OBJ)\timer.obj		    \
+	$(OBJ)\toolbar.obj		    \
+	$(OBJ)\uiconfig.obj		    \
+	$(OBJ)\windowctl.obj
 
 RESFILES= \
 	$(OBJ)\khapp.res	\
@@ -91,13 +96,13 @@ LIBFILES=$(LIBDIR)\nidmgr32.lib
 
 SDKLIBFILES= 			\
 	comctl32.lib 		\
-	shell32.lib		\
+	gdiplus.lib		\
 	htmlhelp.lib		\
 	iphlpapi.lib		\
-	shlwapi.lib		\
 	msimg32.lib		\
-	gdiplus.lib		\
-	ole32.lib
+	ole32.lib		\
+	shell32.lib		\
+	shlwapi.lib
 
 !if "$(APPVER)" != "5.0"
 SDKLIBFILES = $(SDKLIBFILES) uxtheme.lib

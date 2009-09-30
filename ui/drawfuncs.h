@@ -70,6 +70,7 @@ namespace nim {
 
         Color   c_selection;    // Selection color
         Color   c_background;   // Background color
+	Color   c_alert;	// Background color for alerts
 
         Color   c_normal;       // Normal background color
         Color   c_empty;        // Empty background color
@@ -176,6 +177,8 @@ namespace nim {
                               const std::wstring& title,
                               const std::wstring& subtitle,
                               const std::wstring& aux);
+
+	void DrawAlertBackground(Graphics& g, const Rect& extents, DrawState state);
     };
 
     typedef enum DrawTextStyle {
@@ -236,6 +239,7 @@ namespace nim {
         }
     };
 
+    // Applies to WithTextDisplay
     template <class T>
     class ColumnCellTextT : public WithCachedFont< T > {
         void GetStringFormat(StringFormat& sf) {
@@ -254,6 +258,7 @@ namespace nim {
         }
     };
 
+    // Applies to WithTextDisplay
     template <class T>
     class GenericTextT : public WithCachedFont< T > {
         void GetStringFormat(StringFormat& sf) {
