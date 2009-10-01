@@ -129,7 +129,7 @@ namespace nim {
 	    if (ref->flags & KHUI_ALERT_FLAG_MODAL)
 		return false;
 
-	    if (ref->alert_type == KHUI_ALERTTYPE_NONE ||
+	    if (// Should ideally only be checked if the type isn't NONE
 		ref->alert_type != alert->alert_type)
 		return false;
 	}
@@ -209,6 +209,13 @@ namespace nim {
 	    if (ae) {
 		ae->OnErrCtxEvent((enum kherr_ctx_event) codeNotify);
 	    }
+	} else {
+	    __super::OnCommand(id, hwndCtl, codeNotify);
 	}
+    }
+
+    bool AlertContainer::TranslateAccelerator(LPMSG pMsg)
+    {
+        return !! ::TranslateAccelerator(hwnd, khm_global_accel_table, pMsg);
     }
 }

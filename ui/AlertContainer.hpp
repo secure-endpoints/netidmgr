@@ -12,7 +12,10 @@ namespace nim {
     /*! \brief A display container for alerts
      */
     class AlertContainer :
-	public WithVerticalLayout < WithNavigation < DisplayContainer > >
+	public
+    WithVerticalLayout < 
+	WithAcceleratorTranslation < 
+	    WithNavigation < DisplayContainer > > >
     {
 	AlertList m_alerts;
 	std::wstring m_title;
@@ -61,6 +64,12 @@ namespace nim {
 	bool BeginMonitoringAlert(Alert& a);
 
 	virtual void AlertContainer::OnCommand(int id, HWND hwndCtl, UINT codeNotify);
+
+	virtual DWORD GetStyleEx() {
+	    return 0;
+	}
+
+	virtual bool TranslateAccelerator(LPMSG pMsg);
 
     public:
 	static AlertElement *GetAlertElement(Alert& alert, DisplayElement *container);
