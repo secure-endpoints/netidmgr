@@ -52,6 +52,7 @@ enum tag_khm_ui_element {
     KHM_CLR_SELECTION,
     KHM_CLR_BACKGROUND,
     KHM_CLR_ALERTBKG,
+    KHM_CLR_SUGGESTBKG,
     KHM_CLR_ACCENT,
 
     KHM_CLR_HEADER,
