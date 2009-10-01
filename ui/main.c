@@ -339,7 +339,7 @@ void khm_unregister_window_classes(void) {
     khm_unregister_propertywnd_class();
 }
 
-static HACCEL ha_menu;
+HACCEL khm_global_accel_table;
 
 WPARAM khm_message_loop_int(khm_boolean * p_exit) {
     int r;
@@ -351,7 +351,7 @@ WPARAM khm_message_loop_int(khm_boolean * p_exit) {
             break;
         if(!khm_check_dlg_message(&msg) &&
            !khm_check_ps_message(&msg) &&
-           !TranslateAccelerator(khm_hwnd_main, ha_menu, &msg)) {
+           !TranslateAccelerator(khm_hwnd_main, khm_global_accel_table, &msg)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -362,9 +362,9 @@ WPARAM khm_message_loop_int(khm_boolean * p_exit) {
 
 WPARAM khm_message_loop(void) {
     WPARAM w;
-    ha_menu = khui_create_global_accel_table();
+    khm_global_accel_table = khui_create_global_accel_table();
     w = khm_message_loop_int(NULL);
-    DestroyAcceleratorTable(ha_menu);
+    DestroyAcceleratorTable(khm_global_accel_table);
     return w;
 }
 

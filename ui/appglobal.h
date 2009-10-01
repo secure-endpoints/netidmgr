@@ -137,6 +137,8 @@ typedef struct tag_khm_query_app_version_v1 {
 
 #define KHM_QUERY_APP_VER_MAGIC 0x38f8c2eb
 
+extern HACCEL khm_global_accel_table;
+
 void khm_add_dialog(HWND dlg);
 void khm_del_dialog(HWND dlg);
 BOOL khm_is_dialog_active(void);
