@@ -49,6 +49,12 @@ namespace nim {
 
         dw->Hold();
 
+	khm_add_dialog(hwnd);
+
+#ifdef DEBUG
+	dw->SetOkToDispose(false);
+#endif
+
         return dw->OnInitDialog(hwnd_focus, pd->user_param);
     }
 
@@ -71,7 +77,7 @@ namespace nim {
     void DialogWindow::HandleNcNotify(HWND hwnd, khui_wm_nc_notifications code,
                                       int sParam, void * vParam)
     {
-#define HANDLE_NCMSG(c, fn)                        \
+#define HANDLE_NCMSG(c, fn)				\
         case c: HANDLE_##c(sParam, vParam, fn); break
 
         switch (code) {
@@ -104,6 +110,7 @@ namespace nim {
         }
 
         if (uMsg == WM_DESTROY) {
+	    khm_del_dialog(hwnd);
             HANDLE_WM_DESTROY(hwnd, wParam, lParam, dw->HandleOnDestroy);
             return TRUE;
         }
@@ -123,6 +130,7 @@ namespace nim {
             HANDLE_MSG(hwnd, WM_DRAWITEM, dw->HandleDrawItem);
             HANDLE_MSG(hwnd, WM_MEASUREITEM, dw->HandleMeasureItem);
             HANDLE_MSG(hwnd, WM_NOTIFY, dw->HandleNotify);
+	    HANDLE_MSG(hwnd, WM_GETDLGCODE, dw->HandleGetDlgCode);
 #ifdef KHUI_WM_NC_NOTIFY
             HANDLE_MSG(hwnd, KHUI_WM_NC_NOTIFY, dw->HandleNcNotify);
 #endif

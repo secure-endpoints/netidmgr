@@ -88,6 +88,10 @@ namespace nim {
 
         cw->Hold();
 
+#ifdef DEBUG
+	cw->SetOkToDispose(false);
+#endif
+
         return cw->OnCreate(cp->createParams);
     }
 
@@ -97,6 +101,19 @@ namespace nim {
         SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
         hwnd = NULL;
         Release();
+#ifdef DEBUG
+	SetOkToDispose(true);
+#endif
+    }
+
+    UINT ControlWindow::OnGetDlgCode(LPMSG pMsg)
+    {
+	return 0;
+    }
+
+    UINT ControlWindow::HandleGetDlgCode(HWND hwnd, LPMSG pMsg)
+    {
+	return OnGetDlgCode(pMsg);
     }
 
 #ifdef KMQ_WM_DISPATCH
@@ -157,6 +174,7 @@ namespace nim {
 	    HANDLE_MSG(hwnd, WM_ACTIVATE, cw->HandleActivate);
 	    HANDLE_MSG(hwnd, WM_HELP, cw->HandleHelp);
 	    HANDLE_MSG(hwnd, WM_TIMER, cw->HandleTimer);
+	    HANDLE_MSG(hwnd, WM_GETDLGCODE, cw->HandleGetDlgCode);
 #ifdef KMQ_WM_DISPATCH
 	    HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, cw->HandleDispatch);
 #endif
