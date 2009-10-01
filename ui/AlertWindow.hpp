@@ -9,7 +9,7 @@ namespace nim {
     typedef std::list<AlertWindow *> AlertWindowList;
 
     class AlertWindow :
-	public DialogWindow {
+	virtual public DialogWindow {
 
 	AlertWindowList * m_owner;
 	AlertContainer * m_alerts;
