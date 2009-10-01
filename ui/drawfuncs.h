@@ -71,6 +71,7 @@ namespace nim {
         Color   c_selection;    // Selection color
         Color   c_background;   // Background color
 	Color   c_alert;	// Background color for alerts
+	Color   c_suggestion;	// Background color for alert suggestion
 
         Color   c_normal;       // Normal background color
         Color   c_empty;        // Empty background color
@@ -179,6 +180,8 @@ namespace nim {
                               const std::wstring& aux);
 
 	void DrawAlertBackground(Graphics& g, const Rect& extents, DrawState state);
+
+	void DrawAlertSuggestBackground(Graphics& g, const Rect& extents, DrawState state);
     };
 
     typedef enum DrawTextStyle {
@@ -273,6 +276,18 @@ namespace nim {
         Color GetForegroundColor() {
             return (selected)? g_theme->c_text_selected : g_theme->c_text;
         }
+    };
+
+    template <class T, void (KhmDraw::*DF)(Graphics&, const Rect&, DrawState)>
+    class BackgroundT : public T {
+        virtual void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
+	    (g_theme->*DF)(g, bounds, GetDrawState());
+	    __super::PaintSelf(g, bounds, clip);
+	}
+
+	virtual DrawState GetDrawState() {
+	    return DrawStateNone;
+	}
     };
 
     extern KhmDraw * g_theme;
