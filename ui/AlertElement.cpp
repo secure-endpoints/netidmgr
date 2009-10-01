@@ -50,9 +50,18 @@ namespace nim {
 	    return LoadIconResource(
 				    (alert->severity == KHERR_ERROR)? OIC_HAND :
 				    (alert->severity == KHERR_WARNING)? OIC_BANG :
-				    OIC_NOTE
+				    OIC_NOTE,
+				    false, true, NULL
 				    );
 	}
+    }
+
+    DrawState AlertElement::GetDrawState()
+    {
+	return (DrawState)(0 |
+			   (selected ? DrawStateSelected : DrawStateNone) |
+			   (highlight ? DrawStateHotTrack : DrawStateNone) |
+			   (focus ? DrawStateFocusRect : DrawStateNone));
     }
 
     void AlertElement::UpdateLayoutPre(Graphics & g, Rect & layout)
@@ -305,6 +314,6 @@ namespace nim {
 
     void AlertElement::PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip)
     {
-	g_theme->DrawAlertBackground(g, bounds, DrawStateNone);
+	g_theme->DrawAlertBackground(g, bounds, GetDrawState());
     }
 }

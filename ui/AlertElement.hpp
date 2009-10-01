@@ -3,16 +3,17 @@
 namespace nim {
 
     class AlertTitleElement :
-	public GenericTextT< WithStaticCaption < > > {
-    };
+	public GenericTextT< WithStaticCaption < > >
+    {};
 
     class AlertMessageElement :
-	public GenericTextT< WithStaticCaption < > > {
-    };
+	public GenericTextT< WithStaticCaption < > >
+    {};
 
     class AlertSuggestionElement :
-	public GenericTextT< WithStaticCaption < > > {
-    };
+	public BackgroundT< GenericTextT< WithStaticCaption < > >,
+			    &KhmDraw::DrawAlertSuggestBackground >
+    {};
 
     // forward dcl.
     class AlertContextMonitor;
@@ -46,6 +47,8 @@ namespace nim {
 	void TryMonitorNewChildContext(kherr_context * c);
 
 	void OnErrCtxEvent(enum kherr_ctx_event e);
+
+	DrawState GetDrawState();
 
     public:
 	Alert                    m_alert;
