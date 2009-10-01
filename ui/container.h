@@ -38,9 +38,16 @@ namespace nim {
 
     class RefCount {
         LONG refcount;
+#ifdef DEBUG
+	bool ok_to_dispose;
+#endif
 
     public:
-        RefCount() : refcount(1) { }
+        RefCount() : refcount(1)
+#ifdef DEBUG
+		   , ok_to_dispose(true)
+#endif
+	{ }
 
         RefCount(bool initially_held) : refcount((initially_held)? 1 : 0) { }
 
@@ -57,6 +64,9 @@ namespace nim {
         }
 
         virtual void Dispose() {
+#ifdef DEBUG
+	    assert (ok_to_dispose);
+#endif
             delete this;
         }
 
@@ -64,6 +74,13 @@ namespace nim {
             HoldReference = 0,
             TakeOwnership = 1,
         };
+
+#ifdef DEBUG
+	void SetOkToDispose(bool is_ok) {
+	    ok_to_dispose = is_ok;
+	}
+#endif
+
     };
 
     template<class T>
@@ -203,6 +220,8 @@ namespace nim {
 
         virtual LRESULT OnMeasureItem( MEASUREITEMSTRUCT * lpMeasureItem) { return 0; }
 
+	virtual UINT OnGetDlgCode(LPMSG pMsg);
+
 #ifdef KMQ_WM_DISPATCH
         virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype, khm_ui_4 uparam,
                                        void * vparam) { return 0; }
@@ -307,6 +326,8 @@ namespace nim {
         void HandleHScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos);
 
         void HandleVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos);
+
+	UINT HandleGetDlgCode(HWND hwnd, LPMSG lpMsg);
 
         LRESULT HandleDispatch(LPARAM lParam);
 
@@ -1169,6 +1190,25 @@ namespace nim {
             e->is_outline = true;
             e->visible = expanded;
         }
+    };
+
+    // Applies to DisplayContainer
+    template<class T = DisplayContainer>
+    class NOINITVTABLE WithAcceleratorTranslation : public T {
+	virtual UINT OnGetDlgCode(LPMSG pMsg) {
+	    if (pMsg != NULL) {
+		if (TranslateAccelerator(pMsg))
+		    return DLGC_WANTMESSAGE;
+		else
+		    return 0;
+	    } else {
+		return DLGC_WANTMESSAGE;
+	    }
+	}
+
+	virtual bool TranslateAccelerator(LPMSG pMsg) {
+	    return false;
+	}
     };
 
     // Applies to DisplayContainer
