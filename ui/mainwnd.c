@@ -586,6 +586,11 @@ khm_main_wnd_proc(HWND hwnd,
                         khui_cfg_release(node);
                     }
                 }
+#ifdef UITESTS
+                if (paction && paction->data == (void *) TESTACTION_MAGIC) {
+                    test_action_trigger(action);
+                }
+#endif
             } else if (MsgIs(KMSG_CRED, KMSG_CRED_REFRESH)) {
 
                 mw_restart_refresh_timer(hwnd);

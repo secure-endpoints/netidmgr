@@ -161,6 +161,14 @@ WPARAM khm_message_loop_int(khm_boolean * p_exit);
 
 int khm_compare_version(const khm_version * v1, const khm_version * v2);
 
+#ifdef UITESTS
+extern int test_Magic;
+#define TESTACTION_MAGIC (&test_Magic)
+void test_init(void);
+void test_exit(void);
+void test_action_trigger(int);
+#endif
+
 #define MAX_RES_STRING 1024
 
 #define ELLIPSIS L"..."

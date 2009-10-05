@@ -537,7 +537,15 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         khm_refresh_config();
 
+#ifdef UITESTS
+    test_init();
+#endif
+
         rv = (int) khm_message_loop();
+
+#ifdef UITESTS
+    test_exit();
+#endif
 
         kmq_set_completion_handler(KMSG_CRED, NULL);
 

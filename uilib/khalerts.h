@@ -148,6 +148,7 @@ typedef enum tag_khui_alert_types {
     KHUI_ALERTTYPE_CHPW,        /*!< Failed to change password */
     KHUI_ALERTTYPE_PROGRESS,    /*!< General progress monitor */
     KHUI_ALERTTYPE_PROGRESSACQ, /*!< Progress monitor for credentials acquisition */
+    KHUI_ALERTTYPE_TEST,        /*!< Reserved for testing */
 } khui_alert_type;
 
 /*! \brief Create an empty alert object
@@ -238,6 +239,8 @@ khui_alert_add_command(khui_alert * alert,
                        khm_int32 command_id);
 
 /*! \brief Set the type of alert
+
+  One of ::khui_alert_type .
  */
 KHMEXP khm_int32 KHMAPI
 khui_alert_set_type(khui_alert * alert,

@@ -29,6 +29,12 @@ EXEFILE=$(BINDIR)\netidmgr.exe
 
 MANIFESTFILE=$(BINDIR)\netidmgr.exe.static.manifest
 
+!if "$(KH_BUILD)" != "RETAIL"
+# UI test code
+UITESTS=1
+KH_AUXCFLAGS=$(KH_AUXCFLAGS) -DUITESTS
+!endif
+
 OBJFILES=				    \
 	$(OBJ)\AlertContainer.obj	    \
 	$(OBJ)\AlertContextMonitor.obj	    \
@@ -83,6 +89,12 @@ OBJFILES=				    \
 	$(OBJ)\toolbar.obj		    \
 	$(OBJ)\uiconfig.obj		    \
 	$(OBJ)\windowctl.obj
+
+!ifdef UITESTS
+OBJFILES=$(OBJFILES)	\
+	$(OBJ)\test_alerts.obj	\
+	$(OBJ)\test_uimain.obj
+!endif
 
 RESFILES= \
 	$(OBJ)\khapp.res	\
