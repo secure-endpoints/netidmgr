@@ -18,7 +18,7 @@ namespace nim {
 	ni.uID = KHUI_NOTIFY_ICON_ID;
 	ni.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 	ni.hIcon = LoadIconResource(m_iid, true, false); // small_icon = true, shared = false
-	ni.uCallbackMessage = WM_COMMAND;
+	ni.uCallbackMessage = NOTIFICATION_MSG;
 
 	LoadStringResource(buf, IDS_NOTIFY_PREFIX);
 	m_tooltip = buf;

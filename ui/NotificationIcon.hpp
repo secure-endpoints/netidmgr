@@ -9,6 +9,11 @@ namespace nim {
 	khm_int32 m_severity;
 
     public:
+        enum {
+            NOTIFICATION_MSG = WM_USER + 1
+        };
+
+    public:
 	NotificationIcon(ControlWindow * cw_notify):
 	    m_notify(cw_notify),
 	    m_iid(IDI_NOTIFY_NONE),

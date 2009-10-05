@@ -85,11 +85,11 @@ namespace nim {
 	virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype,
 				       khm_ui_4 uparam, void * vparam);
 
-	virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
-
 	virtual void OnWmTimer(UINT id);
 
 	virtual BOOL OnCreate(LPVOID createParams);
+
+        virtual BOOL HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT * lr);
     };
 
     extern Notifier * g_notifier;
