@@ -142,6 +142,7 @@ namespace nim {
         ValidateScrollPos();
 
         if (!oldScroll.Equals(scroll)) {
+            NotifyLayoutInternal();
             UpdateScrollBars(true);
             ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
         }
@@ -192,6 +193,7 @@ namespace nim {
         ValidateScrollPos();
 
         if (!oldScroll.Equals(scroll)) {
+            NotifyLayoutInternal();
             UpdateScrollBars(true);
             ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
         }
@@ -219,6 +221,7 @@ namespace nim {
             }
         }
 
+        NotifyLayoutInternal();
         UpdateScrollBars(true);
     }
 
