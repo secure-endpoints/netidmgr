@@ -13,7 +13,7 @@ namespace nim {
     public:
         RefCount() : refcount(1)
 #ifdef DEBUG
-		   , ok_to_dispose(true)
+		   , ok_to_dispose(false)
 #endif
 	{ }
 
