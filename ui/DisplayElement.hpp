@@ -91,6 +91,8 @@ namespace nim {
 
         void UpdateLayout(Graphics & g, const Rect & layout);
 
+        void NotifyLayoutInternal();
+
         void Invalidate(const Rect & r);
 
         void Invalidate() {
@@ -100,6 +102,8 @@ namespace nim {
         virtual void UpdateLayoutPre(Graphics & g, Rect & layout);
 
         virtual void UpdateLayoutPost(Graphics & g, const Rect & layout);
+
+        virtual void NotifyLayout() { };
 
         virtual void Expand(bool _expand = true);
 

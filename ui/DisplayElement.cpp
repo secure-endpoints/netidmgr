@@ -112,6 +112,15 @@ namespace nim {
         recalc_extents = false;
     }
 
+    void DisplayElement::NotifyLayoutInternal(void)
+    {
+        NotifyLayout();
+
+        for (DisplayElement * c = TQFIRSTCHILD(this); c; c = TQNEXTSIBLING(c)) {
+            c->NotifyLayoutInternal();
+        }
+    }
+
     void DisplayElement::UpdateLayoutPre(Graphics& g, Rect& layout)
     {
     }
