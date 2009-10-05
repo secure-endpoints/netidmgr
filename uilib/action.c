@@ -28,6 +28,10 @@
 #define NIMPRIVATE
 #define _NIMLIB_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include<khuidefs.h>
 #include<intaction.h>
 #include<utils.h>
@@ -1667,3 +1671,7 @@ khui_context_cursor_filter(khm_handle cred,
     } else
         return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
