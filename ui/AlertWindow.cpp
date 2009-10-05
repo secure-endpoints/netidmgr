@@ -1,7 +1,22 @@
 #include "khmapp.h"
 #include "AlertWindow.hpp"
+#include <algorithm>
+#include <assert.h>
 
 namespace nim {
+
+    AlertWindow::AlertWindow() : DialogWindow(MAKEINTRESOURCE(IDD_ALERTS),
+                                              khm_hInstance)
+    {
+        m_alerts = new AlertContainer();
+        m_owner = NULL;
+    }
+
+    AlertWindow::~AlertWindow()
+    {
+        SetOwnerList(NULL);
+        m_alerts->Release();
+    }
 
     BOOL AlertWindow::OnInitDialog(HWND hwndFocus, LPARAM lParam)
     {
@@ -17,6 +32,13 @@ namespace nim {
 
     void AlertWindow::SetOwnerList(AlertWindowList * _owner)
     {
+        if (m_owner)
+            m_owner->remove(this);
+
+        m_owner = _owner;
+
+        if (m_owner)
+            m_owner->push_back(this);
     }
 
     void AlertWindow::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
@@ -38,5 +60,10 @@ namespace nim {
     {
 	DoDefault();
 	return 0;
+    }
+
+    void AlertWindow::OnDestroy(void)
+    {
+        SetOwnerList(NULL);
     }
 }

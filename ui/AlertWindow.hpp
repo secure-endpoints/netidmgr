@@ -15,14 +15,9 @@ namespace nim {
 	AlertContainer * m_alerts;
 
     public:
-	AlertWindow() : DialogWindow(MAKEINTRESOURCE(IDD_ALERTS),
-				     khm_hInstance) {
-	    m_alerts = new AlertContainer();
-	}
+	AlertWindow();
 
-	~AlertWindow() {
-	    m_alerts->Release();
-	}
+	~AlertWindow();
 
 	bool Add(Alert & a) {
 	    return m_alerts->Add(a);
@@ -42,6 +37,8 @@ namespace nim {
         virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam);
 
         virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
+
+        virtual void OnDestroy(void);
 
         virtual LRESULT OnHelp(HELPINFO * info);
     };
