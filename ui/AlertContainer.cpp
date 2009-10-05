@@ -136,8 +136,9 @@ namespace nim {
 
 	m_alerts.push_back(alert);
 
-	// If the alert container has been initialized already, we
-	// have to add new AlertElement elements for this alert.
+        MarkForExtentUpdate();
+        Invalidate();
+
 	return true;
     }
 
