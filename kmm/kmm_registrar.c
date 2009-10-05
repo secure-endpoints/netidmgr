@@ -682,7 +682,7 @@ void kmmint_init_module(kmm_module_i * m) {
     /* from this point on, we must record any failure codes */
     record_failure = TRUE;
 
-    hm = LoadLibrary(m->path);
+    hm = LoadLibraryEx(m->path, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
     if(!hm) {
         m->h_module = NULL;
         m->state = KMM_MODULE_STATE_FAIL_NOT_FOUND;
