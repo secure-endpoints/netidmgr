@@ -69,6 +69,18 @@ namespace nim {
         WithNavigation() { el_focus = NULL; el_anchor = NULL; }
         ~WithNavigation() { }
 
+        virtual void OnSetFocus(HWND hwnd_old) {
+            if (el_focus)
+                el_focus->Focus(true);
+            __super::OnSetFocus(hwnd_old);
+        }
+
+        virtual void OnKillFocus(HWND hwnd_new) {
+            if (el_focus)
+                el_focus->Focus(false);
+            __super::OnKillFocus(hwnd_new);
+        }
+
 	virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e) {
             if (el_focus == e)
                 el_focus = NULL;
@@ -83,31 +95,31 @@ namespace nim {
             __super::NotifyDeleteAllChildren(_parent);
         }
 
-        typedef enum FocusAction {
-            FocusExclusive,
-            FocusExtend,
-            FocusAddToggle
-        } FocusAction;
+        typedef enum SelectAction {
+            SelectExclusive,
+            SelectExtend,
+            SelectAddToggle
+        } SelectAction;
 
-        void SetFocusElement(DisplayElement * e, FocusAction action) {
+        void SetSelection(DisplayElement * e, SelectAction action) {
             DisplayElement * oldFocus = el_focus;
 
             if (e == NULL)
                 return;
 
             switch (action) {
-            case FocusAddToggle:
+            case SelectAddToggle:
                 e->Select(!e->selected);
                 el_anchor = e;
                 break;
 
-            case FocusExclusive:
+            case SelectExclusive:
                 SelectAllIn(this, false);
                 e->Select(true);
                 el_anchor = e;
                 break;
 
-            case FocusExtend:
+            case SelectExtend:
                 DisplayElement * c;
                 for (c = e; c; c = NextTabStop(c)) {
                     if (c == el_anchor)
@@ -178,13 +190,13 @@ namespace nim {
                 // fallthrough
 
             case KHUI_PACTION_UP:
-                SetFocusElement(PrevTabStop(el_focus), FocusExclusive); break;
+                SetSelection(PrevTabStop(el_focus), SelectExclusive); break;
 
             case KHUI_PACTION_UP_EXTEND:
-                SetFocusElement(PrevTabStop(el_focus), FocusExtend); break;
+                SetSelection(PrevTabStop(el_focus), SelectExtend); break;
 
             case KHUI_PACTION_UP_TOGGLE:
-                SetFocusElement(PrevTabStop(el_focus), FocusAddToggle); break;
+                SetSelection(PrevTabStop(el_focus), SelectAddToggle); break;
 
             case KHUI_PACTION_PGUP_EXTEND:
             case KHUI_PACTION_PGUP:
@@ -195,11 +207,11 @@ namespace nim {
                     DisplayElement * e = DescendantFromPoint(p);
                     if (e) e = PrevTabStop(e);
                     if (e) e = NextTabStop(e);
-                    SetFocusElement((e)? e : NextTabStop(NULL),
-                        (id == KHUI_PACTION_PGUP)? FocusExclusive : FocusExtend);
+                    SetSelection((e)? e : NextTabStop(NULL),
+                        (id == KHUI_PACTION_PGUP)? SelectExclusive : SelectExtend);
                 } else {
-                    SetFocusElement(NextTabStop(NULL), 
-                        (id == KHUI_PACTION_PGUP)? FocusExclusive : FocusExtend);
+                    SetSelection(NextTabStop(NULL), 
+                        (id == KHUI_PACTION_PGUP)? SelectExclusive : SelectExtend);
                 }
                 break;
 
@@ -212,13 +224,13 @@ namespace nim {
                 // fallthrough
 
             case KHUI_PACTION_DOWN:
-                SetFocusElement(NextTabStop(el_focus), FocusExclusive); break;
+                SetSelection(NextTabStop(el_focus), SelectExclusive); break;
 
             case KHUI_PACTION_DOWN_EXTEND:
-                SetFocusElement(NextTabStop(el_focus), FocusExtend); break;
+                SetSelection(NextTabStop(el_focus), SelectExtend); break;
 
             case KHUI_PACTION_DOWN_TOGGLE:
-                SetFocusElement(NextTabStop(el_focus), FocusAddToggle); break;
+                SetSelection(NextTabStop(el_focus), SelectAddToggle); break;
 
             case KHUI_PACTION_PGDN_EXTEND:
             case KHUI_PACTION_PGDN:
@@ -229,11 +241,11 @@ namespace nim {
                     DisplayElement * e = DescendantFromPoint(p);
                     if (e) e = PrevTabStop(e);
                     if (e) e = NextTabStop(e);
-                    SetFocusElement((e)? e : PrevTabStop(NULL),
-                        (id == KHUI_PACTION_PGDN)? FocusExclusive : FocusExtend);
+                    SetSelection((e)? e : PrevTabStop(NULL),
+                        (id == KHUI_PACTION_PGDN)? SelectExclusive : SelectExtend);
                 } else {
-                    SetFocusElement(PrevTabStop(NULL), 
-                        (id == KHUI_PACTION_PGDN)? FocusExclusive : FocusExtend);
+                    SetSelection(PrevTabStop(NULL), 
+                        (id == KHUI_PACTION_PGDN)? SelectExclusive : SelectExtend);
                 }
                 break;
 
@@ -249,11 +261,11 @@ namespace nim {
             if (!e->IsTabStop()) return;
 
             if ((keyflags & MK_SHIFT) == MK_SHIFT) {
-                SetFocusElement(e, FocusExtend);
+                SetSelection(e, SelectExtend);
             } else if ((keyflags & MK_CONTROL) == MK_CONTROL) {
-                SetFocusElement(e, FocusAddToggle);
+                SetSelection(e, SelectAddToggle);
             } else {
-                SetFocusElement(e, FocusExclusive);
+                SetSelection(e, SelectExclusive);
             }
             T::OnChildClick(e, p, keyflags, doubleClick);
         }
