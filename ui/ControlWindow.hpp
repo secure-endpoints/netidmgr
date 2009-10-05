@@ -77,6 +77,8 @@ namespace nim {
                                        void * vparam) { return 0; }
 #endif
 
+        virtual BOOL HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT *lr) { return FALSE; }
+
         /* Styles */
     public:
         virtual DWORD GetStyle() {

@@ -100,10 +100,10 @@ namespace nim {
         OnDestroy();
         SetWindowLongPtr(hwnd, GWLP_USERDATA, 0);
         hwnd = NULL;
-        Release();
 #ifdef DEBUG
 	SetOkToDispose(true);
 #endif
+        Release();
     }
 
     UINT ControlWindow::OnGetDlgCode(LPMSG pMsg)
@@ -179,6 +179,13 @@ namespace nim {
 	    HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, cw->HandleDispatch);
 #endif
 	}
+
+        if (!cw.IsNull()) {
+            LRESULT lr = 0;
+
+            if (cw->HandleMessage(uMsg, wParam, lParam, &lr))
+                return lr;
+        }
 
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }

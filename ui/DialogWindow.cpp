@@ -143,6 +143,14 @@ namespace nim {
 #pragma warning(pop)
         }
 
+        if (!dw->bHandled) {
+            LRESULT lr = 0;
+
+            dw->bHandled = dw->HandleMessage(uMsg, wParam, lParam, &lr);
+            if (dw->bHandled && lr)
+                dw->SetDlgResult(lr);
+        }
+
         return dw->bHandled;
     }
 
