@@ -108,6 +108,9 @@ enum khui_alert_flags {
      */
 #pragma deprecated("KHUI_ALERT_FLAG_VALID_ERROR")
 
+    KHUI_ALERT_FLAG_MODIFIED        =0x00040000,
+    /*!< Internal. The alert has been modified. */
+
     KHUI_ALERT_FLAG_DISPLAY_WINDOW  =0x01000000,
     /*!< The alert has been displayed in a window */
 

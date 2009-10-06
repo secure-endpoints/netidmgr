@@ -65,7 +65,7 @@ khui_alert_create_empty(khui_alert ** result)
 
     /* set defaults */
     a->severity = KHERR_INFO;
-    a->flags = KHUI_ALERT_FLAG_FREE_STRUCT;
+    a->flags = KHUI_ALERT_FLAG_FREE_STRUCT | KHUI_ALERT_FLAG_MODIFIED;
     a->alert_type = KHUI_ALERTTYPE_NONE;
     khui_context_create(&a->ctx, KHUI_SCOPE_NONE,
                         NULL, KCDB_CREDTYPE_INVALID,
@@ -126,6 +126,7 @@ khui_alert_set_title(khui_alert * alert, const wchar_t * title)
         StringCbCopy(alert->title, cb, title);
         alert->flags |= KHUI_ALERT_FLAG_FREE_TITLE;
     }
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
 
     return KHM_ERROR_SUCCESS;
@@ -143,6 +144,7 @@ khui_alert_set_flags(khui_alert * alert, khm_int32 mask, khm_int32 flags)
     alert->flags = 
         (alert->flags & ~mask) |
         (flags & mask);
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
 
     return KHM_ERROR_SUCCESS;
@@ -156,6 +158,7 @@ khui_alert_set_severity(khui_alert * alert, khm_int32 severity)
 
     EnterCriticalSection(&cs_alerts);
     alert->severity = severity;
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
     return KHM_ERROR_SUCCESS;
 }
@@ -191,6 +194,7 @@ khui_alert_set_suggestion(khui_alert * alert,
         StringCbCopy(alert->suggestion, cb, suggestion);
         alert->flags |= KHUI_ALERT_FLAG_FREE_SUGGEST;
     }
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
 
     return KHM_ERROR_SUCCESS;
@@ -227,6 +231,7 @@ khui_alert_set_message(khui_alert * alert, const wchar_t * message)
         StringCbCopy(alert->message, cb, message);
         alert->flags |= KHUI_ALERT_FLAG_FREE_MESSAGE;
     }
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
 
     return KHM_ERROR_SUCCESS;
@@ -239,6 +244,7 @@ khui_alert_clear_commands(khui_alert * alert)
 
     EnterCriticalSection(&cs_alerts);
     alert->n_alert_commands = 0;
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
     return KHM_ERROR_SUCCESS;
 }
@@ -256,6 +262,7 @@ khui_alert_add_command(khui_alert * alert, khm_int32 command_id)
     else {
         alert->alert_commands[alert->n_alert_commands++] = command_id;
     }
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
 
     return rv;
@@ -270,6 +277,7 @@ khui_alert_set_type(khui_alert * alert, khui_alert_type alert_type)
 
     EnterCriticalSection(&cs_alerts);
     alert->alert_type = alert_type;
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
 
     return rv;
@@ -293,6 +301,7 @@ khui_alert_set_ctx(khui_alert * alert,
                         identity,
                         cred_type,
                         cred);
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
     LeaveCriticalSection(&cs_alerts);
 
     return rv;
@@ -399,13 +408,18 @@ khui_alert_monitor_progress(khui_alert * alert,
         }
     }
 
-    alert->err_context = ctx;
     kherr_hold_context(ctx);
 
-    alert->monitor_flags = monitor_flags;
+    EnterCriticalSection(&cs_alerts);
 
+    alert->err_context = ctx;
+    alert->monitor_flags = monitor_flags;
     if (alert->alert_type == KHUI_ALERTTYPE_NONE)
         alert->alert_type = KHUI_ALERTTYPE_PROGRESS;
+
+    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
+
+    LeaveCriticalSection(&cs_alerts);
 
     if (release_context && ctx)
         kherr_release_context(ctx);
