@@ -66,7 +66,7 @@ namespace nim {
 	virtual void AlertContainer::OnCommand(int id, HWND hwndCtl, UINT codeNotify);
 
 	virtual DWORD GetStyleEx() {
-	    return 0;
+	    return WS_EX_CONTROLPARENT;
 	}
 
 	virtual bool TranslateAccelerator(LPMSG pMsg);

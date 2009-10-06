@@ -2,6 +2,13 @@
 
 namespace nim {
 
+    class AlertCommandButtonElement :
+        public WithHostedControl< > {
+    public:
+        void CreateFromCommand(khm_int32 cmd, UINT ctl_id);
+        void UpdateLayoutPre(Graphics& g, Rect& layout);
+    };
+
     class AlertTitleElement :
 	public GenericTextT< WithStaticCaption < > >
     {};
@@ -27,6 +34,8 @@ namespace nim {
 	ProgressBarElement	*el_progress;
 
 	AlertContextMonitor     *m_monitor;
+
+        std::vector<AlertCommandButtonElement *> el_buttons;
 
     public:
 	AlertElement(Alert& a, int index);

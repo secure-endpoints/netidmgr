@@ -109,6 +109,22 @@ namespace nim {
 	    InsertChildAfter(el_icon);
 	}
 
+        if (el_buttons.size() == 0 && HasCommands()) {
+            AutoLock<Alert> a_lock(&m_alert);
+
+            for (int i = 0; i < m_alert->n_alert_commands; i++) {
+                if (m_alert->alert_commands[i] != KHUI_PACTION_CLOSE) {
+                    AlertCommandButtonElement * e = new AlertCommandButtonElement();
+
+                    InsertChildAfter(e);
+                    el_buttons.push_back(e);
+
+                    e->CreateFromCommand(m_alert->alert_commands[i],
+                                         AlertContainer::ControlIdFromIndex(m_index, i));
+                }
+            }
+        }
+
 	extents.Height = 0;
 	extents.Width = layout.Width;
 
@@ -120,37 +136,37 @@ namespace nim {
 	}
     }
 
-    void AlertElement::UpdateLayoutPost(Graphics & g, const Rect & layout)
+    void AlertElement::UpdateLayoutPost(Graphics & g, const Rect & bounds)
     {
-	Point pos = g_theme->pt_margin_cx + g_theme->pt_margin_cx + g_theme->pt_margin_cy +
-	    g_theme->pt_icon_cx;
+        int left_indent = g_theme->sz_margin.Width * 2 + g_theme->sz_icon.Width;
 
-	if (el_title) {
-	    el_title->origin = pos;
-	    pos.Y += el_title->extents.Height + g_theme->sz_margin.Height;
-	}
+        FlowLayout layout(Rect(Point(0,0),
+                               Size(bounds.Width + left_indent, 0)),
+                          g_theme->sz_margin);
 
-	if (el_message) {
-	    el_message->origin = pos;
-	    pos.Y += el_message->extents.Height + g_theme->sz_margin.Height;
-	}
+        layout
+            .PushIndent(left_indent - g_theme->sz_margin.Width)
+            .LineBreak()
+            .Add(el_title, FlowLayout::Left, FlowLayout::Fixed, el_title != NULL)
+            .LineBreak()
+            .Add(el_message, FlowLayout::Left, FlowLayout::Fixed, el_message != NULL)
+            .LineBreak()
+            .Add(el_suggestion, FlowLayout::Left, FlowLayout::Fixed, el_suggestion != NULL)
+            .LineBreak()
+            .Add(el_progress, FlowLayout::Left, FlowLayout::Fixed, el_progress != NULL)
+            .LineBreak()
+            .PopIndent()
+            .PushIndent(g_theme->sz_margin.Width + g_theme->sz_icon.Width - g_theme->sz_icon_sm.Width)
+            .Add(el_expose, FlowLayout::Left, FlowLayout::Fixed, el_expose != NULL)
+            .PopIndent()
+            .PushIndent(g_theme->sz_margin.Width + g_theme->sz_icon.Width)
+            ;
 
-	if (el_suggestion) {
-	    el_suggestion->origin = pos;
-	    pos.Y += el_suggestion->extents.Height + g_theme->sz_margin.Height;
-	}
-
-	if (el_progress) {
-	    el_progress->origin = pos;
-	    pos.Y += el_progress->extents.Height + g_theme->sz_margin.Height;
-	}
-
-	if (el_expose) {
-	    el_expose->origin = pos - (g_theme->pt_margin_cx +
-				       g_theme->pt_icon_sm_cx +
-				       g_theme->pt_margin_cy +
-				       g_theme->pt_icon_sm_cy);
-	}
+        for (std::vector<AlertCommandButtonElement *>::iterator i = el_buttons.begin();
+             i != el_buttons.end(); ++i) {
+            layout.Add(*i);
+        }
+        layout.LineBreak();
 
 	for (DisplayElement * e = TQFIRSTCHILD(this); e;
 	     e = TQNEXTSIBLING(e)) {
@@ -159,11 +175,10 @@ namespace nim {
 	    if (!ca || !ca->visible)
 		continue;
 
-	    ca->origin = pos;
-	    pos.Y += ca->extents.Height;
+            layout.Add(e).LineBreak();
 	}
 
-	extents.Height = pos.Y;
+	extents = layout.GetSize();
     }
 
     void AlertElement::UpdateIcon()
@@ -315,5 +330,61 @@ namespace nim {
     void AlertElement::PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip)
     {
 	g_theme->DrawAlertBackground(g, bounds, GetDrawState());
+    }
+
+    void AlertCommandButtonElement::CreateFromCommand(khm_int32 cmd, UINT ctl_id)
+    {
+        assert (owner);
+        assert (owner->hwnd);
+
+        HWND hwnd_button;
+        wchar_t caption[KHUI_MAXCCH_SHORT_DESC] = L"";
+
+        khm_get_action_caption(cmd, caption, sizeof(caption));
+
+        hwnd_button = CreateWindow(L"BUTTON",
+                                   caption,
+                                   WS_TABSTOP | WS_CHILD | BS_PUSHBUTTON | BS_NOTIFY,
+                                   0, 0, 100, 100, // Dummy x,y,width,height
+                                   owner->hwnd,
+                                   (HMENU)(UINT_PTR) ctl_id,
+                                   khm_hInstance,
+                                   NULL);
+        SendMessage(hwnd_button, WM_SETFONT, (WPARAM) g_theme->hf_normal, FALSE);
+        SetWindow(hwnd_button);
+    }
+
+    void AlertCommandButtonElement::UpdateLayoutPre(Graphics& g, Rect& layout)
+    {
+        HWND hwnd_button;
+
+        hwnd_button = GetWindow();
+
+        if (hwnd_button) {
+            wchar_t caption[KHUI_MAXCCH_SHORT_DESC] = L"";
+            HFONT hf;
+            Font * font;
+
+            GetWindowText(hwnd_button, caption, ARRAYLENGTH(caption));
+            hf = (HFONT) SendMessage(hwnd_button, WM_GETFONT, 0, 0);
+            if (hf == NULL)
+                hf = (HFONT) GetStockObject(DEFAULT_GUI_FONT);
+            {
+                HDC hdc = g.GetHDC();
+                font = new Font(hdc, hf);
+                g.ReleaseHDC(hdc);
+            }
+
+            StringFormat fmt(StringFormatFlagsNoWrap);
+            RectF brect;
+
+            g.MeasureString(caption, -1, font, PointF(0.0, 0.0), &fmt, &brect);
+
+            int bwidth = (int) brect.Width + g_theme->sz_margin.Width * 2;
+            int bheight = (int) brect.Height + g_theme->sz_margin.Height * 2;
+
+            SetWindowPos(hwnd_button, NULL, 0, 0,
+                         bwidth, bheight, SWP_SIZEONLY);
+        }
     }
 }
