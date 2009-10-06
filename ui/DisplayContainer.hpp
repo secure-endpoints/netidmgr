@@ -47,6 +47,10 @@ namespace nim {
             return Point(p.X + scroll.X, p.Y + scroll.Y - header_height);
         }
 
+        Point VirtualToClient(const Point& p) {
+            return Point(p.X - scroll.X, (p.Y - scroll.Y) + header_height);
+        }
+
         bool ValidateScrollPos(void);
 
         bool UpdateScrollBars(bool redraw);

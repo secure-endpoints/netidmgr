@@ -19,6 +19,9 @@
 /* Move+Size */
 #define SWP_MOVESIZE  (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_SHOWWINDOW|SWP_NOZORDER)
 
+/* Move */
+#define SWP_MOVEONLY  (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOSIZE|SWP_SHOWWINDOW|SWP_NOZORDER)
+
 /* Size */
 #define SWP_SIZEONLY (SWP_NOACTIVATE|SWP_NOOWNERZORDER|SWP_NOMOVE|SWP_NOZORDER)
 
@@ -41,6 +44,7 @@ using namespace Gdiplus;
 #include "WithAcceleratorTranslation.hpp"
 #include "WithNavigation.hpp"
 #include "WithTooltips.hpp"
+#include "WithHostedControl.hpp"
 #include "FlowLayout.hpp"
 
 #endif
