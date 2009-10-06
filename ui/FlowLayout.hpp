@@ -89,13 +89,17 @@ namespace nim {
         }
 
         FlowLayout& LineBreak() {
-            left = indent.top();
-            top = baseline + margin.Height;
+            if (left != indent.top()) {
+                left = indent.top();
+                top = baseline + margin.Height;
+            }
             return *this;
         }
 
         FlowLayout& PushIndent(INT v) {
             indent.push(indent.top() + v);
+            if (left < indent.top())
+                left = indent.top();
             return *this;
         }
 
@@ -123,7 +127,7 @@ namespace nim {
                 left += margin.Width;
             Rect nb(left + bounds.X, top + bounds.Y,
                     width, 0);
-            left = width;
+            left += width;
             return FlowLayout(nb, margin, *this);
         }
 
@@ -141,8 +145,9 @@ namespace nim {
         FlowLayout& Add(DisplayElement * e, Alignment opt = Left,
                         Type etype = Fixed, bool condition = true) {
 
-            if (!condition) {
-                e->visible = false;
+            if (!condition || !e) {
+                if (e)
+                    e->visible = false;
                 return *this;
             }
 
