@@ -5,7 +5,8 @@ namespace nim {
 
     extern "C" int test_Magic = 0;
 
-    extern "C" void KHMCALLBACK test_alerts(void);
+    extern "C" void KHMCALLBACK test_alert_group(void);
+    extern "C" void KHMCALLBACK test_alert_dispatch(void);
 
     struct test_data {
         khm_int32 test_action;
@@ -15,7 +16,8 @@ namespace nim {
     };
 
     static test_data tests[] = {
-        { 0, L"KhmTestAlerts", L"Test Alerts", test_alerts },
+        { 0, L"KhmTestAlertGroup", L"Test Alert Group", test_alert_group },
+        { 0, L"KhmTestAlertDispatch", L"Test Alert Dispatch", test_alert_dispatch },
     };
 
     static const int n_tests = ARRAYLENGTH(tests);

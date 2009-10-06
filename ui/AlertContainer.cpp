@@ -12,8 +12,8 @@ namespace nim {
 	const int alert_idx = AlertFromControlId(id);
 	const int cmd_idx = ButtonFromControlId(id);
 
-	khm_int32 flags = 0;
-	khm_int32 cmd = 0;
+	khm_int32 flags = 0;    // flags for this alert
+	khm_int32 cmd = 0;      // command corresponding to this button
 
 	assert(alert_idx >= 0 && alert_idx < (int) m_alerts.size());
 
@@ -21,21 +21,11 @@ namespace nim {
 	    return;
 
 	AlertElement * e = NULL;
-	int n_idx = 0;
 
-	for (DisplayElement *de = TQFIRSTCHILD(this); de; de = TQNEXTSIBLING(de)) {
-	    e = dynamic_cast<AlertElement *>(de);
-	    if (e) {
-		if (n_idx == alert_idx)
-		    break;
-		n_idx++;
-	    }
-	}
-
-	assert(alert_idx == 0);
+        e = GetAlertElement(m_alerts[alert_idx], this);
 	assert(e);
 
-	if (e == NULL || alert_idx != 0)
+	if (e == NULL)
 	    return;
 
 	{
@@ -60,18 +50,6 @@ namespace nim {
 			  MAKEWPARAM(cmd, 0), 0);
 	}
 
-	// if this was the only alert in the alert group and its close
-	// button was clicked, we close the alert window.  Otherwise,
-	// the alert window creates its own close button that closes
-	// the window.
-
-	if (m_alerts.size() == 1) {
-	    HWND hwnd_parent = GetParent(hwnd);
-
-	    if (hwnd_parent)
-		::PostMessage(hwnd_parent, WM_CLOSE, 0, 0);
-	}
-
 	// While we are at it, we should disable the buttons for this
 	// alert since we have already dispatched the command for it.
 
@@ -79,9 +57,8 @@ namespace nim {
 	    HWND hw_focus = GetFocus();
 	    bool focus_trapped = false;
 
-#if 0
 	    for (int i=0; i < e->m_alert->n_alert_commands; i++) {
-		HWND hw_button = GetDlgItem(hwnd, IDC_FROM_IDX(alert_idx, i));
+		HWND hw_button = GetDlgItem(hwnd, ControlIdFromIndex(alert_idx, i));
 		if (hw_button) {
 		    if (hw_focus == hw_button)
 			focus_trapped = true;
@@ -89,7 +66,6 @@ namespace nim {
 		    EnableWindow(hw_button, FALSE);
 		}
 	    }
-#endif
 
 	    if (focus_trapped) {
 		HWND hwnd_parent = GetParent(hwnd);
@@ -101,6 +77,18 @@ namespace nim {
 		}
 	    }
 	}
+
+	// if this was the last unseen alert in the alert group we
+	// close the alert window.
+
+        --m_unseen;
+
+	if (m_unseen == 0) {
+	    HWND hwnd_parent = GetParent(hwnd);
+
+	    if (hwnd_parent)
+		::PostMessage(hwnd_parent, WM_CLOSE, 0, 0);
+	}
     }
 
     bool AlertContainer::Add(Alert &alert)
@@ -108,14 +96,12 @@ namespace nim {
 	{
 	    AutoLock<Alert> a_lock(&alert);
 
-	    if ((alert->flags & KHUI_ALERT_FLAG_DISPLAY_BALLOON) &&
-		!(alert->flags & KHUI_ALERT_FLAG_DISPLAY_WINDOW))
+            if (!(alert->flags & KHUI_ALERT_FLAG_REQUEST_WINDOW) &&
+                (alert->flags & KHUI_ALERT_FLAG_REQUEST_BALLOON))
+                return false;
 
-		return false;
-
-	    if ((alert->flags & (KHUI_ALERT_FLAG_REQUEST_BALLOON |
-				 KHUI_ALERT_FLAG_REQUEST_WINDOW)) == KHUI_ALERT_FLAG_REQUEST_BALLOON)
-		return false;
+            if (alert->flags & KHUI_ALERT_FLAG_DISPLAY_WINDOW)
+                return false;
 
 	    if (m_alerts.size() > 0 &&
 		(alert->flags & KHUI_ALERT_FLAG_MODAL))
@@ -135,6 +121,7 @@ namespace nim {
 	}
 
 	m_alerts.push_back(alert);
+        ++m_unseen;
 
         MarkForExtentUpdate();
         Invalidate();
@@ -210,6 +197,18 @@ namespace nim {
 	    if (ae) {
 		ae->OnErrCtxEvent((enum kherr_ctx_event) codeNotify);
 	    }
+        } else if (IsCommandButtonControlId(id)) {
+            if (codeNotify == BN_CLICKED) {
+                ProcessCommand(id);
+            } else if (codeNotify == BN_SETFOCUS) {
+                unsigned alert_idx = AlertFromControlId(id);
+
+                if (alert_idx >= 0 && alert_idx < m_alerts.size()) {
+                    AlertElement * ae = GetAlertElement(m_alerts[alert_idx], this);
+                    if (ae)
+                        EnsureElementIsVisible(ae);
+                }
+            }
 	} else {
 	    __super::OnCommand(id, hwndCtl, codeNotify);
 	}

@@ -153,8 +153,19 @@ namespace nim {
             }
 
             el_focus = e;
+            EnsureElementIsVisible(el_focus);
 
-            Rect focusRect(MapFromDescendant(el_focus, Point(0,0)), el_focus->extents);
+            if (oldFocus != el_focus) {
+                if (oldFocus)
+                    oldFocus->Focus(false);
+
+                if (el_focus)
+                    el_focus->Focus(true);
+            }
+        }
+
+        void EnsureElementIsVisible(DisplayElement * e) {
+            Rect focusRect(MapFromDescendant(e, Point(0,0)), e->extents);
             if (!scroll.Contains(focusRect)) {
                 Rect oldScroll = scroll;
 
@@ -169,14 +180,6 @@ namespace nim {
                     ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
                     NotifyLayoutInternal();
                 }
-            }
-
-            if (oldFocus != el_focus) {
-                if (oldFocus)
-                    oldFocus->Focus(false);
-
-                if (el_focus)
-                    el_focus->Focus(true);
             }
         }
 

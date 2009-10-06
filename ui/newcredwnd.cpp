@@ -58,7 +58,7 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 
     if (!w.IsNull() && w->m_progress.hwnd != NULL) {
 
-	AlertContainer * c;
+	AlertContainer * c = NULL;
 
         if (tnc == nc) {
 	    RECT r_pos;
@@ -73,8 +73,7 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 
                 hw_rect = w->m_progress.GetItem(IDC_CONTAINER);
                 GetWindowRect(hw_rect, &r_pos);
-                MapWindowPoints(HWND_DESKTOP, w->m_progress.hwnd, (LPPOINT) &r_pos,
-                                sizeof(RECT)/sizeof(POINT));
+                MapWindowRect(HWND_DESKTOP, w->m_progress.hwnd, &r_pos);
             }
 
 	    c = new AlertContainer();
@@ -82,9 +81,11 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 
 	    c->Create(w->m_progress.hwnd, RectFromRECT(&r_pos));
 	    c->ShowWindow();
+        } else {
+            c = dynamic_cast<AlertContainer *>(&*w->m_progress.cw_container);
         }
 
-	{
+	if (c) {
 	    khui_alert * _a = NULL;
 
 	    khui_alert_create_empty(&_a);

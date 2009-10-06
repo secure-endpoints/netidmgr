@@ -7,7 +7,7 @@
 
 namespace nim {
 
-    typedef std::list<Alert> AlertList;
+    typedef std::vector<Alert> AlertList;
 
     /*! \brief A display container for alerts
      */
@@ -19,6 +19,7 @@ namespace nim {
     {
 	AlertList m_alerts;
 	std::wstring m_title;
+        int m_unseen;
 
     private:
 
@@ -48,8 +49,16 @@ namespace nim {
 	    return (idc - IDC_NTF_CMDBUTTONS) % (KHUI_MAX_ALERT_COMMANDS + 2) - 2;
 	}
 
+        bool IsCommandButtonControlId(UINT idc) {
+            unsigned alert = AlertFromControlId(idc);
+            unsigned button = ButtonFromControlId(idc);
+
+            return (alert >= 0 && alert < m_alerts.size() &&
+                    button >= 0 && button < (unsigned) m_alerts[alert]->n_alert_commands);
+        }
+
     public:
-	AlertContainer() {}
+	AlertContainer() : m_unseen(0) {}
 
 	~AlertContainer() {}
 
