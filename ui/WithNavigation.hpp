@@ -167,6 +167,7 @@ namespace nim {
                 if (!oldScroll.Equals(scroll)) {
                     UpdateScrollBars(true);
                     ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
+                    NotifyLayoutInternal();
                 }
             }
 

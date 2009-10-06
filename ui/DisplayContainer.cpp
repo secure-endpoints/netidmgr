@@ -142,9 +142,9 @@ namespace nim {
         ValidateScrollPos();
 
         if (!oldScroll.Equals(scroll)) {
-            NotifyLayoutInternal();
             UpdateScrollBars(true);
             ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
+            NotifyLayoutInternal();
         }
     }
 
@@ -193,9 +193,9 @@ namespace nim {
         ValidateScrollPos();
 
         if (!oldScroll.Equals(scroll)) {
-            NotifyLayoutInternal();
             UpdateScrollBars(true);
             ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
+            NotifyLayoutInternal();
         }
     }
 
@@ -221,8 +221,8 @@ namespace nim {
             }
         }
 
-        NotifyLayoutInternal();
         UpdateScrollBars(true);
+        NotifyLayoutInternal();
     }
 
     void DisplayContainer::OnPaint(Graphics& g, const Rect& clip)
