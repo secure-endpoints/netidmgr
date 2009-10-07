@@ -48,6 +48,8 @@ handle_kmsg_ident_init(void) {
     }
 
     /* TODO: Additional initialization code goes here */
+    assert (credtype_id > 0);
+    kcdb_identity_set_type(credtype_id);
 
     return KHM_ERROR_SUCCESS;
 }
