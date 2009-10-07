@@ -143,9 +143,14 @@ namespace nim {
     {
         Point pto;
         if (owner == NULL) return;
-        r.GetLocation(&pto);
-        pto = owner->MapFromDescendant(this, pto);
-        owner->Invalidate(Rect(pto, Size(r.Width, r.Height)));
+
+        if (owner->recalc_extents) {
+            owner->Invalidate();
+        } else {
+            r.GetLocation(&pto);
+            pto = owner->MapFromDescendant(this, pto);
+            owner->Invalidate(Rect(pto, Size(r.Width, r.Height)));
+        }
     }
 
     Point DisplayElement::MapToParent(const Point& pt)
