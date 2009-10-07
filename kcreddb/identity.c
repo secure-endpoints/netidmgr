@@ -1734,8 +1734,9 @@ kcdb_identity_get_attr(khm_handle vid,
     }
 
     if(!buffer && !pcbbuf) {
-        /* in this case the caller is only trying to determine if the field
-            contains data.  If we get here, then the value exists. */
+        /* in this case the caller is only trying to determine if the
+           field contains data.  If we get here, then the value
+           exists. */
         code = KHM_ERROR_SUCCESS;
         goto _exit;
     }
