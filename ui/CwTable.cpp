@@ -624,14 +624,27 @@ namespace nim
             }
             break;
 
-        case KCDB_OP_INSERT:
         case KCDB_OP_MODIFY:
+            {
+                khm_handle identity = (khm_handle) vparam;
+                std::vector<CwIdentityOutline *> elts;
+
+                FindElements(Identity(identity, false), elts);
+                for (std::vector<CwIdentityOutline *>::iterator i = elts.begin();
+                     i != elts.end(); ++i) {
+                    (*i)->MarkForExtentUpdate();
+                }
+                Invalidate();
+            }
+            break;
+
+        case KCDB_OP_INSERT:
             {
                 kmq_message * m;
                 kmq_get_current_message(&m);
                 if (m && m->timeSent < ticks_UpdateOutline) {
 #ifdef DEBUG
-                    OutputDebugString(L"Skipping KCDB_IDENT <KCDB_OP_MODIFY or INSERT>\n");
+                    OutputDebugString(L"Skipping KCDB_IDENT <KCDB_OP_INSERT>\n");
 #endif
                     break;
                 }
