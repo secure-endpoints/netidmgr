@@ -112,21 +112,6 @@ namespace nim {
 	    InsertChildAfter(el_icon);
 	}
 
-        if (el_expose) {
-            bool has_children = false;
-
-            for (DisplayElement * e = TQFIRSTCHILD(this); e; e = TQNEXTSIBLING(e)) {
-                AlertElement * ae = dynamic_cast<AlertElement *>(e);
-
-                if (ae) {
-                    has_children = true;
-                    break;
-                }
-            }
-
-            el_expose->Show(has_children);
-        }
-
         if (el_buttons.size() == 0 && HasCommands()) {
             AutoLock<Alert> a_lock(&m_alert);
 
@@ -157,6 +142,18 @@ namespace nim {
     void AlertElement::UpdateLayoutPost(Graphics & g, const Rect & bounds)
     {
         int left_indent = g_theme->sz_margin.Width * 2 + g_theme->sz_icon.Width;
+        bool has_children = false;
+
+        if (el_expose) {
+            for (DisplayElement * e = TQFIRSTCHILD(this); e; e = TQNEXTSIBLING(e)) {
+                AlertElement * ae = dynamic_cast<AlertElement *>(e);
+
+                if (ae) {
+                    has_children = true;
+                    break;
+                }
+            }
+        }
 
         FlowLayout layout(Rect(Point(0,0),
                                Size(bounds.Width + left_indent, 0)),
@@ -165,18 +162,18 @@ namespace nim {
         layout
             .PushIndent(left_indent - g_theme->sz_margin.Width)
             .LineBreak()
-            .Add(el_title, FlowLayout::Left, FlowLayout::Fixed, el_title != NULL)
+            .Add(el_title)
             .LineBreak()
-            .Add(el_message, FlowLayout::Left, FlowLayout::Fixed, el_message != NULL)
+            .Add(el_message)
             .LineBreak()
-            .Add(el_suggestion, FlowLayout::Left, FlowLayout::Fixed, el_suggestion != NULL)
+            .Add(el_suggestion)
             .LineBreak()
-            .Add(el_progress, FlowLayout::Left, FlowLayout::Fixed, el_progress != NULL)
+            .Add(el_progress)
             .LineBreak()
             .PopIndent()
             .PushIndent(g_theme->sz_margin.Width + g_theme->sz_icon.Width - g_theme->sz_icon_sm.Width)
             .LineBreak()
-            .Add(el_expose, FlowLayout::Left, FlowLayout::Fixed, el_expose != NULL)
+            .Add(el_expose, FlowLayout::Left, FlowLayout::Fixed, has_children)
             .PopIndent()
             .PushIndent(g_theme->sz_margin.Width + g_theme->sz_icon.Width)
             ;
