@@ -6,6 +6,7 @@ namespace nim {
 	AutoRef<ControlWindow>	listener;
 	AlertElement		*element;
 	UINT			controlID;
+        kherr_context           *context;
 
     public:
 	AlertContextMonitor(AlertElement * _e, ControlWindow *_cw, UINT controlID);

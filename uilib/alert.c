@@ -417,7 +417,7 @@ khui_alert_monitor_progress(khui_alert * alert,
     if (alert->alert_type == KHUI_ALERTTYPE_NONE)
         alert->alert_type = KHUI_ALERTTYPE_PROGRESS;
 
-    alert->flags |= KHUI_ALERT_FLAG_MODIFIED;
+    alert->flags |= (KHUI_ALERT_FLAG_MODIFIED | KHUI_ALERT_FLAG_VALID_ERROR);
 
     LeaveCriticalSection(&cs_alerts);
 

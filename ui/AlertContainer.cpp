@@ -123,8 +123,11 @@ namespace nim {
 	m_alerts.push_back(alert);
         ++m_unseen;
 
-        MarkForExtentUpdate();
-        Invalidate();
+        {
+            AlertElement * e = new AlertElement(alert, m_alerts.size() - 1);
+            InsertChildAfter(e);
+            Invalidate();
+        }
 
 	return true;
     }
@@ -154,9 +157,7 @@ namespace nim {
 	}
 
 	for (; al != m_alerts.end(); ++al) {
-
 	    AlertElement * e = new AlertElement(*al, (int) index++);
-
 	    InsertChildAfter(e);
 	}
     }
@@ -181,7 +182,7 @@ namespace nim {
     {
 	AlertElement *ae = GetAlertElement(a, this);
 
-	if (ae == NULL)
+	if (ae == NULL || ae->IsMonitored())
 	    return false;
 
 	// Context monitors are self-disposing

@@ -101,12 +101,7 @@ enum khui_alert_flags {
     /*!< Internal. There is a valid target for the alert */
 
     KHUI_ALERT_FLAG_VALID_ERROR     =0x00020000,
-    /*!< Internal. There is a valid error context associated with the alert
-
-      \deprecated No longer used.  The presence of an error context is
-          enough to determine this.
-     */
-#pragma deprecated("KHUI_ALERT_FLAG_VALID_ERROR")
+    /*!< Internal. There is a valid error context associated with the alert */
 
     KHUI_ALERT_FLAG_MODIFIED        =0x00040000,
     /*!< Internal. The alert has been modified. */

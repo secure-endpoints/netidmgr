@@ -34,6 +34,8 @@ namespace nim {
 	ProgressBarElement	*el_progress;
 
 	AlertContextMonitor     *m_monitor;
+        bool                    m_err_completed;
+        kherr_context           *m_err_context;
 
         std::vector<AlertCommandButtonElement *> el_buttons;
 
@@ -53,11 +55,19 @@ namespace nim {
 
 	void UpdateIcon();
 
+        void UpdateProgress();
+
 	void TryMonitorNewChildContext(kherr_context * c);
 
 	void OnErrCtxEvent(enum kherr_ctx_event e);
 
 	DrawState GetDrawState();
+
+        bool IsMonitored() {
+            return m_monitor != NULL;
+        }
+
+        HICON IconForAlert();
 
     public:
 	Alert                    m_alert;

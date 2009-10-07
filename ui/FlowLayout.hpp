@@ -145,7 +145,7 @@ namespace nim {
         FlowLayout& Add(DisplayElement * e, Alignment opt = Left,
                         Type etype = Fixed, bool condition = true) {
 
-            if (!condition || !e) {
+            if (!condition || !e || !e->visible) {
                 if (e)
                     e->visible = false;
                 return *this;

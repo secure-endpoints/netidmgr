@@ -100,6 +100,7 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 					KHUI_AMP_ADD_CHILDREN |
 					KHUI_AMP_SHOW_EVT_ERR |
 					KHUI_AMP_SHOW_EVT_WARN);
+            c->BeginMonitoringAlert(a);
 	}
 
         nc->ignore_errors = TRUE;

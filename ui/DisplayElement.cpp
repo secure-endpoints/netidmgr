@@ -7,6 +7,8 @@ namespace nim {
     {
         MarkChildrenForExtentUpdate();
         for (DisplayElement * p = this; p; p = TQPARENT(p)) {
+            if (p->recalc_extents)
+                break;
             p->recalc_extents = true;
         }
     }

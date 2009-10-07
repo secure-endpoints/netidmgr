@@ -49,10 +49,11 @@ namespace nim {
 	    }
 	}
 
-	kherr_release_context(a->err_context);
-	a->err_context = NULL;
-
 	element->SetMonitor(this);
+
+        context = a->err_context;
+        kherr_release_context(a->err_context);
+        a->err_context = NULL;
     }
 
     AlertContextMonitor::~AlertContextMonitor()
@@ -60,8 +61,8 @@ namespace nim {
 	Alert& a = element->m_alert;
 	AutoLock<Alert> a_lock(&a);
 
-	if (a->err_context) {
-	    kherr_remove_ctx_handler_param(ErrorContextCallback, a->err_context->serial,
+	if (context) {
+	    kherr_remove_ctx_handler_param(ErrorContextCallback, context->serial,
 					   (void *) this);
 	}
 

@@ -9,6 +9,8 @@ namespace nim {
 	m_alert(a),
 	m_index(index),
 	m_monitor(NULL),
+        m_err_completed(false),
+        m_err_context(NULL),
 
 	el_title(NULL),
 	el_message(NULL),
@@ -34,22 +36,18 @@ namespace nim {
      }
 
     // alert must be locked
-    static HICON IconForAlert(Alert & alert)
+    HICON AlertElement::IconForAlert()
     {
-	if ((alert->alert_type == KHUI_ALERTTYPE_PROGRESS ||
-	     alert->alert_type == KHUI_ALERTTYPE_PROGRESSACQ) &&
-	    alert->severity >= KHERR_INFO &&
-	    alert->err_context) {
+	if ((m_alert->alert_type == KHUI_ALERTTYPE_PROGRESS ||
+	     m_alert->alert_type == KHUI_ALERTTYPE_PROGRESSACQ) &&
+	    m_alert->severity >= KHERR_INFO &&
+	    (m_alert->flags & KHUI_ALERT_FLAG_VALID_ERROR)) {
 
-	    khm_ui_4 num, denom;
-
-	    kherr_get_progress_i(alert->err_context, &num, &denom);
-
-	    return LoadIconResource((denom != 0 && num >= denom) ? IDI_CHECK : IDI_CLOCK);
+	    return LoadIconResource(m_err_completed ? IDI_CHECK : IDI_CLOCK);
 	} else {
 	    return LoadIconResource(
-				    (alert->severity == KHERR_ERROR)? OIC_HAND :
-				    (alert->severity == KHERR_WARNING)? OIC_BANG :
+				    (m_alert->severity == KHERR_ERROR)? OIC_HAND :
+				    (m_alert->severity == KHERR_WARNING)? OIC_BANG :
 				    OIC_NOTE,
 				    false, true, NULL
 				    );
@@ -67,47 +65,67 @@ namespace nim {
     void AlertElement::UpdateLayoutPre(Graphics & g, Rect & layout)
     {
 	AutoLock<Alert> a_lock(&m_alert);
+        bool was_modified = !!(m_alert->flags & KHUI_ALERT_FLAG_MODIFIED);
 
 	if (!el_title) {
 	    el_title = new AlertTitleElement();
-	    if (m_alert->title)
-		el_title->SetCaption(std::wstring(m_alert->title));
 	    InsertChildAfter(el_title);
 	}
 
+        if (m_alert->title && was_modified)
+            el_title->SetCaption(std::wstring(m_alert->title));
+
 	if (!el_message) {
 	    el_message = new AlertMessageElement();
-	    if (m_alert->message)
-		el_message->SetCaption(std::wstring(m_alert->message));
 	    InsertChildAfter(el_message);
 	}
 
+        if (m_alert->message && was_modified)
+            el_message->SetCaption(std::wstring(m_alert->message));
+
 	if (!el_suggestion) {
 	    el_suggestion = new AlertSuggestionElement();
-	    if (m_alert->suggestion)
-		el_suggestion->SetCaption(std::wstring(m_alert->suggestion));
 	    InsertChildAfter(el_suggestion);
 	}
 
-	if (m_alert->err_context) {
+        if (m_alert->suggestion && was_modified)
+            el_suggestion->SetCaption(std::wstring(m_alert->suggestion));
+
+	if (m_alert->flags & KHUI_ALERT_FLAG_VALID_ERROR) {
 
 	    if (!el_progress) {
 		el_progress = new ProgressBarElement();
 		InsertChildAfter(el_progress);
+                UpdateProgress();
 	    }
 
 	    if (!el_expose) {
 		el_expose = new ExposeControlElement();
-		InsertChildAfter(el_suggestion);
+		InsertChildAfter(el_expose);
 	    }
 	}
 
 	if (!el_icon) {
 	    el_icon = new IconDisplayElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy,
-					     IconForAlert(m_alert),
+					     IconForAlert(),
 					     true /* Large */);
 	    InsertChildAfter(el_icon);
 	}
+
+        if (el_expose) {
+            bool has_children = false;
+
+            for (DisplayElement * e = TQFIRSTCHILD(this); e; e = TQNEXTSIBLING(e)) {
+                AlertElement * ae = dynamic_cast<AlertElement *>(e);
+
+                if (ae) {
+                    has_children = true;
+                    break;
+                }
+            }
+
+            el_expose->Show(has_children);
+        }
 
         if (el_buttons.size() == 0 && HasCommands()) {
             AutoLock<Alert> a_lock(&m_alert);
@@ -157,6 +175,7 @@ namespace nim {
             .LineBreak()
             .PopIndent()
             .PushIndent(g_theme->sz_margin.Width + g_theme->sz_icon.Width - g_theme->sz_icon_sm.Width)
+            .LineBreak()
             .Add(el_expose, FlowLayout::Left, FlowLayout::Fixed, el_expose != NULL)
             .PopIndent()
             .PushIndent(g_theme->sz_margin.Width + g_theme->sz_icon.Width)
@@ -179,15 +198,53 @@ namespace nim {
 	}
 
 	extents = layout.GetSize();
+        extents.Height = max(extents.Height, g_theme->sz_margin.Height * 2 + g_theme->sz_icon.Height);
     }
 
     void AlertElement::UpdateIcon()
     {
+        if (el_icon)
+            el_icon->SetIcon(IconForAlert());
+    }
+
+    void AlertElement::UpdateProgress()
+    {
+        khm_ui_4 num, denom;
+        int norm_progress;
+
+        if (m_err_context) {
+            AutoLock<Alert> a_lock(&m_alert);
+            kherr_get_progress_i(m_err_context, &num, &denom);
+        } else {
+            num = denom = 1;
+        }
+
+        if (denom == 0)
+            norm_progress = 0;
+        else if (num > denom)
+            norm_progress = 256;
+        else
+            norm_progress = (num * 256) / denom;
+
+        if (el_progress)
+            el_progress->SetProgress(norm_progress);
+        else {
+            MarkForExtentUpdate();
+            Invalidate();
+        }
+
+        if (norm_progress >= 256) {
+            m_err_completed = true;
+            UpdateIcon();
+        }
     }
 
     void AlertElement::SetMonitor(AlertContextMonitor * m)
     {
+        assert (m_monitor == NULL || m == NULL);
 	m_monitor = m;
+        m_err_context = m_alert->err_context;
+        assert(m_err_context != NULL || m == NULL);
     }
 
     void AlertElement::TryMonitorNewChildContext(kherr_context * c)
@@ -202,7 +259,7 @@ namespace nim {
 	    {
 		AutoLock<Alert> a_lock(&ae->m_alert);
 
-		if (kherr_context_is_equal(c, ae->m_alert->err_context))
+		if (kherr_context_is_equal(c, ae->m_err_context))
 		    return;	// Already there
 	    }
 	}
@@ -218,37 +275,46 @@ namespace nim {
 	Alert alert(a, true);
 	AlertElement * ae = new AlertElement(alert, -1);
 
-	InsertChildAfter(ae);
+	InsertOutlineAfter(ae);
 
 	khui_alert_monitor_progress(a, c,
 				    KHUI_AMP_SHOW_EVT_ERR |
 				    KHUI_AMP_SHOW_EVT_WARN);
+
+        dynamic_cast<AlertContainer *>(owner)->BeginMonitoringAlert(alert);
     }
 
     void AlertElement::OnErrCtxEvent(enum kherr_ctx_event e)
     {
+        if (m_err_context == NULL)
+            return;
+
 	switch (e) {
 	case KHERR_CTX_DESCRIBE:
 	    {
 		AutoLock<Alert> a_lock(&m_alert);
 		kherr_event * ev;
 
-		ev = kherr_get_desc_event(m_alert->err_context);
+		ev = kherr_get_desc_event(m_err_context);
 		if (ev) {
 		    if (ev->short_desc && ev->long_desc) {
-			el_title->SetCaption(ev->long_desc);
-			el_message->SetCaption(ev->short_desc);
+                        khui_alert_set_title(m_alert, ev->long_desc);
+                        khui_alert_set_message(m_alert, ev->short_desc);
 		    } else if (ev->long_desc) {
-			el_title->SetCaption(ev->long_desc);
+                        khui_alert_set_title(m_alert, ev->long_desc);
 		    } else if (ev->short_desc) {
-			el_title->SetCaption(ev->short_desc);
+                        khui_alert_set_title(m_alert, ev->short_desc);
 		    }
 		}
+                MarkForExtentUpdate();
+                Invalidate();
 	    }
 	    break;
 
 	case KHERR_CTX_END:
 	    {
+                m_err_completed = true;
+                m_err_context = NULL;
 		UpdateIcon();
 	    }
 	    break;
@@ -259,7 +325,7 @@ namespace nim {
 		AutoLock<Alert> a_lock(&m_alert);
 		kherr_event * ev;
 
-		ev = kherr_get_last_event(m_alert->err_context);
+		ev = kherr_get_last_event(m_err_context);
 
 		if (((m_alert->monitor_flags & KHUI_AMP_SHOW_EVT_ERR) &&
 		     ev->severity <= KHERR_ERROR) ||
@@ -279,9 +345,9 @@ namespace nim {
 			kherr_evaluate_event(ev);
 
 		    if (ev->long_desc) {
-			el_message->SetCaption(ev->long_desc);
+                        khui_alert_set_message(m_alert, ev->long_desc);
 		    } else if (ev->short_desc) {
-			el_message->SetCaption(ev->short_desc);
+                        khui_alert_set_message(m_alert, ev->short_desc);
 		    }
 
 		    UpdateIcon();
@@ -295,7 +361,7 @@ namespace nim {
 
 		{
 		    AutoLock<Alert> a_lock(&m_alert);
-		    c = kherr_get_first_context(m_alert->err_context);
+		    c = kherr_get_first_context(m_err_context);
 		}
 
 		for (; c ; c = kherr_get_next_context(c)) {
@@ -306,22 +372,7 @@ namespace nim {
 
 	case KHERR_CTX_PROGRESS:
 	    {
-		khm_ui_4 num, denom;
-		int norm_progress;
-
-		{
-		    AutoLock<Alert> a_lock(&m_alert);
-		    kherr_get_progress_i(m_alert->err_context, &num, &denom);
-		}
-
-		if (denom == 0)
-		    norm_progress = 0;
-		else if (num > denom)
-		    norm_progress = 256;
-		else
-		    norm_progress = (num * 256) / denom;
-
-		el_progress->SetProgress(norm_progress);
+                UpdateProgress();
 	    }
 	    break;
 	}

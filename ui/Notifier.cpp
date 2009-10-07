@@ -90,7 +90,7 @@ namespace nim {
 
              (a->n_alert_commands > 0 ||
               a->suggestion ||
-              a->err_context))) {
+              (a->flags & KHUI_ALERT_FLAG_VALID_ERROR)))) {
 
             /* if mbuf wasn't big enough, this should have copied a
                truncated version of it */
