@@ -307,7 +307,8 @@ namespace nim
         }
     };
 
-    class CwProgressBarElement : public WithFixedSizePos< ProgressBarElement > { };
+    //class CwProgressBarElement : public WithFixedSizePos< ProgressBarElement > { };
+    typedef ProgressBarElement CwProgressBarElement;
 
     /*! \brief  Identity Outline Node
      */
