@@ -1471,6 +1471,29 @@ khui_cw_add_control_row(khui_new_creds * c,
 }
 
 KHMEXP khm_int32 KHMAPI
+khui_cw_configure_identity(khui_new_creds * c,
+                           HWND hwnd_parent,
+                           khm_handle identity)
+{
+    khui_configure_identity_data cid;
+
+    cid.nc = c;
+    cid.hwnd_parent = hwnd_parent;
+    cid.target_identity = identity;
+
+    if (c) {
+        ASSERT_NC(c);
+        EnterCriticalSection(&c->cs);
+        cid.hwnd_parent = c->hwnd;
+        LeaveCriticalSection(&c->cs);
+    }
+
+    return (khm_int32)
+        SendMessage(khui_hwnd_main, WM_COMMAND, MAKEWPARAM(KHUI_ACTION_CONFIG_ID, 0),
+                    (LPARAM) &cid);
+}
+
+KHMEXP khm_int32 KHMAPI
 khui_cw_collect_privileged_credentials(khui_new_creds * c,
                                        HWND hwnd_parent,
                                        khm_handle identity,

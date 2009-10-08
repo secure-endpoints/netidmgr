@@ -40,9 +40,7 @@
 
 @{ */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+BEGIN_C
 
 /*! \brief Window message sent to credentials type panels
 
@@ -1322,6 +1320,27 @@ khui_cw_get_prompt_value(khui_new_creds * c,
                          wchar_t * buf, 
                          khm_size *cbbuf);
 
+/*! \brief Configure an identity
+
+  Invokes a modal dialog that provides a UI for configuring credential
+  acquisition for an identity.
+
+  If this is to be invoked as a sub operation of a new credentials
+  dialog, then the \a c parameter must be specified.
+
+  \param [in] c ::khui_new_creds structure associated with this
+      operation.  Optional.
+
+  \param [in] hwnd_parent Handle to parent window.  Can be NULL.
+
+  \param [in] identity Handle to identity that is to be configured.
+      Required.
+ */
+KHMEXP khm_int32 KHMAPI
+khui_cw_configure_identity(khui_new_creds * c,
+                           HWND hwnd_parent,
+                           khm_handle identity);
+
 KHMEXP khm_int32 KHMAPI
 khui_cw_collect_privileged_credentials(khui_new_creds * c,
                                        HWND hwnd_parent,
@@ -1345,9 +1364,7 @@ KHMEXP khm_int32 KHMAPI
 khui_cw_get_privileged_credential_store(khui_new_creds * c,
                                         khm_handle * p_id);
 
-#ifdef __cplusplus
-}
-#endif
+END_C
 
 /*!@}*/ /* Credentials acquisition */
 /*!@}*/

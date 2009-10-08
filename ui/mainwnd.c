@@ -356,6 +356,9 @@ khm_main_wnd_proc(HWND hwnd,
         case KHUI_ACTION_COLL_PRIV:
             return khm_cred_collect_privileged_creds((khui_collect_privileged_creds_data *)(LONG_PTR)lParam);
 
+        case KHUI_ACTION_CONFIG_ID:
+            return khm_cred_configure_identity((khui_configure_identity_data *)(LONG_PTR) lParam);
+
             /* layout control */
 
         case KHUI_ACTION_VIEW_ALL_IDS:

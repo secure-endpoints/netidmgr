@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
- * Copyright (c) 2007 Secure Endpoints Inc.
+ * Copyright (c) 2007, 2009 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -75,6 +75,9 @@ khm_cred_obtain_new_creds(wchar_t * window_title);
 
 void
 khm_cred_obtain_new_creds_for_ident(khm_handle ident, wchar_t * title);
+
+LRESULT
+khm_cred_configure_identity(khui_configure_identity_data * pcid);
 
 LRESULT
 khm_cred_collect_privileged_creds(khui_collect_privileged_creds_data * pcpcd);

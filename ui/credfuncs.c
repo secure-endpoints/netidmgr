@@ -947,6 +947,13 @@ void khm_cred_change_password(wchar_t * title)
 }
 
 LRESULT
+khm_cred_configure_identity(khui_configure_identity_data * pcid)
+{
+    khm_show_identity_config_pane(pcid->target_identity);
+    return 0;
+}
+
+LRESULT
 khm_cred_collect_privileged_creds(khui_collect_privileged_creds_data * pcpcd)
 {
     khui_new_creds * nc_child;
