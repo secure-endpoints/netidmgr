@@ -182,7 +182,7 @@ namespace nim {
         Navigate(NC_PAGET_CANCEL);
     }
 
-    void NewCredWizard::OnActivate(HWND hwnd, UINT state, HWND hwndActDeact, BOOL fMinimized)
+    void NewCredWizard::OnActivate(UINT state, HWND hwndActDeact, BOOL fMinimized)
     {
         if (state == WA_ACTIVE || state == WA_CLICKACTIVE) {
 
@@ -204,8 +204,10 @@ namespace nim {
             ex_style = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
 
             if (ex_style & WS_EX_TOPMOST) {
+                ex_style &= ~WS_EX_TOPMOST;
+                SetWindowLongPtr(hwnd, GWL_EXSTYLE, ex_style);
                 SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
-                             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+                             SWP_NOMOVE | SWP_NOSIZE);
             }
         }
     }

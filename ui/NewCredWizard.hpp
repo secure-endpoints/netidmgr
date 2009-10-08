@@ -71,7 +71,7 @@ namespace nim {
 
     public:
 
-        void OnActivate(HWND hwnd, UINT state, HWND hwndActDeact, BOOL fMinimized);
+        void OnActivate(UINT state, HWND hwndActDeact, BOOL fMinimized);
 
         void OnClose();
 
