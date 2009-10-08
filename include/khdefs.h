@@ -186,6 +186,14 @@ typedef unsigned __int64 khm_lparm;
 
 #endif
 
+#ifdef __cplusplus
+#define BEGIN_C extern "C" {
+#define END_C }
+#else
+#define BEGIN_C
+#define END_C
+#endif
+
 /* Generic permission values */
 /*! \brief Generic read permission or request */
 #define KHM_PERM_READ       0x100
