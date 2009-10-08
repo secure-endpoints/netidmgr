@@ -32,11 +32,11 @@ NETIDMGR_VERSION_INC=1
 
 NETIDMGR_VERSION_MAJOR=1
 NETIDMGR_VERSION_MINOR=99
-NETIDMGR_VERSION_PATCH=8
+NETIDMGR_VERSION_PATCH=10
 NETIDMGR_VERSION_AUX=0
 
 # Release description
-NETIDMGR_RELEASEDESC=
+NETIDMGR_RELEASEDESC=Pre 2.0 Beta 10
 
 # The API version.  This number must be incremented each time the API
 # changes.  Plugins specify the version of the API that they were
@@ -45,7 +45,7 @@ NETIDMGR_RELEASEDESC=
 #
 # Changes to the API version numbers should be documented in
 # apiversion.txt at the root of the source tree.
-NETIDMGR_VERSION_API=12
+NETIDMGR_VERSION_API=13
 
 # Minimum backwards compatible version.  API versions from
 # NETIDMGR_VERSION_API_MINCOMPAT through NETIDMGR_VERSION_API
@@ -70,11 +70,11 @@ KH_BUILD=DEBUG
 !endif
 
 !if "$(KH_BUILD)"=="DEBUG" && defined(NODEBUG) && "$(NODEBUG)"=="1"
-! error The Khimaira build configuration is set for DEBUG while the Platform SDK build environment is set to RETAIL.
+! error The NetIDMgr build configuration is set for DEBUG while the Platform SDK build environment is set to RETAIL.
 !endif
 
 !if "$(KH_BUILD)"=="RETAIL" && !defined(NODEBUG)
-! error The Khimaira build configuration is set for RETAIL while the Platform SDK build environment is set to DEBUG
+! error The NetIDMgr build configuration is set for RETAIL while the Platform SDK build environment is set to DEBUG
 !endif
 
 # The default release type is PRIVATE if no other type is specified
