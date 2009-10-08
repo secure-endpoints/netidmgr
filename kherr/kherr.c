@@ -243,6 +243,7 @@ notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
                 h = ctx_handlers[i].h.p_handler_param;
                 vparam = ctx_handlers[i].vparam;
 
+                assert(cs_error.RecursionCount == 1);
                 LeaveCriticalSection(&cs_error);
 
                 (*h)(e, c, vparam);
@@ -261,6 +262,7 @@ notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
 
                 h = ctx_handlers[i].h.p_handler;
 
+                assert(cs_error.RecursionCount == 1);
                 LeaveCriticalSection(&cs_error);
 
                 (*h)(e, c);
@@ -310,6 +312,7 @@ attach_this_thread(void)
     TlsSetValue(tls_error, t);
 }
 
+/* Should NOT be called with cs_error held */
 void
 detach_this_thread(void)
 {
@@ -574,6 +577,7 @@ free_context(kherr_context * c)
 #endif
 }
 
+/* MUST be called with cs_error held */
 static void
 add_event(kherr_context * c, kherr_event * e)
 {
@@ -585,7 +589,6 @@ add_event(kherr_context * c, kherr_event * e)
     assert(LPREV(e) == NULL && LNEXT(e) == NULL);
 #endif
 
-    EnterCriticalSection(&cs_error);
     te = QBOTTOM(c);
     if (te && !(te->flags & KHERR_RF_COMMIT)) {
 	notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
@@ -601,7 +604,6 @@ add_event(kherr_context * c, kherr_event * e)
         if (e->severity <= KHERR_ERROR)
             notify_ctx_event(KHERR_CTX_ERROR, c);
     }
-    LeaveCriticalSection(&cs_error);
 }
 
 static void
@@ -983,6 +985,7 @@ kherr_reportf_ex(enum kherr_severity severity,
     return e;
 }
 
+/* Should NOT be called with cs_error held */
 KHMEXP kherr_event * KHMAPI 
 kherr_report(enum kherr_severity severity,
              const wchar_t * short_desc,
@@ -1145,6 +1148,7 @@ _exit:
     LeaveCriticalSection(&cs_error);
 }
 
+/* Should NOT be called with cs_error held */
 KHMEXP void KHMAPI
 kherr_set_desc_event(void)
 {
@@ -1208,37 +1212,18 @@ kherr_del_last_event(void)
 KHMEXP void KHMAPI
 kherr_push_context(kherr_context * c)
 {
-#if 0
-    kherr_context * p = NULL;
-    int new_context = FALSE;
-#endif
 
     if (!IS_KHERR_CTX(c))
         return;
 
     EnterCriticalSection(&cs_error);
-#if 0
-    p = peek_context();
-    if(IS_KHERR_CTX(p) && (c->flags & KHERR_CF_UNBOUND)) {
-        LDELETE(&ctx_root_list, c);
-        TADDCHILD(p,c);
-        c->flags &= ~KHERR_CF_UNBOUND;
-        kherr_hold_context(p);
-        new_context = TRUE;
-    }
-#endif
 
     push_context(c);
 
-#if 0
-    if (new_context && IS_KHERR_CTX(p)) {
-        notify_ctx_event(KHERR_CTX_BEGIN, c);
-        notify_ctx_event(KHERR_CTX_NEWCHILD, p);
-    }
-#endif
     LeaveCriticalSection(&cs_error);
 }
 
+/* Should NOT be called with cs_error held */
 KHMEXP void KHMAPI
 kherr_push_new_context(khm_int32 flags) 
 {
@@ -1272,6 +1257,7 @@ kherr_push_new_context(khm_int32 flags)
    progress markers of its children. */
 #define CTX_USES_OWN_PROGRESS(c) ((c)->progress_num != 0 || (c)->progress_denom != 0 || ((c)->flags & KHERR_CF_OWN_PROGRESS))
 
+/* MUST be called with cs_error held */
 static void
 set_and_notify_progress_change(kherr_context * c, khm_ui_4 num, khm_ui_4 denom)
 {
@@ -1290,6 +1276,7 @@ set_and_notify_progress_change(kherr_context * c, khm_ui_4 num, khm_ui_4 denom)
     }
 }
 
+/* Should NOT be called with cs_error held */
 KHMEXP void KHMAPI
 kherr_set_progress(khm_ui_4 num, khm_ui_4 denom)
 {
@@ -1316,7 +1303,7 @@ kherr_get_progress(khm_ui_4 * num, khm_ui_4 * denom)
     kherr_get_progress_i(c,num,denom);
 }
 
-/* called with cs_error held */
+/* MUST be called with cs_error held */
 static void
 get_progress(kherr_context * c, khm_ui_4 * pnum, khm_ui_4 * pdenom)
 {
@@ -1441,6 +1428,49 @@ kherr_hold_context(kherr_context * c)
     LeaveCriticalSection(&cs_error);
 }
 
+/* MUST be called with cs_error held */
+static void
+release_context(kherr_context * c)
+{
+    if (IS_KHERR_CTX(c)) {
+        c->refcount--;
+        if (c->refcount == 0) {
+            kherr_event * e;
+            kherr_context * p;
+
+            e = QBOTTOM(c);
+            if (IS_KHERR_EVENT(e) && !(e->flags & KHERR_RF_COMMIT)) {
+                notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
+                e->flags |= KHERR_RF_COMMIT;
+            }
+
+            if (CTX_USES_OWN_PROGRESS(c)) {
+                set_and_notify_progress_change(c, 256, 256);
+            }
+
+            p = TPARENT(c);
+
+            notify_ctx_event(KHERR_CTX_END, c);
+
+            if (IS_KHERR_CTX(p)) {
+                e = fold_context(c);
+                if (e)
+                    add_event(p, e);
+
+                TDELCHILD(p, c);
+
+                notify_ctx_event(KHERR_CTX_FOLDCHILD, p);
+
+                release_context(p);
+            } else {
+                LDELETE(&ctx_root_list, c);
+            }
+            free_context(c);
+        }
+    }
+}
+
+/* Should NOT be called with cs_error held */
 KHMEXP void KHMAPI
 kherr_release_context(kherr_context * c)
 {
@@ -1448,42 +1478,11 @@ kherr_release_context(kherr_context * c)
         return;
 
     EnterCriticalSection(&cs_error);
-    c->refcount--;
-    if (c->refcount == 0) {
-        kherr_event * e;
-        kherr_context * p;
-
-	e = QBOTTOM(c);
-	if (IS_KHERR_EVENT(e) && !(e->flags & KHERR_RF_COMMIT)) {
-	    notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
-	    e->flags |= KHERR_RF_COMMIT;
-	}
-
-	if (CTX_USES_OWN_PROGRESS(c)) {
-	    set_and_notify_progress_change(c, 256, 256);
-	}
-
-        notify_ctx_event(KHERR_CTX_END, c);
-
-        p = TPARENT(c);
-        if (IS_KHERR_CTX(p)) {
-            e = fold_context(c);
-            if (e)
-                add_event(p, e);
-
-            TDELCHILD(p, c);
-
-            notify_ctx_event(KHERR_CTX_FOLDCHILD, p);
-
-            kherr_release_context(p);
-        } else {
-            LDELETE(&ctx_root_list, c);
-        }
-        free_context(c);
-    }
+    release_context(c);
     LeaveCriticalSection(&cs_error);
 }
 
+/* Should NOT be called with cs_error held */
 KHMEXP void KHMAPI
 kherr_pop_context(void)
 {
@@ -1492,7 +1491,7 @@ kherr_pop_context(void)
     EnterCriticalSection(&cs_error);
     c = pop_context();
     if(IS_KHERR_CTX(c)) {
-        kherr_release_context(c);
+        release_context(c);
     }
     LeaveCriticalSection(&cs_error);
 }
