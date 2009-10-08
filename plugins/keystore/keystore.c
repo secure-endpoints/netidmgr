@@ -244,6 +244,24 @@ ks_keystore_release(keystore_t * ks)
 }
 
 khm_int32
+ks_keystore_get_identkey(keystore_t * ks, khm_size idx, identkey_t ** pidk)
+{
+    assert(is_keystore_t(ks));
+
+    KSLOCK(ks);
+
+    if (idx < ks->n_keys) {
+        *pidk = ks->keys[idx];
+    } else {
+        *pidk = NULL;
+    }
+
+    KSUNLOCK(ks);
+
+    return (*pidk)? KHM_ERROR_SUCCESS : KHM_ERROR_OUT_OF_BOUNDS;
+}
+
+khm_int32
 ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
 {
     khm_size i;

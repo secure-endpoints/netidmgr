@@ -255,12 +255,12 @@ creddlg_refresh_idlist(HWND hwlist, keystore_t * ks)
     KSLOCK(ks);
     for (i=0; i < ks->n_keys; i++) {
         LVITEM lvi_id = {
-            LVIF_PARAM | LVIF_STATE | LVIF_TEXT | LVIF_IMAGE,
-            (int) i, 0,
-            INDEXTOOVERLAYMASK((ks->keys[i]->flags & IDENTKEY_FLAG_LOCKED)?2:1),
-            LVIS_OVERLAYMASK,
-            ks->keys[i]->display_name, 0,
-            0, i, 0, 0, 0, 0};
+            LVIF_PARAM | LVIF_STATE | LVIF_TEXT | LVIF_IMAGE, /* mask */
+            (int) i, 0,                                       /* iItem, iSubitem */
+            INDEXTOOVERLAYMASK((ks->keys[i]->flags & IDENTKEY_FLAG_LOCKED)?2:1), /* state */
+            LVIS_OVERLAYMASK,   /* statemask */
+            ks->keys[i]->display_name, 0, /* pszText, cchTextMax */
+            0, i, 0, 0, 0, 0};            /* iImage, lParam, iIndent, iGropuId, cColumns, puColumns */
         wchar_t idtype[KCDB_MAXCCH_NAME] = L"";
         LVITEM lvi_type = {
             LVIF_TEXT,
@@ -669,6 +669,55 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
 void
 creddlg_prompt_for_configure(HWND hwnd, struct nc_dialog_data * d)
 {
+    identkey_t * idk;
+    khm_size idkey_idx;
+
+    assert (d->ks);
+
+    {
+        HWND hwlist = GetDlgItem(hwnd, IDC_IDLIST);
+        int idx = -1;
+
+        if (ListView_GetSelectedCount(hwlist) != 1)
+            return;
+
+        idx = ListView_GetNextItem(hwlist, idx, LVNI_SELECTED);
+        if (idx == -1)
+            return;
+
+        {
+            LVITEM lvi = { LVIF_PARAM, idx, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, 0 };
+            ListView_GetItem(hwlist, &lvi);
+
+            idkey_idx = lvi.lParam;
+        }
+    }
+
+    {
+        khm_handle identity = NULL;
+        khm_handle identpro = NULL;
+
+        KSLOCK(d->ks);
+        do {
+            if (KHM_FAILED(ks_keystore_get_identkey(d->ks, idkey_idx, &idk)) ||
+
+                KHM_FAILED(kcdb_identpro_find(idk->provider_name, &identpro)) ||
+
+                KHM_FAILED(kcdb_identity_create_ex(identpro, idk->identity_name,
+                                                   KCDB_IDENT_FLAG_CREATE, NULL, &identity)))
+                break;
+        } while (FALSE);
+        KSUNLOCK(d->ks);
+
+        if (identity) {
+            khui_cw_configure_identity(d->nct.nc, hwnd, identity);
+            kcdb_identity_release(identity);
+        }
+
+        if (identpro) {
+            kcdb_identpro_release(identpro);
+        }
+    }
 }
 
 void
