@@ -769,8 +769,7 @@ cfgui_dlgproc(HWND hwnd,
 
         cfgui_activate_node(hwnd, node);
 
-        khm_add_dialog(hwnd);
-        khm_enter_modal(hwnd);
+        cfgui_hwnd = hwnd;
 
         return TRUE;
 
@@ -789,8 +788,6 @@ cfgui_dlgproc(HWND hwnd,
         DeleteObject(d->hbr_white);
 
         cfgui_set_wnd_data(hwnd, NULL);
-
-        khm_del_dialog(hwnd);
 
         SetForegroundWindow(khm_hwnd_main);
 
@@ -856,8 +853,7 @@ cfgui_dlgproc(HWND hwnd,
     case WM_COMMAND:
         switch(wParam) {
         case MAKEWPARAM(IDCANCEL, BN_CLICKED):
-            khm_leave_modal();
-            DestroyWindow(hwnd);
+            EndDialog(hwnd, 0);
             break;
 
         case MAKEWPARAM(IDAPPLY, BN_CLICKED):
@@ -866,8 +862,7 @@ cfgui_dlgproc(HWND hwnd,
 
         case MAKEWPARAM(IDOK, BN_CLICKED):
             cfgui_apply_settings(NULL);
-            khm_leave_modal();
-            DestroyWindow(hwnd);
+            EndDialog(hwnd, 0);
             break;
         }
         return TRUE;
@@ -900,28 +895,15 @@ cfgui_dlgproc(HWND hwnd,
 
 static void
 cfgui_create_window(khui_config_node node) {
-#ifdef DEBUG
     assert(cfgui_hwnd == NULL);
-#endif
 
     khm_refresh_config();
 
-    cfgui_hwnd = CreateDialogParam(khm_hInstance,
-                                   MAKEINTRESOURCE(IDD_CFG_MAIN),
-                                   khm_hwnd_main,
-                                   cfgui_dlgproc,
-                                   (LPARAM) node);
-#ifdef DEBUG
-    assert(cfgui_hwnd != NULL);
-#endif
-    ShowWindow(cfgui_hwnd,SW_SHOW);
-}
-
-static void 
-cfgui_destroy_window(void) {
-    if (cfgui_hwnd)
-        DestroyWindow(cfgui_hwnd);
-    /* cfgui_hwnd will be set to NULL in the dialog proc */
+    DialogBoxParam(khm_hInstance,
+                   MAKEINTRESOURCE(IDD_CFG_MAIN),
+                   khm_hwnd_main,
+                   cfgui_dlgproc,
+                   (LPARAM) node);
 }
 
 void

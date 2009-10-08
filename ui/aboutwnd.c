@@ -114,25 +114,19 @@ about_dlg_proc(HWND hwnd,
             _done_with_modules:
                 CloseHandle(hsnap);
             }
-
-            khm_add_dialog(hwnd);
-            khm_enter_modal(hwnd);
         }
         return FALSE;
 
     case WM_DESTROY:
-        khm_del_dialog(hwnd);
         return TRUE;
 
     case WM_CLOSE:
-        khm_leave_modal();
-        DestroyWindow(hwnd);
+        EndDialog(hwnd, 0);
         return TRUE;
 
     case WM_COMMAND:
         if (wParam == MAKEWPARAM(IDOK, BN_CLICKED)) {
-            khm_leave_modal();
-            DestroyWindow(hwnd);
+            EndDialog(hwnd, 0);
         }
         return TRUE;
     }
@@ -142,13 +136,8 @@ about_dlg_proc(HWND hwnd,
 
 void
 khm_create_about_window(void) {
-    HWND hwnd;
-    hwnd = CreateDialog(khm_hInstance,
-                        MAKEINTRESOURCE(IDD_ABOUT),
-                        khm_hwnd_main,
-                        about_dlg_proc);
-
-    ShowWindow(hwnd, SW_SHOW);
-    /* no need to keep track of the hwnd, since we add it to the
-       dialog chain in the dialog procedure */
+    DialogBox(khm_hInstance,
+              MAKEINTRESOURCE(IDD_ABOUT),
+              khm_hwnd_main,
+              about_dlg_proc);
 }

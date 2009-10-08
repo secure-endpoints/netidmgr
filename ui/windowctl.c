@@ -30,25 +30,31 @@
 /* we support up to 32 simutaneous dialogs.  In reality, more than two
    is pretty unlikely.  Property sheets are special and are handled
    separately. */
-#define MAX_UI_DIALOGS 32
+#define MAX_UI_DIALOGS 128
 
-typedef struct tag_khui_dialog {
+typedef struct khui_dialog {
     HWND hwnd;
     HWND hwnd_next;
     BOOL active;
+
+    LDCL(struct khui_dialog);
 } khui_dialog;
 
-static khui_dialog khui_dialogs[MAX_UI_DIALOGS];
+static khui_dialog * khui_dialogs = NULL;
 static int n_khui_dialogs = 0;
-static HWND khui_modal_dialog = NULL;
 static BOOL khui_main_window_active;
 
 /* should only be called from the UI thread */
 void khm_add_dialog(HWND dlg) {
-    if(n_khui_dialogs < MAX_UI_DIALOGS - 1) {
-        khui_dialogs[n_khui_dialogs].hwnd = dlg;
-        khui_dialogs[n_khui_dialogs].hwnd_next = NULL;
-        khui_dialogs[n_khui_dialogs].active = TRUE;
+    if (n_khui_dialogs < MAX_UI_DIALOGS) {
+        khui_dialog * d = PMALLOC(sizeof(*d));
+
+        d->hwnd = dlg;
+        d->hwnd_next = NULL;
+        d->active = TRUE;
+        LINIT(d);
+
+        LPUSH(&khui_dialogs, d);
         n_khui_dialogs++;
     } else {
         assert(FALSE);
@@ -56,126 +62,23 @@ void khm_add_dialog(HWND dlg) {
 }
 
 /* should only be called from the UI thread */
-void khm_enter_modal(HWND hwnd) {
-    int i;
-
-    if (khui_modal_dialog) {
-
-        /* we are already in a modal loop. */
-
-        assert(hwnd != khui_modal_dialog);
-
-        for (i=0; i < n_khui_dialogs; i++) {
-            if (khui_dialogs[i].hwnd == khui_modal_dialog) {
-                khui_dialogs[i].active = TRUE;
-                EnableWindow(khui_modal_dialog, FALSE);
-                break;
-            }
-        }
-
-        assert(i < n_khui_dialogs);
-
-        for (i=0; i < n_khui_dialogs; i++) {
-            if (khui_dialogs[i].hwnd == hwnd) {
-                khui_dialogs[i].hwnd_next = khui_modal_dialog;
-                break;
-            }
-        }
-
-        assert(i < n_khui_dialogs);
-
-        khui_modal_dialog = hwnd;
-
-    } else {
-
-        /* we are entering a modal loop.  preserve the active state of
-           the overlapped dialogs and proceed with the modal
-           dialog. */
-
-        for (i=0; i < n_khui_dialogs; i++) {
-            if(khui_dialogs[i].hwnd != hwnd) {
-                khui_dialogs[i].active = IsWindowEnabled(khui_dialogs[i].hwnd);
-                EnableWindow(khui_dialogs[i].hwnd, FALSE);
-            }
-        }
-
-        khui_main_window_active = khm_is_main_window_active();
-        EnableWindow(khm_hwnd_main, FALSE);
-
-        khui_modal_dialog = hwnd;
-
-        SetForegroundWindow(hwnd);
-    }
-}
-
-/* should only be called from the UI thread */
-void khm_leave_modal(void) {
-    int i;
-
-    for (i=0; i < n_khui_dialogs; i++) {
-        if (khui_dialogs[i].hwnd == khui_modal_dialog)
-            break;
-    }
-
-    assert(i < n_khui_dialogs);
-
-    if (i < n_khui_dialogs && khui_dialogs[i].hwnd_next) {
-
-        /* we need to proceed to the next one down the modal dialog
-           chain.  We are not exiting a modal loop. */
-
-        khui_modal_dialog = khui_dialogs[i].hwnd_next;
-        khui_dialogs[i].hwnd_next = FALSE;
-
-        EnableWindow(khui_modal_dialog, TRUE);
-
-    } else {
-
-        HWND last_dialog = NULL;
-
-        /* we are exiting a modal loop. */
-
-        for (i=0; i < n_khui_dialogs; i++) {
-            if(khui_dialogs[i].hwnd != khui_modal_dialog) {
-                EnableWindow(khui_dialogs[i].hwnd, khui_dialogs[i].active);
-                last_dialog = khui_dialogs[i].hwnd;
-            }
-        }
-
-        EnableWindow(khm_hwnd_main, TRUE);
-
-        khui_modal_dialog = NULL;
-
-        if(last_dialog)
-            SetActiveWindow(last_dialog);
-        else
-            SetActiveWindow(khm_hwnd_main);
-    }
-}
-
-/* should only be called from the UI thread */
 void khm_del_dialog(HWND dlg) {
-    int i;
-    for(i=0;i < n_khui_dialogs; i++) {
-        if(khui_dialogs[i].hwnd == dlg)
-            break;
-    }
-    
-    if(i < n_khui_dialogs)
-        n_khui_dialogs--;
-    else
-        return;
+    khui_dialog * d;
 
-    for(;i < n_khui_dialogs; i++) {
-        khui_dialogs[i] = khui_dialogs[i+1];
+    for (d = khui_dialogs; d; d = LNEXT(d)) {
+        if (d->hwnd == dlg) {
+            LDELETE(&khui_dialogs, d);
+            n_khui_dialogs--;
+        }
     }
 }
 
 BOOL khm_check_dlg_message(LPMSG pmsg) {
-    int i;
     BOOL found = FALSE;
-    for(i=0;i<n_khui_dialogs;i++) {
-        if(IsDialogMessage(khui_dialogs[i].hwnd, pmsg)) {
+    khui_dialog *d;
+
+    for(d = khui_dialogs; d; d = LNEXT(d)) {
+        if(IsDialogMessage(d->hwnd, pmsg)) {
             found = TRUE;
             break;
         }
@@ -186,12 +89,12 @@ BOOL khm_check_dlg_message(LPMSG pmsg) {
 
 BOOL khm_is_dialog_active(void) {
     HWND hwnd;
-    int i;
+    khui_dialog * d;
 
     hwnd = GetForegroundWindow();
 
-    for (i=0; i<n_khui_dialogs; i++) {
-        if (khui_dialogs[i].hwnd == hwnd)
+    for (d = khui_dialogs; d; d = LNEXT(d)) {
+        if (d->hwnd == hwnd)
             return TRUE;
     }
 
