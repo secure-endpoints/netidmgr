@@ -202,9 +202,19 @@ finale: keystore
 keystore: ui
 	$(ECHO) -- Entering $@
 	$(CD) plugins\keystore
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
+
+keystore-install-local:
+	$(ECHO) Local install of plugins\keystore
+	$(CD) plugins\keystore
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore install-local
+	$(CD) ..\..
+	$(ECHO) Done
+
+install-local:: keystore-install-local
+
 !endif
 
 !if exist( plugins\certprov )
@@ -213,9 +223,19 @@ finale: certprov
 certprov: ui
 	$(ECHO) -- Entering $@
 	$(CD) plugins\certprov
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
+
+certprov-install-local:
+	$(ECHO) Local install of plugins\certprov
+	$(CD) plugins\certprov
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov install-local
+	$(CD) ..\..
+	$(ECHO) Done
+
+install-local:: certprov-install-local
+
 !endif
 
 pdoc:

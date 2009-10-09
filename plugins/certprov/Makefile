@@ -95,8 +95,12 @@ BUILDTYPE=debug
 ! error Environment variable 'CPU' is not defined.
 !endif
 
+!ifndef DEST
 DEST=$(BUILDROOT)\dest\$(CPU)_$(BUILDTYPE)
+!endif
+!ifdef OBJ
 OBJ=$(BUILDROOT)\obj\$(CPU)_$(BUILDTYPE)
+!endif
 
 # If you are building against the NetIDMgr build tree, you can define
 # the environment variable NIDMRAWDIRS.
