@@ -1,5 +1,5 @@
 # Copyright (c) 2004,2005,2006 Massachusetts Institute of Technology
-# Copyright (c) 2006,2007 Secure Endpoints Inc.
+# Copyright (c) 2006,2007,2009 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -58,7 +58,7 @@ NETIDMGR_VERSIONC=$(NETIDMGR_VERSION_MAJOR),$(NETIDMGR_VERSION_MINOR),$(NETIDMGR
 
 # Source information
 NETIDMGR_SRC_COMPANY_1033=Secure Endpoints Inc.
-NETIDMGR_SRC_COPYRIGHT_1033=(C) 2009 Secure Endpoints Inc.
+NETIDMGR_SRC_COPYRIGHT_1033=© 2006-2009 Secure Endpoints Inc.
 
 # Choose the default build type if one is not set
 !if ("$(KH_BUILD)" != "DEBUG") && ("$(KH_BUILD)" != "RETAIL")
