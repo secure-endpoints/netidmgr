@@ -89,8 +89,12 @@ BUILDTYPE=debug
 ! error Environment variable 'CPU' is not defined.
 !endif
 
+!ifndef DEST
 DEST=$(BUILDROOT)\dest\$(CPU)_$(BUILDTYPE)
+!endif
+!ifndef OBJ
 OBJ=$(BUILDROOT)\obj\$(CPU)_$(BUILDTYPE)
+!endif
 
 !if "$(CPU)"=="AMD64" || "$(CPU)"=="x64"
 NIDMGRLIB=nidmgr64.lib
