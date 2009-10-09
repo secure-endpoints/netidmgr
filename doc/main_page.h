@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
- * Copyright (c) 2007 Secure Endpoints Inc.
+ * Copyright (c) 2007-2009 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -44,7 +44,7 @@
 
     &copy; 2004-2007 Massachusetts Institute of Technology
 
-    &copy; 2005-2007 Secure Endpoints Inc.
+    &copy; 2005-2009 Secure Endpoints Inc.
 */
 
 /*!
@@ -56,7 +56,7 @@
 
     Copyright &copy; 2004,2005,2006,2007 Massachusetts Institute of Technology
 
-    Copyright &copy; 2005,2006,2007 Secure Endpoints Inc.
+    Copyright &copy; 2005-2009 Secure Endpoints Inc.
  
     Permission is hereby granted, free of charge, to any person
     obtaining a copy of this software and associated documentation
