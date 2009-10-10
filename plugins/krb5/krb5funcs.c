@@ -215,6 +215,8 @@ typedef struct tag_ident_data {
     FILETIME  ft_expire;
     FILETIME  ft_renewexpire;
     khm_int32 krb5_flags;
+
+    khm_boolean imported;       /* is this an imported identity? */
 } ident_data;
 
 typedef struct tag_identlist {
@@ -377,6 +379,11 @@ tc_set_ident_data(identlist * idlist) {
                                        &idlist->list[i].ft_renewexpire,
                                        sizeof(idlist->list[i].ft_renewexpire));
             }
+
+            if (idlist->list[i].imported)
+                khm_krb5_set_identity_flags(idlist->list[i].ident,
+                                            K5IDFLAG_IMPORTED,
+                                            K5IDFLAG_IMPORTED);
 
         } else {
             /* We didn't see any TGTs for this identity.  We have to
@@ -748,6 +755,15 @@ static long get_tickets_from_cache(krb5_context ctx,
             */
 
             ft_expire_old = d->ft_expire;
+
+           /* If we find the identity in MSLSA: and any other
+              credentials cache, we assume the identity was
+              imported. */
+            if (((!!wcscmp(wcc_name, L"MSLSA:")) ^ (!!wcscmp(d->ccname, L"MSLSA:"))) &&
+                CompareFileTime(&ft_expire_new, &ft_expire_old) == 0) {
+                _reportf(L"Setting identity as imported");
+                d->imported = TRUE;
+            }
 
             if(d->count == 1
                || (CompareFileTime(&ft_expire_new, &ft_expire_old) > 0 &&
@@ -1131,6 +1147,11 @@ khm_krb5_renew_ident(khm_handle identity)
         FILETIME ft_threshold;
         krb5_principal princ = NULL;
 
+        /* assume failure */
+        code = EINVAL;
+
+        kherr_reportf(L"Renewing identity using ms2mit [%s]", idname);
+
         UnicodeStrToAnsi(cidname, sizeof(cidname), idname);
 
         imported = khm_krb5_ms2mit(cidname, FALSE, TRUE, &imported_id);
@@ -1152,10 +1173,10 @@ khm_krb5_renew_ident(khm_handle identity)
 
         ft_now = FtAdd(&ft_now, &ft_threshold);
 
+        code = 0;
+
         if (CompareFileTime(&ft_expire, &ft_now) < 0) {
             /* the ticket lifetime is not long enough */
-
-            code = 0;
 
             if (ctx == NULL)
                 code = pkrb5_init_context(&ctx);
@@ -1219,6 +1240,8 @@ khm_krb5_renew_ident(khm_handle identity)
                                              &k5_flags,
                                              &cb)) &&
         !(k5_flags & TKT_FLG_RENEWABLE)) {
+
+        kherr_reportf(L"Identity is not renewable");
 
         code = KRB5KDC_ERR_BADOPTION;
         goto cleanup;

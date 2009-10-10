@@ -794,8 +794,8 @@ k5_handle_process_new_creds(khui_new_creds *nc,
 
     if(d->kinit_task && d->kinit_task->kinit_code != 0) {
         wchar_t tbuf[1024];
-        DWORD suggestion;
-        kherr_suggestion suggest_code;
+        DWORD suggestion = 0;
+        kherr_suggestion suggest_code = 0;
 
         khm_err_describe(d->kinit_task->kinit_code,
                          tbuf, sizeof(tbuf),
