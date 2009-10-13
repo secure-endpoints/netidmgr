@@ -226,7 +226,7 @@ khm_new_cred_progress_broadcast(enum kherr_ctx_event evt,
         break;
 
     case KHERR_CTX_END:
-        kmq_post_message(KMSG_CREDP, KMSG_CREDP_END_NEWCRED, 0,
+        kmq_post_message(KMSG_CREDP, KMSG_CREDP_END_NEWCRED, nc->subtype,
                          identity);
         break;
 
@@ -243,7 +243,8 @@ khm_new_cred_progress_broadcast(enum kherr_ctx_event evt,
             }
 
             kmq_post_message(KMSG_CREDP, KMSG_CREDP_PROG_NEWCRED,
-                             num, identity);
+                             ((((khm_ui_4)nc->subtype) << 16)|(num)),
+                             identity);
         }
         break;
     }
@@ -1169,6 +1170,38 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
 
     return cont;
 }
+
+/*! \page notif Identity Event Notification
+
+ * When a lengthy credentials operation begins for an identity, the
+   following happens:
+
+   - khm_cred_dispatch_process_message() calls
+     khm_nc_track_progress_of_this_task() which begins monitoring the
+     new credentials operation.
+
+   - khm_new_cred_progress_broadcast() is added to the context istener
+     list of the current error context.
+
+   - khm_new_cred_progress_broadcast() is called with KHERR_CTX_BEGIN.
+
+   - If the operation is ending, khm_new_cred_progress_broadcast() is
+     called with KHERR_CTX_END.
+
+   - When progress is made, khm_new_cred_progress_broadcast() will be
+     called with KHERR_CTX_PROGRESS.
+
+ * When khm_new_cred_progress_broadcast() is called with
+   KHERR_CTX_BEGIN, KHERR_CTX_PROGRESS or KHERR_CTX_END, it posts a
+   KMSG_CREDP message:
+
+   - KMSG_CREDP_BEGIN_NEWCRED
+
+   - KMSG_CREDP_PROG_NEWCRED
+
+   - KMSG_CREDP_END_NEWCRED
+
+*/
 
 void 
 khm_cred_dispatch_process_message(khui_new_creds *nc)

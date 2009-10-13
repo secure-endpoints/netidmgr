@@ -741,7 +741,8 @@ namespace nim
 
     DEFINE_KMSG(CREDP, PROG_NEWCRED)
     {
-        int progress = (int) uparam;
+        int progress = (int) (uparam & 0xff);
+        khui_nc_subtype subtype = (khui_nc_subtype) (uparam >> 16);
         khm_handle identity = (khm_handle) vparam;
         std::vector<CwIdentityOutline *> elts;
 
@@ -749,7 +750,7 @@ namespace nim
 
         for (std::vector<CwIdentityOutline *>::iterator i = elts.begin();
              i != elts.end(); ++i) {
-            (*i)->SetIdentityOpProgress(progress);
+            (*i)->SetIdentityOpProgress(subtype, progress);
         }
 
         return KHM_ERROR_SUCCESS;
