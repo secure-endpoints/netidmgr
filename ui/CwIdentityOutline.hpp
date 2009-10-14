@@ -197,6 +197,10 @@ namespace nim
 
                 return __super::GetCaption();
 
+            } else if (identity.Exists(KCDB_ATTR_STATUS)) {
+
+                return identity.GetAttribStringObj(KCDB_ATTR_STATUS);
+
             } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0 ||
                        !identity.Exists(KCDB_ATTR_EXPIRE)) {
 
@@ -517,9 +521,9 @@ namespace nim
             }
         }
 
-        void SetIdentityOpProgress(int progress) {
+        void SetIdentityOpProgress(khui_nc_subtype subtype, int progress) {
             if (!monitor_progress) {
-                SetIdentityOp(KHUI_NC_SUBTYPE_OTHER);
+                SetIdentityOp(subtype);
             }
             el_progress->SetProgress(progress);
         }
