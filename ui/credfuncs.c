@@ -345,162 +345,10 @@ kmsg_cred_completion(kmq_message *m)
            there were any errors reported.  Otherwise we dispatch
            another set of messages. */
         if(!khm_cred_dispatch_process_level(nc)) {
-            int has_error = kherr_is_error();
 
-            if(has_error && !nc->ignore_errors) {
-                khui_alert * alert;
-                kherr_event * evt;
-                kherr_context * ctx;
-                wchar_t ws_tfmt[512];
-                wchar_t w_idname[KCDB_IDENT_MAXCCH_NAME];
-                wchar_t ws_title[ARRAYLENGTH(ws_tfmt) + KCDB_IDENT_MAXCCH_NAME];
-                khm_size cb;
+            khm_boolean has_error;
 
-                /* For renewals, we suppress the error message for the
-                   following case:
-
-                   - The renewal was for an identity
-
-                   - There are no identity credentials for the
-                     identity (no credentials that have the same type
-                     as the identity provider). */
-
-                if (nc->subtype == KMSG_CRED_RENEW_CREDS &&
-                    nc->ctx.scope == KHUI_SCOPE_IDENT &&
-                    nc->ctx.identity != NULL) {
-                    khm_int32 count = 0;
-
-                    cb = sizeof(count);
-                    kcdb_identity_get_attr(nc->ctx.identity, KCDB_ATTR_N_IDCREDS, NULL,
-                                           &count, &cb);
-
-                    if (count == 0) {
-                        goto done_with_op;
-                    }
-                }
-
-                ctx = kherr_peek_context();
-                evt = kherr_get_err_event(ctx);
-                kherr_evaluate_event(evt);
-
-                khui_alert_create_empty(&alert);
-
-                if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-                    nc->subtype == KMSG_CRED_ACQPRIV_ID) {
-
-                    khui_alert_set_type(alert, KHUI_ALERTTYPE_ACQUIREFAIL);
-
-                    cb = sizeof(w_idname);
-                    if (nc->n_identities == 0 ||
-                        KHM_FAILED(kcdb_get_resource(nc->identities[0],
-                                                     KCDB_RES_DISPLAYNAME,
-                                                     0, NULL, NULL,
-                                                     w_idname, &cb))) {
-                        /* an identity could not be determined */
-                        LoadString(khm_hInstance, IDS_NC_FAILED_TITLE,
-                                   ws_title, ARRAYLENGTH(ws_title));
-                    } else {
-                        LoadString(khm_hInstance, IDS_NC_FAILED_TITLE_I,
-                                   ws_tfmt, ARRAYLENGTH(ws_tfmt));
-                        StringCbPrintf(ws_title, sizeof(ws_title),
-                                       ws_tfmt, w_idname);
-                        khui_alert_set_ctx(alert,
-                                           KHUI_SCOPE_IDENT,
-                                           nc->identities[0],
-                                           KCDB_CREDTYPE_INVALID,
-                                           NULL);
-                    }
-
-                } else if (nc->subtype == KMSG_CRED_PASSWORD) {
-
-                    khui_alert_set_type(alert, KHUI_ALERTTYPE_CHPW);
-
-                    cb = sizeof(w_idname);
-                    if (nc->n_identities == 0 ||
-                        KHM_FAILED(kcdb_get_resource(nc->identities[0],
-                                                     KCDB_RES_DISPLAYNAME,
-                                                     0, NULL, NULL,
-                                                     w_idname, &cb))) {
-                        LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE,
-                                   ws_title, ARRAYLENGTH(ws_title));
-                    } else {
-                        LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE_I,
-                                   ws_tfmt, ARRAYLENGTH(ws_tfmt));
-                        StringCbPrintf(ws_title, sizeof(ws_title),
-                                       ws_tfmt, w_idname);
-                        khui_alert_set_ctx(alert,
-                                           KHUI_SCOPE_IDENT,
-                                           nc->identities[0],
-                                           KCDB_CREDTYPE_INVALID,
-                                           NULL);
-                    }
-
-                } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
-
-                    khui_alert_set_type(alert, KHUI_ALERTTYPE_RENEWFAIL);
-
-                    cb = sizeof(w_idname);
-                    if (nc->ctx.identity == NULL ||
-                        KHM_FAILED(kcdb_get_resource(nc->ctx.identity,
-                                                     KCDB_RES_DISPLAYNAME,
-                                                     0, NULL, NULL,
-                                                     w_idname, &cb))) {
-                        LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE,
-                                   ws_title, ARRAYLENGTH(ws_title));
-                    } else {
-                        LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE_I,
-                                   ws_tfmt, ARRAYLENGTH(ws_tfmt));
-                        StringCbPrintf(ws_title, sizeof(ws_title),
-                                       ws_tfmt, w_idname);
-                        khui_alert_set_ctx(alert,
-                                           KHUI_SCOPE_IDENT,
-                                           nc->ctx.identity,
-                                           KCDB_CREDTYPE_INVALID,
-                                           NULL);
-                    }
-
-                } else {
-#ifdef DEBUG
-                    assert(FALSE);
-#endif
-                }
-
-                khui_alert_set_title(alert, ws_title);
-                khui_alert_set_severity(alert, evt->severity);
-
-                if(!evt->long_desc)
-                    khui_alert_set_message(alert, evt->short_desc);
-                else
-                    khui_alert_set_message(alert, evt->long_desc);
-
-                if(evt->suggestion)
-                    khui_alert_set_suggestion(alert, evt->suggestion);
-
-                if (nc->subtype == KMSG_CRED_RENEW_CREDS &&
-                    nc->ctx.identity != NULL) {
-
-                    khm_int32 n_cmd;
-
-                    n_cmd = khm_get_identity_new_creds_action(nc->ctx.identity);
-
-                    if (n_cmd != 0) {
-                        khui_alert_add_command(alert, n_cmd);
-                        khui_alert_add_command(alert, KHUI_PACTION_CLOSE);
-
-                        khui_alert_set_flags(alert, KHUI_ALERT_FLAG_DISPATCH_CMD,
-                                             KHUI_ALERT_FLAG_DISPATCH_CMD);
-                    }
-                }
-
-                khui_alert_show(alert);
-                khui_alert_release(alert);
-
-                kherr_release_context(ctx);
-
-                kherr_clear_error();
-            }
-
-        done_with_op:
+            has_error = khm_cred_conclude_processing(nc);
 
             if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
                 kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, 
@@ -1109,6 +957,170 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         kcdb_identpro_release(def_idpro);
         def_idpro = NULL;
     }
+}
+
+/*! \brief Conclude processing of a new credentials operation
+
+  Once the new credentials operation has concluded, this function is
+  called to check if there are any errors to be reported to the user.
+ */
+khm_boolean
+khm_cred_conclude_processing(khui_new_creds * nc)
+{
+    khm_boolean has_error = kherr_is_error();
+
+    if(has_error && !nc->ignore_errors) {
+        khui_alert * alert;
+        kherr_event * evt;
+        kherr_context * ctx;
+        wchar_t ws_tfmt[512];
+        wchar_t w_idname[KCDB_IDENT_MAXCCH_NAME];
+        wchar_t ws_title[ARRAYLENGTH(ws_tfmt) + KCDB_IDENT_MAXCCH_NAME];
+        khm_size cb;
+
+        /* For renewals, we suppress the error message for the
+           following case:
+
+           - The renewal was for an identity
+
+           - There are no identity credentials for the identity (no
+             credentials that have the same type as the identity
+             provider). */
+
+        if (nc->subtype == KMSG_CRED_RENEW_CREDS &&
+            nc->ctx.scope == KHUI_SCOPE_IDENT &&
+            nc->ctx.identity != NULL) {
+            khm_int32 count = 0;
+
+            cb = sizeof(count);
+            kcdb_identity_get_attr(nc->ctx.identity, KCDB_ATTR_N_IDCREDS, NULL,
+                                   &count, &cb);
+
+            if (count == 0) {
+                return has_error;
+            }
+        }
+
+        ctx = kherr_peek_context();
+        evt = kherr_get_err_event(ctx);
+        kherr_evaluate_event(evt);
+
+        khui_alert_create_empty(&alert);
+
+        if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+            nc->subtype == KMSG_CRED_ACQPRIV_ID) {
+
+            khui_alert_set_type(alert, KHUI_ALERTTYPE_ACQUIREFAIL);
+
+            cb = sizeof(w_idname);
+            if (nc->n_identities == 0 ||
+                KHM_FAILED(kcdb_get_resource(nc->identities[0],
+                                             KCDB_RES_DISPLAYNAME,
+                                             0, NULL, NULL,
+                                             w_idname, &cb))) {
+                /* an identity could not be determined */
+                LoadString(khm_hInstance, IDS_NC_FAILED_TITLE,
+                           ws_title, ARRAYLENGTH(ws_title));
+            } else {
+                LoadString(khm_hInstance, IDS_NC_FAILED_TITLE_I,
+                           ws_tfmt, ARRAYLENGTH(ws_tfmt));
+                StringCbPrintf(ws_title, sizeof(ws_title),
+                               ws_tfmt, w_idname);
+                khui_alert_set_ctx(alert,
+                                   KHUI_SCOPE_IDENT,
+                                   nc->identities[0],
+                                   KCDB_CREDTYPE_INVALID,
+                                   NULL);
+            }
+
+        } else if (nc->subtype == KMSG_CRED_PASSWORD) {
+
+            khui_alert_set_type(alert, KHUI_ALERTTYPE_CHPW);
+
+            cb = sizeof(w_idname);
+            if (nc->n_identities == 0 ||
+                KHM_FAILED(kcdb_get_resource(nc->identities[0],
+                                             KCDB_RES_DISPLAYNAME,
+                                             0, NULL, NULL,
+                                             w_idname, &cb))) {
+                LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE,
+                           ws_title, ARRAYLENGTH(ws_title));
+            } else {
+                LoadString(khm_hInstance, IDS_NC_PWD_FAILED_TITLE_I,
+                           ws_tfmt, ARRAYLENGTH(ws_tfmt));
+                StringCbPrintf(ws_title, sizeof(ws_title),
+                               ws_tfmt, w_idname);
+                khui_alert_set_ctx(alert,
+                                   KHUI_SCOPE_IDENT,
+                                   nc->identities[0],
+                                   KCDB_CREDTYPE_INVALID,
+                                   NULL);
+            }
+
+        } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+
+            khui_alert_set_type(alert, KHUI_ALERTTYPE_RENEWFAIL);
+
+            cb = sizeof(w_idname);
+            if (nc->ctx.identity == NULL ||
+                KHM_FAILED(kcdb_get_resource(nc->ctx.identity,
+                                             KCDB_RES_DISPLAYNAME,
+                                             0, NULL, NULL,
+                                             w_idname, &cb))) {
+                LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE,
+                           ws_title, ARRAYLENGTH(ws_title));
+            } else {
+                LoadString(khm_hInstance, IDS_NC_REN_FAILED_TITLE_I,
+                           ws_tfmt, ARRAYLENGTH(ws_tfmt));
+                StringCbPrintf(ws_title, sizeof(ws_title),
+                               ws_tfmt, w_idname);
+                khui_alert_set_ctx(alert,
+                                   KHUI_SCOPE_IDENT,
+                                   nc->ctx.identity,
+                                   KCDB_CREDTYPE_INVALID,
+                                   NULL);
+            }
+
+        } else {
+            assert(FALSE);
+        }
+
+        khui_alert_set_title(alert, ws_title);
+        khui_alert_set_severity(alert, evt->severity);
+
+        if(!evt->long_desc)
+            khui_alert_set_message(alert, evt->short_desc);
+        else
+            khui_alert_set_message(alert, evt->long_desc);
+
+        if(evt->suggestion)
+            khui_alert_set_suggestion(alert, evt->suggestion);
+
+        if (nc->subtype == KMSG_CRED_RENEW_CREDS &&
+            nc->ctx.identity != NULL) {
+
+            khm_int32 n_cmd;
+
+            n_cmd = khm_get_identity_new_creds_action(nc->ctx.identity);
+
+            if (n_cmd != 0) {
+                khui_alert_add_command(alert, n_cmd);
+                khui_alert_add_command(alert, KHUI_PACTION_CLOSE);
+
+                khui_alert_set_flags(alert, KHUI_ALERT_FLAG_DISPATCH_CMD,
+                                     KHUI_ALERT_FLAG_DISPATCH_CMD);
+            }
+        }
+
+        khui_alert_show(alert);
+        khui_alert_release(alert);
+
+        kherr_release_context(ctx);
+
+        kherr_clear_error();
+    }
+
+    return has_error;
 }
 
 /* this is called by khm_cred_dispatch_process_message and the

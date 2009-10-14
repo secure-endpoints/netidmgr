@@ -28,9 +28,7 @@
 #ifndef __KHIMAIRA_CREDFUNCS_H
 #define __KHIMAIRA_CREDFUNCS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+BEGIN_C
 
 khm_boolean
 khm_cred_begin_new_cred_op(void);
@@ -97,6 +95,9 @@ khm_cred_dispatch_process_message(khui_new_creds *nc);
 BOOL 
 khm_cred_dispatch_process_level(khui_new_creds *nc);
 
+khm_boolean
+khm_cred_conclude_processing(khui_new_creds * nc);
+
 BOOL
 khm_cred_is_in_dialog(void);
 
@@ -119,8 +120,6 @@ khm_cred_addr_change(void);
 void
 khm_cred_import(void);
 
-#ifdef __cplusplus
-}
-#endif
+END_C
 
 #endif
