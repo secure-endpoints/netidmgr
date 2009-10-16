@@ -936,11 +936,9 @@ khm_refresh_identity_menus(void) {
     renew_def = khui_find_menu(KHUI_MENU_RENEW_CRED);
     dest_def = khui_find_menu(KHUI_MENU_DESTROY_CRED);
     setdef_def = khui_find_menu(KHUI_MENU_SETDEF);
-#ifdef DEBUG
     assert(renew_def);
     assert(dest_def);
     assert(setdef_def);
-#endif
 
     t = khui_menu_get_size(renew_def);
     while(t) {
@@ -1000,6 +998,13 @@ khm_refresh_identity_menus(void) {
                                     0);
             added_setdef = TRUE;
         }
+
+        /* For each active identity, we should maintain the new
+           credentials action (and the action map entry).  Otherwise
+           new credentials actions used in menus and alerts would stop
+           working when the credentials associated with an identity
+           are destroyed. */
+        khm_get_identity_new_creds_action(identity);
     }
 
     if (added_dest) {
