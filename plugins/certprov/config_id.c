@@ -100,8 +100,10 @@ config_id_dlgproc(HWND hwnd,
                 GetWindowLongPtr(hwnd, DWLP_USER);
 
             if (d) {
-                if (d->ident)
+                if (d->ident) {
                     kcdb_identity_release(d->ident);
+                    d->ident = NULL;
+                }
 
                 /* TODO: perform any other required uninitialization */
 
