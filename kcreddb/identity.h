@@ -98,6 +98,26 @@ kcdbint_ident_attr_cb(khm_handle h, khm_int32 attr,
                       void * buf, khm_size *pcb_buf);
 
 #define kcdb_is_identity(id) ((id) && ((kcdb_identity *)(id))->magic == KCDB_IDENT_MAGIC)
+
+#ifndef  DEBUG
+
 #define kcdb_is_active_identity(id) (kcdb_is_identity(id) && (((kcdb_identity *)(id))->flags & KCDB_IDENT_FLAG_ACTIVE))
+
+#else
+
+#include<assert.h>
+
+__inline int kcdb_is_active_identity(const void * v) {
+    if (!kcdb_is_identity(v))
+        return 0;
+
+    if (((const kcdb_identity *)v)->flags & KCDB_IDENT_FLAG_ACTIVE)
+        return 1;
+
+    assert(0);
+    return 0;
+}
+
+#endif
 
 #endif

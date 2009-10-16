@@ -328,7 +328,7 @@ identpro_get_provider_for_identity(khm_handle videntity)
     kcdb_identpro_i * p = NULL;
 
     EnterCriticalSection(&cs_ident);
-    if (kcdb_is_active_identity(videntity)) {
+    if (kcdb_is_identity(videntity)) {
 
         ident = (kcdb_identity *) videntity;
 
@@ -965,7 +965,7 @@ kcdb_identpro_set_default_identity(khm_handle videntity, khm_boolean ask_idpro)
     khm_int32 rv = KHM_ERROR_SUCCESS;
     kcdb_identpro_i * p;
 
-    if(!kcdb_is_active_identity(videntity))
+    if(!kcdb_is_identity(videntity))
         return KHM_ERROR_INVALID_PARAM;
 
     p = identpro_get_provider_for_identity(videntity);
@@ -1039,7 +1039,7 @@ kcdb_identpro_set_searchable(khm_handle videntity,
     khm_handle sub;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    if(!kcdb_is_active_identity(videntity))
+    if(!kcdb_is_identity(videntity))
         return KHM_ERROR_INVALID_PARAM;
 
     sub = identpro_get_sub_for_identity(videntity);
@@ -1088,7 +1088,7 @@ kcdb_identpro_notify_create(khm_handle identity)
     khm_handle sub;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    if(!kcdb_is_active_identity(identity))
+    if(!kcdb_is_identity(identity))
         return KHM_ERROR_INVALID_PARAM;
 
     sub = identpro_get_sub_for_identity(identity);
@@ -1110,7 +1110,7 @@ kcdb_identpro_notify_config_create(khm_handle identity)
     khm_handle sub;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
-    if(!kcdb_is_active_identity(identity))
+    if(!kcdb_is_identity(identity))
         return KHM_ERROR_INVALID_PARAM;
 
     sub = identpro_get_sub_for_identity(identity);

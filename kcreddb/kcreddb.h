@@ -30,10 +30,7 @@
 #include "khdefs.h"
 #include<time.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+BEGIN_C
 
 /*! \defgroup kcdb NetIDMgr Credentials Database */
 /*@{*/
@@ -281,17 +278,25 @@ Functions, macros etc. for manipulating identities.
 
 /*! \brief Don't post notifications
 
-    No notifications about identity property changes will be generated
-    while this flag is set.  In addition, the identity will not show
-    up in any enumeration while this flag is set.
+    No ::KMSG_IDENT notifications for ::KCDB_OP_MODIFY about identity
+    property changes will be generated while this flag is set.
  */
 #define KCDB_IDENT_FLAG_NO_NOTIFY   0x00010000L
+
+/*! \brief Need to post a notification
+
+    If any modifications are made to an identity while the
+    ::KCDB_IDENT_FLAG_NO_NOTIFY flag is specified, then this flag is
+    set to indicate that the notification should be sent after the
+    ::KCDB_IDENT_FLAG_NO_NOTIFY flag is cleared.
+ */
+#define KCDB_IDENT_FLAG_NEED_NOTIFY 0x00020000L
 
 /*! \brief Read/write flags mask.
 
     A bitmask that correspond to all the read/write flags in the mask.
 */
-#define KCDB_IDENT_FLAGMASK_RDWR    0x0001ffffL
+#define KCDB_IDENT_FLAGMASK_RDWR    0x0003ffffL
 
 /*@}*/
 
@@ -3799,6 +3804,8 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
   */
 #define KCDB_ATTR_STATUS        18
 
+/* KCDB_ATTRID_USER is 20 */
+
 /*! \brief Number of credentials
 
   Number of credentials in the root credentials set that are
@@ -4186,9 +4193,7 @@ kcdb_credtype_get_id(const wchar_t * name,
 
 /*@}*/
 
-#ifdef __cplusplus
-}
-#endif
+END_C
 
 #ifdef __cplusplus
 
@@ -4365,7 +4370,10 @@ namespace nim {
 
             rv = pT->GetAttribString(attr_name, NULL, &cb_buf, flags);
             while (rv == KHM_ERROR_TOO_LONG) {
-                temp = PREALLOC(temp, cb_buf);
+                wchar_t * t2 = static_cast<wchar_t*>(PREALLOC(temp, cb_buf));
+                if (t2 == NULL)
+                    break;
+                temp = t2;
                 rv = pT->GetAttribString(attr_name, temp, &cb_buf, flags);
             }
 
@@ -4385,8 +4393,18 @@ namespace nim {
             khm_int32 rv = KHM_ERROR_TOO_LONG;
 
             while (rv == KHM_ERROR_TOO_LONG) {
-                if (cb_buf != 0)
-                    temp = reinterpret_cast<wchar_t *>(PREALLOC(temp, cb_buf));
+                if (cb_buf != 0) {
+                    wchar_t * t2;
+                    t2 = reinterpret_cast<wchar_t *>(PREALLOC(temp, cb_buf));
+                    if (t2 == NULL) {
+                        if (temp) {
+                            PFREE(temp);
+                            temp = NULL;
+                        }
+                        break;
+                    }
+                    temp = t2;
+                }
                 rv = pT->GetAttribString(attr_id, temp, &cb_buf, flags);
             }
 
@@ -4470,7 +4488,10 @@ namespace nim {
 
             rv = pT->GetResource(r_id, flags, NULL, NULL, NULL, &cb);
             while (rv == KHM_ERROR_TOO_LONG) {
-                temp = (wchar_t *) PREALLOC(temp, cb);
+                wchar_t * t2 = (wchar_t *) PREALLOC(temp, cb);
+                if (t2 == NULL)
+                    break;
+                temp = t2;
                 rv = pT->GetResource(r_id, flags, NULL, NULL, temp, &cb);
             }
 

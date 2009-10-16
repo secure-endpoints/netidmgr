@@ -96,9 +96,7 @@ hash_identity(const void * vkey)
 {
     const kcdb_identity * key = (const kcdb_identity *) vkey;
 
-#ifdef DEBUG
     assert(kcdb_is_identity(key));
-#endif
 
     return (hash_string(key->name) << 5) + (khm_int32)((UINT_PTR)key->id_pro >> 3);
 }
@@ -131,7 +129,7 @@ kcdb_identity_is_equal(khm_handle identity1,
 KHMEXP khm_boolean KHMAPI
 kcdb_handle_is_identity(khm_handle h)
 {
-    return kcdb_is_active_identity(h);
+    return kcdb_is_identity(h);
 }
 
 #pragma warning(push)
@@ -297,7 +295,6 @@ kcdb_identity_create_ex(khm_handle vidpro,
 
     id->flags = (flags & KCDB_IDENT_FLAGMASK_RDWR);
     id->flags |=
-        KCDB_IDENT_FLAG_ACTIVE |
         KCDB_IDENT_FLAG_EMPTY |
         KCDB_IDENT_FLAG_NO_NOTIFY;
     LINIT(id);
@@ -332,7 +329,6 @@ kcdb_identity_create_ex(khm_handle vidpro,
             id->serial = ++kcdb_ident_serial;
 
         hash_add(kcdb_identities_namemap, (void *) id, (void *) id);
-        LPUSH(&kcdb_identities, id);
         kcdb_identity_hold((khm_handle) id);
 
         if (KHM_SUCCEEDED(kcdb_identity_get_config((khm_handle) id,
@@ -375,15 +371,16 @@ kcdb_identity_create_ex(khm_handle vidpro,
         if (vparam)
             kcdb_identity_set_attr((khm_handle) id, KCDB_ATTR_PARAM, NULL, 0);
 
-        if (id)
-            kcdbint_ident_post_message(KCDB_OP_INSERT, id);
+        EnterCriticalSection(&cs_ident);
+        LPUSH(&kcdb_identities, id);
+        id->flags |= KCDB_IDENT_FLAG_ACTIVE;
+        id->flags &= ~KCDB_IDENT_FLAG_NO_NOTIFY;
+        LeaveCriticalSection(&cs_ident);
+
+        kcdbint_ident_post_message(KCDB_OP_INSERT, id);
 
         if (h_kcdb)
             khc_close_space(h_kcdb);
-
-        EnterCriticalSection(&cs_ident);
-        id->flags &= ~KCDB_IDENT_FLAG_NO_NOTIFY;
-        LeaveCriticalSection(&cs_ident);
     }
 
     return KHM_ERROR_SUCCESS;
@@ -621,6 +618,7 @@ KHMEXP khm_int32 KHMAPI
 kcdb_identity_delete(khm_handle vid)
 {
     kcdb_identity * id;
+    kcdb_identity * parent = NULL;
     khm_int32 code = KHM_ERROR_SUCCESS;
 
     EnterCriticalSection(&cs_ident);
@@ -646,10 +644,8 @@ kcdb_identity_delete(khm_handle vid)
         return KHM_ERROR_SUCCESS;
     } else if (id->refcount == 0) {
 
-        if (id->parent) {
-            kcdb_identity_release(id->parent);
-            id->parent = NULL;
-        }
+        parent = id->parent;
+        id->parent = NULL;
 
         khui_cache_del_by_owner(vid);
 
@@ -662,6 +658,7 @@ kcdb_identity_delete(khm_handle vid)
         id->magic = 0;
         PFREE(id);
     }
+
     /* else, we have an identity that is not active, but has
        outstanding references.  We have to wait until those references
        are freed.  Once they are released, kcdb_identity_delete() will
@@ -669,6 +666,12 @@ kcdb_identity_delete(khm_handle vid)
 
  _exit:
     LeaveCriticalSection(&cs_ident);
+
+    /* parent must be released outside cs_ident since it can also
+       trigger an identity delete. */
+    if (parent) {
+        kcdb_identity_release(parent);
+    }
 
     return code;
 }
@@ -687,7 +690,7 @@ kcdb_identity_set_flags(khm_handle vid,
     if (mask == 0)
         return KHM_ERROR_SUCCESS;
 
-    if(!kcdb_is_active_identity(vid))
+    if(!kcdb_is_identity(vid))
         return KHM_ERROR_INVALID_PARAM;
 
     id = (kcdb_identity *) vid;
@@ -709,6 +712,7 @@ kcdb_identity_set_flags(khm_handle vid,
 
         mask &= ~KCDB_IDENT_FLAG_DEFAULT;
         flag &= ~KCDB_IDENT_FLAG_DEFAULT;
+        delta |= KCDB_IDENT_FLAG_DEFAULT;
     }
 
     EnterCriticalSection(&cs_ident);
@@ -719,7 +723,7 @@ kcdb_identity_set_flags(khm_handle vid,
                 LeaveCriticalSection(&cs_ident);
                 rv = kcdb_identpro_set_searchable(vid, FALSE);
                 EnterCriticalSection(&cs_ident);
-                if(rv == KHM_ERROR_NO_PROVIDER ||
+                if (rv == KHM_ERROR_NO_PROVIDER ||
                     KHM_SUCCEEDED(rv)) {
                     id->flags &= ~KCDB_IDENT_FLAG_SEARCHABLE;
                     delta |= KCDB_IDENT_FLAG_SEARCHABLE;
@@ -778,22 +782,31 @@ kcdb_identity_set_flags(khm_handle vid,
         id->flags &= ~(KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_UNKNOWN);
     }
 
+    /* If the NO_NOTIFY flag is turned off and the NEED_NOTIFY flag is
+       present, then a notification should be triggered. */
+    if ((mask & KCDB_IDENT_FLAG_NO_NOTIFY) &&
+        !(flag & KCDB_IDENT_FLAG_NO_NOTIFY)) {
+        id->flags &= ~KCDB_IDENT_FLAG_NEED_NOTIFY;
+    }
+
     newflags = id->flags;
 
     LeaveCriticalSection(&cs_ident);
 
     delta |= newflags ^ oldflags;
+    delta &= ~KCDB_IDENT_FLAG_NO_NOTIFY; /* Simply turning on
+                                            notifications shouldn't
+                                            cause a notification. */
 
     if((delta & KCDB_IDENT_FLAG_HIDDEN)) {
-        kcdbint_ident_post_message(
-            (newflags & KCDB_IDENT_FLAG_HIDDEN)?KCDB_OP_HIDE:KCDB_OP_UNHIDE, 
-            vid);
+        kcdbint_ident_post_message((newflags & KCDB_IDENT_FLAG_HIDDEN)?KCDB_OP_HIDE:KCDB_OP_UNHIDE, 
+                                   vid);
     }
 
     if((delta & KCDB_IDENT_FLAG_SEARCHABLE)) {
-        kcdbint_ident_post_message(
-            (newflags & KCDB_IDENT_FLAG_SEARCHABLE)?KCDB_OP_SETSEARCH:KCDB_OP_UNSETSEARCH, 
-            vid);
+        kcdbint_ident_post_message((newflags & KCDB_IDENT_FLAG_SEARCHABLE)?
+                                   KCDB_OP_SETSEARCH:KCDB_OP_UNSETSEARCH, 
+                                   vid);
     }
 
     if(delta != 0 && !(newflags & KCDB_IDENT_FLAG_NO_NOTIFY))
@@ -808,7 +821,7 @@ kcdb_identity_get_parent(khm_handle vid,
 {
     kcdb_identity * id;
 
-    if (!kcdb_is_active_identity(vid))
+    if (!kcdb_is_identity(vid))
         return KHM_ERROR_INVALID_PARAM;
 
     id = (kcdb_identity *) vid;
@@ -830,8 +843,8 @@ kcdb_identity_set_parent(khm_handle vid,
     kcdb_identity * old_parent = NULL;
     khm_boolean notify = FALSE;
 
-    if (!kcdb_is_active_identity(vid) ||
-        (vparent != NULL && !kcdb_is_active_identity(vparent)))
+    if (!kcdb_is_identity(vid) ||
+        (vparent != NULL && !kcdb_is_identity(vparent)))
         return KHM_ERROR_INVALID_PARAM;
 
     id = (kcdb_identity *) vid;
@@ -842,6 +855,8 @@ kcdb_identity_set_parent(khm_handle vid,
     if (vparent)
         kcdb_identity_hold(vparent);
     notify = !(id->flags & KCDB_IDENT_FLAG_NO_NOTIFY);
+    if (!notify)
+        id->flags |= KCDB_IDENT_FLAG_NEED_NOTIFY;
     LeaveCriticalSection(&cs_ident);
 
     if (old_parent)
@@ -860,7 +875,7 @@ kcdb_identity_get_flags(khm_handle vid,
 
     *flags = 0;
 
-    if(!kcdb_is_active_identity(vid))
+    if(!kcdb_is_identity(vid))
         return KHM_ERROR_INVALID_PARAM;
 
     id = (kcdb_identity *) vid;
@@ -879,7 +894,7 @@ kcdb_identity_get_serial(khm_handle vid, khm_ui_8 * pserial)
     khm_int32 rv;
 
     EnterCriticalSection(&cs_ident);
-    if (kcdb_is_active_identity(vid)) {
+    if (kcdb_is_identity(vid)) {
         id = (kcdb_identity *) vid;
         *pserial = id->serial;
         rv = KHM_ERROR_SUCCESS;
@@ -899,7 +914,7 @@ kcdb_identity_get_name(khm_handle vid,
     size_t namesize;
     kcdb_identity * id;
 
-    if(!kcdb_is_active_identity(vid) || !pcbsize)
+    if(!kcdb_is_identity(vid) || !pcbsize)
         return KHM_ERROR_INVALID_PARAM;
 
     id = (kcdb_identity *) vid;
@@ -926,7 +941,7 @@ kcdb_identity_get_identpro(khm_handle h_ident,
 {
     kcdb_identity * id;
 
-    if (!kcdb_is_active_identity(h_ident) ||
+    if (!kcdb_is_identity(h_ident) ||
         ph_identpro == NULL)
         return KHM_ERROR_INVALID_PARAM;
 
@@ -992,7 +1007,7 @@ kcdb_identity_get_config(khm_handle vid,
     khm_size cb;
     khm_boolean need_to_notify_provider = FALSE;
 
-    if(kcdb_is_active_identity(vid)) {
+    if(kcdb_is_identity(vid)) {
         id = (kcdb_identity *) vid;
     } else {
         return KHM_ERROR_INVALID_PARAM;
@@ -1111,7 +1126,7 @@ kcdb_identity_hold(khm_handle vid)
     kcdb_identity * id;
 
     EnterCriticalSection(&cs_ident);
-    if(kcdb_is_active_identity(vid)) {
+    if(kcdb_is_identity(vid)) {
         id = vid;
         id->refcount++;
     } else {
@@ -1231,6 +1246,9 @@ kcdb_identity_refresh(khm_handle vid)
     result.n_id_credentials = 0;
     result.n_init_credentials = 0;
 
+    notify = !(ident->flags & KCDB_IDENT_FLAG_NO_NOTIFY);
+    ident->flags |= KCDB_IDENT_FLAG_NO_NOTIFY;
+
     LeaveCriticalSection(&cs_ident);
 
     kcdb_credset_apply(NULL, kcdbint_idref_proc, &result);
@@ -1252,7 +1270,10 @@ kcdb_identity_refresh(khm_handle vid)
     ident->n_init_credentials = result.n_init_credentials;
     ident->flags &= ~KCDB_IDENT_FLAG_NEEDREFRESH;
 
-    notify = !(ident->flags & KCDB_IDENT_FLAG_NO_NOTIFY);
+    if (!notify)
+        ident->flags |= KCDB_IDENT_FLAG_NEED_NOTIFY;
+    else
+        ident->flags &= ~KCDB_IDENT_FLAG_NO_NOTIFY;
 
  _exit:
     LeaveCriticalSection(&cs_ident);
@@ -1591,7 +1612,7 @@ kcdb_identity_set_attr(khm_handle vid,
     khm_boolean notify = FALSE;
 
     EnterCriticalSection(&cs_ident);
-    if(!kcdb_is_active_identity(vid)) {
+    if(!kcdb_is_identity(vid)) {
         LeaveCriticalSection(&cs_ident);
         return KHM_ERROR_INVALID_PARAM;
     }
@@ -1718,7 +1739,7 @@ kcdb_identity_get_attr(khm_handle vid,
 
     EnterCriticalSection(&cs_ident);
 
-    if(!kcdb_is_active_identity(vid)) {
+    if(!kcdb_is_identity(vid)) {
         code = KHM_ERROR_INVALID_PARAM;
         goto _exit;
     }
@@ -1802,7 +1823,7 @@ kcdb_identity_get_attr_string(khm_handle vid,
 
     EnterCriticalSection(&cs_ident);
 
-    if(!kcdb_is_active_identity(vid)) {
+    if(!kcdb_is_identity(vid)) {
         code = KHM_ERROR_INVALID_PARAM;
         goto _exit;
     }
@@ -2024,16 +2045,17 @@ kcdb_identity_enum(khm_int32 and_flags,
     for ( id = kcdb_identities;
           id != NULL;
           id = LNEXT(id) ) {
-        if (((id->flags & (KCDB_IDENT_FLAG_ACTIVE | KCDB_IDENT_FLAG_NO_NOTIFY)) == 
-             KCDB_IDENT_FLAG_ACTIVE) &&
-            ((id->flags & and_flags) == eq_flags)) {
+
+        if ((id->flags & KCDB_IDENT_FLAG_ACTIVE) == KCDB_IDENT_FLAG_ACTIVE &&
+            (id->flags & and_flags) == eq_flags) {
+
             n_idents ++;
+
             rv = kcdb_identity_get_short_name((khm_handle) id, FALSE, NULL, &cb_curr);
-#ifdef DEBUG
             assert(rv == KHM_ERROR_TOO_LONG);
-#endif
+
             cb_req += cb_curr;
-        } 
+        }
     }
 
     cb_req += sizeof(wchar_t);
@@ -2051,15 +2073,14 @@ kcdb_identity_enum(khm_int32 and_flags,
         for (id = kcdb_identities;
              id != NULL;
              id = LNEXT(id)) {
-            if (((id->flags & (KCDB_IDENT_FLAG_ACTIVE | KCDB_IDENT_FLAG_NO_NOTIFY)) == 
-                 KCDB_IDENT_FLAG_ACTIVE) &&
-                ((id->flags & and_flags) == eq_flags)) {
+
+            if ((id->flags & KCDB_IDENT_FLAG_ACTIVE) == KCDB_IDENT_FLAG_ACTIVE &&
+                (id->flags & and_flags) == eq_flags) {
+
                 cb_curr = cch_left * sizeof(wchar_t);
                 rv = kcdb_identity_get_short_name((khm_handle) id, FALSE,
                                                   name_buf, &cb_curr);
-#ifdef DEBUG
                 assert(KHM_SUCCEEDED(rv));
-#endif
                 cch_left -= cb_curr / sizeof(wchar_t);
                 name_buf += cb_curr / sizeof(wchar_t);
             }
@@ -2099,9 +2120,8 @@ kcdb_identity_begin_enum(khm_int32 and_flags,
 
     n_ids = 0;
     for (id = kcdb_identities; id != NULL; id = LNEXT(id))
-        if ((id->flags & (KCDB_IDENT_FLAG_ACTIVE |
-			  KCDB_IDENT_FLAG_NO_NOTIFY)) == KCDB_IDENT_FLAG_ACTIVE &&
-            ((id->flags & and_flags) == eq_flags))
+        if ((id->flags & KCDB_IDENT_FLAG_ACTIVE) == KCDB_IDENT_FLAG_ACTIVE &&
+            (id->flags & and_flags) == eq_flags)
             n_ids ++;
 
     if (n_ids == 0) {
@@ -2113,13 +2133,11 @@ kcdb_identity_begin_enum(khm_int32 and_flags,
     kcdbint_enum_alloc(e, n_ids);
 
     for (i=0, id = kcdb_identities; id != NULL; id = LNEXT(id))
-        if ((id->flags & (KCDB_IDENT_FLAG_ACTIVE |
-			  KCDB_IDENT_FLAG_NO_NOTIFY)) == KCDB_IDENT_FLAG_ACTIVE &&
-            ((id->flags & and_flags) == eq_flags)) {
+        if ((id->flags & KCDB_IDENT_FLAG_ACTIVE) == KCDB_IDENT_FLAG_ACTIVE &&
+            (id->flags & and_flags) == eq_flags) {
 
-#ifdef DEBUG
             assert(i < n_ids);
-#endif
+
             if (i >= n_ids)
                 break;
 
