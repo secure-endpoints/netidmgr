@@ -2755,6 +2755,7 @@ k5_register_config_panels(void) {
 #endif
     }
 
+#ifdef USE_KRB5_REALM_EDITOR
     ZeroMemory(&reg, sizeof(reg));
 
     LoadString(hResModule, IDS_K5RLM_SHORT_DESC,
@@ -2771,6 +2772,7 @@ k5_register_config_panels(void) {
     reg.flags = 0;
 
     khui_cfg_register(node, &reg);
+#endif
 
     ZeroMemory(&reg, sizeof(reg));
 
@@ -2838,7 +2840,9 @@ k5_register_config_panels(void) {
 void
 k5_unregister_config_panels(void) {
     khui_config_node node_main;
+#ifdef USE_KRB5_REALM_EDITOR
     khui_config_node node_realms;
+#endif
     khui_config_node node_ids;
     khui_config_node node_tab;
     khui_config_node node_ccaches;
@@ -2850,6 +2854,7 @@ k5_unregister_config_panels(void) {
 #endif
     }
 
+#ifdef USE_KRB5_REALM_EDITOR
     if (KHM_SUCCEEDED(khui_cfg_open(node_main, L"KerberosRealms", 
                                     &node_realms))) {
         khui_cfg_remove(node_realms);
@@ -2859,6 +2864,7 @@ k5_unregister_config_panels(void) {
         assert(FALSE);
 #endif
     }
+#endif
 
     if (KHM_SUCCEEDED(khui_cfg_open(node_main, L"KerberosCCaches",
                                     &node_ccaches))) {
