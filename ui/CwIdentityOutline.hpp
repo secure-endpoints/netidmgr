@@ -408,7 +408,8 @@ namespace nim
         virtual void UpdateLayoutPre(Graphics& g, Rect& layout) {
             CwIdentityOutline * p = dynamic_cast<CwIdentityOutline *>(TQPARENT(this));
             if (p && p->col_idx == col_idx) {
-                indent = p->indent + g_theme->sz_margin.Width * 4 + g_theme->sz_icon_sm.Width;
+                indent = p->indent + g_theme->sz_margin.Width * 4 +
+                    g_theme->sz_icon.Width + g_theme->sz_icon_sm.Width;
             }
 
             LayoutOutlineSetup(g, layout);
