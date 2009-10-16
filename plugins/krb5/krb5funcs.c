@@ -257,6 +257,7 @@ tc_prep_idlist(identlist * idlist) {
 
         idlist->list[i].ident = ident;
         idlist->list[i].count = 0;
+        ident = NULL;
 
         i++;
     }
