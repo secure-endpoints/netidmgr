@@ -288,6 +288,11 @@ namespace nim {
         virtual void OnChildClick(DisplayElement * e, const Point& p, UINT keyflags, bool doubleClick) {
             if (!e->IsTabStop()) return;
 
+            if (doubleClick) {
+                e->Activate();
+                return;
+            }
+
             if ((keyflags & MK_SHIFT) == MK_SHIFT) {
                 SetSelection(e, SelectExtend);
             } else if ((keyflags & MK_CONTROL) == MK_CONTROL) {

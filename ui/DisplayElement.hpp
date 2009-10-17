@@ -137,6 +137,8 @@ namespace nim {
 
         virtual void Focus(bool _focus = true);
 
+        virtual void Activate();
+
         bool IsVisible();
 
         void OnPaint(Graphics& g, const Rect& bounds, const Rect& clip);

@@ -221,7 +221,7 @@ namespace nim {
 
         WNDCLASSEX wx = {
             sizeof(WNDCLASSEX), // cbSize
-            CS_CLASSDC | CS_HREDRAW | CS_VREDRAW, // style
+            CS_CLASSDC | CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS, // style
             WindowProc,         // lpfnWndProc
             0,                  // cbClsExtra
             sizeof(ULONG_PTR),  // cbWndExtra

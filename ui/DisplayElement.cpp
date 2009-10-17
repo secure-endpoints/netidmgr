@@ -296,4 +296,12 @@ namespace nim {
         Invalidate();
     }
 
+    void DisplayElement::Activate()
+    {
+        DisplayElement * p = TQPARENT(this);
+
+        if (p)
+            p->Activate();
+    }
+
 }

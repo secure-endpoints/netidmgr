@@ -81,6 +81,8 @@ namespace nim
 
             SetContext(sctx);
         }
+
+        void Activate();
     };
 
 

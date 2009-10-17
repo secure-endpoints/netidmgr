@@ -108,7 +108,8 @@ namespace nim
         return new CwIdentityOutline(identity, column);
     }
 
-    void CwOutline::Select(bool _select) {
+    void CwOutline::Select(bool _select)
+    {
         if (selected == _select)
             return;
 
@@ -116,6 +117,11 @@ namespace nim
         for_each_child(c) {
             c->Select(_select);
         }
+    }
+
+    void CwOutline::Activate()
+    {
+        khm_show_properties();
     }
 
     CwOutline * CreateOutlineNode(Credential & cred, DisplayColumnList& columns, int column)

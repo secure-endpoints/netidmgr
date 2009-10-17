@@ -213,11 +213,6 @@ namespace nim {
         }
 
         virtual void OnClick(const Point& pt, UINT keyflags, bool doubleClick) {
-            if (doubleClick) {
-                T::OnClick(pt, keyflags, doubleClick);
-                return;
-            }
-
             if (owner)
                 owner->OnChildClick(this, pt, keyflags, doubleClick);
             else
