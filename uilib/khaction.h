@@ -1048,23 +1048,20 @@ namespace nim {
         }
 
         SelectionContext& Add(const Identity& _identity) {
-            if (ident_filter)
-                delete ident_filter;
-            ident_filter = new Identity(_identity);
+            if (!ident_filter)
+                ident_filter = new Identity(_identity);
             return *this;
         }
 
         SelectionContext& Add(const Credential& _credential) {
-            if (cred_filter)
-                delete cred_filter;
-            cred_filter = new Credential(_credential);
+            if (!cred_filter)
+                cred_filter = new Credential(_credential);
             return *this;
         }
 
         SelectionContext& Add(const CredentialType& _ctype) {
-            if (credtype_filter)
-                delete credtype_filter;
-            credtype_filter = new CredentialType(_ctype);
+            if (!credtype_filter)
+                credtype_filter = new CredentialType(_ctype);
             return *this;
         }
 
