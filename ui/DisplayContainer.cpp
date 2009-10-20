@@ -119,7 +119,6 @@ namespace nim {
     void DisplayContainer::ScrollBy(const Point& delta)
     {
         ScrollWindowEx(hwnd, -delta.X, -delta.Y, NULL, NULL, NULL, NULL, SW_INVALIDATE);
-        // InvalidateRect(hwnd, NULL, FALSE);
     }
 
     void DisplayContainer::OnHScroll(UINT code, int pos)
