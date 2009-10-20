@@ -74,6 +74,8 @@ namespace nim {
 
         virtual void OnLButtonUp(const Point& p, UINT keyflags) { }
 
+        virtual void OnMouseWheel(const Point& p, UINT keyflags, int zDelta) { }
+
         virtual void OnContextMenu(const Point& p) { }
 
         virtual void OnSetFocus(HWND hwnd_old) { }
@@ -149,6 +151,10 @@ namespace nim {
 
         void HandleLButtonUp(HWND hwnd, int x, int y, UINT keyflags) {
             OnLButtonUp(Point(x,y), keyflags);
+        }
+
+        void HandleMouseWheel(HWND hwnd, int x, int y, int zDelta, UINT keyflags) {
+            OnMouseWheel(Point(x, y), keyflags, zDelta);
         }
 
         void HandleContextMenu(HWND hwnd, HWND hwnd_ctx, int x, int y) {

@@ -223,6 +223,12 @@ khm_main_wnd_proc(HWND hwnd,
         khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_WELCOME);
         break;
 
+    case WM_MOUSEWHEEL:
+        {
+            SendMessage(khm_hwnd_main_cred, WM_MOUSEWHEEL, wParam, lParam);
+        }
+        return 0;
+
     case WM_COMMAND:
         switch(LOWORD(wParam)) {
             /* general actions */

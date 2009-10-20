@@ -121,6 +121,8 @@ namespace nim {
 
         virtual void OnLButtonUp(const Point & p, UINT keyflags);
 
+        virtual void OnMouseWheel(const Point& p, UINT keyflags, int zDelta);
+
         virtual void OnContextMenu(const Point & p);
 
         virtual LRESULT OnNotify(int id, NMHDR * pnmh);

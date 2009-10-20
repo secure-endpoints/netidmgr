@@ -188,6 +188,7 @@ namespace nim {
 	    HANDLE_MSG(hwnd, WM_MOUSEMOVE, cw->HandleMouseMove);
 	    HANDLE_MSG(hwnd, WM_MOUSEHOVER, cw->HandleMouseHover);
 	    HANDLE_MSG(hwnd, WM_MOUSELEAVE, cw->HandleMouseLeave);
+            HANDLE_MSG(hwnd, WM_MOUSEWHEEL, cw->HandleMouseWheel);
 	    HANDLE_MSG(hwnd, WM_LBUTTONDOWN, cw->HandleLButtonDown);
 	    HANDLE_MSG(hwnd, WM_LBUTTONDBLCLK, cw->HandleLButtonDown);
 	    HANDLE_MSG(hwnd, WM_LBUTTONUP, cw->HandleLButtonUp);

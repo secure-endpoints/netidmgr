@@ -118,7 +118,8 @@ namespace nim {
 
     void DisplayContainer::ScrollBy(const Point& delta)
     {
-        InvalidateRect(hwnd, NULL, FALSE);
+        ScrollWindowEx(hwnd, -delta.X, -delta.Y, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+        // InvalidateRect(hwnd, NULL, FALSE);
     }
 
     void DisplayContainer::OnHScroll(UINT code, int pos)
@@ -447,6 +448,25 @@ namespace nim {
         }
 
         mouse_track = false;
+    }
+
+    void DisplayContainer::OnMouseWheel(const Point& p, UINT keyflags, int zDelta)
+    {
+        int nLines = -zDelta / WHEEL_DELTA;
+
+        if (nLines != 0) {
+            Rect oldScroll = scroll;
+
+            scroll.Y += GetSystemMetrics(SM_CYICON) * nLines;
+
+            ValidateScrollPos();
+
+            if (!oldScroll.Equals(scroll)) {
+                UpdateScrollBars(true);
+                ScrollBy(Point(scroll.X - oldScroll.X, scroll.Y - oldScroll.Y));
+                NotifyLayoutInternal();
+            }
+        }
     }
 
     void DisplayContainer::OnContextMenu(const Point& p)
