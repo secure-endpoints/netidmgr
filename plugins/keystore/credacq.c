@@ -247,6 +247,141 @@ creddlg_setup_idlist(HWND hwlist)
 }
 
 void
+creddlg_show_passwords(HWND hwlist, keystore_t * ks)
+{
+    LVCOLUMN column;
+
+    column.mask = LVCF_SUBITEM;
+    if (!ListView_GetColumn(hwlist, 2, &column)) {
+        RECT r;
+        wchar_t caption[128];
+        khm_size i;
+
+        GetClientRect(hwlist, &r);
+        r.right -= r.left;
+
+        column.mask = LVCF_WIDTH;
+
+        column.cx = r.right * 192 / (256 + 64);
+        ListView_SetColumn(hwlist, 0, &column);
+
+        column.cx = r.right * 64 / (256 + 64);
+        ListView_SetColumn(hwlist, 1, &column);
+
+        column.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+        column.fmt = 0;
+        column.cx = r.right * 64 / (256 + 64);
+        column.pszText = caption;
+        LoadString(hResModule, IDS_COL_PASSWORD, caption, ARRAYLENGTH(caption));
+        column.iSubItem = 2;
+        ListView_InsertColumn(hwlist, 2, &column);
+
+        KSLOCK(ks);
+        ks_keystore_unlock(ks);
+        for (i=0; i < ks->n_keys; i++) {
+            LVITEM lvi = {
+                LVIF_TEXT,
+                (int) i, 2, 0, 0,
+                NULL, 0,
+                0, 0, 0, 0, 0, 0
+            };
+            identkey_t * idk;
+            khm_handle credential = NULL;
+
+            lvi.pszText = caption;
+
+            idk = ks->keys[i];
+            caption[0] = L'\0';
+
+            if (idk->plain_key.cb_data != 0 &&
+                idk->plain_key.data != NULL &&
+                KHM_SUCCEEDED(ks_unserialize_credential(idk->plain_key.data,
+                                                        idk->plain_key.cb_data,
+                                                        &credential))) {
+
+                if (KHM_SUCCEEDED(kcdb_cred_get_attrib(credential, L"Krb5PrivateKey1", NULL, NULL, NULL))) {
+                    char * pdata = NULL;
+                    khm_size cb_data = 0;
+                    int nc;
+
+                    kcdb_cred_get_attrib(credential, L"Krb5PrivateKey1", NULL, NULL, &cb_data);
+                    if (cb_data != 0) {
+                        pdata = malloc(cb_data);
+                        kcdb_cred_get_attrib(credential, L"Krb5PrivateKey1", NULL, pdata, &cb_data);
+                    }
+
+                    nc = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS,
+                                             pdata, cb_data,
+                                             caption, ARRAYLENGTH(caption));
+                    caption[max(nc, ARRAYLENGTH(caption) - 1)] = L'\0';
+
+                    if (pdata) {
+                        SecureZeroMemory(pdata, cb_data);
+                        free(pdata);
+                    }
+
+                } else if (KHM_SUCCEEDED(kcdb_cred_get_attrib(credential, L"PasswordString", NULL, NULL, NULL))) {
+                    khm_size cb = sizeof(caption);
+
+                    kcdb_cred_get_attrib_string(credential, L"PasswordString", caption, &cb, 0);
+                }
+            } else {
+                LoadString(hResModule, IDS_PW_LOCKED, caption, ARRAYLENGTH(caption));
+            }
+
+            if (caption[0] == L'\0')
+                LoadString(hResModule, IDS_PW_NONE, caption, ARRAYLENGTH(caption));
+
+            ListView_SetItem(hwlist, &lvi);
+
+            if (credential)
+                kcdb_cred_release(credential);
+            SecureZeroMemory(caption, sizeof(caption));
+        }
+        ks_keystore_lock(ks);
+        KSUNLOCK(ks);
+    }
+}
+
+void
+creddlg_hide_passwords(HWND hwlist, keystore_t * ks)
+{
+    LVCOLUMN column;
+
+    column.mask = LVCF_SUBITEM;
+    if (ListView_GetColumn(hwlist, 2, &column)) {
+        khm_size i;
+        RECT r;
+
+        KSLOCK(ks);
+        for (i=0; i < ks->n_keys; i++) {
+            LVITEM lvi = {
+                LVIF_TEXT,
+                (int) i, 2, 0, 0,
+                L"", 0,
+                0, 0, 0, 0, 0, 0
+            };
+
+            ListView_SetItem(hwlist, &lvi);
+        }
+        KSUNLOCK(ks);
+
+        ListView_DeleteColumn(hwlist, 2);
+
+        GetClientRect(hwlist, &r);
+        r.right -= r.left;
+
+        column.mask = LVCF_WIDTH;
+
+        column.cx = r.right * 192 / 256;
+        ListView_SetColumn(hwlist, 0, &column);
+
+        column.cx = r.right * 64 / 256;
+        ListView_SetColumn(hwlist, 1, &column);
+    }
+}
+
+void
 creddlg_refresh_idlist(HWND hwlist, keystore_t * ks)
 {
     khm_size i;
@@ -667,12 +802,12 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
 }
 
 void
-creddlg_prompt_for_configure(HWND hwnd, struct nc_dialog_data * d)
+creddlg_prompt_for_configure(HWND hwnd, khui_new_creds * nc, keystore_t *ks)
 {
     identkey_t * idk;
     khm_size idkey_idx;
 
-    assert (d->ks);
+    assert (ks);
 
     {
         HWND hwlist = GetDlgItem(hwnd, IDC_IDLIST);
@@ -697,9 +832,9 @@ creddlg_prompt_for_configure(HWND hwnd, struct nc_dialog_data * d)
         khm_handle identity = NULL;
         khm_handle identpro = NULL;
 
-        KSLOCK(d->ks);
+        KSLOCK(ks);
         do {
-            if (KHM_FAILED(ks_keystore_get_identkey(d->ks, idkey_idx, &idk)) ||
+            if (KHM_FAILED(ks_keystore_get_identkey(ks, idkey_idx, &idk)) ||
 
                 KHM_FAILED(kcdb_identpro_find(idk->provider_name, &identpro)) ||
 
@@ -707,10 +842,10 @@ creddlg_prompt_for_configure(HWND hwnd, struct nc_dialog_data * d)
                                                    KCDB_IDENT_FLAG_CREATE, NULL, &identity)))
                 break;
         } while (FALSE);
-        KSUNLOCK(d->ks);
+        KSUNLOCK(ks);
 
         if (identity) {
-            khui_cw_configure_identity(d->nct.nc, hwnd, identity);
+            khui_cw_configure_identity(nc, hwnd, identity);
             kcdb_identity_release(identity);
         }
 
@@ -760,12 +895,22 @@ creddlg_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
     }
 
     if (id == IDC_CONFIGURE && code == BN_CLICKED) {
-        creddlg_prompt_for_configure(hwnd, d);
+        creddlg_prompt_for_configure(hwnd, d->nct.nc, d->ks);
         return TRUE;
     }
 
     if (id == IDC_REMOVE && code == BN_CLICKED) {
         creddlg_remove_selected_identkeys(hwnd, d);
+        return TRUE;
+    }
+
+    if (id == IDC_SHOWPW && code == BN_CLICKED) {
+        BOOL show = (IsDlgButtonChecked(hwnd, IDC_SHOWPW) == BST_CHECKED);
+
+        if (show)
+            creddlg_show_passwords(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+        else
+            creddlg_hide_passwords(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
         return TRUE;
     }
 
@@ -1133,7 +1278,7 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
         kcdb_credset_add_cred(credset, credential, -1);
 
         khui_cw_derive_credentials(nc, identity, credset);
-            
+
     done_with_idk:
         if (identity) kcdb_identity_release(identity);
         if (identpro) kcdb_identpro_release(identpro);

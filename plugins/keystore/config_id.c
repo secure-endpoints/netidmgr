@@ -149,6 +149,13 @@ config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
     return TRUE;
 }
 
+INT_PTR
+config_id_ks_configure_identkey(HWND hwnd, config_id_dlg_data * d)
+{
+    creddlg_prompt_for_configure(hwnd, NULL, d->ks);
+    return TRUE;
+}
+
 INT_PTR CALLBACK
 config_id_ks_dlgproc(HWND hwnd,
                      UINT uMsg,
@@ -186,6 +193,24 @@ config_id_ks_dlgproc(HWND hwnd,
         }
         return FALSE;
 
+    case WM_NOTIFY:
+        {
+            NMHDR *pnmh = (NMHDR *) lParam;
+
+            if (pnmh->idFrom == IDC_IDLIST &&
+                pnmh->code == LVN_ITEMCHANGED) {
+
+                if (ListView_GetSelectedCount(pnmh->hwndFrom) != 0) {
+                    EnableWindow(GetDlgItem(hwnd, IDC_REMOVE), TRUE);
+                    EnableWindow(GetDlgItem(hwnd, IDC_CONFIGURE), TRUE);
+                } else {
+                    EnableWindow(GetDlgItem(hwnd, IDC_REMOVE), FALSE);
+                    EnableWindow(GetDlgItem(hwnd, IDC_CONFIGURE), FALSE);
+                }
+            }
+        }
+        return TRUE;
+
     case WM_COMMAND:
         d = (config_id_dlg_data *)
             GetWindowLongPtr(hwnd, DWLP_USER);
@@ -198,8 +223,25 @@ config_id_ks_dlgproc(HWND hwnd,
 
             if (code == BN_CLICKED && id == IDC_ADDNEW) {
                 return config_id_ks_add_new_identkey(hwnd, d);
-            } else if (code == BN_CLICKED && id == IDC_REMOVE) {
+            }
+
+            if (code == BN_CLICKED && id == IDC_REMOVE) {
                 return config_id_ks_delete_identkey(hwnd, d);
+            }
+
+            if (code == BN_CLICKED && id == IDC_CONFIGURE) {
+                return config_id_ks_configure_identkey(hwnd, d);
+            }
+
+            if (code == BN_CLICKED && id == IDC_SHOWPW) {
+                if (IsDlgButtonChecked(hwnd, IDC_SHOWPW) == BST_CHECKED) {
+                    if (get_key_if_necessary(hwnd, d->ks, IDS_PWR_SHOWP)) {
+                        creddlg_show_passwords(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+                        ks_keystore_release_key(d->ks);
+                    }
+                } else {
+                    creddlg_hide_passwords(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+                }
             }
         }
 

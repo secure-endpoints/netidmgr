@@ -65,6 +65,10 @@
 #define IDS_CONF_DEL_TITLE              151
 #define IDS_CONF_DEL_FMT1               152
 #define IDS_CONF_DEL_FMT                153
+#define IDS_PWR_SHOWP                   154
+#define IDS_COL_PASSWORD                155
+#define IDS_PW_NONE                     156
+#define IDS_PW_LOCKED                   157
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041
@@ -88,6 +92,7 @@
 #define IDC_LOCATION                    1064
 #define IDC_KSLIST                      1066
 #define IDC_REASON                      1067
+#define IDC_SHOWPW                      1071
 
 // Next default values for new objects
 // 
@@ -95,7 +100,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        125
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1070
+#define _APS_NEXT_CONTROL_VALUE         1072
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

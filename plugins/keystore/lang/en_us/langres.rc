@@ -94,6 +94,7 @@ BEGIN
     PUSHBUTTON      "&Add new identity ...",IDC_ADDNEW,7,145,79,14
     PUSHBUTTON      "&Configure",IDC_CONFIGURE,225,145,58,14,WS_DISABLED
     PUSHBUTTON      "&Remove ...",IDC_REMOVE,290,145,55,14,WS_DISABLED
+    CONTROL         "&Show passwords",IDC_SHOWPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,148,149,73,10
 END
 
 IDD_CONFIG DIALOGEX 0, 0, 255, 182
@@ -185,12 +186,14 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     LTEXT           "Name",IDC_STATIC,7,10,19,8
     EDITTEXT        IDC_NAME,61,7,281,14,ES_AUTOHSCROLL | ES_READONLY
-    LTEXT           "Location",IDC_STATIC,7,30,28,8
-    EDITTEXT        IDC_LOCATION,61,27,281,14,ES_AUTOHSCROLL | ES_READONLY
-    LTEXT           "&Identities contained in this keystore:",IDC_STATIC,7,44,118,8
-    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,57,335,88
+    LTEXT           "Location",IDC_STATIC,7,27,28,8
+    EDITTEXT        IDC_LOCATION,61,24,281,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "&Identities contained in this keystore:",IDC_STATIC,7,42,118,8
+    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,52,335,93
     PUSHBUTTON      "&Add new identity ...",IDC_ADDNEW,7,152,79,14
-    PUSHBUTTON      "&Remove ...",IDC_REMOVE,287,152,55,14
+    PUSHBUTTON      "&Remove ...",IDC_REMOVE,287,152,55,14,WS_DISABLED
+    PUSHBUTTON      "Configure ...",IDC_CONFIGURE,217,152,66,14,WS_DISABLED
+    CONTROL         "&Show passwords",IDC_SHOWPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,139,156,73,10
 END
 
 IDD_CONFIG_ID_O DIALOGEX 0, 0, 349, 200
@@ -412,6 +415,10 @@ BEGIN
     IDS_CONF_DEL_TITLE      "Confirm deletion"
     IDS_CONF_DEL_FMT1       "Are you sure you want to delete the selected password?"
     IDS_CONF_DEL_FMT        "Are you sure you want to delete %d passwords?"
+    IDS_PWR_SHOWP           "Keystore password must be supplied before passwords can be viewed."
+    IDS_COL_PASSWORD        "Password"
+    IDS_PW_NONE             "(No password found or unable to decode password)"
+    IDS_PW_LOCKED           "(Keystore must be unlocked before passwords can be shown)"
 END
 
 #endif    // English (U.S.) resources

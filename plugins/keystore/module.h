@@ -201,6 +201,18 @@ creddlg_setup_idlist(HWND hwlist);
 void
 creddlg_refresh_idlist(HWND hwlist, keystore_t * ks);
 
+void
+creddlg_prompt_for_configure(HWND hwnd,
+                             khui_new_creds * nc,
+                             keystore_t *ks);
+
+void
+creddlg_show_passwords(HWND hwlist, keystore_t * ks);
+
+void
+creddlg_hide_passwords(HWND hwlist, keystore_t * ks);
+
+
 /* in proppage.c */
 INT_PTR CALLBACK
 pp_cred_dlg_proc(HWND hwnd,
@@ -300,3 +312,4 @@ add_identkeys_from_credset(keystore_t * ks, khm_handle credset);
 
 khm_boolean
 get_key_if_necessary(HWND hwnd, keystore_t * ks, int res_reason);
+
