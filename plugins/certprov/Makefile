@@ -61,7 +61,7 @@ DLLBASENAME=genericx509
 
 # TODO: Change the version numbers
 VERMAJOR=0
-VERMINOR=42
+VERMINOR=43
 VERAUX  =0
 VERPATCH=0
 
