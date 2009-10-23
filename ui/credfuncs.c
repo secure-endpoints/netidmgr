@@ -1183,6 +1183,64 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
     return cont;
 }
 
+/*! \brief Figure out a good description of the credentials operation we are going to perform
+
+ */
+static void
+describe_new_creds_operation(khui_new_creds * nc)
+{
+    wchar_t wsinsert[512];
+    khm_size cbsize;
+
+    if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+       nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
+
+        cbsize = sizeof(wsinsert);
+        kcdb_get_resource(nc->identities[0],
+                          KCDB_RES_DISPLAYNAME,
+                          0, NULL, NULL, wsinsert, &cbsize);
+
+        _report_sr1(KHERR_NONE,  IDS_CTX_PROC_NEW_CREDS,
+                    _cstr(wsinsert));
+
+    } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+        cbsize = sizeof(wsinsert);
+
+        if (nc->ctx.scope == KHUI_SCOPE_IDENT)
+            kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
+        else if (nc->ctx.scope == KHUI_SCOPE_CREDTYPE) {
+            if (nc->ctx.identity != NULL)
+                kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
+            else
+                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->ctx.cred_type),
+                                  KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
+        } else if (nc->ctx.scope == KHUI_SCOPE_CRED) {
+            kcdb_get_resource(nc->ctx.cred, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
+        } else {
+            StringCbCopy(wsinsert, sizeof(wsinsert), L"(?)");
+        }
+
+        _report_sr1(KHERR_NONE, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
+                                 IDS_CTX_PROC_NEW_CREDS :IDS_CTX_PROC_RENEW_CREDS), 
+                    _cstr(wsinsert));
+    } else if (nc->subtype == KMSG_CRED_PASSWORD) {
+        cbsize = sizeof(wsinsert);
+        kcdb_identity_get_name(nc->identities[0], wsinsert, &cbsize);
+
+        _report_sr1(KHERR_NONE, IDS_CTX_PROC_PASSWORD,
+                    _cstr(wsinsert));
+    } else {
+        assert(FALSE);
+    }
+
+    _describe();
+
+}
+
 /*! \page notif Identity Event Notification
 
  * When a lengthy credentials operation begins for an identity, the
@@ -1195,23 +1253,23 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
    - khm_new_cred_progress_broadcast() is added to the context istener
      list of the current error context.
 
-   - khm_new_cred_progress_broadcast() is called with KHERR_CTX_BEGIN.
+   - khm_new_cred_progress_broadcast() is called with ::KHERR_CTX_BEGIN.
 
    - If the operation is ending, khm_new_cred_progress_broadcast() is
-     called with KHERR_CTX_END.
+     called with ::KHERR_CTX_END.
 
    - When progress is made, khm_new_cred_progress_broadcast() will be
-     called with KHERR_CTX_PROGRESS.
+     called with ::KHERR_CTX_PROGRESS.
 
  * When khm_new_cred_progress_broadcast() is called with
-   KHERR_CTX_BEGIN, KHERR_CTX_PROGRESS or KHERR_CTX_END, it posts a
-   KMSG_CREDP message:
+   ::KHERR_CTX_BEGIN, ::KHERR_CTX_PROGRESS or ::KHERR_CTX_END, it posts a
+   ::KMSG_CREDP message:
 
-   - KMSG_CREDP_BEGIN_NEWCRED
+   - ::KMSG_CREDP_BEGIN_NEWCRED
 
-   - KMSG_CREDP_PROG_NEWCRED
+   - ::KMSG_CREDP_PROG_NEWCRED
 
-   - KMSG_CREDP_END_NEWCRED
+   - ::KMSG_CREDP_END_NEWCRED
 
 */
 
@@ -1220,17 +1278,18 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
 {
     khm_size i;
     BOOL pending;
-    wchar_t wsinsert[512];
-    khm_size cbsize;
 
     /* see if there's anything to do.  We can check this without
        obtaining a lock */
     if(nc->n_types == 0 ||
+
        ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
          nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) &&
         nc->n_identities == 0) ||
+
        (nc->subtype == KMSG_CRED_PASSWORD &&
         nc->n_identities == 0))
+
         goto _terminate_job;
 
     /* check dependencies and stuff first */
@@ -1261,55 +1320,7 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
                                 KHERR_SERIAL_CURRENT,
                                 nc);
 
-    /* Describe the context */
-    if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-       nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
-
-        cbsize = sizeof(wsinsert);
-        kcdb_get_resource(nc->identities[0],
-                          KCDB_RES_DISPLAYNAME,
-                          0, NULL, NULL, wsinsert, &cbsize);
-
-        _report_sr1(KHERR_NONE,  IDS_CTX_PROC_NEW_CREDS,
-                    _cstr(wsinsert));
-        _resolve();
-    } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
-        cbsize = sizeof(wsinsert);
-
-        if (nc->ctx.scope == KHUI_SCOPE_IDENT)
-            kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                              wsinsert, &cbsize);
-        else if (nc->ctx.scope == KHUI_SCOPE_CREDTYPE) {
-            if (nc->ctx.identity != NULL)
-                kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                                  wsinsert, &cbsize);
-            else
-                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->ctx.cred_type),
-                                  KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                                  wsinsert, &cbsize);
-        } else if (nc->ctx.scope == KHUI_SCOPE_CRED) {
-            kcdb_get_resource(nc->ctx.cred, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                              wsinsert, &cbsize);
-        } else {
-            StringCbCopy(wsinsert, sizeof(wsinsert), L"(?)");
-        }
-
-        _report_sr1(KHERR_NONE, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
-                                 IDS_CTX_NEW_CREDS :IDS_CTX_PROC_RENEW_CREDS), 
-                    _cstr(wsinsert));
-        _resolve();
-    } else if (nc->subtype == KMSG_CRED_PASSWORD) {
-        cbsize = sizeof(wsinsert);
-        kcdb_identity_get_name(nc->identities[0], wsinsert, &cbsize);
-
-        _report_sr1(KHERR_NONE, IDS_CTX_PROC_PASSWORD,
-                    _cstr(wsinsert));
-        _resolve();
-    } else {
-        assert(FALSE);
-    }
-
-    _describe();
+    describe_new_creds_operation(nc);
 
     pending = khm_cred_dispatch_process_level(nc);
 
