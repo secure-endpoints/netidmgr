@@ -2731,6 +2731,7 @@ k5_register_config_panels(void) {
     khui_config_node_reg reg;
     wchar_t wshort[KHUI_MAXCCH_SHORT_DESC];
     wchar_t wlong[KHUI_MAXCCH_LONG_DESC];
+    khm_int32 show_profile_editor = 0;
 
     ZeroMemory(&reg, sizeof(reg));
 
@@ -2756,24 +2757,25 @@ k5_register_config_panels(void) {
 #endif
     }
 
-#ifdef USE_KRB5_REALM_EDITOR
-    ZeroMemory(&reg, sizeof(reg));
+    if (KHM_SUCCEEDED(khc_read_int32(csp_params, L"ShowProfileEditor", &show_profile_editor)) &&
+        show_profile_editor != 0) {
+        ZeroMemory(&reg, sizeof(reg));
 
-    LoadString(hResModule, IDS_K5RLM_SHORT_DESC,
-               wshort, ARRAYLENGTH(wshort));
-    LoadString(hResModule, IDS_K5RLM_LONG_DESC,
-               wlong, ARRAYLENGTH(wlong));
+        LoadString(hResModule, IDS_K5RLM_SHORT_DESC,
+                   wshort, ARRAYLENGTH(wshort));
+        LoadString(hResModule, IDS_K5RLM_LONG_DESC,
+                   wlong, ARRAYLENGTH(wlong));
 
-    reg.name = L"KerberosRealms";
-    reg.short_desc = wshort;
-    reg.long_desc = wlong;
-    reg.h_module = hResModule;
-    reg.dlg_template = MAKEINTRESOURCE(IDD_CFG_REALMS);
-    reg.dlg_proc = k5_realms_dlgproc;
-    reg.flags = 0;
+        reg.name = L"KerberosRealms";
+        reg.short_desc = wshort;
+        reg.long_desc = wlong;
+        reg.h_module = hResModule;
+        reg.dlg_template = MAKEINTRESOURCE(IDD_CFG_REALMS);
+        reg.dlg_proc = k5_realms_dlgproc;
+        reg.flags = 0;
 
-    khui_cfg_register(node, &reg);
-#endif
+        khui_cfg_register(node, &reg);
+    }
 
     ZeroMemory(&reg, sizeof(reg));
 
@@ -2841,9 +2843,7 @@ k5_register_config_panels(void) {
 void
 k5_unregister_config_panels(void) {
     khui_config_node node_main;
-#ifdef USE_KRB5_REALM_EDITOR
     khui_config_node node_realms;
-#endif
     khui_config_node node_ids;
     khui_config_node node_tab;
     khui_config_node node_ccaches;
@@ -2855,17 +2855,13 @@ k5_unregister_config_panels(void) {
 #endif
     }
 
-#ifdef USE_KRB5_REALM_EDITOR
     if (KHM_SUCCEEDED(khui_cfg_open(node_main, L"KerberosRealms", 
                                     &node_realms))) {
         khui_cfg_remove(node_realms);
         khui_cfg_release(node_realms);
     } else {
-#ifdef DEBUG
-        assert(FALSE);
-#endif
+        /* This is expected if the realm editor was disabled. */
     }
-#endif
 
     if (KHM_SUCCEEDED(khui_cfg_open(node_main, L"KerberosCCaches",
                                     &node_ccaches))) {
