@@ -698,42 +698,6 @@ namespace nim {
         return ControlWindow::OnNotify(id, pnmh);
     }
 
-    LRESULT DisplayContainer::OnSync()
-    {
-        if (h_syncEvent == NULL)
-            h_syncEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-        else
-            ResetEvent(h_syncEvent);
-
-        if (InSendMessage())
-            ReplyMessage(1);
-        else {
-            assert(FALSE);
-        }
-
-        WaitForSingleObject(h_syncEvent, INFINITE);
-        return 0;
-    }
-
-    bool DisplayContainer::BeginSynchronizedOperation()
-    {
-        if (GetCurrentThreadId() == GetWindowThreadProcessId(hwnd, NULL))
-            return true;
-
-        LRESULT lr;
-        lr = SendMessage(CWM_SYNC, 0, 0);
-        assert(lr == 1);
-
-        return true;
-    }
-
-    void DisplayContainer::EndSynchronizedOperation()
-    {
-        if (h_syncEvent) {
-            SetEvent(h_syncEvent);
-        }
-    }
-
     void DisplayContainer::PurgeKilledTimers()
     {
         DWORD now = GetTickCount();

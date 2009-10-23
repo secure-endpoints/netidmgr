@@ -72,11 +72,9 @@ namespace nim
         }
 
         void OnTimer() {
-            owner->BeginSynchronizedOperation();
             need_update = true;
             MarkForExtentUpdate();
             Invalidate();
-            owner->EndSynchronizedOperation();
         }
 
         void UpdateLayoutPre(Graphics& g, Rect& layout) {

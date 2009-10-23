@@ -164,10 +164,6 @@ namespace nim {
 #define HANDLE_WM_HELP(hwnd, wParam, lParam, fn) \
     (LRESULT)(fn)((hwnd), (HELPINFO *)(LPARAM) lParam)
 #endif
-#ifndef HANDLE_CWM_SYNC
-#define HANDLE_CWM_SYNC(hwnd, wParam, lParam, fn) \
-    (LRESULT)(fn)((hwnd))
-#endif
 
     LRESULT CALLBACK
     ControlWindow::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -207,7 +203,6 @@ namespace nim {
 #ifdef KMQ_WM_DISPATCH
 	    HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, cw->HandleDispatch);
 #endif
-            HANDLE_MSG(hwnd, CWM_SYNC, cw->HandleSync);
 	}
 
         if (!cw.IsNull()) {

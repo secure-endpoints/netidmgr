@@ -55,14 +55,10 @@ namespace nim {
             header_height = 0;
             mouse_element = NULL; mouse_dblclk = false;
             owner = this;
-            h_syncEvent = NULL;
         }
 
         virtual ~DisplayContainer() {
             if (dbuffer) delete dbuffer;
-            if (h_syncEvent) {
-                CloseHandle(h_syncEvent);
-            }
         }
 
         virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e) {
@@ -99,8 +95,6 @@ namespace nim {
         virtual BOOL OnCreate(LPVOID createParams);
 
         virtual LRESULT OnNotify(int id, NMHDR * pnmh);
-
-        virtual LRESULT OnSync();
 
         virtual Point MapToScreen(const Point & p);
 
@@ -172,14 +166,6 @@ namespace nim {
         virtual void OnColumnSizeChanged(int idx) {}
 
         virtual void OnColumnSortChanged(int idx) {}
-
-    protected:
-        HANDLE h_syncEvent;
-
-    public:
-        bool BeginSynchronizedOperation();
-
-        void EndSynchronizedOperation();
 
     private:
         friend class IsKilledTimerEqualTo;

@@ -215,10 +215,6 @@ namespace nim {
 
         LRESULT HandleDispatch(LPARAM lParam);
 
-        LRESULT HandleSync(HWND hwnd) {
-            return OnSync();
-        }
-
         static BOOL HandleOnCreate(HWND hwnd, LPCREATESTRUCT lpc);
 
         static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -245,11 +241,6 @@ namespace nim {
         static void RegisterWindowClass(void);
 
         static void UnregisterWindowClass(void);
-
-        enum {
-            // Used for synchronization
-            CWM_SYNC = WM_APP + 0xfe
-        };
 
     private:
         struct CreateParams {

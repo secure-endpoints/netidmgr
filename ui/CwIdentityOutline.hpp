@@ -78,9 +78,7 @@ namespace nim
         }
 
         void OnTimer() {
-            owner->BeginSynchronizedOperation();
             Invalidate();
-            owner->EndSynchronizedOperation();
         }
 
         void SetStatus(DrawState _state, const wchar_t * _caption = NULL) {
@@ -251,9 +249,7 @@ namespace nim
         }
 
         void OnTimer() {
-            owner->BeginSynchronizedOperation();
             Invalidate();
-            owner->EndSynchronizedOperation();
         }
     };
 
