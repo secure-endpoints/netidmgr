@@ -27,16 +27,21 @@
 namespace nim {
 
     class NOINITVTABLE TimerQueueClient {
-        friend class TimerQueueHost;
+        friend class DisplayContainer;
 
     private:
-        HANDLE timer;
-        HANDLE timerQueue;
+        UINT_PTR m_timer_id;
+
+        typedef void (*CancelTimerCallback)(TimerQueueClient *, void *);
+
+        CancelTimerCallback m_timer_ccb;
+        void * m_timer_ccb_data;
 
     public:
         TimerQueueClient() {
-            timer = NULL;
-            timerQueue = NULL;
+            m_timer_id = 0;
+            m_timer_ccb = NULL;
+            m_timer_ccb_data = NULL;
         }
 
         virtual ~TimerQueueClient() {
@@ -53,60 +58,8 @@ namespace nim {
         }
 
         void CancelTimer() {
-            HANDLE p_timer;
-#pragma warning(push)
-#pragma warning(disable: 4312)
-            p_timer = InterlockedExchangePointer(&timer, NULL);
-#pragma warning(pop)
-            if (p_timer != NULL && timerQueue != NULL) {
-                DeleteTimerQueueTimer(timerQueue, p_timer,
-                                      INVALID_HANDLE_VALUE);
-                timerQueue = NULL;
-            }
-        }
-    };
-
-    class NOINITVTABLE TimerQueueHost {
-    protected:
-        HANDLE timerQueue;
-
-        static VOID CALLBACK TimerCallback(PVOID param, BOOLEAN waitOrTimer) {
-            TimerQueueClient * cb = static_cast<TimerQueueClient *>(param);
-            if (cb->timer)
-                cb->OnTimer();
-        }
-
-    public:
-        TimerQueueHost() { 
-            timerQueue = CreateTimerQueue();
-        }
-
-        virtual ~TimerQueueHost() {
-            if (timerQueue) {
-                DeleteTimerQueueEx(timerQueue, INVALID_HANDLE_VALUE);
-            }
-        }
-
-        void SetTimer(TimerQueueClient * cb, DWORD milliseconds) {
-            HANDLE timer;
-
-#ifdef DEBUG
-            kherr_debug_printf(L"SetTimer(%S, %d ms)\n",
-                               typeid(*cb).name(), milliseconds);
-#endif
-            if (CreateTimerQueueTimer(&timer, timerQueue, TimerCallback,
-                                      cb, milliseconds, 0, WT_EXECUTEONLYONCE)) {
-                cb->timer = timer;
-                cb->timerQueue = timerQueue;
-            }
-        }
-
-        void SetTimerRepeat(TimerQueueClient * cb, DWORD ms_start, DWORD ms_repeat) {
-            HANDLE timer;
-            if (CreateTimerQueueTimer(&timer, timerQueue, TimerCallback,
-                                      cb, ms_start, ms_repeat, 0)) {
-                cb->timer = timer;
-                cb->timerQueue = timerQueue;
+            if (m_timer_ccb) {
+                (*m_timer_ccb)(this, m_timer_ccb_data);
             }
         }
     };

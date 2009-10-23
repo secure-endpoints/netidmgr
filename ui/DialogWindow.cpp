@@ -155,6 +155,7 @@ namespace nim {
             HANDLE_MSG(hwnd, WM_MEASUREITEM, dw->HandleMeasureItem);
             HANDLE_MSG(hwnd, WM_NOTIFY, dw->HandleNotify);
 	    HANDLE_MSG(hwnd, WM_GETDLGCODE, dw->HandleGetDlgCode);
+            HANDLE_MSG(hwnd, WM_TIMER, dw->HandleTimer);
 #ifdef KHUI_WM_NC_NOTIFY
             HANDLE_MSG(hwnd, KHUI_WM_NC_NOTIFY, dw->HandleNcNotify);
 #endif

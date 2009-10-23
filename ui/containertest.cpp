@@ -119,7 +119,7 @@ public:
     MyWidget() { has_mouse = false; toggle = false; }
 };
 
-class AnimWidget : public DisplayElement, public TimerQueueHost, public TimerQueueClient {
+class AnimWidget : public DisplayElement,  public TimerQueueClient {
     bool do_animation;
     bool timer_set;
 

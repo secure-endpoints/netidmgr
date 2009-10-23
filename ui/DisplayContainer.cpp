@@ -697,4 +697,123 @@ namespace nim {
             return OnHeaderNotify(pnmh);
         return ControlWindow::OnNotify(id, pnmh);
     }
+
+    LRESULT DisplayContainer::OnSync()
+    {
+        if (h_syncEvent == NULL)
+            h_syncEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+        else
+            ResetEvent(h_syncEvent);
+
+        if (InSendMessage())
+            ReplyMessage(1);
+        else {
+            assert(FALSE);
+        }
+
+        WaitForSingleObject(h_syncEvent, INFINITE);
+        return 0;
+    }
+
+    bool DisplayContainer::BeginSynchronizedOperation()
+    {
+        if (GetCurrentThreadId() == GetWindowThreadProcessId(hwnd, NULL))
+            return true;
+
+        LRESULT lr;
+        lr = SendMessage(CWM_SYNC, 0, 0);
+        assert(lr == 1);
+
+        return true;
+    }
+
+    void DisplayContainer::EndSynchronizedOperation()
+    {
+        if (h_syncEvent) {
+            SetEvent(h_syncEvent);
+        }
+    }
+
+    void DisplayContainer::PurgeKilledTimers()
+    {
+        DWORD now = GetTickCount();
+
+        while (!m_killed_timers.empty() &&
+               m_killed_timers.front().time_of_death < now - TMR_DISCARD_THRESHOLD)
+            m_killed_timers.pop_front();
+    }
+
+    bool DisplayContainer::TimerWasKilled(TimerQueueClient * cb)
+    {
+        for (KilledTimers::iterator i = m_killed_timers.begin();
+             i != m_killed_timers.end(); ++i) {
+            if (i->cb == cb)
+                return true;
+        }
+        return false;
+    }
+
+    static void TimerCancellationCallback(TimerQueueClient * cb,
+                                          void * p)
+    {
+        DisplayContainer * dc = static_cast<DisplayContainer *>(p);
+
+        assert(dc);
+
+        if (dc) {
+            dc->KillTimer(cb);
+        }
+    }
+
+    class IsKilledTimerEqualTo {
+        TimerQueueClient * cb;
+
+    public:
+        IsKilledTimerEqualTo(TimerQueueClient * _cb): cb(_cb) {}
+
+        bool operator ( ) ( DisplayContainer::KilledTimer& val ) {
+            return val.cb == cb;
+        }
+    };
+
+    void DisplayContainer::SetTimer(TimerQueueClient * cb, DWORD milliseconds)
+    {
+        UINT_PTR timer_id;
+#ifdef DEBUG
+        kherr_debug_printf(L"SetTimer(%S, %d ms)\n",
+                           typeid(*cb).name(), milliseconds);
+#endif
+        m_killed_timers.remove_if( IsKilledTimerEqualTo(cb) );
+
+        timer_id = ::SetTimer(hwnd, (UINT_PTR) cb, milliseconds, NULL);
+        cb->m_timer_id = timer_id;
+        cb->m_timer_ccb = TimerCancellationCallback;
+        cb->m_timer_ccb_data = static_cast<void *>(this);
+    }
+
+    void DisplayContainer::KillTimer(TimerQueueClient * cb)
+    {
+        ::KillTimer(hwnd, cb->m_timer_id);
+
+        KilledTimer kt;
+
+        kt.cb = cb;
+        kt.time_of_death = GetTickCount();
+
+        m_killed_timers.push_back(kt);
+
+        cb->m_timer_id = 0;
+        cb->m_timer_ccb = NULL;
+        cb->m_timer_ccb_data = NULL;
+    }
+
+    void DisplayContainer::OnWmTimer(UINT_PTR id)
+    {
+        TimerQueueClient * cb = reinterpret_cast<TimerQueueClient *>(id);
+
+        PurgeKilledTimers();
+        if (!TimerWasKilled(cb)) {
+            cb->OnTimer();
+        }
+    }
 }

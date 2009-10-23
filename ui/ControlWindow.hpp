@@ -90,13 +90,15 @@ namespace nim {
 
         virtual LRESULT OnHelp( HELPINFO * hlp ) { return 0; }
 
-	virtual void OnWmTimer(UINT id) { }
+	virtual void OnWmTimer(UINT_PTR id) { }
 
         virtual LRESULT OnDrawItem( const DRAWITEMSTRUCT * lpDrawItem) { return 0; }
 
         virtual LRESULT OnMeasureItem( MEASUREITEMSTRUCT * lpMeasureItem) { return 0; }
 
 	virtual UINT OnGetDlgCode(LPMSG pMsg);
+
+        virtual LRESULT OnSync() { return 0; }
 
 #ifdef KMQ_WM_DISPATCH
         virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype, khm_ui_4 uparam,
@@ -197,7 +199,7 @@ namespace nim {
             return OnHelp(info);
         }
 
-	void HandleTimer(HWND hwnd, UINT id) {
+	void HandleTimer(HWND hwnd, UINT_PTR id) {
 	    return OnWmTimer(id);
 	}
 
@@ -212,6 +214,10 @@ namespace nim {
 	UINT HandleGetDlgCode(HWND hwnd, LPMSG lpMsg);
 
         LRESULT HandleDispatch(LPARAM lParam);
+
+        LRESULT HandleSync(HWND hwnd) {
+            return OnSync();
+        }
 
         static BOOL HandleOnCreate(HWND hwnd, LPCREATESTRUCT lpc);
 
@@ -239,6 +245,11 @@ namespace nim {
         static void RegisterWindowClass(void);
 
         static void UnregisterWindowClass(void);
+
+        enum {
+            // Used for synchronization
+            CWM_SYNC = WM_APP + 0xfe
+        };
 
     private:
         struct CreateParams {

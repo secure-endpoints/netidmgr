@@ -637,7 +637,7 @@ namespace nim {
         return FALSE;
     }
 
-    void Notifier::OnWmTimer(UINT id) {
+    void Notifier::OnWmTimer(UINT_PTR id) {
         switch (id) {
         case KHUI_TRIGGER_TIMER_ID:
             OnTriggerTimer();

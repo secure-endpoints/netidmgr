@@ -26,6 +26,9 @@
 
 #include "DisplayElement.hpp"
 #include "ControlWindow.hpp"
+#include "TimerQueue.hpp"
+
+#include <list>
 
 namespace nim {
 
@@ -52,9 +55,15 @@ namespace nim {
             header_height = 0;
             mouse_element = NULL; mouse_dblclk = false;
             owner = this;
+            h_syncEvent = NULL;
         }
 
-        virtual ~DisplayContainer() { if (dbuffer) delete dbuffer; }
+        virtual ~DisplayContainer() {
+            if (dbuffer) delete dbuffer;
+            if (h_syncEvent) {
+                CloseHandle(h_syncEvent);
+            }
+        }
 
         virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e) {
             if (mouse_element == e)
@@ -75,89 +84,127 @@ namespace nim {
             return Point(p.X - scroll.X, (p.Y - scroll.Y) + header_height);
         }
 
-        bool ValidateScrollPos(void);
-
         bool UpdateScrollBars(bool redraw);
 
         bool UpdateScrollInfo(void);
 
-        void UpdateExtents(Graphics& g);
+        bool ValidateScrollPos(void);
 
         void ScrollBy(const Point & delta);
 
-        virtual BOOL OnCreate(LPVOID createParams);
-
-        virtual void UpdateLayoutPre(Graphics & g, Rect & layout);
-
-        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
-
-        virtual void OnPosChanged(LPWINDOWPOS lp);
-
-        virtual void Invalidate(const Rect & r);
-
-        void Invalidate() {
-            ::InvalidateRect(hwnd, NULL, TRUE);
-        }
-
-        virtual Point MapToScreen(const Point & p);
-
-        virtual void OnPaint(Graphics& g, const Rect& clip);
-
-        virtual void OnHScroll(UINT code, int pos);
-
-        virtual void OnVScroll(UINT code, int pos);
-
-        virtual Rect& GetClientRect(Rect * cr);
+        void UpdateExtents(Graphics& g);
 
         Rect&   GetClientRectNoScroll(Rect * cr);
 
-        virtual void OnMouseMove(const Point& p, UINT keyflags);
+        virtual BOOL OnCreate(LPVOID createParams);
 
-        virtual void OnMouseHover(const Point& p, UINT keyflags);
+        virtual LRESULT OnNotify(int id, NMHDR * pnmh);
 
-        virtual void OnMouseLeave();
+        virtual LRESULT OnSync();
+
+        virtual Point MapToScreen(const Point & p);
+
+        virtual Rect& GetClientRect(Rect * cr);
+
+        virtual void Invalidate(const Rect & r);
+
+        virtual void OnContextMenu(const Point & p);
+
+        virtual void OnHScroll(UINT code, int pos);
 
         virtual void OnLButtonDown(bool doubleClick, const Point& p, UINT keyflags);
 
         virtual void OnLButtonUp(const Point & p, UINT keyflags);
 
+        virtual void OnMouseHover(const Point& p, UINT keyflags);
+
+        virtual void OnMouseLeave();
+
+        virtual void OnMouseMove(const Point& p, UINT keyflags);
+
         virtual void OnMouseWheel(const Point& p, UINT keyflags, int zDelta);
 
-        virtual void OnContextMenu(const Point & p);
+        virtual void OnPaint(Graphics& g, const Rect& clip);
 
-        virtual LRESULT OnNotify(int id, NMHDR * pnmh);
+        virtual void OnPosChanged(LPWINDOWPOS lp);
 
+        virtual void OnVScroll(UINT code, int pos);
 
-        LRESULT OnHeaderNotify(NMHDR * pnmh);
+        virtual void OnWmTimer(UINT_PTR id);
 
-        LRESULT OnHeaderBeginTrack(NMHEADER * pnmh);
+        virtual void UpdateLayoutPost(Graphics& g, const Rect& layout);
 
-        LRESULT OnHeaderEndTrack(NMHEADER * pnmh);
+        virtual void UpdateLayoutPre(Graphics & g, Rect & layout);
 
-        LRESULT OnHeaderTrack(NMHEADER * pnmh);
+        void Invalidate() {
+            ::InvalidateRect(hwnd, NULL, TRUE);
+        }
+
 
         LRESULT OnHeaderBeginDrag(NMHEADER * pnmh);
 
+        LRESULT OnHeaderBeginTrack(NMHEADER * pnmh);
+
         LRESULT OnHeaderEndDrag(NMHEADER * pnmh);
+
+        LRESULT OnHeaderEndTrack(NMHEADER * pnmh);
+
+        LRESULT OnHeaderItemChanged(NMHEADER * pnmh);
+
+        LRESULT OnHeaderItemChanging(NMHEADER * pnmh);
 
         LRESULT OnHeaderItemClick(NMHEADER * pnmh);
 
         LRESULT OnHeaderItemDblClick(NMHEADER * pnmh);
 
-        LRESULT OnHeaderItemChanging(NMHEADER * pnmh);
-
-        LRESULT OnHeaderItemChanged(NMHEADER * pnmh);
+        LRESULT OnHeaderNotify(NMHDR * pnmh);
 
         LRESULT OnHeaderRightClick(NMHDR * pnmh);
 
+        LRESULT OnHeaderTrack(NMHEADER * pnmh);
+
+
     public:                     // Overridables
-        virtual void OnColumnSizeChanged(int idx) {}
+        virtual void OnColumnContextMenu(int idx, const Point& p) {}
 
         virtual void OnColumnPosChanged(int from, int to) {}
 
+        virtual void OnColumnSizeChanged(int idx) {}
+
         virtual void OnColumnSortChanged(int idx) {}
 
-        virtual void OnColumnContextMenu(int idx, const Point& p) {}
+    protected:
+        HANDLE h_syncEvent;
+
+    public:
+        bool BeginSynchronizedOperation();
+
+        void EndSynchronizedOperation();
+
+    private:
+        friend class IsKilledTimerEqualTo;
+
+        struct KilledTimer {
+            TimerQueueClient   *cb;
+            DWORD               time_of_death;
+        };
+
+        typedef std::list<KilledTimer> KilledTimers;
+
+        KilledTimers m_killed_timers;
+
+        enum {
+            TMR_DISCARD_THRESHOLD = 2000
+        };
+
+        void PurgeKilledTimers();
+
+        bool TimerWasKilled(TimerQueueClient * cb);
+
+    public:
+        void SetTimer(TimerQueueClient * cb, DWORD milliseconds);
+
+        void KillTimer(TimerQueueClient * cb);
     };
 
 

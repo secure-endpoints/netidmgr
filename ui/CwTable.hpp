@@ -49,8 +49,7 @@ namespace nim
     /*! \brief Credential Window
      */
     class CwTable : public WithVerticalLayout< WithNavigation< WithTooltips< DisplayContainer > > >,
-                    public CwOutlineBase,
-                    public TimerQueueHost
+                    public CwOutlineBase
     {
     public:
         // Credentials selection

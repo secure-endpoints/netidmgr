@@ -109,7 +109,7 @@ namespace nim {
 	virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype,
 				       khm_ui_4 uparam, void * vparam);
 
-	virtual void OnWmTimer(UINT id);
+	virtual void OnWmTimer(UINT_PTR id);
 
 	virtual BOOL OnCreate(LPVOID createParams);
 

@@ -78,7 +78,9 @@ namespace nim
         }
 
         void OnTimer() {
+            owner->BeginSynchronizedOperation();
             Invalidate();
+            owner->EndSynchronizedOperation();
         }
 
         void SetStatus(DrawState _state, const wchar_t * _caption = NULL) {
@@ -108,8 +110,7 @@ namespace nim
                         g_theme->DrawCredMeterState(g, bounds, state, &ms);
 
                     if (ms != 0) {
-                        TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
-                        host->SetTimer(this, ms);
+                        owner->SetTimer(this, ms);
                     }
                 }
                 break;
@@ -159,8 +160,7 @@ namespace nim
                             }
 
                             if (ms > 0) {
-                                TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
-                                host->SetTimer(this, ms);
+                                owner->SetTimer(this, ms);
                             }
                         }
                     }
@@ -246,13 +246,14 @@ namespace nim
             __super::PaintSelf(g, bounds, clip);
 
             if (ms_to_next_change != 0) {
-                TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
-                host->SetTimer(this, ms_to_next_change);
+                owner->SetTimer(this, ms_to_next_change);
             }
         }
 
         void OnTimer() {
+            owner->BeginSynchronizedOperation();
             Invalidate();
+            owner->EndSynchronizedOperation();
         }
     };
 

@@ -64,19 +64,19 @@ namespace nim
             FtToStringEx(&ft, ftse_flags, &ms, buf, &cb);
 
             SetCaption(std::wstring(buf));
-            if (ms != 0) {
-                TimerQueueHost * host = dynamic_cast<TimerQueueHost *>(owner);
-                if (host)
-                    host->SetTimer(this, ms);
+            if (ms != 0 && owner) {
+                owner->SetTimer(this, ms);
             }
 
             need_update = false;
         }
 
         void OnTimer() {
+            owner->BeginSynchronizedOperation();
             need_update = true;
             MarkForExtentUpdate();
             Invalidate();
+            owner->EndSynchronizedOperation();
         }
 
         void UpdateLayoutPre(Graphics& g, Rect& layout) {
