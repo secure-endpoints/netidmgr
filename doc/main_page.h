@@ -55,6 +55,7 @@
     \section license_l MIT License
 
     Copyright &copy; 2004,2005,2006,2007 Massachusetts Institute of Technology
+    Copyright &copy; 2006-2009 Secure Endpoints Inc.
 
     Copyright &copy; 2005-2009 Secure Endpoints Inc.
  
