@@ -265,6 +265,50 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
                             KHUI_CNFLAG_APPLIED | KHUI_CNFLAG_MODIFIED);
 }
 
+static void
+k5_browse_for_ccache(HWND hwnd, k5_id_dlg_data * d)
+{
+    OPENFILENAME ofn;
+    wchar_t path[KRB5_MAXCCH_CCNAME];
+    wchar_t title[128];
+
+    ZeroMemory(&ofn, sizeof(ofn));
+    ZeroMemory(path, sizeof(path));
+
+    GetDlgItemText(hwnd, IDC_CFG_CCACHE,
+                   path, ARRAYLENGTH(path));
+
+    if (wcsncmp(path, L"FILE:", 5) ||
+        !PathFileExists(path))
+        *path = 0;
+
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = hwnd;
+    ofn.lpstrFilter = L"All files\0*.*\0\0";
+    ofn.nFilterIndex = 1;
+    ofn.lpstrFile = path;
+    ofn.nMaxFile = ARRAYLENGTH(path);
+    ofn.lpstrTitle = title;
+
+    LoadString(hResModule, IDS_OFN_IDCCT,
+               title, ARRAYLENGTH(title));
+
+    ofn.Flags =
+        OFN_DONTADDTORECENT |
+        OFN_FORCESHOWHIDDEN |
+        OFN_EXPLORER;
+
+    if (GetOpenFileName(&ofn)) {
+        wchar_t ccname[KRB5_MAXCCH_CCNAME];
+
+        StringCbPrintf(ccname, sizeof(ccname), L"FILE:%s", path);
+
+        SetDlgItemText(hwnd, IDC_CFG_CCACHE, ccname);
+
+        k5_id_check_mod(hwnd, d);
+    }
+}
+
 INT_PTR CALLBACK 
 k5_id_tab_dlgproc(HWND hwnd,
                   UINT uMsg,
@@ -319,6 +363,11 @@ k5_id_tab_dlgproc(HWND hwnd,
 
         if (d == NULL)
             break;
+
+        if (wParam == MAKEWPARAM(IDC_BROWSE, BN_CLICKED)) {
+            k5_browse_for_ccache(hwnd, d);
+            return TRUE;
+        }
 
         if (HIWORD(wParam) == EN_CHANGE ||
             HIWORD(wParam) == BN_CLICKED)

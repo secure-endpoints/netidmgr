@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\pismere\athena\auth\krb5\src\windows\identity\plugins\krb5\lang\en_us\langres.rc
+// Used by C:\work\netidmgrcpp\plugins\krb5\lang\en_us\langres.rc
 //
 #define IDS_UNK_ADDR_FMT                101
 #define IDD_NC_KRB5                     102
@@ -44,6 +44,7 @@
 #define IDS_KRB5_SHORT_DESC             126
 #define IDS_KRB5_LONG_DESC              127
 #define IDS_KRB4_SHORT_DESC             128
+#define IDS_OFN_IDCCT                   128
 #define IDS_KRB4_LONG_DESC              129
 #define IDS_KRB5_FLAGS_SHORT_DESC       130
 #define IDS_RENEW_TILL_SHORT_DESC       131
@@ -214,6 +215,7 @@
 #define IDC_NC_UN_LBL                   1083
 #define IDC_NC_REALM_LBL                1084
 #define IDC_NC_ICON                     1085
+#define IDC_BROWSE                      1086
 #define ID_FOO_BAR                      40001
 
 // Next default values for new objects
@@ -222,7 +224,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        221
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1086
+#define _APS_NEXT_CONTROL_VALUE         1087
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
