@@ -146,11 +146,11 @@ typedef struct tag_kconf_schema {
 /*! \brief Indicates the configuration store which stores the schema */
 #define KCONF_FLAG_SCHEMA        0x00000008
 
+/*! \brief Read-only  */
+#define KCONF_FLAG_READONLY      0x00000010
+
 /*! \brief Indicates that the last component of the given configuration path is to be considered to be a configuration value */
 #define KCONF_FLAG_TRAILINGVALUE 0x00000020
-
-/*! \brief Read-only  */
-#define KCONF_FLAG_READONLY      0x00000040
 
 /*! \brief Only write values back there is a change
 
