@@ -3159,8 +3159,58 @@ get_default_file_cache_for_identity(const wchar_t * idname,
 }
 
 khm_int32
-khm_krb5_get_identity_default_ccache(khm_handle ident, wchar_t * buf, khm_size * pcb) {
-    wchar_t ccname[KRB5_MAXCCH_CCNAME];
+khm_krb5_get_identity_default_ccache_failover(khm_handle ident, wchar_t * buf, khm_size * pcb)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    wchar_t ccname[KRB5_MAXCCH_CCNAME] = L"";
+    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+    khm_size cb;
+    khm_int32 use_file_cache = 0;
+    khm_handle csp_id = NULL;
+
+    rv = khm_krb5_get_identity_config(ident, 0, &csp_id);
+    if (KHM_FAILED(rv))
+        return rv;
+
+    khc_read_int32(csp_id, L"DefaultToFileCache", &use_file_cache);
+
+    cb = sizeof(idname);
+    kcdb_identity_get_name(ident, idname, &cb);
+
+    if (use_file_cache) {
+        cb = sizeof(ccname);
+        rv = get_default_file_cache_for_identity(idname, ccname, &cb);
+        assert(KHM_SUCCEEDED(rv));
+    } else {                /* generate an API: cache */
+        StringCbPrintf(ccname, sizeof(ccname), L"API:%s", idname);
+    }
+    khm_krb5_canon_cc_name(ccname, sizeof(ccname));
+
+    _reportf(L"Setting CCache [%s] for identity [%s]", ccname, idname);
+
+    StringCbLength(ccname, sizeof(ccname), &cb);
+    cb += sizeof(wchar_t);
+
+    if (buf && *pcb >= cb) {
+        StringCbCopy(buf, *pcb, ccname);
+        *pcb = cb;
+        rv = KHM_ERROR_SUCCESS;
+    } else {
+        *pcb = cb;
+        rv = KHM_ERROR_TOO_LONG;
+    }
+
+    if (csp_id)
+        khc_close_space(csp_id);
+
+    return rv;
+}
+
+khm_int32
+khm_krb5_get_identity_default_ccache(khm_handle ident, wchar_t * buf, khm_size * pcb)
+{
+    wchar_t ccname[KRB5_MAXCCH_CCNAME] = L"";
     khm_handle csp_id = NULL;
     khm_int32 rv = KHM_ERROR_SUCCESS;
     khm_size cbt;
@@ -3173,41 +3223,7 @@ khm_krb5_get_identity_default_ccache(khm_handle ident, wchar_t * buf, khm_size *
 
     if (KHM_FAILED(rv) ||
         (KHM_SUCCEEDED(rv) && ccname[0] == L'\0')) {
-        /* we need to figure out the default ccache from the principal
-           name */
-        wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
-        khm_size cb;
-        khm_int32 use_file_cache = 0;
-
-        khc_read_int32(csp_id, L"DefaultToFileCache", &use_file_cache);
-
-        cb = sizeof(idname);
-        kcdb_identity_get_name(ident, idname, &cb);
-
-        if (use_file_cache) {
-            cb = sizeof(ccname);
-            rv = get_default_file_cache_for_identity(idname, ccname, &cb);
-#ifdef DEBUG
-            assert(KHM_SUCCEEDED(rv));
-#endif
-        } else {                /* generate an API: cache */
-            StringCbPrintf(ccname, sizeof(ccname), L"API:%s", idname);
-        }
-        khm_krb5_canon_cc_name(ccname, sizeof(ccname));
-
-        _reportf(L"Setting CCache [%s] for identity [%s]", ccname, idname);
-
-        StringCbLength(ccname, sizeof(ccname), &cb);
-        cb += sizeof(wchar_t);
-
-        if (buf && *pcb >= cb) {
-            StringCbCopy(buf, *pcb, ccname);
-            *pcb = cb;
-            rv = KHM_ERROR_SUCCESS;
-        } else {
-            *pcb = cb;
-            rv = KHM_ERROR_TOO_LONG;
-        }
+        rv = khm_krb5_get_identity_default_ccache_failover(ident, buf, pcb);
     } else {
         if (wcschr(ccname, L'%')) {
             wchar_t expccname[MAX_PATH + 5];

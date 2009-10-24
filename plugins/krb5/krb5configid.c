@@ -173,7 +173,6 @@ k5_id_check_mod(HWND hw, k5_id_dlg_data * d) {
 static void
 k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
 
-    khm_handle csp_idroot = NULL;
     khm_handle csp_ident = NULL;
     wchar_t ccache[KRB5_MAXCCH_CCNAME];
     khm_size cb;
@@ -185,17 +184,10 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     if (!k5_id_is_mod(hw, d))
         return;
 
-    rv = kcdb_identity_get_config(d->ident, KHM_FLAG_CREATE, &csp_idroot);
-    if (KHM_SUCCEEDED(rv)) {
-        khc_open_space(csp_idroot, CSNAME_KRB5CRED,
-                       KHM_FLAG_CREATE | KCONF_FLAG_WRITEIFMOD,
-                       &csp_ident);
-    }
+    rv = khm_krb5_get_identity_config(d->ident, KHM_FLAG_CREATE | KCONF_FLAG_WRITEIFMOD,
+                                      &csp_ident);
 
-    if (csp_idroot)
-        khc_close_space(csp_idroot);
-
-    if (!csp_ident)
+    if (KHM_FAILED(rv))
         return;
 
     if (d->life != d->tc_life.current) {
@@ -245,9 +237,12 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     if (SUCCEEDED(StringCbLength(ccache, sizeof(ccache), &cb)) &&
         cb > sizeof(wchar_t)) {
 
+        khm_krb5_canon_cc_name(ccache, sizeof(ccache));
+
         if (wcscmp(ccache, d->ccache)) {
             khc_write_string(csp_ident, L"DefaultCCName", ccache);
             StringCbCopy(d->ccache, sizeof(d->ccache), ccache);
+            SetDlgItemText(hw, IDC_CFG_CCACHE, ccache);
             applied = TRUE;
         }
 
@@ -269,25 +264,25 @@ static void
 k5_browse_for_ccache(HWND hwnd, k5_id_dlg_data * d)
 {
     OPENFILENAME ofn;
-    wchar_t path[KRB5_MAXCCH_CCNAME];
+    wchar_t ccname[KRB5_MAXCCH_CCNAME];
     wchar_t title[128];
 
     ZeroMemory(&ofn, sizeof(ofn));
-    ZeroMemory(path, sizeof(path));
+    ZeroMemory(ccname, sizeof(ccname));
 
     GetDlgItemText(hwnd, IDC_CFG_CCACHE,
-                   path, ARRAYLENGTH(path));
+                   ccname, ARRAYLENGTH(ccname));
 
-    if (wcsncmp(path, L"FILE:", 5) ||
-        !PathFileExists(path))
-        *path = 0;
+    if (wcsncmp(ccname, L"FILE:", 5) ||
+        !PathFileExists(ccname))
+        *ccname = 0;
 
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = hwnd;
     ofn.lpstrFilter = L"All files\0*.*\0\0";
     ofn.nFilterIndex = 1;
-    ofn.lpstrFile = path;
-    ofn.nMaxFile = ARRAYLENGTH(path);
+    ofn.lpstrFile = ccname;
+    ofn.nMaxFile = ARRAYLENGTH(ccname);
     ofn.lpstrTitle = title;
 
     LoadString(hResModule, IDS_OFN_IDCCT,
@@ -299,9 +294,7 @@ k5_browse_for_ccache(HWND hwnd, k5_id_dlg_data * d)
         OFN_EXPLORER;
 
     if (GetOpenFileName(&ofn)) {
-        wchar_t ccname[KRB5_MAXCCH_CCNAME];
-
-        StringCbPrintf(ccname, sizeof(ccname), L"FILE:%s", path);
+        khm_krb5_canon_cc_name(ccname, sizeof(ccname));
 
         SetDlgItemText(hwnd, IDC_CFG_CCACHE, ccname);
 
@@ -342,6 +335,20 @@ k5_id_tab_dlgproc(HWND hwnd,
         khui_tracker_refresh(&d->tc_renew);
 
         SetDlgItemText(hwnd, IDC_CFG_CCACHE, d->ccache);
+#ifdef EM_SETCUEBANNER
+        {
+            wchar_t defcc[KRB5_MAXCCH_CCNAME];
+            khm_size cb;
+
+            cb = sizeof(defcc);
+            if (KHM_SUCCEEDED(khm_krb5_get_identity_default_ccache_failover(d->ident,
+                                                                            defcc,
+                                                                            &cb))) {
+                Edit_SetCueBannerTextFocused(GetDlgItem(hwnd, IDC_CFG_CCACHE),
+                                             defcc, TRUE);
+            }
+        }
+#endif
 
         CheckDlgButton(hwnd, IDC_CFG_RENEW,
                        (d->renewable? BST_CHECKED: BST_UNCHECKED));
