@@ -1270,7 +1270,6 @@ describe_new_creds_operation(khui_new_creds * nc)
    - ::KMSG_CREDP_PROG_NEWCRED
 
    - ::KMSG_CREDP_END_NEWCRED
-
 */
 
 void 
