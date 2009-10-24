@@ -344,8 +344,8 @@ k5_id_tab_dlgproc(HWND hwnd,
             if (KHM_SUCCEEDED(khm_krb5_get_identity_default_ccache_failover(d->ident,
                                                                             defcc,
                                                                             &cb))) {
-                Edit_SetCueBannerTextFocused(GetDlgItem(hwnd, IDC_CFG_CCACHE),
-                                             defcc, TRUE);
+                SendDlgItemMessage(hwnd, IDC_CFG_CCACHE, EM_SETCUEBANNER,
+                                   TRUE, (LPARAM) defcc);
             }
         }
 #endif
