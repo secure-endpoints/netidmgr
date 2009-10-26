@@ -51,14 +51,19 @@ namespace nim {
 
     public:
         DisplayContainer(): ControlWindow() {
-            dbuffer = 0; show_header = false; hwnd_header = NULL;
+            dbuffer = NULL; show_header = false; hwnd_header = NULL;
             header_height = 0;
             mouse_element = NULL; mouse_dblclk = false;
             owner = this;
         }
 
         virtual ~DisplayContainer() {
-            if (dbuffer) delete dbuffer;
+            DeleteAllChildren();
+
+            if (dbuffer) {
+                delete dbuffer;
+                dbuffer = NULL;
+            }
         }
 
         virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e) {
