@@ -132,6 +132,8 @@ namespace nim {
     void NewCredWizard::OnDestroy(void)
     {
         khm_del_dialog(hwnd);
+
+        __super::OnDestroy();
     }
 
     LRESULT NewCredWizard::OnHelp(HELPINFO * hlp)
