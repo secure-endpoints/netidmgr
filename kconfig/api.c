@@ -98,32 +98,33 @@ void exit_kconf(void)
 #include<stdio.h>
 
 static void
-khcint_dump_space(FILE * f, kconf_conf_space * sp)
+khcint_dump_space(kconf_conf_space * sp)
 {
 
     kconf_conf_space * sc;
 
-    fprintf(f, "c12\t[%S]\t[%S]\t%d\t0x%x\tWin(%s|%s)|%s\n",
-            ((sp->regpath) ? sp->regpath : L"!No Reg path"),
-            sp->name,
-            (int) sp->refcount,
-            (int) sp->flags,
-            ((sp->regkey_user)? "HKCU" : ""),
-            ((sp->regkey_machine)? "HKLM" : ""),
-            ((sp->schema)? "Schema" : ""));
+    _RPTW4(_CRT_WARN, L"c12\t[%s]\t[%s]\t%d\t0x%x",
+           ((sp->regpath) ? sp->regpath : L"!No Reg path"),
+           sp->name,
+           (int) sp->refcount,
+           (int) sp->flags);
 
+    _RPT3(_CRT_WARN, "\tWin(%s|%s)|%s\n",
+           ((sp->regkey_user)? "HKCU" : ""),
+           ((sp->regkey_machine)? "HKLM" : ""),
+           ((sp->schema)? "Schema" : ""));
 
     sc = TFIRSTCHILD(sp);
     while(sc) {
 
-        khcint_dump_space(f, sc);
+        khcint_dump_space(sc);
 
         sc = LNEXT(sc);
     }
 }
 
 KHMEXP void KHMAPI
-khcint_dump_handles(FILE * f)
+khcint_dump_handles(void)
 {
     if (khc_is_config_running()) {
         kconf_handle * h, * sh;
@@ -131,8 +132,8 @@ khcint_dump_handles(FILE * f)
         EnterCriticalSection(&cs_conf_handle);
         EnterCriticalSection(&cs_conf_global);
 
-        fprintf(f, "c00\t*** Active handles ***\n");
-        fprintf(f, "c01\tHandle\tName\tFlags\tRegpath\n");
+        _RPT0 (_CRT_WARN, "c00\t*** Active handles ***\n");
+        _RPT0 (_CRT_WARN, "c01\tHandle\tName\tFlags\tRegpath\n");
 
         h = conf_handles;
         while(h) {
@@ -142,15 +143,15 @@ khcint_dump_handles(FILE * f)
 
             if (!khc_is_handle(h) || sp == NULL) {
 
-                fprintf(f, "c02\t!!INVALID HANDLE!!\n");
+                _RPT0(_CRT_WARN, "c02\t!!INVALID HANDLE!!\n");
 
             } else {
 
-                fprintf(f, "c02\t0x%p\t[%S]\t0x%x\t[%S]\n",
-                        h,
-                        sp->name,
-                        h->flags,
-                        sp->regpath);
+                _RPTW4(_CRT_WARN, L"c02\t0x%p\t[%s]\t0x%x\t[%s]\n",
+                       h,
+                       sp->name,
+                       h->flags,
+                       sp->regpath);
 
                 sh = khc_shadow(h);
 
@@ -160,16 +161,16 @@ khcint_dump_handles(FILE * f)
 
                     if (!khc_is_handle(sh) || sp == NULL) {
 
-                        fprintf(f, "c02\t0x%p:Shadow:0x%p\t[!!INVALID HANDLE!!]\n",
-                                h, sh);
+                        _RPT2(_CRT_WARN, "c02\t0x%p:Shadow:0x%p\t[!!INVALID HANDLE!!]\n",
+                              h, sh);
 
                     } else {
 
-                        fprintf(f, "c02\t0x%p:Shadow:0x%p,[%S]\t0x%x\t[%S]\n",
-                                h, sh,
-                                sp->name,
-                                sh->flags,
-                                sp->regpath);
+                        _RPTW5(_CRT_WARN, L"c02\t0x%p:Shadow:0x%p,[%s]\t0x%x\t[%s]\n",
+                               h, sh,
+                               sp->name,
+                               sh->flags,
+                               sp->regpath);
 
                     }
 
@@ -181,20 +182,20 @@ khcint_dump_handles(FILE * f)
             h = LNEXT(h);
         }
 
-        fprintf(f, "c03\t------  End ---------\n");
+        _RPT0(_CRT_WARN, "c03\t------  End ---------\n");
 
-        fprintf(f, "c10\t*** Active Configuration Spaces ***\n");
-        fprintf(f, "c11\tReg path\tName\tRefcount\tFlags\tLayers\n");
+        _RPT0(_CRT_WARN, "c10\t*** Active Configuration Spaces ***\n");
+        _RPT0(_CRT_WARN, "c11\tReg path\tName\tRefcount\tFlags\tLayers\n");
 
-        khcint_dump_space(f, conf_root);
+        khcint_dump_space(conf_root);
 
-        fprintf(f, "c13\t------  End ---------\n");
+        _RPT0(_CRT_WARN, "c13\t------  End ---------\n");
 
         LeaveCriticalSection(&cs_conf_global);
         LeaveCriticalSection(&cs_conf_handle);
 
     } else {
-        fprintf(f, "c00\t------- KHC Configuration not running -------\n");
+        _RPT0(_CRT_WARN, "c00\t------- KHC Configuration not running -------\n");
     }
 }
 

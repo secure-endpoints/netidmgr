@@ -55,9 +55,9 @@ HRESULT hr_coinitialize = S_OK;
 
 #if defined(DEBUG) && (defined(KH_BUILD_PRIVATE) || defined(KH_BUILD_SPECIAL))
 
-KHMEXP void KHMAPI khcint_dump_handles(FILE * f);
-KHMEXP void KHMAPI perf_dump(FILE * f);
-KHMEXP void KHMAPI kmqint_dump(FILE * f);
+KHMEXP void KHMAPI khcint_dump_handles(void);
+KHMEXP void KHMAPI perf_dump(void);
+KHMEXP void KHMAPI kmqint_dump(void);
 
 #endif
 
@@ -467,22 +467,31 @@ int WINAPI WinMain(HINSTANCE hInstance,
     BOOL slave = FALSE;
     int mutex_retries = 5;
 
+    PINIT();
+
     khm_hInstance = hInstance;
     khm_nCmdShow = nCmdShow;
 
     khm_parse_commandline();
 
-    if (khm_startup.error_exit)
-        return 0;
+    if (khm_startup.error_exit) {
+        rv = 0;
+        goto done;
+    }
 
  _retry_mutex:
 
-    if (--mutex_retries < 0)
-        return 2;
+    if (--mutex_retries < 0) {
+        rv = 2;
+        goto done;
+    }
 
     h_appmutex = CreateMutex(NULL, FALSE, L"Local\\NetIDMgr_GlobalAppMutex");
-    if (h_appmutex == NULL)
-        return 5;
+    if (h_appmutex == NULL) {
+        rv = 5;
+        goto done;
+    }
+
     if (GetLastError() == ERROR_ALREADY_EXISTS)
         slave = TRUE;
 
@@ -537,7 +546,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
         khm_refresh_config();
 
 #ifdef UITESTS
-    test_init();
+        test_init();
 #endif
 
         rv = (int) khm_message_loop();
@@ -610,8 +619,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
                                  4096,
                                  mapname);
 
-        if (hmap == NULL)
-            return 3;
+        if (hmap == NULL) {
+            rv = 3;
+            goto done;
+        }
 
         xfer = MapViewOfFile(hmap, FILE_MAP_WRITE, 0, 0,
                              sizeof(query_app_version));
@@ -707,8 +718,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
                                  (DWORD) cb,
                                  mapname);
 
-        if (hmap == NULL)
-            return 3;
+        if (hmap == NULL) {
+            rv = 3;
+            goto done;
+        }
 
         /* make the call */
 
@@ -820,28 +833,14 @@ int WINAPI WinMain(HINSTANCE hInstance,
     }
 
 #if defined(DEBUG) && (defined(KH_BUILD_PRIVATE) || defined(KH_BUILD_SPECIAL))
-    {
-        FILE * f = NULL;
-
-#if _MSC_VER >= 1400 && __STDC_WANT_SECURE_LIB__
-        if (fopen_s(&f, "memleak.txt", "w") != 0)
-            goto done_with_dump;
-#else
-        f = fopen("memleak.txt", "w");
-        if (f == NULL)
-            goto done_with_dump;
+    perf_dump();
+    khcint_dump_handles();
+    kmqint_dump();
 #endif
 
-        perf_dump(f);
-        khcint_dump_handles(f);
-        kmqint_dump(f);
+ done:
 
-        fclose(f);
-
-    done_with_dump:
-        ;
-    }
-#endif
+    PEXIT();
 
     return rv;
 }

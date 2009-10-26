@@ -36,7 +36,7 @@ kmq_message * msg_active = NULL;
 #include<stdio.h>
 
 void
-kmqint_dump_publisher(FILE * f) {
+kmqint_dump_publisher(void) {
 
     int n_free = 0;
     int n_active = 0;
@@ -44,46 +44,48 @@ kmqint_dump_publisher(FILE * f) {
 
     EnterCriticalSection(&cs_kmq_msg);
 
-    fprintf(f, "qp0\t*** Free Messages ***\n");
-    fprintf(f, "qp1\tAddress\n");
+    _RPT0(_CRT_WARN, "qp0\t*** Free Messages ***\n");
+    _RPT0(_CRT_WARN, "qp1\tAddress\n");
 
     m = msg_free;
     while(m) {
         n_free++;
 
-        fprintf(f, "qp2\t0x%p\n", m);
+        _RPT1(_CRT_WARN, "qp2\t0x%p\n", m);
 
         m = LNEXT(m);
     }
 
-    fprintf(f, "qp3\tTotal free messages : %d\n", n_free);
+    _RPT1(_CRT_WARN, "qp3\tTotal free messages : %d\n", n_free);
 
-    fprintf(f, "qp4\t*** Active Messages ***\n");
-    fprintf(f, "qp5\tAddress\tType\tSubtype\tuParam\tvParam\tnSent\tnCompleted\tnFailed\twait_o\trefcount\n");
+    _RPT0(_CRT_WARN, "qp4\t*** Active Messages ***\n");
+    _RPT0(_CRT_WARN, "qp5\tAddress\tType\tSubtype\tuParam\tvParam\tnSent\tnCompleted\tnFailed\twait_o\trefcount\n");
 
     m = msg_active;
     while(m) {
 
         n_active++;
 
-        fprintf(f, "qp6\t0x%p\t%d\t%d\t0x%x\t0x%p\t%d\t%d\t%d\t0x%p\t%d\n",
-                m,
-                (int) m->type,
-                (int) m->subtype,
-                (unsigned int) m->uparam,
-                m->vparam,
-                (int) m->nSent,
-                (int) m->nCompleted,
-                (int) m->nFailed,
-                (void *) m->wait_o,
-                (int) m->refcount);
+        _RPT5(_CRT_WARN, "qp6\t0x%p\t%d\t%d\t0x%x\t0x%p",
+              m,
+              (int) m->type,
+              (int) m->subtype,
+              (unsigned int) m->uparam,
+              m->vparam);
+
+        _RPT5(_CRT_WARN, "\t%d\t%d\t%d\t0x%p\t%d\n",
+              (int) m->nSent,
+              (int) m->nCompleted,
+              (int) m->nFailed,
+              (void *) m->wait_o,
+              (int) m->refcount);
 
         m = LNEXT(m);
     }
 
-    fprintf(f, "qp7\tTotal number of active messages = %d\n", n_active);
+    _RPT1(_CRT_WARN, "qp7\tTotal number of active messages = %d\n", n_active);
 
-    fprintf(f, "qp8\t--- End ---\n");
+    _RPT0(_CRT_WARN, "qp8\t--- End ---\n");
 
     LeaveCriticalSection(&cs_kmq_msg);
 

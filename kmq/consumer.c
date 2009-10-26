@@ -42,7 +42,7 @@ kmq_msg_subscription * kmq_adhoc_subs = NULL;
 #include<stdio.h>
 
 void
-kmqint_dump_consumer(FILE * f) {
+kmqint_dump_consumer(void) {
     kmq_message_ref * r;
     kmq_msg_subscription * s;
 
@@ -51,49 +51,49 @@ kmqint_dump_consumer(FILE * f) {
 
     EnterCriticalSection(&cs_kmq_msg_ref);
 
-    fprintf(f, "qc0\t*** Free Message References ***\n");
+    _RPT0(_CRT_WARN, "qc0\t*** Free Message References ***\n");
 
-    fprintf(f, "qc1\tAddress\n");
+    _RPT0(_CRT_WARN, "qc1\tAddress\n");
 
     r = kmq_msg_ref_free;
     while(r) {
         n_free ++;
 
-        fprintf(f, "qc2\t0x%p\n", r);
+        _RPT1(_CRT_WARN, "qc2\t0x%p\n", r);
 
         r = LNEXT(r);
     }
 
-    fprintf(f, "qc3\tTotal free message references : %d\n", n_free);
+    _RPT1(_CRT_WARN, "qc3\tTotal free message references : %d\n", n_free);
 
-    fprintf(f, "qc4\t--- End ---\n");
+    _RPT0(_CRT_WARN, "qc4\t--- End ---\n");
 
     LeaveCriticalSection(&cs_kmq_msg_ref);
 
     EnterCriticalSection(&cs_kmq_global);
 
-    fprintf(f, "qc5\t*** Adhoc Message Subscriptions ***\n");
+    _RPT0(_CRT_WARN, "qc5\t*** Adhoc Message Subscriptions ***\n");
 
-    fprintf(f, "qc6\tAddress\tMsg Type\tRcpt Type\tRcpt\tQueue\n");
+    _RPT0(_CRT_WARN, "qc6\tAddress\tMsg Type\tRcpt Type\tRcpt\tQueue\n");
 
     s = kmq_adhoc_subs;
 
     while(s) {
         n_adhoc ++;
 
-        fprintf(f, "qc7\t0x%p\t%d\t%s\t0x%p\t0x%p\n",
-                s,
-                s->type,
-                (s->rcpt_type == KMQ_RCPTTYPE_CB)?"CALLBACK":"HWND",
-                (s->rcpt_type == KMQ_RCPTTYPE_CB)? s->recipient.cb: (void *) s->recipient.hwnd,
-                s->queue);
+        _RPT5(_CRT_WARN, "qc7\t0x%p\t%d\t%s\t0x%p\t0x%p\n",
+              s,
+              s->type,
+              (s->rcpt_type == KMQ_RCPTTYPE_CB)?"CALLBACK":"HWND",
+              (s->rcpt_type == KMQ_RCPTTYPE_CB)? s->recipient.cb: (void *) s->recipient.hwnd,
+              s->queue);
 
         s = LNEXT(s);
     }
 
-    fprintf(f, "qc8\tTotal ad-hoc subscriptions : %d\n", n_adhoc);
+    _RPT1(_CRT_WARN, "qc8\tTotal ad-hoc subscriptions : %d\n", n_adhoc);
 
-    fprintf(f, "qc9\t--- End ---\n");
+    _RPT0(_CRT_WARN, "qc9\t--- End ---\n");
 
     LeaveCriticalSection(&cs_kmq_global);
 

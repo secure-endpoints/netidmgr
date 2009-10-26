@@ -302,13 +302,13 @@ KHMEXP khm_int32 KHMAPI kmq_exit(void) {
 
 #ifdef DEBUG
 
-void kmqint_dump_consumer(FILE * f);
-void kmqint_dump_publisher(FILE * f);
+void kmqint_dump_consumer(void);
+void kmqint_dump_publisher(void);
 
 
-KHMEXP void KHMAPI kmqint_dump(FILE * f) {
-    kmqint_dump_consumer(f);
-    kmqint_dump_publisher(f);
+KHMEXP void KHMAPI kmqint_dump(void) {
+    kmqint_dump_consumer();
+    kmqint_dump_publisher();
 }
 
 #endif

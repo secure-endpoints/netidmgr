@@ -28,56 +28,62 @@
 #ifndef __KHIMAIRA_PERFSTAT_H
 #define __KHIMAIRA_PERFSTAT_H
 
+#define _CRTDBG_MAP_ALLOC
+#include<stdlib.h>
+#include<crtdbg.h>
+
 #include<khdefs.h>
 
-#ifdef DEBUG
-#define PMALLOC(s) perf_malloc(__FILE__,__LINE__,s)
-#define PCALLOC(n,s) perf_calloc(__FILE__,__LINE__,n,s)
-#define PREALLOC(d,s) perf_realloc(__FILE__,__LINE__,d,s)
-#define PFREE(p)   perf_free(p)
+#ifdef _DEBUG
+#define PMALLOC(s) _malloc_dbg(s, _NORMAL_BLOCK, __FILE__, __LINE__)
+#define PCALLOC(n,s) _calloc_dbg(n,s, _NORMAL_BLOCK, __FILE__, __LINE__)
+#define PREALLOC(d,s) _realloc_dbg(d,s, _NORMAL_BLOCK, __FILE__, __LINE__)
+#define PFREE(p)   _free_dbg(p, _NORMAL_BLOCK)
+#define PWCSDUP(s) _wcsdup_dbg(s, _NORMAL_BLOCK, __FILE__, __LINE__)
+#define PSTRDUP(s) _strdup_dbg(s, _NORMAL_BLOCK, __FILE__, __LINE__)
+
+#define PINIT()    perf_init()
+#define PEXIT()    perf_exit()
 #define PDUMP(f)   perf_dump(f)
-#define PWCSDUP(s) perf_wcsdup(__FILE__,__LINE__,s)
-#define PSTRDUP(s) perf_strdup(__FILE__,__LINE__,s)
 #define PDESCTHREAD(n,c) perf_set_thread_desc(__FILE__,__LINE__,n,c);
 #else
 #define PMALLOC(s) malloc(s)
 #define PCALLOC(n,s) calloc(n,s)
 #define PREALLOC(d,s) realloc(d,s)
 #define PFREE(p)   free(p)
-#define PDUMP(f)   ((void) 0)
 #define PWCSDUP(s) _wcsdup(s)
 #define PSTRDUP(s) strdup(s)
+
+#define PINIT()    ((void) 0)
+#define PEXIT()    ((void) 0)
 #define PDESCTHREAD(n,c) ((void) 0)
+#define PDUMP(f)   ((void) 0)
 #endif
 
-#ifdef __cplusplus
-extern "C" {
+BEGIN_C
+
+#ifdef _DEBUG
+KHMEXP void KHMAPI
+perf_init(void);
+
+KHMEXP void KHMAPI
+perf_exit(void);
 #endif
-
-KHMEXP void *
-perf_malloc(const char * file, int line, size_t s);
-
-KHMEXP void *
-perf_realloc(const char * file, int line, void * data, size_t s);
-
-KHMEXP void
-perf_free  (void * b);
-
-KHMEXP wchar_t *
-perf_wcsdup(const char * file, int line, const wchar_t * str);
-
-KHMEXP char *
-perf_strdup(const char * file, int line, const char * str);
-
-KHMEXP void *
-perf_calloc(const char * file, int line, size_t num, size_t size);
 
 KHMEXP void
 perf_set_thread_desc(const char * file, int line,
                      const wchar_t * name, const wchar_t * creator);
 
+END_C
+
 #ifdef __cplusplus
-}
+
+#ifdef _DEBUG
+#define PNEW new(_CLIENT_BLOCK, __FILE__, __LINE__)
+#else
+#define PNEW new
+#endif
+
 #endif
 
 #endif
