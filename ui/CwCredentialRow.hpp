@@ -60,7 +60,7 @@ namespace nim
                     switch (cwc->attr_id) {
                     case KCDB_ATTR_RENEW_TIMELEFT:
                     case KCDB_ATTR_TIMELEFT:
-                        e = new CwTimeTextCellElement(credential, cwc->attr_id,
+                        e = PNEW CwTimeTextCellElement(credential, cwc->attr_id,
                                                       FTSE_INTERVAL, i);
                         break;
 
@@ -69,20 +69,20 @@ namespace nim
                             std::wstring wc = credential.GetAttribStringObj(KCDB_ATTR_DISPLAY_NAME);
 
                             if (wc.length() > 0)
-                                e = new CwStaticCellElement(wc, i);
+                                e = PNEW CwStaticCellElement(wc, i);
                             else
-                                e = new CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
+                                e = PNEW CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
                         }
                         break;
 
                     case KCDB_ATTR_ID_NAME:
                     case KCDB_ATTR_ID:
                     case KCDB_ATTR_ID_DISPLAY_NAME:
-                        e = new CwStaticCellElement(credential.GetAttribStringObj(KCDB_ATTR_ID_DISPLAY_NAME), i);
+                        e = PNEW CwStaticCellElement(credential.GetAttribStringObj(KCDB_ATTR_ID_DISPLAY_NAME), i);
                         break;
 
                     default:
-                        e = new CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
+                        e = PNEW CwStaticCellElement(credential.GetAttribStringObj(cwc->attr_id), i);
                     }
 
                     InsertChildAfter(e);

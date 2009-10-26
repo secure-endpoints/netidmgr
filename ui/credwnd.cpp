@@ -31,6 +31,8 @@
 
 namespace nim
 {
+    static CwTable * main_table = NULL;
+
     extern "C" void 
     khm_register_credwnd_class(void) {
         ControlWindow::RegisterWindowClass();
@@ -40,8 +42,6 @@ namespace nim
     khm_unregister_credwnd_class(void) {
         ControlWindow::UnregisterWindowClass();
     }
-
-    static CwTable * main_table = NULL;
 
     extern "C" HWND 
     khm_create_credwnd(HWND parent) {
@@ -54,7 +54,7 @@ namespace nim
 
         assert(main_table == NULL);
 
-        main_table = new CwTable;
+        main_table = PNEW CwTable;
 
         ZeroMemory(CwTable::attrib_to_action, sizeof(CwTable::attrib_to_action));
 
@@ -63,6 +63,8 @@ namespace nim
         hwnd = main_table->Create(parent, RectFromRECT(&r), 0, &cparams);
 
         main_table->ShowWindow();
+
+        main_table->Release();
 
         return hwnd;
     }

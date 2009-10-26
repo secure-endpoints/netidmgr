@@ -358,30 +358,30 @@ namespace nim
             monitor_progress    = false;
 
             InsertChildAfter(el_icon =
-                             new IconDisplayElement(Point(0,0),
+                             PNEW IconDisplayElement(Point(0,0),
 						    identity.GetResourceIcon(KCDB_RES_ICON_NORMAL),
 						    true));
 
             InsertChildAfter(el_default_id =
-                             new CwDefaultIdentityElement(identity));
+                             PNEW CwDefaultIdentityElement(identity));
 
             InsertChildAfter(el_display_name =
-                             new CwIdentityTitleElement(identity));
+                             PNEW CwIdentityTitleElement(identity));
 
             InsertChildAfter(el_type_name =
-                             new CwIdentityTypeElement(identity));
+                             PNEW CwIdentityTypeElement(identity));
 
             InsertChildAfter(el_meter =
-                             new CwIdentityMeterElement(identity));
+                             PNEW CwIdentityMeterElement(identity));
 
             InsertChildAfter(el_sticky =
-                             new CwSticktyIdentityElement(identity));
+                             PNEW CwSticktyIdentityElement(identity));
 
             InsertChildAfter(el_status =
-                             new CwIdentityStatusElement(identity));
+                             PNEW CwIdentityStatusElement(identity));
 
             InsertChildAfter(el_progress =
-                             new CwProgressBarElement());
+                             PNEW CwProgressBarElement());
         }
 
         ~CwIdentityOutline() {

@@ -50,7 +50,7 @@ namespace nim
         }
 
         if (expandable && outline_widget == NULL) {
-            outline_widget = new ExposeControlElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
+            outline_widget = PNEW ExposeControlElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy);
             InsertChildAfter(outline_widget);
         }
 
@@ -105,7 +105,7 @@ namespace nim
     {
         assert((unsigned) column >= columns.size() ||
                (static_cast<CwColumn *>(columns[column]))->attr_id == KCDB_ATTR_ID_DISPLAY_NAME);
-        return new CwIdentityOutline(identity, column);
+        return PNEW CwIdentityOutline(identity, column);
     }
 
     void CwOutline::Select(bool _select)
@@ -132,17 +132,17 @@ namespace nim
             cwcol = static_cast<CwColumn *>(columns[column]);
 
         if (cwcol == NULL || !cwcol->group)
-            return new CwCredentialRow(cred, column);
+            return PNEW CwCredentialRow(cred, column);
 
         switch (cwcol->attr_id) {
         case KCDB_ATTR_ID_DISPLAY_NAME:
-            return new CwIdentityOutline(cred.GetIdentity(), column);
+            return PNEW CwIdentityOutline(cred.GetIdentity(), column);
 
         case KCDB_ATTR_TYPE_NAME:
-            return new CwCredTypeOutline(cred.GetType(), column);
+            return PNEW CwCredTypeOutline(cred.GetType(), column);
 
         default:
-            return new CwGenericOutline(cred, cwcol->attr_id, column);
+            return PNEW CwGenericOutline(cred, cwcol->attr_id, column);
         }
     }
 

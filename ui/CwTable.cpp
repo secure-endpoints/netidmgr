@@ -131,7 +131,7 @@ namespace nim
             if (attr_info.InError())
                 continue;
 
-            column_list.push_back(new std::wstring(attr_info->name));
+            column_list.push_back(PNEW std::wstring(attr_info->name));
 
             ConfigSpace cs_col(cs_columns, attr_info->name,
                                KHM_PERM_WRITE | KHM_FLAG_CREATE | KCONF_FLAG_WRITEIFMOD);
@@ -251,7 +251,7 @@ namespace nim
             if (KHM_FAILED(cs_col.GetLastError()))
                 continue;
 
-            cw_col = new CwColumn;
+            cw_col = PNEW CwColumn;
 
             if ((*colname)->compare(CW_CANAME_FLAGS) == 0) {
                 // Ignore
@@ -549,6 +549,8 @@ namespace nim
         kmq_unsubscribe_hwnd(KMSG_CRED, hwnd);
         kmq_unsubscribe_hwnd(KMSG_KCDB, hwnd);
         kmq_unsubscribe_hwnd(KMSG_KMM, hwnd);
+
+        __super::OnDestroy();
     }
 
     void CwTable::OnColumnPosChanged(int from, int to)
@@ -816,7 +818,7 @@ namespace nim
         if (KHM_FAILED(info.GetLastError()))
             return;
 
-        CwColumn * col = new CwColumn();
+        CwColumn * col = PNEW CwColumn();
 
         col->attr_id = info->id;
         col->caption = info.GetDescription(KCDB_TS_SHORT);

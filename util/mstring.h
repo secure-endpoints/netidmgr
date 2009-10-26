@@ -387,13 +387,13 @@ namespace nim {
         multi_string(const wchar_t * mstring) {
             if (mstring && mstring[0])
                 for (const wchar_t * str = mstring; str; str = multi_string_next(str))
-                    push_back(new std::wstring(str));
+                    push_back(PNEW std::wstring(str));
         }
 
         multi_string(const multi_string& that) {
             for (const_iterator i = that.begin(); i != that.end(); ++i) {
                 if (*i) {
-                    push_back(new std::wstring(*(*i), 0));
+                    push_back(PNEW std::wstring(*(*i), 0));
                 }
             }
         }

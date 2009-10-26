@@ -806,7 +806,7 @@ namespace nim
 
             GdiplusStartup(&gdiplus_token, &gdip_inp, NULL);
 
-            g_theme = new KhmDraw;
+            g_theme = PNEW KhmDraw;
 
             g_theme->LoadTheme();
         }

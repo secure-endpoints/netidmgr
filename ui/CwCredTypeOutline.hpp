@@ -53,7 +53,7 @@ namespace nim
             CwOutline(_column) {
 
             InsertChildAfter(el_typename =
-                             new CwCredentialTypeElement(_credtype));
+                             PNEW CwCredentialTypeElement(_credtype));
         }
 
         virtual bool Represents(const Credential& credential) {

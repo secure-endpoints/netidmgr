@@ -43,7 +43,7 @@ namespace nim
             CwOutline(_column) {
 
             InsertChildAfter(el_text =
-                             new StaticTextElement(credential.GetAttribStringObj(attr_id)));
+                             PNEW StaticTextElement(credential.GetAttribStringObj(attr_id)));
         }
 
         ~CwGenericOutline() {}

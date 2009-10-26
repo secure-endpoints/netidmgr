@@ -76,7 +76,7 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
                 MapWindowRect(HWND_DESKTOP, w->m_progress.hwnd, &r_pos);
             }
 
-	    c = new AlertContainer();
+	    c = PNEW AlertContainer();
 	    w->m_progress.cw_container = c;
 
 	    c->Create(w->m_progress.hwnd, RectFromRECT(&r_pos));
@@ -433,7 +433,7 @@ INT_PTR khm_do_modal_newcredwnd(HWND parent, khui_new_creds * c)
     }
     khui_cw_unlock_nc(c);
 
-    AutoRef<NewCredWizard> ncw(new NewCredWizard(c), RefCount::TakeOwnership);
+    AutoRef<NewCredWizard> ncw(PNEW NewCredWizard(c), RefCount::TakeOwnership);
     INT_PTR rv = ncw->DoModal(parent);
 
     return rv;
@@ -472,7 +472,7 @@ HWND khm_create_newcredwnd(HWND parent, khui_new_creds * c)
 
     khui_cw_unlock_nc(c);
 
-    AutoRef<NewCredWizard> ncw(new NewCredWizard(c), RefCount::TakeOwnership);
+    AutoRef<NewCredWizard> ncw(PNEW NewCredWizard(c), RefCount::TakeOwnership);
 
     hwnd = ncw->Create(parent);
 

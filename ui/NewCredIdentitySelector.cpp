@@ -44,7 +44,7 @@ namespace nim {
                 m_current = NULL;
             }
 
-            m_current = new IdentityDisplayData(primary_id);
+            m_current = PNEW IdentityDisplayData(primary_id);
         } else {
             if (m_current) {
                 delete m_current;
@@ -89,7 +89,7 @@ namespace nim {
 
         i = 0;
 
-        ids[0] = new IdentityDisplayData();
+        ids[0] = PNEW IdentityDisplayData();
 
         ids[0]->icon = LoadIconResource(IDI_ID_NEW);
         ids[0]->display_string = LoadStringResource(IDS_NC_NEW_IDENT);
@@ -103,14 +103,14 @@ namespace nim {
         for (; !e.AtEnd(); ++e) {
             assert(i < n_ids);
 
-            ids[i++] = new IdentityDisplayData(*e);
+            ids[i++] = PNEW IdentityDisplayData(*e);
 
             if (*e == current_id)
                 seen_current = true;
         }
 
         if (!seen_current && current_id.IsValid()) {
-            ids[i++] = new IdentityDisplayData(current_id);
+            ids[i++] = PNEW IdentityDisplayData(current_id);
         }
 
         n_ids = i;

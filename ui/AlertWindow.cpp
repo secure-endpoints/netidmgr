@@ -32,7 +32,7 @@ namespace nim {
     AlertWindow::AlertWindow() : DialogWindow(MAKEINTRESOURCE(IDD_ALERTS),
                                               khm_hInstance)
     {
-        m_alerts = new AlertContainer();
+        m_alerts = PNEW AlertContainer();
         m_owner = NULL;
     }
 
@@ -89,5 +89,6 @@ namespace nim {
     void AlertWindow::OnDestroy(void)
     {
         SetOwnerList(NULL);
+        __super::OnDestroy();
     }
 }

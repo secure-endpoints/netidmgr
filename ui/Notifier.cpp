@@ -57,7 +57,7 @@
 namespace nim {
 
     Notifier::Notifier() {
-        m_icon = new NotificationIcon(this);
+        m_icon = PNEW NotificationIcon(this);
     }
 
     Notifier::~Notifier() {
@@ -69,7 +69,7 @@ namespace nim {
     }
 
     khm_int32 Notifier::ShowAlertNormal(Alert& a) {
-        AlertWindow * w = new AlertWindow();
+        AlertWindow * w = PNEW AlertWindow();
         AutoRef<AlertWindow> r_w(w, RefCount::TakeOwnership);
         bool is_modal = false;
 
@@ -238,7 +238,7 @@ namespace nim {
         if (m_alert_list.empty())
             return;
 
-        AlertWindow * w = new AlertWindow();
+        AlertWindow * w = PNEW AlertWindow();
 
         for (AlertList::iterator i = m_alert_list.begin();
              i != m_alert_list.end();) {
@@ -670,7 +670,7 @@ namespace nim {
     {
         ControlWindow::RegisterWindowClass();
 
-        g_notifier = new Notifier();
+        g_notifier = PNEW Notifier();
 
         hwnd_notifier = g_notifier->Create(HWND_MESSAGE, Rect(0,0,0,0));
 

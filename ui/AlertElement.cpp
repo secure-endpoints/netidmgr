@@ -92,7 +92,7 @@ namespace nim {
         bool was_modified = !!(m_alert->flags & KHUI_ALERT_FLAG_MODIFIED);
 
 	if (!el_title) {
-	    el_title = new AlertTitleElement();
+	    el_title = PNEW AlertTitleElement();
 	    InsertChildAfter(el_title);
 	}
 
@@ -100,7 +100,7 @@ namespace nim {
             el_title->SetCaption(std::wstring(m_alert->title));
 
 	if (!el_message) {
-	    el_message = new AlertMessageElement();
+	    el_message = PNEW AlertMessageElement();
 	    InsertChildAfter(el_message);
 	}
 
@@ -108,7 +108,7 @@ namespace nim {
             el_message->SetCaption(std::wstring(m_alert->message));
 
 	if (!el_suggestion) {
-	    el_suggestion = new AlertSuggestionElement();
+	    el_suggestion = PNEW AlertSuggestionElement();
 	    InsertChildAfter(el_suggestion);
 	}
 
@@ -118,19 +118,19 @@ namespace nim {
 	if (m_alert->flags & KHUI_ALERT_FLAG_VALID_ERROR) {
 
 	    if (!el_progress) {
-		el_progress = new ProgressBarElement();
+		el_progress = PNEW ProgressBarElement();
 		InsertChildAfter(el_progress);
                 UpdateProgress();
 	    }
 
 	    if (!el_expose) {
-		el_expose = new ExposeControlElement();
+		el_expose = PNEW ExposeControlElement();
 		InsertChildAfter(el_expose);
 	    }
 	}
 
 	if (!el_icon) {
-	    el_icon = new IconDisplayElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy,
+	    el_icon = PNEW IconDisplayElement(g_theme->pt_margin_cx + g_theme->pt_margin_cy,
 					     IconForAlert(),
 					     true /* Large */);
 	    InsertChildAfter(el_icon);
@@ -141,7 +141,7 @@ namespace nim {
 
             for (int i = 0; i < m_alert->n_alert_commands; i++) {
                 if (m_alert->alert_commands[i] != KHUI_PACTION_CLOSE) {
-                    AlertCommandButtonElement * e = new AlertCommandButtonElement();
+                    AlertCommandButtonElement * e = PNEW AlertCommandButtonElement();
 
                     InsertChildAfter(e);
                     el_buttons.push_back(e);
@@ -294,7 +294,7 @@ namespace nim {
 	khui_alert_set_type(a, KHUI_ALERTTYPE_PROGRESSACQ);
 
 	Alert alert(a, true);
-	AlertElement * ae = new AlertElement(alert, -1);
+	AlertElement * ae = PNEW AlertElement(alert, -1);
 
 	InsertOutlineAfter(ae);
 
@@ -457,6 +457,8 @@ namespace nim {
 
             SetWindowPos(hwnd_button, NULL, 0, 0,
                          bwidth, bheight, SWP_SIZEONLY);
+
+            delete font;
         }
     }
 }

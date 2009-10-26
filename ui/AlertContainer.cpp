@@ -148,7 +148,7 @@ namespace nim {
         ++m_unseen;
 
         {
-            AlertElement * e = new AlertElement(alert, m_alerts.size() - 1);
+            AlertElement * e = PNEW AlertElement(alert, m_alerts.size() - 1);
             InsertChildAfter(e);
             Invalidate();
         }
@@ -181,7 +181,7 @@ namespace nim {
 	}
 
 	for (; al != m_alerts.end(); ++al) {
-	    AlertElement * e = new AlertElement(*al, (int) index++);
+	    AlertElement * e = PNEW AlertElement(*al, (int) index++);
 	    InsertChildAfter(e);
 	}
     }
@@ -210,7 +210,7 @@ namespace nim {
 	    return false;
 
 	// Context monitors are self-disposing
-	AlertContextMonitor * ctxmon = new AlertContextMonitor(ae, this, IDC_NTF_ERRCTXMONITOR);
+	AlertContextMonitor * ctxmon = PNEW AlertContextMonitor(ae, this, IDC_NTF_ERRCTXMONITOR);
 
 	return true;
     }
