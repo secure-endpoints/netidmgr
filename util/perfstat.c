@@ -89,13 +89,17 @@ perf_init(void) {
                           NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_ARCHIVE,
                           NULL);
         if (hLog != INVALID_HANDLE_VALUE) {
-            _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_FILE );
-            _CrtSetReportFile( _CRT_ERROR, hLog );
             _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_FILE );
             _CrtSetReportFile( _CRT_WARN, hLog );
+            _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_FILE );
+            _CrtSetReportFile( _CRT_ERROR, hLog );
             h_CrtReport = hLog;
         }
     }
+#else
+
+    _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
+
 #endif
 }
 
@@ -103,7 +107,7 @@ KHMEXP void KHMAPI
 perf_exit(void) {
 #ifdef USE_FILE_LOG
     if (h_CrtReport != INVALID_HANDLE_VALUE) {
-        _CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
+        _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_DEBUG );
         _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_DEBUG );
         CloseHandle(h_CrtReport);
         h_CrtReport = INVALID_HANDLE_VALUE;
@@ -163,9 +167,9 @@ KHMEXP void
 perf_set_thread_desc(const char * file, int line,
                      const wchar_t * name, const wchar_t * creator) {
 
-    _RPTW3(_CRT_ERROR, L"Beginning thread: %s (ID: %d, by %s)",
+    _RPTW3(_CRT_WARN, L"Beginning thread: %s (ID: %d, by %s)",
            name, GetCurrentThreadId(), creator);
-    _RPT2(_CRT_ERROR, "  @%s:%d\n", file, line);
+    _RPT2(_CRT_WARN, "  @%s:%d\n", file, line);
     set_thread_name((DWORD) -1, name);
 }
 
