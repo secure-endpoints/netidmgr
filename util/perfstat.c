@@ -75,7 +75,7 @@ KHMEXP void KHMAPI
 perf_init(void) {
     int dbf = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
 
-    dbf = (dbf & 0x0000ffff) | _CRTDBG_CHECK_EVERY_1024_DF | _CRTDBG_LEAK_CHECK_DF;
+    dbf = (dbf & 0x0000ffff) | _CRTDBG_CHECK_EVERY_1024_DF;
     _CrtSetDbgFlag(dbf);
 
     _CrtSetReportMode( _CRT_WARN, _CRTDBG_MODE_DEBUG );
@@ -117,7 +117,9 @@ perf_exit(void) {
 
 KHMEXP void KHMAPI
 perf_dump() {
+#ifdef DUMP_MEMORY_LEAKS
     _CrtDumpMemoryLeaks();
+#endif
 }
 
 #endif
