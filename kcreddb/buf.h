@@ -52,8 +52,8 @@ typedef struct tag_kcdb_buf {
     khm_size    nc_fields;
 } kcdb_buf;
 
-#define KCDB_BUF_CBBUF_INITIAL  4096
-#define KCDB_BUF_CBBUF_GROWTH   4096
+#define KCDB_BUF_CBBUF_INITIAL  1024
+#define KCDB_BUF_CBBUF_GROWTH   1024
 #define KCDB_BUF_FIELDS_INITIAL 16
 #define KCDB_BUF_FIELDS_GROWTH  16
 
