@@ -313,7 +313,7 @@ creddlg_show_passwords(HWND hwlist, keystore_t * ks)
                     nc = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS,
                                              pdata, cb_data,
                                              caption, ARRAYLENGTH(caption));
-                    caption[max(nc, ARRAYLENGTH(caption) - 1)] = L'\0';
+                    caption[min(nc, ARRAYLENGTH(caption) - 1)] = L'\0';
 
                     if (pdata) {
                         SecureZeroMemory(pdata, cb_data);
