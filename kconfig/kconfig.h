@@ -32,9 +32,7 @@
 #include "khdefs.h"
 #include "mstring.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+BEGIN_C
 
 /*! \defgroup kconf NetIDMgr Configuration Provider */
 /*@{*/
@@ -1016,10 +1014,393 @@ KHMEXP khm_int32 KHMAPI
 khc_remove_space(khm_handle conf);
 /*@}*/
 
+/*! \page kconf_p_handles Using the configuration provider handle
 
-#ifdef __cplusplus
-}
-#endif
+  When a configuration provider is mounted, the system calls the \a
+  init() method of the provider and passes in a handle to a
+  configuration space.  This handle is different from the usual
+  configuration handle returned by khc_open_space() etc. and can only
+  be used by the configuration provider only with the following APIs:
+
+  - khc_mount_provider()
+
+  - khc_unmount_provider()
+
+  Usage of this handle is as described in the documentation for each
+  of the functions.  However, in general, the provider handle for a
+  configuration space is not restricted to any particular
+  configuration store and is always considered read/write.
+
+  These handles do NOT need to closed using khc_close_space().
+  Attempting to use it with any other API will result in an error and
+  is otherwise harmless.
+ */
+
+/*! \brief Configuration provider API
+
+  While configuration information is typically stored on the Windows
+  registry, plug-ins can provide their own configuration store
+  providers.  This structure is used to establish a set of callbacks
+  that the configuration subsystem will use to communicate with your
+  provider.
+
+  In order to use a provider, you will need to do the following:
+
+  - Implement callback handlers for all the callbacks in the
+    ::khc_provider_interface structure.
+
+  - Fill in a ::khc_provider_interface structure.
+
+  - Obtain a handle to the parent configuration space within which you
+    want to register the provider.
+
+  - Call khc_mount_provider() using the obtained handle and the
+    ::khc_provider_interface structure.
+
+  Once you are done with with the provider, you can unmount it using
+  the khc_unmount_provider() call.
+
+  During operation, calls to the registered callbacks may be made from
+  any thread.  However, all calls to provider are serialized.
+  Therefore, your provider may NOT assume that it would be called from
+  any specific thread.
+
+  The first call to a provider will always be
+  khc_provider_interface::init() while the last call will always be
+  khc_provider_interface::exit().
+
+  A configuration space provider can only operate on a single space.
+  However, when processing the \a init() callback or \a begin_enum()
+  callback, it may mount as many child spaces as necessary.
+ */
+typedef struct khc_provider_interface {
+    khm_int32 version;
+
+    /*! \brief Mount provider
+
+      Called to mount the provider on a configuration space.
+
+      \param[in] sp_handle Handle to configuration space.  This is not
+          a regular configuration space handle and can only be used
+          with a select few kconfig APIs.  See \ref kconf_p_handles .
+
+      \param[in] path The full path to the configuration space on
+          which this provider is being mounted.  See notes.
+
+      \param[in] flags Flags which designate the store and whether the
+          store should be created if it doesn't already exist.  The
+          only flags that are passed is EXACTLY ONE OF
+          ::KCONF_FLAG_USER, ::KCONF_FLAG_MACHINE or
+          ::KCONF_FLAG_SCHEMA along with ::KHM_FLAG_CREATE.  If the
+          ::KHM_FLAG_CREATE flag is specified, the configuration store
+          should be created if it doesn't already exist.
+
+      \param[in] context A context handle that was used when calling
+          khc_mount_provider().  This is application defined.
+
+      \param[out] r_nodeHandle Upon successful completion, a context
+          handle should be returned through this parameter.  This
+          handle will be used in all subsequent calls up until \a
+          exit().
+
+      The path passed in through the \a path parameter is the full
+      path to the configuration space.  E.g.:
+
+      \code
+      L"\\PluginManager\\Modules\\Foo"
+      \endcode
+
+      The full path always starts with a backslash and ends with the
+      last component name (no trailing backslash).
+
+      One of the following values should be returned:
+
+      \retval KHM_ERROR_SUCCESS The provider was successfully
+          initialized and a valid context handle was returned in \a
+          r_nodeHandle.
+
+      \retval KHM_ERROR_NOT_FOUND A backing configuration store was
+          not found or this provider can not be mounted at this store
+          or space.  In this case the provider will be immediately
+          unmounted from the configuration space.  The \a exit()
+          method will NOT be invoked.
+     */
+    khm_int32 (KHMCALLBACK * init)(khm_handle sp_handle,
+                                   const wchar_t * path, khm_int32 flags,
+                                   void * context, void ** r_nodeHandle);
+
+    /*! \brief Unmount a provider
+
+      Each successful call of \a init() will be coupled with a call to
+      \a exit().  This is the last invocation of the provider for this
+      mount.  The provider will be immediately unmounted after this
+      method is called.
+
+      The return value of this method is ignored.
+
+      It is the responsibility of the provider to perform any clean-up
+      operations.  Note that it is possible for \a exit() to be called
+      before all open handles have been released.
+     */
+    khm_int32 (KHMCALLBACK * exit)(void * nodeHandle);
+
+    /*! \brief Notify open handle
+
+      Used to notify the provider that a handle is to be created that
+      uses this configuration store.  This function can be called more
+      than once if more than one handle is being created.
+
+      Each call to \a open() will be coupled with a call to \a close()
+      to indicate that the allocated handle is being freed.  The only
+      exception is if the configuration store is unloaded before all
+      open handles are released, in which case the provider will
+      receive an \a exit() call before all the \a close() calls are
+      sent.
+
+      The provider is expected to take any steps necessary to provider
+      access to the underlying configuration store.  If no open
+      handles are in existence, the configuration store can be assumed
+      to be in an idle state.
+
+     */
+    khm_int32 (KHMCALLBACK * open)(void * nodeHandle);
+
+    /*! \brief Notify close handle
+
+      Complements \a open().
+
+      \see khc_provider_interface::open()
+     */
+    khm_int32 (KHMCALLBACK * close)(void * nodeHandle);
+
+    /*! \brief Remove configuration store
+
+      Called to remove the configuration store represented by \a
+      nodeHandle.  The provider is expected to remove any backing
+      storage used to provide configuration information for this
+      configuration space.
+
+      \note The provider wil be unloaded immediately following this
+      call. I.e. The khc_provider_interface::remove() call will be
+      immediately followed by a khc_provider_interface::exit() call.
+     */
+    khm_int32 (KHMCALLBACK * remove)(void * nodeHandle);
+
+    /*! \brief Create or open a child configuration store
+     
+      In response the provider is expected to open or create a child
+      configuration store.
+
+      \param[in] nodeHandle Handle to the configuration store within
+          which the child store should be created or openend.
+
+      \param[in] name Name of the child configuration store.
+
+      \param[in] flags Identifies the store and signals whether it
+          should be created if it doesn't already exist.  See remarks
+          below.
+
+      Exactly one of ::KCONF_FLAG_USER, ::KCONF_FLAG_MACHINE or
+      ::KCONF_FLAG_SCHEMA will be present in flags.  This flag
+      indicates which configuration store this call applies to and
+      always corresponds to the configuration store that the current
+      provider has been mounted on.  In addition, ::KHM_FLAG_CREATE
+      may also be present, in which case the provider should attempt
+      to create the store if it doesn't already exist.
+     */
+    khm_int32 (KHMCALLBACK * create)(void * nodeHandle, const wchar_t * name, khm_int32 flags);
+    khm_int32 (KHMCALLBACK * begin_enum)(void * nodeHandle);
+    khm_int32 (KHMCALLBACK * get_mtime)(void * nodeHandle, FILETIME * mtime);
+
+    /*! \brief Read a value
+
+      \param[in] nodeHandle A handle that was acquired by calling \a init()
+
+      \param[in] valuename  Name of the value to read
+
+      \param[in,out] pvtype The expected type of the value.  If the
+          type of the value found in the store cannot be converted to
+          this type, then the function should return
+          ::KHM_ERROR_TYPE_MISMATCH.  A type of ::KC_NONE or a \a NULL
+          \a pvtype matches any type.  On successful return, this
+          should be set to the actual type of the value.
+
+      \param[out] buffer Buffer to receive the data.  This can be NULL.
+          See remarks below.
+
+      \param[in,out] pcb Pointer to size of \a buffer in bytes.  This can
+          be NULL. See remarks below.
+
+      Buffer manangement follows the pattern used throughout the
+      Network Identity Manager framework.
+
+      - If \a buffer is \a NULL AND \a pcb is NOT \a NULL, then the
+        required size of the buffer should be stored in the value
+        pointed to by \a pcb and the return value should be
+        ::KHM_ERROR_TOO_LONG. (Assuming the value exists).
+
+      - If \a buffer is NOT \a NULL AND \a pcb is NOT \a NULL AND the
+        size is sufficient to store the found value, then the value
+        should be stored in \a buffer and the size in \a pcb should be
+        updated with the actual size of the found value.  The return
+        value should ::KHM_ERROR_SUCCESS.
+
+      - If both \a buffer and \a pcb is \a NULL, then the caller is
+        requesting that the existence of the value be reported.  In
+        this case, the return value should be ::KHM_ERROR_SUCCESS or
+        ::KHM_ERROR_NOT_FOUND depending on whether the value was found
+        or not.
+
+      If the expected type of the value is ::KC_NONE, it should be
+      interpreted as \a any.  In which case any value found in the
+      configuration store matching the name should be considered for
+      return.
+
+      If the value found in the configuration store is not of the
+      correct type, it may be converted to the expected type before
+      returning.  If the value cannot be converted, then the function
+      should behave as if the requested value was not found.
+
+      \retval KHM_ERROR_SUCCESS Should mean that the value was found
+          and successfully copied (in full) to the buffer pointed to
+          by \a buffer and that the number of copied bytes were stored
+          in the value pointed to by \a pcb.  If both \a buffer and \a
+          pcb is NULL, this means that the value exists with the
+          expected type in this configuration store.
+
+      \retval KHM_ERROR_TOO_LONG Should mean that the supplied buffer
+          was insufficient to store the data and that the required
+          length of the buffer in bytes was stored in the value
+          pointed to by \a pcb.
+
+      \retval KHM_ERROR_NOT_FOUND The requested value was not found in
+          this configuration store.
+
+      \retval KHM_ERROR_TYPE_MISMATCH The requested value was found
+          but the type of the found value was incompatible with the
+          expected type.
+
+      \retval KHM_ERROR_NOT_READY The configuration store is not ready
+          to be read at this time.  Further action may be necessary to
+          allow the request to go through.
+     */
+    khm_int32 (KHMCALLBACK * read_value)(void * nodeHandle, const wchar_t * valuename,
+                                         khm_int32 * vtype, void * buffer, khm_size * pcb);
+
+    /*! \brief Write a value
+
+      \param[in] nodeHandle Handle acquired by calling \a init()
+
+      \param[in] valuename Name of value being written.
+
+      \param[in] vtype Type of value being written.
+
+      \param[in] buffer Buffer containing value data.
+
+      \param[in] cb Size (in bytes) of the value being written.
+
+      The value must be stored in the configuration store represented
+      by \a nodeHandle.  Upon successful completion, one of the
+      following return values should be returned.
+
+      \retval KHM_ERROR_SUCCESS The value was successfully written.
+
+      \retval KHM_ERROR_INVALID_PARAM The format of the data was
+          inconsistent with the type.  This can be caused by a size
+          mismatch or a ::KC_STRING value not having a proper \a NUL
+          terminator or being too long.
+
+      \retval KHM_ERROR_TYPE_MISMATCH The expected type of the value
+          is different from what was being requested.
+
+      \retval KHM_ERROR_NOT_READY The configuration store is not ready
+          to be written to at this time.  Further action may be necessary
+          to prepare the store for writing.
+
+      \retval KHM_ERROR_READONLY The configuration store is read-only.
+          Or the current user is not allowed to write to the
+          configuration store.
+     */
+    khm_int32 (KHMCALLBACK * write_value)(void * nodeHandle, const wchar_t * valuename,
+                                          khm_int32 vtype, const void * buffer, khm_size cb);
+
+    /*! \brief Remove value
+
+      \param[in] nodeHandle Handle acquired by calling \a init()
+
+      \param[in] valuename Name of value to remove
+
+      The value should be removed if it exists.  The return value
+      should be one of the following:
+
+      \retval KHM_ERROR_SUCCESS The value was removed successfully.
+
+      \retval KHM_ERROR_NOT_FOUND The value was not found.
+
+      \retval KHM_ERROR_NOT_READY The configuration space is not ready
+          to complete the operation at this time.
+
+      \retval KHM_ERROR_READONLY The configuration space is read-only.
+          Values can't be removed.
+     */
+    khm_int32 (KHMCALLBACK * remove_value)(void * nodeHandle, const wchar_t * valuename);
+
+} khc_provider_interface;
+
+#define KHC_PROVIDER_V1 1
+
+/*! \brief Mount a provider on a configuration space
+
+  Can be called to mount a configuration provider on a configuration
+  space. The configuration space does not need to exist prior to the
+  call, although the parent configuration space must exist.
+
+  \param[in] conf Handle to parent configuration space.
+
+  \param[in] name Name of configuration space to mount provider on.
+      This must be a name and not a path.  I.e. \a name cannot contain
+      any backslashes.
+
+  \param[in] flags Flags indicating which stores should be affected by
+      the new provider.  See remarks.
+
+  \param[in] provider Provider callback data.
+
+  \param[in] context Context.  Passed to the \a init() method of the
+      provider.
+
+  \param[out] ret_conf If the call is successful, this receives a
+      handle to the configuration space indicated by \a name.
+
+  The configuration stores that will be affected are indicated by the
+  \a flags parameter, which can be a combination of ::KCONF_FLAG_USER,
+  ::KCONF_FLAG_MACHINE, ::KCONF_FLAG_SCHEMA.
+
+  In addition ::KHM_FLAG_CREATE can also be specified in \a flags.
+  This flag does not affect the behavior of khc_mount_provider(), but
+  it will be passed on to the init() function of the provider.
+
+  For each configuration store specified in \a flags, the provider
+  indicated by \a provider will be mounted by calling the \a init()
+  method.  Each invocation will specify a different store.
+
+  \retval KHM_ERROR_SUCCESS Successfully mounted at least one
+  configuration store.
+
+  \retval KHM_ERROR_INVALID_PARAM One or more parameters were invalid.
+
+  \retval KHM_ERROR_NO_PROVIDER The provider failed to initialize.
+
+ */
+KHMEXP khm_int32 KHMAPI
+khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
+                   const khc_provider_interface * provider,
+                   void * context, khm_handle * ret_conf);
+
+KHMEXP khm_int32 KHMAPI
+khc_unmount_provider(khm_handle conf, khm_int32 flags);
+
+END_C
 
 #ifdef __cplusplus
 #include <string>

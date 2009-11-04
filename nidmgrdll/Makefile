@@ -59,6 +59,8 @@ OBJFILES= \
 	$(KHERRDIR)\kherr.obj		\
 	$(KCONFIGDIR)\kconfigmain.obj	\
 	$(KCONFIGDIR)\api.obj		\
+	$(KCONFIGDIR)\registry.obj	\
+	$(KCONFIGDIR)\schema.obj	\
 	$(KMQDIR)\kmqmain.obj		\
 	$(KMQDIR)\init.obj		\
 	$(KMQDIR)\msgtype.obj		\
@@ -140,7 +142,7 @@ TESTER=$(BINDIR)\tests.exe
 
 test:: $(TESTER) $(BINDIR)\restest.dll
 	$(CD) tests
-	$(TESTER)
+	$(TESTER) $(TEST)
 	$(CD) ..
 
 TESTOBJS= \
