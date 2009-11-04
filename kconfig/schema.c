@@ -44,8 +44,8 @@ typedef struct schema_mount_parameters {
 /* no locks */
 khm_int32 
 validate_schema(const kconf_schema *schema,
-                       int                 begin,
-                       int                *end)
+                int                 begin,
+                int                *end)
 {
     int i;
     enum { INITIAL, VALUES, SUBSPACES } state = INITIAL;
@@ -172,6 +172,8 @@ load_schema(schema_node * node, const kconf_schema * schema, int * end)
     kconf_conf_space * thisconf = NULL;
     khm_handle h = NULL;
 
+    assert(is_schema_node(node));
+
     i=0;
     while(!end_found) {
         switch(state) {
@@ -187,7 +189,7 @@ load_schema(schema_node * node, const kconf_schema * schema, int * end)
 
                 node->nSchema = i - 1;
 
-                if (KHM_FAILED(load_schema(node->h, schema + i, &n)))
+                if (KHM_FAILED(khcint_load_schema(node->h, schema + i, &n)))
                     return KHM_ERROR_INVALID_PARAM;
                 i += n;
                 state = SUBSPACES;
@@ -205,7 +207,7 @@ load_schema(schema_node * node, const kconf_schema * schema, int * end)
             if(schema[i].type == KC_SPACE) {
                 int n = 0;
 
-                if(KHM_FAILED(load_schema(node->h, schema + i, &n)))
+                if(KHM_FAILED(khcint_load_schema(node->h, schema + i, &n)))
                     return KHM_ERROR_INVALID_PARAM;
                 i += n;
             } else if(schema[i].type == KC_ENDSPACE) {
@@ -401,7 +403,7 @@ khcint_unload_schema(khm_handle parent, const kconf_schema * schema)
 }
 
 khm_int32
-khcint_load_schema(khm_handle parent, const kconf_schema * schema)
+khcint_load_schema(khm_handle parent, const kconf_schema * schema, int * p_end)
 {
     khm_int32 rv;
     int end;
@@ -417,6 +419,9 @@ khcint_load_schema(khm_handle parent, const kconf_schema * schema)
 
     rv = khc_mount_provider(parent, schema->name, KCONF_FLAG_SCHEMA|KHM_FLAG_CREATE,
                             &khc_schema_provider, &p, &h_conf);
+
+    if (p_end)
+        *p_end = end;
 
     if (h_conf)
         khc_close_space(h_conf);

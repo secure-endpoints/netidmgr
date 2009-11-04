@@ -144,6 +144,6 @@ khm_int32
 khcint_unload_schema(khm_handle parent, const kconf_schema * schema);
 
 khm_int32
-khcint_load_schema(khm_handle parent, const kconf_schema * schema);
+khcint_load_schema(khm_handle parent, const kconf_schema * schema, int * p_end);
 
 #endif

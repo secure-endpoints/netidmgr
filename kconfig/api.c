@@ -1445,7 +1445,7 @@ khc_load_schema(khm_handle conf, const kconf_schema * schema)
         return KHM_ERROR_INVALID_PARAM;
 
     EnterCriticalSection(&cs_conf_global);
-    rv = khcint_load_schema(conf, schema);        
+    rv = khcint_load_schema(conf, schema, NULL);
     LeaveCriticalSection(&cs_conf_global);
 
     return rv;
