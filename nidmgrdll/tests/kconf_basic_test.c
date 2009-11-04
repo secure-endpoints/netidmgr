@@ -99,6 +99,7 @@ static int shadow_config_test(void) {
     khm_handle csp_fooid = NULL;
 
     khm_int32 t;
+    khm_int64 t64;
 
     IS(khc_open_space(NULL, L"KCDBTest", 0, &csp_kcdb));
     IS(khc_open_space(csp_kcdb, L"Identity", 0, &csp_ids));
@@ -108,7 +109,9 @@ static int shadow_config_test(void) {
     CHECK(t == 1);
     IS(khc_read_int32(csp_fooid, L"Monitor", &t));
     CHECK(t == 10);
+    CHECK(khc_read_int64(csp_fooid, L"Monitor", &t64) == KHM_ERROR_TYPE_MISMATCH);
     ISNT(khc_read_int32(csp_fooid, L"RenewAtHalfLife", &t));
+    ISNT(khc_read_int32(csp_fooid, L"AutoRenewThreshold", &t));
 
     IS(khc_close_space(csp_fooid));
     IS(khc_open_space(csp_ids, L"FooIdent", KCONF_FLAG_SHADOW, &csp_fooid));
@@ -169,8 +172,8 @@ static int open_space_test(void) {
     CHECK(t == 1);
     IS(khc_close_space(csp1));
 
-    CHECK(KHM_SUCCEEDED(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent\\Something",
-                                       KCONF_FLAG_SHADOW | KCONF_FLAG_TRAILINGVALUE, &csp1)));
+    IS(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent\\Something",
+                      KCONF_FLAG_SHADOW | KCONF_FLAG_TRAILINGVALUE, &csp1));
     IS(khc_read_int32(csp1, L"ID", &t));
     CHECK(t == 3);
     IS(khc_read_int32(csp1, L"AllowAutoRenew", &t));

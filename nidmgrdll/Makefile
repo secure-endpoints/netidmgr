@@ -166,3 +166,7 @@ $(OBJ)\restest.res: tests\restest.rc
 
 $(TESTER): $(LIBFILE) $(TESTOBJS)
 	$(EXECONLINK) $(TESTLIBS)
+
+clean::
+	-$(RM) $(TESTER)
+	-$(RM) $(BINDIR)\restest.dll

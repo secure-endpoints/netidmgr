@@ -135,12 +135,12 @@ void end_task(int failed)
     task_status = failed;
 }
 
-void check_ifx(khm_boolean b, const char * msg)
+void check_ifx(khm_boolean b, const char * msg, const char * file, int line)
 {
     if (!b) {
-        log("%8s: FAILED %.50s\n", suites[current_test]->name, msg);
+        log("%s(%d) : FAILED %8s: %.50s\n", file, line, suites[current_test]->name, msg);
         task_status = 1;
     } else {
-        log("%8s: Pass   %.50s\n", suites[current_test]->name, msg);
+        log("%s(%d) : Pass   %8s: %.50s\n", file, line, suites[current_test]->name, msg);
     }
 }
