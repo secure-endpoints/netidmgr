@@ -23,6 +23,7 @@
  */
 
 #include "kconfiginternal.h"
+#include <shlwapi.h>
 #include <assert.h>
 
 typedef struct reg_node {
@@ -62,12 +63,12 @@ open_key(reg_node * node, khm_boolean create)
         return node->h_key;
 
     if (RegOpenKeyEx(node->h_root, node->regpath, 0, 
-                     KEY_READ | KEY_WRITE, &node->h_key) != ERROR_SUCCESS) {
+                     KEY_READ | KEY_WRITE, &node->h_key) == ERROR_ACCESS_DENIED &&
 
-        if(RegOpenKeyEx(node->h_root, node->regpath, 0,
-                        KEY_READ, &node->h_key) == ERROR_SUCCESS) {
-            nflags = KHM_PERM_READ;
-        }
+        RegOpenKeyEx(node->h_root, node->regpath, 0,
+                     KEY_READ, &node->h_key) == ERROR_SUCCESS) {
+
+        nflags = KHM_PERM_READ;
     }
 
     if(node->h_key == NULL && create) {
@@ -173,7 +174,7 @@ reg_remove(void * nodeHandle)
     assert(is_reg_node(node));
 
     close_key(node);
-    if (RegDeleteKey(node->h_root, node->regpath) == ERROR_SUCCESS) {
+    if (SHDeleteKey(node->h_root, node->regpath) == ERROR_SUCCESS) {
         return KHM_ERROR_SUCCESS;
     } else {
         return KHM_ERROR_GENERAL;

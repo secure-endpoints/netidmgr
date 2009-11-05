@@ -280,7 +280,7 @@ static int reg_read_write_test(void)
 
     /* Write some values in */
     IS(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent",
-                      KCONF_FLAG_SHADOW, &c_u));
+                      KCONF_FLAG_SHADOW | KHM_FLAG_CREATE, &c_u));
 
     IS(khc_write_int32(c_u, L"32-bit Int", 20));
     IS(khc_write_int64(c_u, L"64-bit Int", 21));
@@ -322,7 +322,7 @@ static int reg_read_write_test(void)
     ISNT(khc_read_binary(c_s, L"Binary value", bytes, &cb));
 
     /* Open a handle for the machine layer.  Same deal as above. */
-    IS(khc_open_space(c_u, NULL, KCONF_FLAG_MACHINE, &c_m));
+    IS(khc_open_space(c_u, NULL, KCONF_FLAG_MACHINE|KHM_FLAG_CREATE, &c_m));
     ISNT(khc_read_int32(c_m, L"32-bit Int", &i32));
     ISNT(khc_read_int64(c_m, L"64-bit Int", &i64));
     cb = sizeof(str);

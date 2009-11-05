@@ -39,56 +39,6 @@ CRITICAL_SECTION cs_conf_global;
 DECLARE_ONCE(conf_once);
 LONG volatile conf_status = 0;
 
-void init_kconf(void)
-{
-    if(InitializeOnce(&conf_once)) {
-        /* we are the first */
-        InitializeCriticalSection(&cs_conf_global);
-
-        EnterCriticalSection(&cs_conf_global);
-        conf_root = khcint_create_empty_space();
-        conf_root->name = PWCSDUP(L"Root");
-        conf_root->refcount++;
-        conf_root->user.provider = NULL;
-        conf_root->machine.provider = NULL;
-        conf_root->schema.provider = NULL;
-        conf_status = 1;
-
-        LeaveCriticalSection(&cs_conf_global);
-
-        InitializeOnceDone(&conf_once);
-    }
-}
-
-void exit_kconf(void)
-{
-    if(khc_is_config_running()) {
-        kconf_handle * h;
-
-        EnterCriticalSection(&cs_conf_global);
-
-        conf_status = 0;
-
-        khcint_free_space(conf_root);
-
-        while(conf_free_handles) {
-            LPOP(&conf_free_handles, &h);
-            if(h) {
-                PFREE(h);
-            }
-        }
-
-        while(conf_handles) {
-            LPOP(&conf_handles, &h);
-            if(h) {
-                PFREE(h);
-            }
-        }
-        LeaveCriticalSection(&cs_conf_global);
-        DeleteCriticalSection(&cs_conf_global);
-    }
-}
-
 #if defined(DEBUG) && (defined(KH_BUILD_PRIVATE) || defined(KH_BUILD_SPECIAL))
 
 #include<stdio.h>
@@ -453,7 +403,7 @@ khcint_get_full_path(kconf_conf_space * s, wchar_t * buffer, khm_size cb)
         StringCbCat(buffer, cb, L"\\");
         StringCbCat(buffer, cb, s->name);
     } else {
-        StringCbCopy(buffer, cb, L"\\");
+        StringCbCopy(buffer, cb, L"");
     }
 }
 
@@ -462,7 +412,7 @@ khcint_find_effective_provider(kconf_conf_space * parent, khm_int32 flags, khm_b
 {
     kconf_conf_space * p;
 
-    *pis_parent = TRUE;
+    *pis_parent = !!(parent);
 
     for (p = parent; p; p = TPARENT(p)) {
         if ((flags & KCONF_FLAG_USER) && khc_provider(p, user))
@@ -489,53 +439,49 @@ khcint_initialize_providers_for_space(kconf_conf_space * space, kconf_conf_space
                                       khm_int32 flags)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
-    khm_int32 create = (flags & KHM_FLAG_CREATE);
+    khm_int32 create_user = ((flags & KCONF_FLAG_USER)? (flags & KHM_FLAG_CREATE) : 0);
+    khm_int32 create_mach = ((flags & KCONF_FLAG_MACHINE) && !create_user ? (flags & KHM_FLAG_CREATE) : 0);
+    khm_int32 create_schm = ((flags & KCONF_FLAG_SCHEMA) && !create_user && !create_mach? (flags & KHM_FLAG_CREATE) : 0);
 
-    if (!khc_provider(space, user) && parent && khc_provider(parent, user))
-        CCreate(parent, user, space->name,
-                KCONF_FLAG_USER | ((flags & KCONF_FLAG_USER)? create : 0));
+    khm_boolean is_parent = FALSE;
+    const khc_provider_interface * pint = NULL;
+    wchar_t cpath[KCONF_MAXCCH_PATH];
 
-    if (!khc_provider(space, machine) && parent && khc_provider(parent, machine))
-        CCreate(parent, machine, space->name,
-                KCONF_FLAG_MACHINE | ((flags & KCONF_FLAG_MACHINE)? create : 0));
+    khcint_get_full_path(space, cpath, sizeof(cpath));
 
-    if (!khc_provider(space, schema) && parent && khc_provider(parent, schema))
-        CCreate(parent, schema, space->name,
-                KCONF_FLAG_SCHEMA | ((flags & KCONF_FLAG_SCHEMA)? create : 0));
+    if (!khc_provider(space, user)) {
+        if (parent && khc_provider(parent, user)) {
+            CCreate(parent, user, space->name,
+                    KCONF_FLAG_USER | create_user);
+        } else if ((pint = khcint_find_effective_provider(parent, KCONF_FLAG_USER, &is_parent)) != NULL) {
+            khc_provider(space, user) = pint;
+            if (KHM_FAILED(CInit(space, user, cpath,
+                                 KCONF_FLAG_USER|create_user, NULL)))
+                khc_provider(space, user) = NULL;
+        }
+    }
 
-    if (create) {
-        khm_boolean is_parent = FALSE;
-        const khc_provider_interface * pint = NULL;
-        wchar_t cpath[KCONF_MAXCCH_PATH];
+    if (!khc_provider(space, machine)) {
+        if (parent && khc_provider(parent, machine)) {
+            CCreate(parent, machine, space->name,
+                    KCONF_FLAG_MACHINE | create_mach);
+        } else if ((pint = khcint_find_effective_provider(parent, KCONF_FLAG_MACHINE, &is_parent)) != NULL) {
+            khc_provider(space, machine) = pint;
+            if (KHM_FAILED(CInit(space, machine, cpath,
+                                 KCONF_FLAG_MACHINE|create_mach, NULL)))
+                khc_provider(space, machine) = NULL;
+        }
+    }
 
-        khcint_get_full_path(space, cpath, sizeof(cpath));
-
-        if (!khc_provider(space, user) && (flags & KCONF_FLAG_USER)) {
-
-            pint = khcint_find_effective_provider(parent, KCONF_FLAG_USER, &is_parent);
-            if (!is_parent && pint) {
-                khc_provider(space, user) = pint;
-                if (KHM_FAILED(CInit(space, user, cpath, KCONF_FLAG_USER|KHM_FLAG_CREATE, NULL)))
-                    khc_provider(space, user) = NULL;
-            }
-
-        } else if (!khc_provider(space, machine) && (flags & KCONF_FLAG_MACHINE)) {
-
-            pint = khcint_find_effective_provider(parent, KCONF_FLAG_MACHINE, &is_parent);
-            if (!is_parent && pint) {
-                khc_provider(space, machine) = pint;
-                if (KHM_FAILED(CInit(space, machine, cpath, KCONF_FLAG_MACHINE|KHM_FLAG_CREATE, NULL)))
-                    khc_provider(space, machine) = NULL;
-            }
-
-        } else if (!khc_provider(space, schema) && (flags & KCONF_FLAG_SCHEMA)) {
-
-            pint = khcint_find_effective_provider(parent, KCONF_FLAG_SCHEMA, &is_parent);
-            if (!is_parent && pint) {
-                khc_provider(space, schema) = pint;
-                if (KHM_FAILED(CInit(space, schema, cpath, KCONF_FLAG_SCHEMA|KHM_FLAG_CREATE, NULL)))
-                    khc_provider(space, schema) = NULL;
-            }
+    if (!khc_provider(space, schema)) {
+        if (parent && khc_provider(parent, schema)) {
+            CCreate(parent, schema, space->name,
+                    KCONF_FLAG_SCHEMA | create_schm);
+        } else if ((pint = khcint_find_effective_provider(parent, KCONF_FLAG_SCHEMA, &is_parent)) != NULL) {
+            khc_provider(space, schema) = pint;
+            if (KHM_FAILED(CInit(space, schema, cpath,
+                                 KCONF_FLAG_SCHEMA|create_schm, NULL)))
+                khc_provider(space, schema) = NULL;
         }
     }
 
@@ -640,7 +586,8 @@ khcint_open_space(kconf_conf_space * parent,
             break;
 
     if(c) {
-        if (KHM_SUCCEEDED(khcint_initialize_providers_for_space(c, p, flags)))
+        if ((flags & KCONF_FLAG_NOINIT) ||
+            KHM_SUCCEEDED(khcint_initialize_providers_for_space(c, p, flags)))
             *result = c;
         else
             *result = NULL;
@@ -662,7 +609,8 @@ khcint_open_space(kconf_conf_space * parent,
     khcint_space_hold(c);
     TADDCHILD(p,c);
 
-    if (KHM_FAILED(khcint_initialize_providers_for_space(c, p, flags))) {
+    if (!(flags & KCONF_FLAG_NOINIT) &&
+        KHM_FAILED(khcint_initialize_providers_for_space(c, p, flags))) {
         TDELCHILD(p, c);
         khcint_free_space(c);
         c = NULL;
@@ -709,6 +657,7 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
     if(cspace == NULL) {
         /* If space is NULL, the caller wants a new handle to the same
            configuration space with different options. */
+        khcint_initialize_providers_for_space(p, TPARENT(p), flags);
         *result = (khm_handle) khcint_handle_from_space(p, flags);
         khcint_space_release(p);
         return KHM_ERROR_SUCCESS;
@@ -1316,15 +1265,18 @@ khc_remove_value(khm_handle conf, const wchar_t * value, khm_int32 flags)
     if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
 
-    if (!khc_is_handle(conf))
+    if (!khc_is_handle(conf) || (flags & ~(KCONF_FLAG_USER|KCONF_FLAG_MACHINE)))
         return KHM_ERROR_INVALID_PARAM;
 
     if (flags == 0)
         flags = KCONF_FLAG_USER | KCONF_FLAG_MACHINE;
 
-    c = khc_space_from_handle(conf);
+    if ((khc_handle_flags(conf) & flags) == 0)
+        return KHM_ERROR_NOT_FOUND;
 
     EnterCriticalSection(&cs_conf_global);
+
+    c = khc_space_from_handle(conf);
 
     if (khc_is_user_handle(conf) && (flags & KCONF_FLAG_USER))
 
@@ -1629,7 +1581,7 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
     EnterCriticalSection(&cs_conf_global);
     p = khc_space_from_any(conf);
 
-    if (KHM_FAILED(khcint_open_space(p, name, KCONF_MAXCCH_NAME, 0, &s))) {
+    if (KHM_FAILED(khcint_open_space(p, name, KCONF_MAXCCH_NAME, KCONF_FLAG_NOINIT, &s))) {
         new_config_space = TRUE;
 
         s = khcint_create_empty_space();
@@ -1752,3 +1704,56 @@ khc_unmount_provider(khm_handle conf, khm_int32 flags)
 
     return (removed)? KHM_ERROR_SUCCESS: KHM_ERROR_NO_PROVIDER;
 }
+
+void init_kconf(void)
+{
+    if(InitializeOnce(&conf_once)) {
+        /* we are the first */
+        InitializeCriticalSection(&cs_conf_global);
+
+        EnterCriticalSection(&cs_conf_global);
+        conf_root = khcint_create_empty_space();
+        conf_root->name = PWCSDUP(L"Root");
+        conf_root->refcount++;
+        conf_root->user.provider = NULL;
+        conf_root->machine.provider = NULL;
+        conf_root->schema.provider = NULL;
+        conf_status = 1;
+
+        khcint_initialize_providers_for_space(conf_root, NULL, 0);
+
+        LeaveCriticalSection(&cs_conf_global);
+
+        InitializeOnceDone(&conf_once);
+    }
+}
+
+void exit_kconf(void)
+{
+    if(khc_is_config_running()) {
+        kconf_handle * h;
+
+        EnterCriticalSection(&cs_conf_global);
+
+        conf_status = 0;
+
+        khcint_free_space(conf_root);
+
+        while(conf_free_handles) {
+            LPOP(&conf_free_handles, &h);
+            if(h) {
+                PFREE(h);
+            }
+        }
+
+        while(conf_handles) {
+            LPOP(&conf_handles, &h);
+            if(h) {
+                PFREE(h);
+            }
+        }
+        LeaveCriticalSection(&cs_conf_global);
+        DeleteCriticalSection(&cs_conf_global);
+    }
+}
+
