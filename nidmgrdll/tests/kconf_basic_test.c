@@ -458,6 +458,21 @@ static int reg_read_write_path_test(void)
     return 0;
 }
 
+static int reg_remove_space_test(void)
+{
+    khm_handle h;
+
+    IS(khc_unload_schema(NULL, schema_kcdbconfig));
+    IS(khc_open_space(NULL, L"KCDBTest", 0, &h));
+    IS(khc_remove_space(h));
+    IS(khc_close_space(h));
+    h = NULL;
+    ISNT(khc_open_space(NULL, L"KCDBTest", 0, &h));
+    ISNT(khc_close_space(h));
+
+    return 0;
+}
+
 static nim_test tests[] = {
     {"scmlod", "Schema load test", schema_load_test},
     {"shadow1", "Shadowed configuration space test", shadow_config_test},
@@ -465,6 +480,7 @@ static nim_test tests[] = {
     {"dirread", "Direct read test", direct_read_test},
     {"rwtest", "Registry read/write test", reg_read_write_test},
     {"prwtest", "Registry read/write with path values", reg_read_write_path_test},
+    {"remspc", "khc_remove_space() and unload schema", reg_remove_space_test},
 };
 
 nim_test_suite kconf_basic_suite = {

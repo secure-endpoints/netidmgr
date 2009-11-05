@@ -58,7 +58,7 @@ typedef struct kconf_conf_space {
 #define khc_provider(h, t)      ((h)->t.provider)
 #define khc_provider_data(h, t) ((h)->t.nodeHandle)
 
-#define CCallIf(h,t,f)          (khc_provider(h,t)? (f) : KHM_ERROR_NOT_IMPLEMENTED)
+#define CCallIf(h,t,f)          (khc_provider(h,t)? (f) : KHM_ERROR_NO_PROVIDER)
 
 #define CInit(h,t,pa,fl,ct)     CCallIf(h,t,(h)->t.provider->init((h),(pa),(fl),(ct),&(h)->t.nodeHandle))
 #define CExit(h,t)              CCallIf(h,t,(h)->t.provider->exit((h)->t.nodeHandle))

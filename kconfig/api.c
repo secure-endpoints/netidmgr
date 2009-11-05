@@ -146,14 +146,22 @@ khcint_handle_from_space(kconf_conf_space * s, khm_int32 flags)
     assert (flags & (KCONF_FLAG_USER | KCONF_FLAG_MACHINE | KCONF_FLAG_SCHEMA));
 
     EnterCriticalSection(&cs_conf_global);
-    if ((flags & KCONF_FLAG_USER) && KHM_FAILED(COpen(s,user)))
-        flags &= ~KCONF_FLAG_USER;
 
-    if ((flags & KCONF_FLAG_MACHINE) && KHM_FAILED(COpen(s,machine)))
-        flags &= ~KCONF_FLAG_MACHINE;
+    /* If the COpen() calls failed, we used to remove the relevant
+       bits from flags, but this results in the handle not seeing
+       those configuration store if they were created later on.  If
+       the user specifies that the handle should see a specific store,
+       it should see that store even if the store doesn't currently
+       exist but will exist in the future. */
 
-    if ((flags & KCONF_FLAG_SCHEMA) && KHM_FAILED(COpen(s,schema)))
-        flags &= ~KCONF_FLAG_SCHEMA;
+    if (flags & KCONF_FLAG_USER)
+        COpen(s,user);
+
+    if (flags & KCONF_FLAG_MACHINE)
+        COpen(s,machine);
+
+    if (flags & KCONF_FLAG_SCHEMA)
+        COpen(s,schema);
 
     LPOP(&conf_free_handles, &h);
     if(!h) {
@@ -810,6 +818,7 @@ khc_close_space(khm_handle csp)
 khm_int32
 khcint_get_parent_config_space(khm_handle pconf,
                                const wchar_t * path,
+                               khm_int32 add_flags,
                                khm_handle *ppconf,
                                const wchar_t ** pvalue)
 {
@@ -822,7 +831,7 @@ khcint_get_parent_config_space(khm_handle pconf,
 
         if(KHM_FAILED(khc_open_space(pconf,
                                      path,
-                                     KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0), 
+                                     KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0) | add_flags, 
                                      ppconf)))
             return KHM_ERROR_INVALID_PARAM;
 
@@ -847,7 +856,7 @@ khcint_read_value_from_cspace(khm_handle pconf,
     khm_int32 rv = KHM_ERROR_NOT_FOUND;
     khm_int32 vtype = expected_type;
 
-    rv = khcint_get_parent_config_space(pconf, pvalue, &conf, &value);
+    rv = khcint_get_parent_config_space(pconf, pvalue, 0, &conf, &value);
     if (KHM_FAILED(rv))
         return rv;
 
@@ -1006,7 +1015,7 @@ khcint_write_value(khm_handle pconf,
             return KHM_ERROR_SUCCESS;
     }
 
-    rv = khcint_get_parent_config_space(pconf, pvalue, &conf, &value);
+    rv = khcint_get_parent_config_space(pconf, pvalue, KHM_FLAG_CREATE, &conf, &value);
     if (KHM_FAILED(rv))
         return rv;
 
@@ -1256,23 +1265,30 @@ khc_value_exists(khm_handle conf, const wchar_t * value)
 
 /* obtains cs_conf_global */
 KHMEXP khm_int32 KHMAPI
-khc_remove_value(khm_handle conf, const wchar_t * value, khm_int32 flags)
+khc_remove_value(khm_handle pconf, const wchar_t * pvalue, khm_int32 flags)
 {
     kconf_conf_space * c;
     khm_int32 rvu = KHM_ERROR_SUCCESS;
     khm_int32 rvm = KHM_ERROR_SUCCESS;
+    khm_int32 rvp;
+    const wchar_t * value;
+    khm_handle conf = NULL;
 
     if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
 
-    if (!khc_is_handle(conf) || (flags & ~(KCONF_FLAG_USER|KCONF_FLAG_MACHINE)))
+    if (!khc_is_handle(pconf) || (flags & ~(KCONF_FLAG_USER|KCONF_FLAG_MACHINE)))
         return KHM_ERROR_INVALID_PARAM;
 
     if (flags == 0)
         flags = KCONF_FLAG_USER | KCONF_FLAG_MACHINE;
 
-    if ((khc_handle_flags(conf) & flags) == 0)
+    if ((khc_handle_flags(pconf) & flags) == 0)
         return KHM_ERROR_NOT_FOUND;
+
+    rvp = khcint_get_parent_config_space(pconf, pvalue, 0, &conf, &value);
+    if (KHM_FAILED(rvp))
+        return rvp;
 
     EnterCriticalSection(&cs_conf_global);
 
@@ -1288,13 +1304,16 @@ khc_remove_value(khm_handle conf, const wchar_t * value, khm_int32 flags)
 
     LeaveCriticalSection(&cs_conf_global);
 
-    return
-        (rvu == KHM_ERROR_SUCCESS)?
+    if (conf && conf != pconf)
+        khc_close_space(conf);
 
-        ((rvm == KHM_ERROR_SUCCESS)? KHM_ERROR_SUCCESS :
+    return
+        (rvu == KHM_ERROR_SUCCESS || rvu == KHM_ERROR_NO_PROVIDER)?
+
+        ((rvm == KHM_ERROR_SUCCESS || rvm == KHM_ERROR_NO_PROVIDER)? KHM_ERROR_SUCCESS :
          ((flags & KCONF_FLAG_USER)? KHM_ERROR_PARTIAL : rvm)) :
 
-        ((rvm == KHM_ERROR_SUCCESS)?
+        ((rvm == KHM_ERROR_SUCCESS || rvm == KHM_ERROR_NO_PROVIDER)?
          ((flags & KCONF_FLAG_MACHINE)? KHM_ERROR_PARTIAL : rvu) :
          rvu);
 }

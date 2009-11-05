@@ -114,10 +114,13 @@ unload_schema(khm_handle parent, const kconf_schema * schema)
     while(schema) {
         switch(state) {
         case INITIAL: /* initial.  this record should start a config space */
+            assert(h == NULL);
+            assert(schema->type == KC_SPACE);
             if(KHM_FAILED(khc_open_space(parent, schema->name, KCONF_FLAG_SCHEMA, &h))) {
                 return NULL;
             }
             khc_unmount_provider(h, KCONF_FLAG_SCHEMA);
+            state = VALUES;
             break;
 
         case VALUES: /* we are inside a config space, in the values area */
@@ -131,6 +134,11 @@ unload_schema(khm_handle parent, const kconf_schema * schema)
                 khc_close_space(h);
                 return schema;
 
+            } else {
+                assert(schema->type == KC_INT32 ||
+                       schema->type == KC_INT64 ||
+                       schema->type == KC_STRING ||
+                       schema->type == KC_BINARY);
             }
             break;
 
