@@ -209,6 +209,11 @@ typedef struct tag_kconf_schema {
  */
 #define KCONF_FLAG_NOINIT        0x00000400
 
+/*! \internal
+    \brief Attempt to use default providers
+ */
+#define KCONF_FLAG_TRYDEFATULTS  0x00000800
+
 /*! \brief Maximum number of allowed characters (including terminating NULL) in a name 
 
     \note This is a hard limit in Windows, since we are mapping

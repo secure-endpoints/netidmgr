@@ -566,7 +566,8 @@ static int prov_mount_test(void)
     IS(khc_close_space(h));
 
     /* This should also work if the child configuration space is
-       mounted and dismounted */
+       mounted and dismounted while a parent configuration space is
+       mounted.  The child should still revert to defaults. */
 
     IS(khc_open_space(NULL, L"TestProvider", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h));
     IS(khc_open_space(h, L"Child", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h2));
@@ -580,7 +581,7 @@ static int prov_mount_test(void)
     i32 = 0; ISNT(khc_read_int32(h2, L"TestValue", &i32));
     IS(khc_unmount_provider(h3, KCONF_FLAG_USER));
     i32 = 0; IS(khc_read_int32(h2, L"TestValue", &i32));
-    CHECK(i32 = 8);
+    CHECK(i32 == 8);
     IS(khc_close_space(h3));
 
     IS(khc_unmount_provider(h, KCONF_FLAG_USER));

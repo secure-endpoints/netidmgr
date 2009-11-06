@@ -465,6 +465,7 @@ khcint_initialize_providers_for_space(kconf_conf_space * space, kconf_conf_space
     khcint_get_full_path(space, cpath, sizeof(cpath));
 
     if (!khc_provider(space, user)) {
+        pint = NULL;
         if (parent && khc_provider(parent, user)) {
             CCreate(parent, user, space->name,
                     KCONF_FLAG_USER | create_user);
@@ -474,9 +475,18 @@ khcint_initialize_providers_for_space(kconf_conf_space * space, kconf_conf_space
                                  KCONF_FLAG_USER|create_user, NULL)))
                 khc_provider(space, user) = NULL;
         }
+
+        if (!khc_provider(space, user) &&
+            (flags & KCONF_FLAG_TRYDEFATULTS) &&
+            pint != &khc_reg_provider) {
+            khc_provider(space, user) = &khc_reg_provider;
+            if (KHM_FAILED(CInit(space, user, cpath, KCONF_FLAG_USER, NULL)))
+                khc_provider(space, user) = NULL;
+        }
     }
 
     if (!khc_provider(space, machine)) {
+        pint = NULL;
         if (parent && khc_provider(parent, machine)) {
             CCreate(parent, machine, space->name,
                     KCONF_FLAG_MACHINE | create_mach);
@@ -486,9 +496,18 @@ khcint_initialize_providers_for_space(kconf_conf_space * space, kconf_conf_space
                                  KCONF_FLAG_MACHINE|create_mach, NULL)))
                 khc_provider(space, machine) = NULL;
         }
+
+        if (!khc_provider(space, machine) &&
+            (flags & KCONF_FLAG_TRYDEFATULTS) &&
+            pint != &khc_reg_provider) {
+            khc_provider(space, machine) = &khc_reg_provider;
+            if (KHM_FAILED(CInit(space, machine, cpath, KCONF_FLAG_MACHINE, NULL)))
+                khc_provider(space, machine) = NULL;
+        }
     }
 
     if (!khc_provider(space, schema)) {
+        pint = NULL;
         if (parent && khc_provider(parent, schema)) {
             CCreate(parent, schema, space->name,
                     KCONF_FLAG_SCHEMA | create_schm);
@@ -865,7 +884,7 @@ khcint_read_value_from_cspace(khm_handle pconf,
     kconf_conf_space * c = NULL;
     const wchar_t * value = NULL;
     khm_handle conf = NULL;
-    khm_int32 rv = KHM_ERROR_NOT_FOUND;
+    khm_int32 rv;
     khm_int32 vtype = expected_type;
 
     rv = khcint_get_parent_config_space(pconf, pvalue, 0, &conf, &value);
@@ -878,6 +897,8 @@ khcint_read_value_from_cspace(khm_handle pconf,
 
     EnterCriticalSection(&cs_conf_global);
     assert(khc_is_space(c));
+
+    rv = KHM_ERROR_NOT_FOUND;
 
     do {
         if (khc_is_user_handle(conf) &&
@@ -1728,7 +1749,7 @@ khc_unmount_provider(khm_handle conf, khm_int32 flags)
         }
     }
 
-    if (KHM_FAILED(khcint_initialize_providers_for_space(s, TPARENT(s), 0))) {
+    if (KHM_FAILED(khcint_initialize_providers_for_space(s, TPARENT(s), KCONF_FLAG_TRYDEFATULTS))) {
         khcint_space_hold(s);
         khcint_space_release(s);
     }
