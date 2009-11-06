@@ -37,6 +37,7 @@ extern nim_test_suite uilib_res_suite;
 extern nim_test_suite uilib_cfg_suite;
 extern nim_test_suite util_task_suite;
 extern nim_test_suite kconf_basic_suite;
+extern nim_test_suite kconf_prov_suite;
 
 const nim_test_suite *suites[] = {
     &util_str_suite,
@@ -45,6 +46,7 @@ const nim_test_suite *suites[] = {
     &util_sync_suite,
     &util_task_suite,
     &kconf_basic_suite,
+    &kconf_prov_suite,
 };
 
 int  current_test;

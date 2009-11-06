@@ -142,6 +142,7 @@ kconf_handle *
 khcint_handle_from_space(kconf_conf_space * s, khm_int32 flags)
 {
     kconf_handle * h;
+    int n_added = 0;
 
     assert (flags & (KCONF_FLAG_USER | KCONF_FLAG_MACHINE | KCONF_FLAG_SCHEMA));
 
@@ -154,14 +155,20 @@ khcint_handle_from_space(kconf_conf_space * s, khm_int32 flags)
        it should see that store even if the store doesn't currently
        exist but will exist in the future. */
 
-    if (flags & KCONF_FLAG_USER)
-        COpen(s,user);
+    if ((flags & KCONF_FLAG_USER) && KHM_SUCCEEDED(COpen(s,user)))
+        n_added++;
 
-    if (flags & KCONF_FLAG_MACHINE)
-        COpen(s,machine);
+    if ((flags & KCONF_FLAG_MACHINE) && KHM_SUCCEEDED(COpen(s,machine)))
+        n_added++;
 
-    if (flags & KCONF_FLAG_SCHEMA)
-        COpen(s,schema);
+    if ((flags & KCONF_FLAG_SCHEMA) && KHM_SUCCEEDED(COpen(s,schema)))
+        n_added++;
+
+    if (n_added == 0) {
+        /* Nothing is visible to this configuration handle */
+        LeaveCriticalSection(&cs_conf_global);
+        return NULL;
+    }
 
     LPOP(&conf_free_handles, &h);
     if(!h) {
@@ -773,6 +780,11 @@ khc_open_space(khm_handle parent, const wchar_t * cspace, khm_int32 flags,
 
                 rv = KHM_ERROR_SUCCESS;
             }
+        } else if (*result == NULL) {
+            /* We may get here because although the configuration
+               space exists, the configuration stores that were
+               requested in 'flags' were not available. */
+            rv = KHM_ERROR_NOT_FOUND;
         }
     } else {
         *result = NULL;
@@ -1590,7 +1602,8 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
     {
         khm_size cch;
 
-        if (FAILED(StringCchLength(name, KCONF_MAXCCH_NAME, &cch)))
+        if (FAILED(StringCchLength(name, KCONF_MAXCCH_NAME, &cch)) ||
+            wcschr(name, L'\\') || wcschr(name, L'/'))
             return KHM_ERROR_INVALID_PARAM;
     }
 
@@ -1664,7 +1677,7 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
         }
     }
 
-    if (s && added) {
+    if (s && added && ret_conf) {
         *ret_conf = khcint_handle_from_space(s, flags);
     }
 

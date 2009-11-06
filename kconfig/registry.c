@@ -124,6 +124,7 @@ reg_init(khm_handle sp_handle,
         *r_nodeHandle = r_node;
         return KHM_ERROR_SUCCESS;
     } else {
+        *r_nodeHandle = NULL;
         return KHM_ERROR_NOT_FOUND;
     }
 }
@@ -186,13 +187,10 @@ reg_create(void * nodeHandle, const wchar_t * name, khm_int32 flags)
 {
     reg_node * node = (reg_node *) nodeHandle;
     khm_int32 rv;
-    khm_handle h = NULL;
 
     assert(is_reg_node(node));
     rv = khc_mount_provider(node->h, name, flags, &khc_reg_provider,
-                            NULL, &h);
-    if (h)
-        khc_close_space(h);
+                            NULL, NULL);
     return rv;
 }
 

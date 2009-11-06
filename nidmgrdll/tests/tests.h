@@ -63,3 +63,5 @@ void check_ifx(khm_boolean b, const char * msg, const char * file, int line);
 #define TOSTR(l) TOSTR_1(l)
 #define CHECK(e) check_ifx((e), #e, __FILE__, __LINE__)
 #define CHECKX(e,m) check_ifx((e), (m), __FILE__, __LINE__)
+#define IS(f) CHECK(KHM_SUCCEEDED(f))
+#define ISNT(f) CHECK(KHM_FAILED(f))

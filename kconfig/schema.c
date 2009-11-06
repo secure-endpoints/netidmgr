@@ -415,7 +415,6 @@ khcint_load_schema(khm_handle parent, const kconf_schema * schema, int * p_end)
 {
     khm_int32 rv;
     int end;
-    khm_handle h_conf = NULL;
     schema_mount_parameters p;
 
     rv = validate_schema(schema, 0, &end);
@@ -426,13 +425,10 @@ khcint_load_schema(khm_handle parent, const kconf_schema * schema, int * p_end)
     p.end = &end;
 
     rv = khc_mount_provider(parent, schema->name, KCONF_FLAG_SCHEMA|KHM_FLAG_CREATE,
-                            &khc_schema_provider, &p, &h_conf);
+                            &khc_schema_provider, &p, NULL);
 
     if (p_end)
         *p_end = end;
-
-    if (h_conf)
-        khc_close_space(h_conf);
     return rv;
 }
 

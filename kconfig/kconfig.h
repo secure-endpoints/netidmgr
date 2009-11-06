@@ -1079,6 +1079,10 @@ khc_remove_space(khm_handle conf);
   callback, it may mount as many child spaces as necessary.
  */
 typedef struct khc_provider_interface {
+    /*! \brief Provider version
+
+      Should be set to ::KHC_PROVIDER_V1.
+     */
     khm_int32 version;
 
     /*! \brief Mount provider

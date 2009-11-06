@@ -79,9 +79,6 @@ static kconf_schema schema_kcdbconfig[] = {
 };
 
 
-#define IS(f) CHECK(KHM_SUCCEEDED(f))
-#define ISNT(f) CHECK(KHM_FAILED(f))
-
 static int schema_load_test(void) {
     khm_handle csp_kcdb = NULL;
 
@@ -148,12 +145,17 @@ static int open_space_test(void) {
     IS(khc_open_space(NULL, L"KCDBTest", 0, &csp1));
     IS(khc_read_int32(csp1, L"ID", &t));
     CHECK(t == 1);
+
+    ISNT(khc_open_space(csp1, L"Identity", KCONF_FLAG_MACHINE, &csp2));
+
     IS(khc_close_space(csp1));
 
     IS(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent", 0, &csp1));
     IS(khc_read_int32(csp1, L"ID", &t));
     CHECK(t == 3);
     IS(khc_close_space(csp1));
+
+    ISNT(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent", KCONF_FLAG_USER, &csp2));
 
     IS(khc_open_space(NULL, L"KCDBTest\\Identity\\FooIdent\\Blah", KCONF_FLAG_TRAILINGVALUE, &csp1));
     IS(khc_read_int32(csp1, L"ID", &t));
