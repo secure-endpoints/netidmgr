@@ -214,6 +214,12 @@ typedef struct tag_kconf_schema {
  */
 #define KCONF_FLAG_TRYDEFATULTS  0x00000800
 
+/*! \brief Apply operation recursively
+
+  \see khc_unmount_provider()
+ */
+#define KCONF_FLAG_RECURSIVE     0x00001000
+
 /*! \brief Maximum number of allowed characters (including terminating NULL) in a name 
 
     \note This is a hard limit in Windows, since we are mapping
@@ -1411,8 +1417,39 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
                    const khc_provider_interface * provider,
                    void * context, khm_handle * ret_conf);
 
+/*! \brief  Unmount a configuration provider
+
+  Unmounts a provider from the specified configuration space and
+  stores.
+
+  \param[in] conf The configuration space to unmount provider from.
+
+  \param[in] flags Specifies the configuration stores that will be
+      affected.  The flags can be a combination of ::KCONF_FLAG_USER,
+      ::KCONF_FLAG_MACHINE and ::KCONF_FLAG_SCHEMA.  The provider
+      associated with configuration store corresponding to each
+      supplied flag will be unmounted.
+
+      In addition, the ::KCONF_FLAG_RECURSIVE flag may be specified to
+      apply the unmount operation to the entire tree starting at the
+      configuration store specified by \a conf.
+
+  Only the configuration stores visible to the handle specified in \a
+  conf will be affected.  Setting \a conf to NULL indicates the root
+  configuration space with all configuration stores visible.
+
+  The following command removes the given provider from the user store
+  of all the configuration spaces in the system:
+
+  \code
+  khc_unmount_provider(NULL, &my_provider, KCONF_FLAG_USER|KCONF_FLAG_RECURSIVE);
+  \endcode
+
+  \see khc_mount_provider()
+ */
 KHMEXP khm_int32 KHMAPI
-khc_unmount_provider(khm_handle conf, khm_int32 flags);
+khc_unmount_provider(khm_handle conf, const khc_provider_interface * provider,
+                     khm_int32 flags);
 
 END_C
 

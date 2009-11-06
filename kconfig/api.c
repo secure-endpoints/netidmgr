@@ -1711,7 +1711,8 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
 }
 
 KHMEXP khm_int32 KHMAPI
-khc_unmount_provider(khm_handle conf, khm_int32 flags)
+khc_unmount_provider(khm_handle conf, const khc_provider_interface * provider,
+                     khm_int32 flags)
 {
     kconf_conf_space * s;
     khm_boolean removed = FALSE;
@@ -1724,9 +1725,10 @@ khc_unmount_provider(khm_handle conf, khm_int32 flags)
 
     EnterCriticalSection(&cs_conf_global);
     s = khc_space_from_any(conf);
+    khcint_space_hold(s);
 
     if ((!khc_is_handle(conf) || khc_is_user_handle(conf)) && (flags & KCONF_FLAG_USER)) {
-        if (khc_provider(s, user)) {
+        if (khc_provider(s, user) && khc_provider(s, user) == provider) {
             CExit(s, user);
             khc_provider(s, user) = NULL;
             removed = TRUE;
@@ -1734,7 +1736,7 @@ khc_unmount_provider(khm_handle conf, khm_int32 flags)
     }
 
     if ((!khc_is_handle(conf) || khc_is_machine_handle(conf)) && (flags & KCONF_FLAG_MACHINE)) {
-        if (khc_provider(s, machine)) {
+        if (khc_provider(s, machine) && khc_provider(s, machine) == provider) {
             CExit(s, machine);
             khc_provider(s, machine) = NULL;
             removed = TRUE;
@@ -1742,17 +1744,29 @@ khc_unmount_provider(khm_handle conf, khm_int32 flags)
     }
 
     if ((!khc_is_handle(conf) || khc_is_schema_handle(conf)) && (flags & KCONF_FLAG_SCHEMA)) {
-        if (khc_provider(s, schema)) {
+        if (khc_provider(s, schema) && khc_provider(s, schema) == provider) {
             CExit(s, schema);
             khc_provider(s, schema) = NULL;
             removed = TRUE;
         }
     }
 
-    if (KHM_FAILED(khcint_initialize_providers_for_space(s, TPARENT(s), KCONF_FLAG_TRYDEFATULTS))) {
-        khcint_space_hold(s);
-        khcint_space_release(s);
+    if (flags & KCONF_FLAG_RECURSIVE) {
+        kconf_conf_space * c;
+        kconf_conf_space * nc;
+
+        for (c = TFIRSTCHILD(s); c; c = nc) {
+            nc = LNEXT(c);
+
+            if (KHM_SUCCEEDED(khc_unmount_provider(c, provider, flags)))
+                removed = TRUE;
+        }
     }
+
+    khcint_initialize_providers_for_space(s, TPARENT(s), KCONF_FLAG_TRYDEFATULTS);
+
+    khcint_space_release(s);
+
     LeaveCriticalSection(&cs_conf_global);
 
     return (removed)? KHM_ERROR_SUCCESS: KHM_ERROR_NO_PROVIDER;

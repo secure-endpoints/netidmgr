@@ -511,7 +511,7 @@ static int prov_mount_test(void)
                           L"\\TestProvider", &h));
     CHECK(h != NULL);
 
-    IS(khc_unmount_provider(h, KCONF_FLAG_USER));
+    IS(khc_unmount_provider(h, &test_provider, KCONF_FLAG_USER));
 
     IS(khc_close_space(h));
 
@@ -524,7 +524,7 @@ static int prov_mount_test(void)
     CHECK(h != NULL);
     CHECK(n_all_data == 3);
 
-    IS(khc_unmount_provider(h, KCONF_FLAG_USER));
+    IS(khc_unmount_provider(h, &test_provider, KCONF_FLAG_USER));
 
     IS(khc_open_space(NULL, L"TestProvider", KCONF_FLAG_MACHINE, &h2));
     IS(khc_close_space(h2));
@@ -534,7 +534,7 @@ static int prov_mount_test(void)
 
     ISNT(khc_open_space(NULL, L"TestProvider", KCONF_FLAG_USER, &h2));
 
-    IS(khc_unmount_provider(h, KCONF_FLAG_MACHINE|KCONF_FLAG_SCHEMA));
+    IS(khc_unmount_provider(h, &test_provider, KCONF_FLAG_MACHINE|KCONF_FLAG_SCHEMA));
 
     IS(khc_close_space(h));
 
@@ -558,7 +558,7 @@ static int prov_mount_test(void)
 
     IS(khc_mount_provider(NULL, L"TestProvider", KCONF_FLAG_USER, &test_provider, NULL, &h));
     i32 = 0; ISNT(khc_read_int32(h, L"TestValue", &i32));
-    IS(khc_unmount_provider(h, KCONF_FLAG_USER));
+    IS(khc_unmount_provider(h, &test_provider, KCONF_FLAG_USER));
     i32 = 0; IS(khc_read_int32(h, L"TestValue", &i32));
     CHECK(i32 = 7);
 
@@ -567,7 +567,8 @@ static int prov_mount_test(void)
 
     /* This should also work if the child configuration space is
        mounted and dismounted while a parent configuration space is
-       mounted.  The child should still revert to defaults. */
+       mounted.  The child should still revert the default
+       provider. */
 
     IS(khc_open_space(NULL, L"TestProvider", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h));
     IS(khc_open_space(h, L"Child", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h2));
@@ -579,15 +580,43 @@ static int prov_mount_test(void)
 
     IS(khc_mount_provider(h, L"Child", KCONF_FLAG_USER, &test_provider, NULL, &h3));
     i32 = 0; ISNT(khc_read_int32(h2, L"TestValue", &i32));
-    IS(khc_unmount_provider(h3, KCONF_FLAG_USER));
+    IS(khc_unmount_provider(h3, &test_provider, KCONF_FLAG_USER));
     i32 = 0; IS(khc_read_int32(h2, L"TestValue", &i32));
     CHECK(i32 == 8);
     IS(khc_close_space(h3));
 
-    IS(khc_unmount_provider(h, KCONF_FLAG_USER));
+    IS(khc_unmount_provider(h, &test_provider, KCONF_FLAG_USER));
     IS(khc_remove_space(h));
     IS(khc_close_space(h));
     IS(khc_close_space(h2));
+
+    /* See if we can remove everything in one go */
+    CHECK(n_all_data == 0);
+    IS(khc_mount_provider(NULL, L"TestProvider", KCONF_FLAG_USER|KCONF_FLAG_MACHINE,
+                          &test_provider, NULL, &h));
+    IS(khc_mount_provider(h, L"Child", KCONF_FLAG_USER|KCONF_FLAG_MACHINE,
+                          &test_provider, NULL, &h2));
+    IS(khc_mount_provider(h2, L"Child", KCONF_FLAG_USER|KCONF_FLAG_MACHINE,
+                          &test_provider, NULL, &h3));
+    CHECK(n_all_data == 6);
+
+    ISNT(khc_unmount_provider(NULL, &test_provider, KCONF_FLAG_USER));
+
+    IS(khc_unmount_provider(h, &test_provider, KCONF_FLAG_USER));
+
+    CHECK(n_all_data == 5);
+
+    IS(khc_unmount_provider(NULL, &test_provider, KCONF_FLAG_USER|KCONF_FLAG_RECURSIVE));
+
+    CHECK(n_all_data == 3);
+
+    IS(khc_unmount_provider(NULL, &test_provider, KCONF_FLAG_USER|KCONF_FLAG_MACHINE|KCONF_FLAG_RECURSIVE));
+
+    CHECK(n_all_data == 0);
+
+    IS(khc_close_space(h3));
+    IS(khc_close_space(h2));
+    IS(khc_close_space(h));
 
     return 0;
 }
@@ -614,7 +643,7 @@ static int prov_create_test(void)
        or the provider failed to mount. */
     CHECK(get_data_for(L"\\TestProvider", KCONF_FLAG_USER)->entry_count[CIDX_p_create] == 3);
 
-    IS(khc_unmount_provider(h, KCONF_FLAG_USER));
+    IS(khc_unmount_provider(h, &test_provider, KCONF_FLAG_USER));
     IS(khc_close_space(h));
 
     return 0;

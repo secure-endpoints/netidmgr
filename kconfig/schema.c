@@ -119,7 +119,7 @@ unload_schema(khm_handle parent, const kconf_schema * schema)
             if(KHM_FAILED(khc_open_space(parent, schema->name, KCONF_FLAG_SCHEMA, &h))) {
                 return NULL;
             }
-            khc_unmount_provider(h, KCONF_FLAG_SCHEMA);
+            khc_unmount_provider(h, &khc_schema_provider, KCONF_FLAG_SCHEMA);
             state = VALUES;
             break;
 
