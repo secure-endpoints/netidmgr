@@ -337,11 +337,13 @@ schema_read_value(void * nodeHandle, const wchar_t * valuename,
             void * src = NULL;
             const kconf_schema * s = &node->schema[i];
 
-            if (node->schema[i].type != *pvalue_type &&
+            if (pvalue_type &&
+                node->schema[i].type != *pvalue_type &&
                 *pvalue_type != KC_NONE)
                 return KHM_ERROR_TYPE_MISMATCH;
 
-            *pvalue_type = s->type;
+            if (pvalue_type)
+                *pvalue_type = s->type;
 
             switch (s->type) {
             case KC_INT32:
@@ -367,6 +369,9 @@ schema_read_value(void * nodeHandle, const wchar_t * valuename,
 
             if (src == NULL)
                 return KHM_ERROR_NOT_FOUND;
+
+            if (buffer == NULL && pcb_buffer == NULL)
+                return KHM_ERROR_SUCCESS;
 
             if (buffer == NULL || *pcb_buffer < cbsize) {
                 *pcb_buffer = cbsize;

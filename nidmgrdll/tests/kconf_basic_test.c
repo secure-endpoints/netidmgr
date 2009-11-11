@@ -290,6 +290,9 @@ static int reg_read_write_test(void)
     IS(khc_write_binary(c_u, L"Binary value", cubytes, sizeof(cubytes)));
 
     /* Now read them back */
+    CHECK(khc_value_exists(c_u, L"32-bit Intx") == 0);
+    CHECK(khc_value_exists(c_u, L"32-bit Int") == KCONF_FLAG_USER);
+
     IS(khc_read_int32(c_u, L"32-bit Int", &i32));
     CHECK(i32 == 20);
     IS(khc_read_int64(c_u, L"64-bit Int", &i64));
@@ -325,6 +328,7 @@ static int reg_read_write_test(void)
 
     /* Open a handle for the machine layer.  Same deal as above. */
     IS(khc_open_space(c_u, NULL, KCONF_FLAG_MACHINE|KHM_FLAG_CREATE, &c_m));
+    CHECK(khc_value_exists(c_m, L"32-bit Int") == 0);
     ISNT(khc_read_int32(c_m, L"32-bit Int", &i32));
     ISNT(khc_read_int64(c_m, L"64-bit Int", &i64));
     cb = sizeof(str);
@@ -353,6 +357,7 @@ static int reg_read_write_test(void)
     CHECK(!memcmp(bytes, cmbytes, sizeof(cmbytes)));
 
     /* The user space should see the same values as it saw earlier */
+    CHECK(khc_value_exists(c_u, L"32-bit Int") == (KCONF_FLAG_USER|KCONF_FLAG_MACHINE));
     IS(khc_read_int32(c_u, L"32-bit Int", &i32));
     CHECK(i32 == 20);
     IS(khc_read_int64(c_u, L"64-bit Int", &i64));

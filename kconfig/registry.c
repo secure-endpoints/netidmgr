@@ -258,7 +258,10 @@ reg_read_value(void * nodeHandle, const wchar_t * valuename,
         return KHM_ERROR_NOT_FOUND;
     }
 
-    size = (DWORD) *pcb_buffer;
+    if (pcb_buffer)
+        size = (DWORD) *pcb_buffer;
+    else
+        size = 0;
 
     hr = RegQueryValueEx(node->h_key, valuename, NULL, &type, (LPBYTE) buffer, &size);
 
@@ -274,7 +277,7 @@ reg_read_value(void * nodeHandle, const wchar_t * valuename,
                       KC_BINARY);
 
         if (pcb_buffer == NULL)         /* Only checking if the value
-                                   exists */
+                                           exists */
             return KHM_ERROR_SUCCESS;
 
         if ((type == REG_SZ || type == REG_EXPAND_SZ) && buffer != NULL &&
