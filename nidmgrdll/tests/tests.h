@@ -51,13 +51,15 @@ int run_tests(void);
 
 int run_test_by_name(const char * name);
 
-void log(const char *, ...);
+void log(kherr_severity, const char *, ...);
 
 void begin_task(const char *);
 
 void end_task(int failed);
 
 void check_ifx(khm_boolean b, const char * msg, const char * file, int line);
+
+extern kherr_severity max_severity;
 
 #define TOSTR_1(e) #e
 #define TOSTR(l) TOSTR_1(l)

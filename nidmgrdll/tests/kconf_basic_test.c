@@ -291,7 +291,7 @@ static int reg_read_write_test(void)
 
     /* Now read them back */
     CHECK(khc_value_exists(c_u, L"32-bit Intx") == 0);
-    CHECK(khc_value_exists(c_u, L"32-bit Int") == KCONF_FLAG_USER);
+    CHECK(khc_value_exists(c_u, L"32-bit Int") == (KCONF_FLAG_USER | KCONF_FLAG_SCHEMA));
 
     IS(khc_read_int32(c_u, L"32-bit Int", &i32));
     CHECK(i32 == 20);
@@ -357,7 +357,7 @@ static int reg_read_write_test(void)
     CHECK(!memcmp(bytes, cmbytes, sizeof(cmbytes)));
 
     /* The user space should see the same values as it saw earlier */
-    CHECK(khc_value_exists(c_u, L"32-bit Int") == (KCONF_FLAG_USER|KCONF_FLAG_MACHINE));
+    CHECK(khc_value_exists(c_u, L"32-bit Int") == (KCONF_FLAG_USER|KCONF_FLAG_MACHINE|KCONF_FLAG_SCHEMA));
     IS(khc_read_int32(c_u, L"32-bit Int", &i32));
     CHECK(i32 == 20);
     IS(khc_read_int64(c_u, L"64-bit Int", &i64));

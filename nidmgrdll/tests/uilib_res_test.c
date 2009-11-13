@@ -48,70 +48,70 @@ int lifr_test(void)
 
     begin_task("Load icon from .ico file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_ICO FNI1, 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load numbered icon from .ico file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_ICO FNI1 L",0", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load numbered icon from .ico file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_ICO FNI1 L",2", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon from .bmp file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_IMG FNB32, 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon from .bmp file 32->24");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_IMG FNB32, KHUI_LIFR_TOOLBAR, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon 0 from .dll file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_ICODLL DLLNAME L",0", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon 1 from .dll file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_ICODLL DLLNAME L",1", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon BMP 0 from .dll file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_IMGDLL DLLNAME L",0", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon BMP 1 from .dll file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_IMGDLL DLLNAME L",1", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon BMP 2 from .dll file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_IMGDLL DLLNAME L",2", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
@@ -119,7 +119,7 @@ int lifr_test(void)
     /* This should fail */
     begin_task("Load icon 3 from .dll file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_ICODLL DLLNAME L",3", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(!rv);
 
     RESETICON;
@@ -127,7 +127,7 @@ int lifr_test(void)
     /* This should fail */
     begin_task("Load icon 0 from non-existent .dll file");
     rv = khui_load_icon_from_resource_path(KHUI_PREFIX_ICODLL L"asdlkjasldfkjsfd.dll" L",0", 0, &hicon);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(!rv);
 
     RESETICON;
@@ -152,7 +152,7 @@ int lifp_test(void)
 
     begin_task("Load icon from .ico file");
     rv = khui_load_icons_from_path(FNI1, KHM_RESTYPE_ICON, 0, 0, &hicon, &n);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
@@ -160,14 +160,14 @@ int lifp_test(void)
     begin_task("Load icon from .bmp file");
     rv = khui_load_icons_from_path(FNB16, KHM_RESTYPE_BITMAP, 0,
                                    KHUI_LIFR_SMALL, &hicon, &n);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
 
     begin_task("Load icon from .bmp file (mixed size)");
     rv = khui_load_icons_from_path(FNB16, KHM_RESTYPE_BITMAP, 0, 0, &hicon, &n);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
@@ -175,7 +175,7 @@ int lifp_test(void)
     begin_task("Load bitmap from .dll file");
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_BITMAP, 0,
                                    KHUI_LIFR_FROMLIB, &hicon, &n);
-    log("Return value : %x\n", rv);
+    log(KHERR_DEBUG_1, "Return value : %x\n", rv);
     end_task(rv);
 
     RESETICON;
@@ -183,7 +183,7 @@ int lifp_test(void)
     begin_task("Get bitmap count from .dll");
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_BITMAP, 0, KHUI_LIFR_FROMLIB, NULL,
                                    &n);
-    log("Return value : %x with bitmap count %d\n", rv, n);
+    log(KHERR_DEBUG_1, "Return value : %x with bitmap count %d\n", rv, n);
     end_task(rv != KHM_ERROR_TOO_LONG || n != 3);
 
     RESETICON;
@@ -191,7 +191,7 @@ int lifp_test(void)
     begin_task("Get icon count from .dll");
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_ICON, 0, KHUI_LIFR_FROMLIB, NULL,
                                    &n);
-    log("Return value : %x with icon count %d\n", rv, n);
+    log(KHERR_DEBUG_1, "Return value : %x with icon count %d\n", rv, n);
     end_task(rv != KHM_ERROR_TOO_LONG || n != 2);
 
     RESETICON;
@@ -203,7 +203,7 @@ int lifp_test(void)
     n = 2;
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_BITMAP, 0, KHUI_LIFR_FROMLIB,
                                    iconarray, &n);
-    log("Return value : %x with bitmap count %d\n", rv, n);
+    log(KHERR_DEBUG_1, "Return value : %x with bitmap count %d\n", rv, n);
     end_task(KHM_FAILED(rv) || n != 2 ||
              iconarray[0] == NULL ||
              iconarray[1] == NULL ||
@@ -221,7 +221,7 @@ int lifp_test(void)
     begin_task("Get all bitmaps from .dll");
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_BITMAP, 0, KHUI_LIFR_FROMLIB,
                                    iconarray, &n);
-    log("Return value : %x with bitmap count %d\n", rv, n);
+    log(KHERR_DEBUG_1, "Return value : %x with bitmap count %d\n", rv, n);
     end_task(KHM_FAILED(rv) || n != 3);
 
     RESETICONS;
@@ -229,7 +229,7 @@ int lifp_test(void)
     begin_task("Get bitmaps 1 and 2 from .dll");
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_BITMAP, 1, KHUI_LIFR_FROMLIB,
                                    iconarray, &n);
-    log("Return value : %x with bitmap count %d\n", rv, n);
+    log(KHERR_DEBUG_1, "Return value : %x with bitmap count %d\n", rv, n);
     end_task(KHM_FAILED(rv) || n != 2);
 
     RESETICONS;
@@ -237,7 +237,7 @@ int lifp_test(void)
     begin_task("Get all icons from .dll");
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_ICON, 0, KHUI_LIFR_FROMLIB,
                                    iconarray, &n);
-    log("Return value : %x with bitmap count %d\n", rv, n);
+    log(KHERR_DEBUG_1, "Return value : %x with bitmap count %d\n", rv, n);
     end_task(KHM_FAILED(rv) || n != 2);
 
     RESETICONS;
@@ -245,7 +245,7 @@ int lifp_test(void)
     begin_task("Get icon 3 from .dll");
     rv = khui_load_icons_from_path(DLLNAME, KHM_RESTYPE_ICON, 3, KHUI_LIFR_FROMLIB,
                                    iconarray, &n);
-    log("Return value : %x with bitmap count %d\n", rv, n);
+    log(KHERR_DEBUG_1, "Return value : %x with bitmap count %d\n", rv, n);
     end_task(rv != KHM_ERROR_NOT_FOUND || n != 0);
 
     RESETICONS;

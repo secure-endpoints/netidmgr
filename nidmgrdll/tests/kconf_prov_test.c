@@ -112,7 +112,7 @@ p_data * get_data_for(const wchar_t * path, khm_int32 flags) {
 #define ENTER(f)                                                        \
     do {                                                                \
         d->entry_count[ CIDX_ ## f ]++;                                 \
-        log("%s(%d) :        Entering " #f " for [%S::%s] with count %d\n", \
+        log(KHERR_DEBUG_1, "%s(%d) :        Entering " #f " for [%S::%s] with count %d\n", \
             __FILE__, __LINE__,                                         \
             d->path,                                                    \
             ((d->flags & KCONF_FLAG_USER)? "USER":                      \
@@ -123,7 +123,7 @@ p_data * get_data_for(const wchar_t * path, khm_int32 flags) {
 
 #define LEAVE(f)                                                       \
     do {                                                               \
-        log("%s(%d) :        Leaving  " #f " for [%S::%s]\n",          \
+        log(KHERR_DEBUG_1, "%s(%d) :        Leaving  " #f " for [%S::%s]\n",          \
             __FILE__, __LINE__,                                        \
             d->path,                                                   \
             ((d->flags & KCONF_FLAG_USER)? "USER":                     \
@@ -208,9 +208,9 @@ khm_int32 KHMCALLBACK p_exit(void * nodeHandle)
     {
         int i;
 
-        log("    Invocation counts:\n");
+        log(KHERR_DEBUG_1, "    Invocation counts:\n");
         for (i=0; i < CIDX_N; i++) {
-            log("        %s = %d\n", CIDX_names[i], d->entry_count[i]);
+            log(KHERR_DEBUG_1, "        %s = %d\n", CIDX_names[i], d->entry_count[i]);
         }
     }
 
@@ -231,7 +231,7 @@ khm_int32 KHMCALLBACK p_open(void * nodeHandle)
 
     d->open_count++;
 
-    log("%s(%d) :        Handle count is %d\n", __FILE__, __LINE__, d->open_count);
+    log(KHERR_DEBUG_1, "%s(%d) :        Handle count is %d\n", __FILE__, __LINE__, d->open_count);
 
     LEAVE(p_open);
     return KHM_ERROR_SUCCESS;
@@ -248,9 +248,9 @@ khm_int32 KHMCALLBACK p_close(void * nodeHandle)
     CHECK(d->open_count >= 0);
 
     if (d->open_count == 0)
-        log("%s(%d) :        CLOSING. Handle count is 0\n", __FILE__, __LINE__);
+        log(KHERR_DEBUG_1, "%s(%d) :        CLOSING. Handle count is 0\n", __FILE__, __LINE__);
     else
-        log("%s(%d) :        Handle count is %d\n", __FILE__, __LINE__, d->open_count);
+        log(KHERR_DEBUG_1, "%s(%d) :        Handle count is %d\n", __FILE__, __LINE__, d->open_count);
 
     LEAVE(p_close);
     return KHM_ERROR_SUCCESS;
@@ -337,7 +337,7 @@ khm_int32 KHMCALLBACK p_read_value(void * nodeHandle, const wchar_t * valuename,
     CHECK(buffer == NULL || pcb != NULL);
 
     for (i=0; i < d->n_values; i++) {
-        if (valuename == d->values[i].name) {
+        if (!wcscmp(valuename, d->values[i].name)) {
             v = &d->values[i];
             break;
         }
@@ -654,10 +654,94 @@ static int prov_rd_wr_test(void)
     return 0;
 }
 
+static int prov_val_test(void)
+{
+    khm_handle h;
+    khm_int32 t = 0;
+
+    IS(khc_mount_provider(NULL, L"TestProvider", KCONF_FLAG_USER,
+                          &test_provider,
+                          L"\\TestProvider", &h));
+    IS(khc_write_int32(h,
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDEF"
+                       L"0123456789ABCDE",
+                       10));
+
+    IS(khc_read_int32(h,
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDEF"
+                      L"0123456789ABCDE",
+                      &t));
+    CHECK(t == 10);
+
+    ISNT(khc_write_int32(h,
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF"
+                         L"0123456789ABCDEF",
+                         11));
+    IS(khc_write_int32(h,
+                       L"abc\\def",
+                       13));
+    IS(khc_read_int32(h, L"abc\\def", &t));
+    CHECK(t == 13);
+
+    return 0;
+}
+
 static nim_test tests[] = {
     {"provmount", "Provider mount/unmount test", prov_mount_test},
     {"provcreate", "Provider create test", prov_create_test},
     {"provrdwr", "Provider read/write test", prov_rd_wr_test},
+    {"provval", "Provider validation tests", prov_val_test},
 };
 
 nim_test_suite kconf_prov_suite = {

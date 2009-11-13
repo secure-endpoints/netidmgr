@@ -117,6 +117,8 @@ extern const khc_provider_interface khc_reg_provider;
 
 extern const khc_provider_interface khc_schema_provider;
 
+extern const khc_provider_interface khc_memory_provider;
+
 kconf_conf_space *
 khcint_create_empty_space(void);
 

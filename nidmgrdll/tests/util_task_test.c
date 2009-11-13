@@ -38,7 +38,7 @@ int create_test(void)
     int      r;
 
     r = rand() & 0x0fffffff;
-    log("Picked random number r=%d\n", r);
+    log(KHERR_DEBUG_1, "Picked random number r=%d\n", r);
     t = task_create(NULL, 0, test_task_1, (void *)(ssize_t) r, NULL, 0);
     CHECK(t != NULL);
     h = task_get_thread_handle(t);
@@ -73,7 +73,7 @@ int abort_test(void)
     LONG previous = 0;
 
     r = (rand() & 0x0f) + 8;
-    log("Picked random number r=%d\n", r);
+    log(KHERR_DEBUG_1, "Picked random number r=%d\n", r);
     t = task_create(NULL, 0, test_task_2, NULL, NULL, 0);
     CHECK(t != NULL);
     h = task_get_thread_handle(t);
@@ -83,17 +83,17 @@ int abort_test(void)
         local_cycles++;
         if (previous != _task_2_counter) {
             previous = _task_2_counter;
-            log("  Thread cycles: %d, Local cycles: %d\n",
+            log(KHERR_DEBUG_1, "  Thread cycles: %d, Local cycles: %d\n",
                 (int) previous, (int) local_cycles);
         }
         Sleep(0);
     }
 
-    log("  Local cycles: %d\n", local_cycles);
+    log(KHERR_DEBUG_1, "  Local cycles: %d\n", local_cycles);
 
     task_abort(t);
 
-    log("Waiting for thread to abort\n");
+    log(KHERR_DEBUG_1, "Waiting for thread to abort\n");
 
     local_cycles = 0;
     while(WaitForSingleObject(h, 0) == WAIT_TIMEOUT) {
@@ -101,7 +101,7 @@ int abort_test(void)
         Sleep(0);
     }
 
-    log("Took %d local cycles\n", local_cycles);
+    log(KHERR_DEBUG_1, "Took %d local cycles\n", local_cycles);
 
     task_release(t);
 
@@ -139,7 +139,7 @@ khm_int32 KHMAPI call_test_msg(khm_int32 msg_type, khm_int32 msg_subtype,
     if (msg_type == KMSG_TASKOBJ && msg_subtype == KMSG_TASKOBJ_CALLBACK) {
         khm_task_callback_params *p;
 
-        log ("Received message from task : uparam=%ud\n", uparam);
+        log (KHERR_DEBUG_1, "Received message from task : uparam=%ud\n", uparam);
 
         p = (khm_task_callback_params *) vparam;
 
@@ -153,13 +153,13 @@ khm_int32 KHMAPI call_test_msg(khm_int32 msg_type, khm_int32 msg_subtype,
         } else if (uparam == 2) {
             khm_int32 * pi = (khm_int32 *) p->vparam;
 
-            log ("Received iteration %d ... ", *pi);
+            log (KHERR_DEBUG_1, "Received iteration %d ... ", *pi);
             *pi = (*pi + 1) % 20;
-            log ("Sending iteration %d\n", *pi);
+            log (KHERR_DEBUG_1, "Sending iteration %d\n", *pi);
         }
 
     } else {
-        log ("Unknown message type : %d and subtype %d\n", msg_type, msg_subtype);
+        log (KHERR_DEBUG_1, "Unknown message type : %d and subtype %d\n", msg_type, msg_subtype);
     }
 
     return KHM_ERROR_SUCCESS;
@@ -180,7 +180,7 @@ int call_test(void)
 
     while (WaitForSingleObject(h, 10) == WAIT_TIMEOUT) {
         if (KHM_SUCCEEDED(kmq_dispatch(10))) {
-            log("Message successfully dispatched...\n");
+            log(KHERR_DEBUG_1, "Message successfully dispatched...\n");
         }
     }
 

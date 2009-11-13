@@ -51,7 +51,7 @@ void print_ms(wchar_t * ms) {
 
   s = ms;
   while(*s) {
-    log("%S\\0", s);
+    log(KHERR_DEBUG_1, "%S\\0", s);
     StringCchLength(s, 512, &cch);
     s += cch + 1;
   }
@@ -67,18 +67,18 @@ int ms_to_csv_test(void) {
 
   for(i=0; i<n_strings; i++) {
     cbbuf = sizeof(wbuf);
-    log("Multi string:[");
+    log(KHERR_DEBUG_1, "Multi string:[");
     print_ms(strings[i].ms);
-    log("]->");
+    log(KHERR_DEBUG_1, "]->");
     code = multi_string_to_csv(NULL, &cbnull, strings[i].ms);
     code = multi_string_to_csv(wbuf, &cbbuf, strings[i].ms);
     if(code) {
-      log(" returned %d\n", code);
+      log(KHERR_DEBUG_1, " returned %d\n", code);
       return code;
     }
-    log("CSV[%S]", wbuf);
+    log(KHERR_DEBUG_1, "CSV[%S]", wbuf);
     if(wcscmp(wbuf, strings[i].csv)) {
-      log(" MISMATCH!");
+      log(KHERR_ERROR, " MISMATCH!");
       return 1;
     }
 
@@ -86,16 +86,16 @@ int ms_to_csv_test(void) {
     cbr+= sizeof(wchar_t);
 
     if(cbr != cbbuf) {
-      log(" Length mismatch");
+      log(KHERR_ERROR, " Length mismatch");
       return 1;
     }
 
     if(cbnull != cbr) {
-      log(" NULL length mismatch");
+      log(KHERR_ERROR, " NULL length mismatch");
       return 1;
     }
 
-    log("\n");
+    log(KHERR_DEBUG_1, "\n");
   }
 
   return code;
@@ -110,25 +110,25 @@ int csv_to_ms_test(void) {
 
   for(i=0; i<n_strings; i++) {
     cbbuf = sizeof(wbuf);
-    log("CSV:[%S]->", strings[i].csv);
+    log(KHERR_DEBUG_1, "CSV:[%S]->", strings[i].csv);
     code = csv_to_multi_string(NULL, &cbnull, strings[i].csv);
     code = csv_to_multi_string(wbuf, &cbbuf, strings[i].csv);
     if(code) {
-      log(" returned %d\n", code);
+      log(KHERR_DEBUG_1, " returned %d\n", code);
       return code;
     }
-    log("MS[");
+    log(KHERR_DEBUG_1, "MS[");
     print_ms(wbuf);
-    log("]");
+    log(KHERR_DEBUG_1, "]");
 
     if(cbnull != cbbuf) {
-      log(" NULL length mismatch");
+      log(KHERR_ERROR, " NULL length mismatch");
       return 1;
     }
 
-    log("\n");
+    log(KHERR_DEBUG_1, "\n");
 
-    log("  Byte length:%d\n", cbbuf);
+    log(KHERR_DEBUG_1, "  Byte length:%d\n", cbbuf);
   }
 
   return code;
@@ -145,22 +145,22 @@ int ms_append_test(void)
     cbbuf = sizeof(wbuf);
     csv_to_multi_string(wbuf, &cbbuf, strings[i].csv);
 
-    log("MS[");
+    log(KHERR_DEBUG_1, "MS[");
     print_ms(wbuf);
-    log("] + [foo]=[");
+    log(KHERR_DEBUG_1, "] + [foo]=[");
   
     cbbuf = sizeof(wbuf);
     code = multi_string_append(wbuf, &cbbuf, L"foo");
 
     if(code) {
-      log(" returned %d\n", code);
+      log(KHERR_DEBUG_1, " returned %d\n", code);
       return code;
     }
 
     print_ms(wbuf);
-    log("]\n");
+    log(KHERR_DEBUG_1, "]\n");
 
-    log("  byte length: %d\n", cbbuf);
+    log(KHERR_DEBUG_1, "  byte length: %d\n", cbbuf);
   }
   return code;
 }
@@ -176,31 +176,31 @@ int ms_delete_test(void)
     cbs = sizeof(wbuf);
     csv_to_multi_string(wbuf, &cbs, strings[i].csv);
 
-    log("MS[");
+    log(KHERR_DEBUG_1, "MS[");
     print_ms(wbuf);
-    log("] - [b]=[");
+    log(KHERR_DEBUG_1, "] - [b]=[");
 
-    log("cs:");
+    log(KHERR_DEBUG_1, "cs:");
     code = multi_string_delete(wbuf, L"b", KHM_CASE_SENSITIVE);
     if(code) {
-      log("ci:");
+      log(KHERR_DEBUG_1, "ci:");
       code = multi_string_delete(wbuf, L"b", 0);
     }
     if(code) {
-      log("pcs:");
+      log(KHERR_DEBUG_1, "pcs:");
       code = multi_string_delete(wbuf, L"b", KHM_CASE_SENSITIVE | KHM_PREFIX);
     }
     if(code) {
-      log("pci:");
+      log(KHERR_DEBUG_1, "pci:");
       code = multi_string_delete(wbuf, L"b", KHM_PREFIX);
     }
 
     if(!code)
       print_ms(wbuf);
     else
-      log(" returned %d\n", code);
+      log(KHERR_DEBUG_1, " returned %d\n", code);
 
-    log("]\n");
+    log(KHERR_DEBUG_1, "]\n");
   }
 
   return code;

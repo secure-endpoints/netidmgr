@@ -38,6 +38,7 @@ extern nim_test_suite uilib_cfg_suite;
 extern nim_test_suite util_task_suite;
 extern nim_test_suite kconf_basic_suite;
 extern nim_test_suite kconf_prov_suite;
+extern nim_test_suite kconf_mem_suite;
 
 const nim_test_suite *suites[] = {
     &util_str_suite,
@@ -47,10 +48,13 @@ const nim_test_suite *suites[] = {
     &util_task_suite,
     &kconf_basic_suite,
     &kconf_prov_suite,
+    &kconf_mem_suite,
 };
 
 int  current_test;
 int  task_status;
+
+kherr_severity max_severity = KHERR_ERROR;
 
 int run_tests(void)
 {
@@ -66,7 +70,7 @@ int run_test_by_name(const char * name)
 
     time (&now);
 
-    log ("\n\n\nMAIN: Starting tests at %s\n", ctime(&now));
+    log (KHERR_INFO, "\n\n\nMAIN: Starting tests at %s\n", ctime(&now));
 
     for (i=0; i < ARRAYLENGTH(suites) && keep_running; i++) {
 
@@ -75,7 +79,7 @@ int run_test_by_name(const char * name)
 
         current_test = i;
 
-        log("\n\n\nMAIN: Starting test suite [%s]\n", suites[i]->desc);
+        log(KHERR_INFO, "\n\n\nMAIN: Starting test suite [%s]\n", suites[i]->desc);
 
         if (suites[i]->initialize)
             suites[i]->initialize();
@@ -85,14 +89,14 @@ int run_test_by_name(const char * name)
         for (j=0; j < suites[i]->n_tests; j++) {
             int trv;
 
-            log("\n\n\n%8s: Starting test %s\n", suites[i]->name,
+            log(KHERR_INFO, "\n\n\n%8s: Starting test %s\n", suites[i]->name,
                 suites[i]->tests[j].desc);
 
             trv = suites[i]->tests[j].func();
 
-            log("%8s: Ending test %s with %s\n", suites[i]->name,
+            log(KHERR_INFO, "%8s: Ending test %s with %s\n", suites[i]->name,
                 suites[i]->tests[j].name,
-                ((trv == 0)?"SUCCESS":"FAILURE"));
+                ((task_status == 0)?"SUCCESS":"FAILURE"));
 
             if (trv)
                 rv = trv;
@@ -101,37 +105,40 @@ int run_test_by_name(const char * name)
         if (suites[i]->finalize)
             suites[i]->finalize();
 
-        log("MAIN: Ending test suite %s\n", suites[i]->name);
+        log(KHERR_INFO, "MAIN: Ending test suite %s\n", suites[i]->name);
 
         if (task_status)
             rv = task_status;
     }
 
-    log ("MAIN: Ending tests\n");
+    log (KHERR_INFO, "MAIN: Ending tests\n");
 
     return rv;
 }
 
-void log(const char *fmt, ...)
+void log(kherr_severity severity, const char *fmt, ...)
 {
-     va_list args;
-     va_start( args, fmt );
+    va_list args;
 
-     vprintf( fmt, args );
+    if (severity <= max_severity || severity == KHERR_INFO) {
+        va_start( args, fmt );
 
-     va_end( args );
+        vprintf( fmt, args );
+
+        va_end( args );
+    }
 }
 
 void begin_task(const char * desc)
 {
-    log("\n%8s: Starting task %s\n", suites[current_test]->name, desc);
+    log(KHERR_INFO, "\n%8s: Starting task %s\n", suites[current_test]->name, desc);
 }
 
 void end_task(int failed)
 {
     failed = (failed || task_status);
 
-    log("%8s: Ending task with %s\n", suites[current_test]->name,
+    log(KHERR_INFO, "%8s: Ending task with %s\n", suites[current_test]->name,
         ((failed? "FAILURE":"SUCCESS")));
 
     task_status = failed;
@@ -140,9 +147,9 @@ void end_task(int failed)
 void check_ifx(khm_boolean b, const char * msg, const char * file, int line)
 {
     if (!b) {
-        log("%s(%d) : FAILED %8s: %.50s\n", file, line, suites[current_test]->name, msg);
+        log(KHERR_ERROR, "%s(%d) : FAILED %8s: %.50s\n", file, line, suites[current_test]->name, msg);
         task_status = 1;
     } else {
-        log("%s(%d) : Pass   %8s: %.50s\n", file, line, suites[current_test]->name, msg);
+        log(KHERR_DEBUG_1, "%s(%d) : Pass   %8s: %.50s\n", file, line, suites[current_test]->name, msg);
     }
 }

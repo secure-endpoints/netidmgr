@@ -872,6 +872,13 @@ khcint_get_parent_config_space(khm_handle pconf,
         *ppconf = pconf;
     }
 
+    {
+        size_t cch;
+
+        if (FAILED(StringCchLength(*pvalue, KCONF_MAXCCH_NAME, &cch)))
+            return KHM_ERROR_INVALID_PARAM;
+    }
+
     return (*ppconf != NULL)? KHM_ERROR_SUCCESS : KHM_ERROR_NOT_FOUND;
 }
 

@@ -33,7 +33,8 @@ OBJFILES= \
 	$(OBJ)\kconfigmain.obj \
 	$(OBJ)\api.obj	\
 	$(OBJ)\registry.obj	\
-	$(OBJ)\schema.obj
+	$(OBJ)\schema.obj	\
+	$(OBJ)\memory.obj
 
 all: mkdirs $(INCFILES) $(OBJFILES)
 

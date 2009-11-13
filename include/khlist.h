@@ -80,6 +80,7 @@
 
 #define TINIT(pe)                               \
     do {                                        \
+        LINIT(pe);                              \
         (pe)->children = NULL;                  \
         (pe)->parent = NULL;                    \
     } while(0)
@@ -91,6 +92,10 @@
     } while(0)
 
 #define TFIRSTCHILD(pt) ((pt)?(pt)->children:NULL)
+
+#define TNEXTSIBLING(pe) LNEXT(pe)
+
+#define TPREVSIBLING(pe) LPREV(pe)
 
 #define TPOPCHILD(pt, ppe)                      \
     do {                                        \

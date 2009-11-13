@@ -46,6 +46,16 @@ int main(int argc, char ** argv)
         int trv;
 
         for (i=1; i < argc; i++) {
+            if (!strcmp(argv[i], "-v")) {
+                max_severity =
+                    (max_severity < KHERR_INFO)? KHERR_INFO:
+                    (max_severity < KHERR_DEBUG_1)? KHERR_DEBUG_1:
+                    (max_severity < KHERR_DEBUG_3)? KHERR_DEBUG_3:
+                    max_severity;
+
+                continue;
+            }
+
             trv = run_test_by_name(argv[i]);
             if (trv)
                 rv = trv;

@@ -130,6 +130,11 @@ typedef struct tag_kconf_schema {
     ignored.
 */
 #define KC_BINARY       6
+
+/*! \internal
+  \brief Modified time
+ */
+#define KC_MTIME        256
 /*@}*/
 
 /*! \brief This is the root configuration space */
@@ -1450,6 +1455,37 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
 KHMEXP khm_int32 KHMAPI
 khc_unmount_provider(khm_handle conf, const khc_provider_interface * provider,
                      khm_int32 flags);
+
+/*! \defgroup kconf_st Memory stores
+@{
+ */
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_create(khm_handle * ret_sp);
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_add(khm_handle sp, const wchar_t * name, khm_int32 type,
+                     const void * data, khm_size cb);
+
+typedef void (KHMCALLBACK * khc_store_enum_cb)(khm_int32 type, const wchar_t * name,
+                                               const void * data, khm_size cb, void * ctx);
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_enum(khm_handle sp, khc_store_enum_cb cb, void * ctx);
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_hold(khm_handle sp);
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_release(khm_handle sp);
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_mount(khm_handle csp_parent, khm_int32 store, khm_handle sp, khm_handle * ret);
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_unmount(khm_handle sp);
+
+/*@}*/
 
 END_C
 

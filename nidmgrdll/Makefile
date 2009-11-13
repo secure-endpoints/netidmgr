@@ -61,6 +61,7 @@ OBJFILES= \
 	$(KCONFIGDIR)\api.obj		\
 	$(KCONFIGDIR)\registry.obj	\
 	$(KCONFIGDIR)\schema.obj	\
+	$(KCONFIGDIR)\memory.obj	\
 	$(KMQDIR)\kmqmain.obj		\
 	$(KMQDIR)\init.obj		\
 	$(KMQDIR)\msgtype.obj		\
@@ -154,7 +155,8 @@ TESTOBJS= \
 	$(OBJ)\uilib_res_test.obj	\
 	$(OBJ)\uilib_cfg_test.obj	\
 	$(OBJ)\kconf_basic_test.obj	\
-	$(OBJ)\kconf_prov_test.obj
+	$(OBJ)\kconf_prov_test.obj	\
+	$(OBJ)\kconf_mem_test.obj
 
 TESTLIBS= \
 	user32.lib

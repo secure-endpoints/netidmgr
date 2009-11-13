@@ -57,13 +57,13 @@ BOOL config_name_is(khui_config_node node, const wchar_t * sname)
 
     cb = sizeof(name);
     if (KHM_FAILED(rv = khui_cfg_get_name(node, name, &cb))) {
-        log("Failed to get name. Retval = 0x%x\n", rv);
+        log(KHERR_DEBUG_1, "Failed to get name. Retval = 0x%x\n", rv);
         return FALSE;
     }
 
     eq = !wcscmp(sname, name);
     if (!eq) {
-        log("Config names are not equal.  Looking for [%S]. Found [%S]\n", sname, name);
+        log(KHERR_DEBUG_1, "Config names are not equal.  Looking for [%S]. Found [%S]\n", sname, name);
     }
 
     return eq;
@@ -401,7 +401,7 @@ void gs_test_node(khui_config_node node)
 
     cb = sizeof(name);
     CHECK(KHM_SUCCEEDED(khui_cfg_get_name(node, name, &cb)));
-    log("Looking at node [%S]\n", name);
+    log(KHERR_DEBUG_1, "Looking at node [%S]\n", name);
 
     hwnd = (HWND) node;
     lparam = (LPARAM) node;
@@ -426,7 +426,7 @@ void gsi_test_node(khui_config_node node, khui_config_node ctx)
 
     cb = sizeof(name);
     CHECK(KHM_SUCCEEDED(khui_cfg_get_name(node, name, &cb)));
-    log("Looking at node [%S]\n", name);
+    log(KHERR_DEBUG_1, "Looking at node [%S]\n", name);
 
     hwnd = (HWND) ((khm_ssize)ctx ^ ((khm_ssize)node >> 2));
     lparam = (LPARAM) ((khm_ssize)ctx ^ ((khm_ssize)node >> 2));
@@ -484,7 +484,7 @@ void gsfi_test_node(khui_config_node node, khui_config_node ctx)
 
     cb = sizeof(name);
     CHECK(KHM_SUCCEEDED(khui_cfg_get_name(node, name, &cb)));
-    log("Looking at node [%S]\n", name);
+    log(KHERR_DEBUG_1, "Looking at node [%S]\n", name);
 
     if (khui_cfg_get_flags(node) & KHUI_CNFLAG_INSTANCE) {
         if (_plural >= ARRAYLENGTH(_pl_before)) {
