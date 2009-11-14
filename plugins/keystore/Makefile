@@ -399,8 +399,8 @@ install:
 
 test:: kstest
 
-kstest: $(OBJ)\test_keystore.exe
-	$(OBJ)\test_keystore.exe
+kstest: $(DEST)\test_keystore.exe
+	$(DEST)\test_keystore.exe
 
-$(OBJ)\test_keystore.exe: $(OBJ)\test_keystore.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
-	$(LINK) /NOLOGO $(ldebug) $(conlflags) $(conlibsdll) Crypt32.lib /OUT:$@ $**
+$(DEST)\test_keystore.exe: $(OBJ)\test_keystore.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
+	$(LINK) /NOLOGO $(ldebug) $(conlflags) $(conlibsdll) Crypt32.lib $(NIDMLIBDIR)\$(NIDMGRLIB) Rpcrt4.lib /OUT:$@ $**
