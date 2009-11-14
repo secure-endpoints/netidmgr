@@ -213,6 +213,13 @@ keystore-install-local:
 	$(CD) ..\..
 	$(ECHO) Done
 
+keystore-test:
+	$(ECHO) Testing keystore
+	$(CD) plugins\keystore
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore test
+	$(CD) ..\..
+	$(ECHO) Done
+
 install-local:: keystore-install-local
 
 !endif
