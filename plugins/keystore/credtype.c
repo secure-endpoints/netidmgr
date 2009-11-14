@@ -127,9 +127,10 @@ find_keystore_for_identity(khm_handle identity)
 }
 
 /* Obtains cs_ks and ks->cs */
-void
+khm_int32
 associate_keystore_and_identity(keystore_t * ks, khm_handle identity)
 {
+    khm_int32 rv = KHM_ERROR_SUCCESS;
     assert(is_keystore_t(ks));
 
     init_credtype();
@@ -140,6 +141,10 @@ associate_keystore_and_identity(keystore_t * ks, khm_handle identity)
     if (ks->identity != NULL) {
         assert(kcdb_identity_is_equal(ks->identity, identity));
         assert((keystore_t *) hash_lookup(ht_identity_to_keystore, identity) == ks);
+
+        if (ks->identity != identity) {
+            rv = KHM_ERROR_DUPLICATE;
+        }
     } else {
         hash_add(ht_identity_to_keystore, identity, ks);
         ks->identity = identity;
@@ -156,6 +161,8 @@ associate_keystore_and_identity(keystore_t * ks, khm_handle identity)
 
     KSUNLOCK(ks);
     LeaveCriticalSection(&cs_ks);
+
+    return rv;
 }
 
 khm_handle
@@ -291,6 +298,7 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
         free(buffer);
 }
 
+
 keystore_t *
 create_keystore_from_location(const wchar_t * path, khm_handle csp)
 {
@@ -422,7 +430,10 @@ create_keystore_for_identity(khm_handle identity)
     }
 
     if (ks) {
-        associate_keystore_and_identity(ks, identity);
+        if (KHM_FAILED(associate_keystore_and_identity(ks, identity))) {
+            ks_keystore_release(ks);
+            ks = NULL;
+        }
     }
 
     /* return ks held, if non-null */
@@ -442,6 +453,7 @@ update_keystore_list(void)
     kcdb_enumeration e;
     khm_size i;
     khm_int32 rv_enum;
+    int n_keystore_identities = 0;
 
     init_credtype();
 
@@ -471,8 +483,11 @@ update_keystore_list(void)
                 idtype != credtype_id)
                 continue;
 
+            n_keystore_identities++;
+
             ks = find_keystore_for_identity(identity);
             if (ks == NULL) {
+                /* TODO: this should be handled more gracefully. */
                 ks = create_keystore_for_identity(identity);
             }
 
@@ -516,7 +531,7 @@ update_keystore_list(void)
         KSUNLOCK(keystores[i]);
     }
 
-    if (n_keystores == 0) {
+    if (n_keystores == 0 && n_keystore_identities == 0) {
         khm_handle def_ks = NULL;
 
         LeaveCriticalSection(&cs_ks);

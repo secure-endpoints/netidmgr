@@ -270,7 +270,7 @@ init_credtype(void);
 keystore_t *
 find_keystore_for_identity(khm_handle identity);
 
-void
+khm_int32
 associate_keystore_and_identity(keystore_t * ks, khm_handle identity);
 
 khm_handle

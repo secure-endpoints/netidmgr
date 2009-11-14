@@ -143,8 +143,12 @@ handle_kmsg_ident_notify_create(khm_handle ident)
                                    KCDB_CBSIZE_AUTO);
         }
         KSUNLOCK(ks);
-        associate_keystore_and_identity(ks, ident);
-        ks_keystore_release(ks);
+        if (KHM_FAILED(associate_keystore_and_identity(ks, ident))) {
+            ks_keystore_release(ks);
+            ks = NULL;          /* invokes the ks==NULL code below */
+        } else {
+            ks_keystore_release(ks);
+        }
         kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
                                 KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
         kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, NULL, 0);
@@ -169,8 +173,9 @@ handle_kmsg_ident_notify_create(khm_handle ident)
             if (csp_p)
                 khc_close_space(csp_p);
         }
+    }
 
-    } else {
+    if (ks == NULL) {
         /* A keystore could not be created for the identity.  This may
            be because the keystore blob couldn't be read or was
            corrupted etc. */
