@@ -155,6 +155,53 @@ dump_keystore(keystore_t * ks) {
     }
 }
 
+void KHMCALLBACK config_dump_cb(khm_int32 type, const wchar_t * name,
+                                const void * data, khm_size cb, void * ctx)
+{
+    int *pi = (int *) ctx;
+    int i;
+
+    for (i=0; i < *pi; i++) {
+        printf ("  ");
+    }
+
+    switch(type) {
+    case KC_SPACE:
+        printf("KC_SPACE: %S\n", name);
+        (*pi)++;
+        break;
+
+    case KC_ENDSPACE:
+        (*pi)--;
+        printf("KC_ENDSPACE\n\n");
+        break;
+
+    case KC_INT32:
+        printf("KC_INT32: %S=%d\n", name, *(khm_int32 *)data);
+        break;
+
+    case KC_INT64:
+        printf("KC_INT64: %S=%i64d\n", name, *(khm_int64 *)data);
+        break;
+
+    case KC_STRING:
+        printf("KC_STRING: %S=\"%S\"\n", name, (wchar_t *)data);
+        break;
+
+    case KC_MTIME:
+        printf("KC_MTIME:\n");
+        break;
+
+    case KC_BINARY:
+        printf("KC_BINARY:\n");
+        hexdump(data, cb);
+        break;
+
+    default:
+        printf("TYPE=%d\n", type);
+        hexdump(data, cb);
+    }
+}
 
 int main(int argc, char ** argv)
 {
@@ -163,6 +210,8 @@ int main(int argc, char ** argv)
     identkey_t * idk = NULL;
     khm_size cb;
     void * buf = NULL;
+    void * cbuf = NULL;
+    khm_handle h = NULL;
 
     __try {
         ks = ks_keystore_create_new();
@@ -174,6 +223,10 @@ int main(int argc, char ** argv)
 
         idk = ks_identkey_create_new();
         leave_if(idk == NULL);
+
+        idk->provider_name = _wcsdup(L"Foo provider");
+        idk->identity_name = _wcsdup(L"My identity");
+        idk->display_name = _wcsdup(L"My identity display name");
 
         testk(ks_keystore_add_identkey(ks, idk));
         ks_datablob_copy(&idk->plain_key, "This is a plain key", 20, 0);
@@ -209,6 +262,71 @@ int main(int argc, char ** argv)
         printf("Unserialized buffer:\n");
         dump_keystore(ksu);
 
+        testk(khc_memory_store_create(&h));
+
+        {
+            khm_int32 i32;
+
+            khm_int64 i64;
+
+            testk(khc_memory_store_add(h, L"A", KC_SPACE, NULL, 0));
+
+            i32 = 12;
+            testk(khc_memory_store_add(h, L"IValue", KC_INT32, &i32, sizeof(i32)));
+
+            testk(khc_memory_store_add(h, L"SValue", KC_STRING, L"The rain in Spain stays mainly on the plane?", 1024));
+
+            testk(khc_memory_store_add(h, L"BValue", KC_BINARY,
+                                       "Lorem ipsum dolo"
+                                       "r sit amet, cons"
+                                       "ectetur adipisic"
+                                       "ing elit, sed do"
+                                       " eiusmod tempor", 79));
+
+            testk(khc_memory_store_add(h, L"New space! This is a new space!", KC_SPACE, NULL, 0));
+
+            testk(khc_memory_store_add(h, L"Fooblarg", KC_SPACE, NULL, 0));
+
+            i64 = 0x9382393029348239i64;
+            testk(khc_memory_store_add(h, L"64bit integer value", KC_INT64, &i64, sizeof(i64)));
+
+            testk(khc_memory_store_add(h, L"Bonorum", KC_STRING,
+                                       L"Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?",
+                                       KCONF_MAXCB_STRING));
+
+            testk(khc_memory_store_add(h, NULL, KC_ENDSPACE, NULL, 0));
+
+            testk(khc_memory_store_add(h, NULL, KC_ENDSPACE, NULL, 0));
+
+            testk(khc_memory_store_add(h, L"Another space! This is a new space!", KC_SPACE, NULL, 0));
+
+            testk(khc_memory_store_add(h, NULL, KC_ENDSPACE, NULL, 0));
+
+            testk(khc_memory_store_add(h, NULL, KC_ENDSPACE, NULL, 0));
+        }
+
+        cb = 0;
+        test_if(ks_serialize_configuration(h, NULL, &cb) == KHM_ERROR_TOO_LONG);
+        test_if(cb > 0);
+
+        cbuf = malloc(cb);
+        testk(ks_serialize_configuration(h, cbuf, &cb));
+
+        printf("Serialized configuration:\n");
+        hexdump(cbuf, cb);
+
+        testk(khc_memory_store_release(h));
+
+        testk(ks_unserialize_configuration(cbuf, cb, &h));
+
+        {
+            int i = 0;
+            printf("\nDump of unserialized configuration space:\n");
+            testk(khc_memory_store_enum(h, config_dump_cb, &i));
+        }
+
+        printf("Success!\n");
+
     } __finally {
         if (ks)
             ks_keystore_release(ks);
@@ -216,6 +334,10 @@ int main(int argc, char ** argv)
             ks_keystore_release(ksu);
         if (buf)
             free(buf);
+        if (cbuf)
+            free(cbuf);
+        if (h)
+            khc_memory_store_release(h);
     }
 
     return 0;

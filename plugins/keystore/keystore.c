@@ -102,9 +102,11 @@ ks_datablob_alloc(datablob_t * dest, khm_size cb)
 {
     ks_datablob_free(dest);
 
-    dest->data = malloc(cb);
-    if (dest->data != NULL) {
-        dest->cb_alloc = cb;
+    if (cb > 0) {
+        dest->data = malloc(cb);
+        if (dest->data != NULL) {
+            dest->cb_alloc = cb;
+        }
     }
 
     return dest;
@@ -128,6 +130,7 @@ ks_identkey_create_new(void)
     ks_datablob_init(&idk->key_hash);
     ks_datablob_init(&idk->key);
     ks_datablob_init(&idk->plain_key);
+    ks_datablob_init(&idk->configuration);
 
     idk->flags = 0;
 
@@ -156,6 +159,7 @@ ks_identkey_free(identkey_t * idk)
     ks_datablob_free(&idk->key);
     ks_datablob_free(&idk->key_hash);
     ks_datablob_free(&idk->plain_key);
+    ks_datablob_free(&idk->configuration);
 
     memset(idk, 0, sizeof(*idk));
     free(idk);

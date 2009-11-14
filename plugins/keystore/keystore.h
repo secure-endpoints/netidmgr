@@ -47,6 +47,8 @@ typedef struct tag_identkey {
 
     datablob_t   plain_key;
 
+    datablob_t   configuration;
+
     khm_int32    version;
     FILETIME     ft_ctime;
     FILETIME     ft_expire;
@@ -221,3 +223,10 @@ ks_serialize_credential(khm_handle credential, void * buffer, khm_size * pcb_buf
 extern khm_int32
 ks_unserialize_credential(const void * buffer, khm_size cb_buffer,
                           khm_handle *pcredential);
+
+khm_int32
+ks_serialize_configuration(khm_handle conf, void * buffer, khm_size * pcb_buffer);
+
+khm_int32
+ks_unserialize_configuration(const void * buffer, khm_size cb_buffer,
+                             khm_handle * conf);

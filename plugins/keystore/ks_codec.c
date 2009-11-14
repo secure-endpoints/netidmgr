@@ -180,6 +180,25 @@ decode_KS_Int(Codec * e)
 }
 
 void
+encode_KS_Int64(khm_int64 i, Codec * e)
+{
+    khm_int64 * pi = declare_serial_buffer(e, sizeof(i), TRUE);
+    if (pi) {
+        memcpy(pi, &i, sizeof(i));
+    }
+}
+
+khm_int64
+decode_KS_Int64(Codec * e)
+{
+    khm_int64 *pi = declare_serial_buffer(e, sizeof(khm_int64), FALSE);
+    if (pi) {
+        return *pi;
+    } else
+        return 0;
+}
+
+void
 encode_KS_Time(FILETIME ft, Codec * e)
 {
     FILETIME * pft = declare_serial_buffer(e, sizeof(FILETIME), TRUE);
@@ -237,6 +256,10 @@ decode_KS_Data(Codec * e)
     }
 
     cb = decode_KS_Size(e);
+
+    if (cb == 0 && ENCOK(e))
+        return d;
+
     if (!ENCOK(e) ||
         (data = declare_serial_buffer(e, cb, FALSE)) == NULL ||
         !ENCOK(e)) {
@@ -346,6 +369,7 @@ encode_KS_IdentKey(const identkey_t * idk, Codec * e)
     E_OPT(7); encode_KS_Int(idk->version, e); E_ENDOPT();
     E_OPT(8); encode_KS_Time(idk->ft_ctime, e); E_ENDOPT();
     E_OPT(9); encode_KS_Time(idk->ft_expire, e); E_ENDOPT();
+    E_OPT(10); encode_KS_Data(&idk->configuration, e); E_ENDOPT();
 }
 
 identkey_t *
@@ -373,6 +397,7 @@ decode_KS_IdentKey(Codec * e)
     D_OPT(7); idk->version = decode_KS_Int(e); D_ENDOPT();
     D_OPT(8); idk->ft_ctime = decode_KS_Time(e); D_ENDOPT();
     D_OPT(9); idk->ft_expire = decode_KS_Time(e); D_ENDOPT();
+    D_OPT(10); idk->configuration = decode_KS_Data(e); D_ENDOPT();
     skip_optional(e);
     idk->flags = IDENTKEY_FLAG_LOCKED;
 
@@ -738,4 +763,222 @@ ks_unserialize_credential(const void * buffer, khm_size cb_buffer,
 
     return decoding.last_error;
 }
+
+#define KSFF_CONFIGURATION_MAGIC 0x1fca108d
+
+#define KSFF_CONFIGURATION_EOF   0x08bd6865
+
+static void KHMCALLBACK config_enum_cb(khm_int32 type, const wchar_t * name,
+                                       const void * data, khm_size cb, void * ctx)
+{
+    Codec * e = (Codec *) ctx;
+
+    encode_KS_Int(type, e);
+
+    switch(type) {
+    case KC_SPACE:
+        encode_KS_CountedString(name, KCONF_MAXCCH_NAME, e);
+        break;
+
+    case KC_ENDSPACE:
+        break;
+
+    case KC_INT32:
+        encode_KS_CountedString(name, KCONF_MAXCCH_NAME, e);
+        encode_KS_Int(*((const khm_int32 *) data), e);
+        break;
+
+    case KC_INT64:
+        encode_KS_CountedString(name, KCONF_MAXCCH_NAME, e);
+        encode_KS_Int64(*((const khm_int64 *) data), e);
+        break;
+
+    case KC_STRING:
+        encode_KS_CountedString(name, KCONF_MAXCCH_NAME, e);
+        encode_KS_CountedString((const wchar_t *) data, cb / sizeof(wchar_t), e);
+        break;
+
+    case KC_BINARY:
+        {
+            datablob_t d;
+
+            ks_datablob_init(&d);
+            d.data = (void *) data;
+            d.cb_data = cb;
+
+            encode_KS_CountedString(name, KCONF_MAXCCH_NAME, e);
+            encode_KS_Data(&d, e);
+        }
+        break;
+
+    case KC_MTIME:
+        encode_KS_Time(*((const FILETIME *) data), e);
+        break;
+
+    default:
+        assert(FALSE);
+    }
+}
+
+void
+encode_KS_Configuration(khm_handle conf, Codec * e)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    encode_KS_Int(KSFF_CONFIGURATION_MAGIC, e);
+
+    rv = khc_memory_store_enum(conf, config_enum_cb, e);
+    if (KHM_FAILED(rv))
+        goto done;
+
+    encode_KS_Int(KSFF_CONFIGURATION_EOF, e);
+
+ done:
+    if (KHM_FAILED(rv))
+        e->last_error = rv;
+}
+
+khm_handle
+decode_KS_Configuration(Codec * e)
+{
+    khm_handle conf = NULL;
+
+    if (!ENCOK(e) ||
+        decode_KS_Int(e) != KSFF_CONFIGURATION_MAGIC ||
+
+        KHM_FAILED(khc_memory_store_create(&conf))) {
+
+        e->last_error = KHM_ERROR_INVALID_PARAM;
+        return NULL;
+    }
+
+    while (TRUE) {
+        khm_int32 rec;
+        khm_int32 rv = KHM_ERROR_INVALID_PARAM;
+        wchar_t * name = NULL;
+
+        rec = decode_KS_Int(e);
+
+        if (!ENCOK(e) || rec == KSFF_CONFIGURATION_EOF)
+            break;
+
+        switch (rec) {
+        case KC_SPACE:
+            {
+                name = decode_KS_CountedString(e, KCONF_MAXCCH_NAME);
+                if (ENCOK(e))
+                    rv = khc_memory_store_add(conf, name, KC_SPACE, NULL, 0);
+            }
+            break;
+
+        case KC_ENDSPACE:
+            rv = khc_memory_store_add(conf, NULL, KC_ENDSPACE, NULL, 0);
+            break;
+
+        case KC_INT32:
+            {
+                khm_int32 i;
+                name = decode_KS_CountedString(e, KCONF_MAXCCH_NAME);
+                i = decode_KS_Int(e);
+                if (ENCOK(e))
+                    rv = khc_memory_store_add(conf, name, KC_INT32, &i, sizeof(i));
+            }
+            break;
+
+        case KC_INT64:
+            {
+                khm_int64 i;
+                name = decode_KS_CountedString(e, KCONF_MAXCCH_NAME);
+                i = decode_KS_Int64(e);
+                if (ENCOK(e))
+                    rv = khc_memory_store_add(conf, name, KC_INT64, &i, sizeof(i));
+            }
+            break;
+
+        case KC_STRING:
+            {
+                wchar_t * val;
+                name = decode_KS_CountedString(e, KCONF_MAXCCH_NAME);
+                val = decode_KS_CountedString(e, KCONF_MAXCCH_STRING);
+                if (ENCOK(e))
+                    rv = khc_memory_store_add(conf, name, KC_STRING, val, KCONF_MAXCB_STRING);
+                if (val)
+                    free(val);
+            }
+            break;
+
+        case KC_BINARY:
+            {
+                datablob_t d;
+
+                name = decode_KS_CountedString(e, KCONF_MAXCCH_NAME);
+                d = decode_KS_Data(e);
+
+                if (ENCOK(e))
+                    rv = khc_memory_store_add(conf, name, KC_BINARY, d.data, d.cb_data);
+                ks_datablob_free(&d);
+            }
+            break;
+
+        case KC_MTIME:
+            {
+                FILETIME ft;
+
+                ft = decode_KS_Time(e);
+                if (ENCOK(e))
+                    rv = khc_memory_store_add(conf, NULL, KC_MTIME, &ft, sizeof(ft));
+            }
+            break;
+
+        default:
+            assert(FALSE);
+        }
+
+        if (KHM_FAILED(rv))
+            e->last_error = rv;
+
+        if (!ENCOK(e))
+            break;
+    }
+
+    if (ENCOK(e))
+        return conf;
+
+    if (conf)
+        khc_memory_store_release(conf);
+    return NULL;
+}
+
+khm_int32
+ks_serialize_configuration(khm_handle conf, void * buffer, khm_size * pcb_buffer)
+{
+    Codec encoding;
+
+    encoding.cb_used = 0;
+    encoding.cb_free = ((buffer != NULL)? *pcb_buffer : 0);
+    encoding.current = encoding.base = buffer;
+    encoding.last_error = KHM_ERROR_SUCCESS;
+
+    encode_KS_Configuration(conf, &encoding);
+
+    *pcb_buffer = encoding.cb_used;
+    return encoding.last_error;
+}
+
+khm_int32
+ks_unserialize_configuration(const void * buffer, khm_size cb_buffer,
+                             khm_handle * conf)
+{
+    Codec decoding;
+
+    decoding.cb_used = 0;
+    decoding.cb_free = cb_buffer;
+    decoding.current = decoding.base = (void *) buffer;
+    decoding.last_error = KHM_ERROR_SUCCESS;
+
+    *conf = decode_KS_Configuration(&decoding);
+
+    return decoding.last_error;
+}
+
 #endif
