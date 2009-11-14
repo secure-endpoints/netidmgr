@@ -769,7 +769,7 @@ khc_memory_store_add(khm_handle sp, const wchar_t * name, khm_int32 type,
         if (h->cursor == NULL)
             return KHM_ERROR_INVALID_OPERATION;
 
-        if (name == NULL)
+        if (name == NULL && type != KC_MTIME)
             return KHM_ERROR_INVALID_PARAM;
 
         return p_write_value(h->cursor, name, type, data, cb);
