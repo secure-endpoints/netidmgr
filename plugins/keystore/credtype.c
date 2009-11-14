@@ -176,12 +176,13 @@ create_default_keystore(void)
         LoadString(hResModule, IDS_DEF_KSDESCF, desc, ARRAYLENGTH(desc));
         ks_keystore_set_string(ks, KCDB_RES_DESCRIPTION, desc);
     }
-    ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, L"REG:");
+    ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, KS_DEFAULT_KEYSTORE_LOCATION);
     ks_keystore_set_flags(ks, KS_FLAG_MODIFIED, KS_FLAG_MODIFIED);
 
     identity = create_identity_from_keystore(ks);
 
-    kcdb_identity_set_attr(identity, KCDB_ATTR_LOCATION, L"REG:", KCDB_CBSIZE_AUTO);
+    kcdb_identity_set_attr(identity, KCDB_ATTR_LOCATION,
+                           KS_DEFAULT_KEYSTORE_LOCATION, KCDB_CBSIZE_AUTO);
 
     save_keystore_with_identity(ks);
 
@@ -242,13 +243,18 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
     if (!wcsncmp(path, L"FILE:", 5)) {
         HANDLE hf;
         DWORD numwritten;
+        wchar_t filepath[MAX_PATH];
 
-        hf = CreateFile(path + 5, GENERIC_WRITE,
+        if (ExpandEnvironmentStrings(path + 5, filepath, ARRAYLENGTH(filepath)) == 0) {
+            return;
+        }
+
+        hf = CreateFile(filepath, GENERIC_WRITE,
                         FILE_SHARE_DELETE,
                         NULL, CREATE_ALWAYS,
                         FILE_ATTRIBUTE_ARCHIVE, NULL);
 
-        if (hf == NULL)
+        if (hf == INVALID_HANDLE_VALUE)
             return;
 
         ks_keystore_serialize(ks, NULL, &cb_buffer);
@@ -296,13 +302,18 @@ create_keystore_from_location(const wchar_t * path, khm_handle csp)
     if (!wcsncmp(path, L"FILE:", 5)) {
         HANDLE hf;
         DWORD cb_read;
+        wchar_t filepath[MAX_PATH];
 
-        hf = CreateFile(path + 5, GENERIC_READ,
+        if (ExpandEnvironmentStrings(path + 5, filepath, ARRAYLENGTH(filepath)) == 0) {
+            return NULL;
+        }
+
+        hf = CreateFile(filepath, GENERIC_READ,
                         FILE_SHARE_READ | FILE_SHARE_DELETE,
                         NULL, OPEN_EXISTING,
                         FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 
-        if (hf == NULL)
+        if (hf == INVALID_HANDLE_VALUE)
             return NULL;
 
         /* Check for file size.  We only deal with files that are less
@@ -781,8 +792,8 @@ save_keystore_with_identity(keystore_t * ks)
         else if ((cb = sizeof(path)) != 0 &&
                  KHM_SUCCEEDED(kcdb_identity_get_attr(identity, KCDB_ATTR_LOCATION,
                                                       NULL, path, &cb))) {
-            write_keystore_to_location(ks, path, csp_ks);
             khc_write_string(csp_ks, L"KeystorePath", path);
+            write_keystore_to_location(ks, path, csp_ks);
         } else {
             rv = KHM_ERROR_INVALID_PARAM;
             goto done;

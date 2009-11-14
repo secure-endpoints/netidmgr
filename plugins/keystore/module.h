@@ -137,6 +137,8 @@
 
 #include "keystore.h"
 
+#define KS_DEFAULT_KEYSTORE_LOCATION L"FILE:%APPDATA%\\NIM-Default-Keystore.bin"
+
 /***************************************************
  Externals
 ***************************************************/
