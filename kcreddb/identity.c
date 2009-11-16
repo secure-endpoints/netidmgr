@@ -1034,7 +1034,8 @@ kcdb_identity_get_config(khm_handle vid,
         rv = khc_open_space(hidents, cfname, flags, &hident);
 
         if(KHM_FAILED(rv)) {
-            if (id->flags & KCDB_IDENT_FLAG_CONFIG) {
+            if ((id->flags & KCDB_IDENT_FLAG_CONFIG) &&
+                ((flags & KCONF_FLAG_USER) || flags == 0)) {
                 id->flags &= ~KCDB_IDENT_FLAG_CONFIG;
                 kcdbint_ident_post_message(KCDB_OP_DELCONFIG, id);
             }
