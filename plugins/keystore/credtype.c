@@ -489,6 +489,7 @@ update_keystore_list(void)
             if (ks == NULL) {
                 /* TODO: this should be handled more gracefully. */
                 ks = create_keystore_for_identity(identity);
+                assert(ks);
             }
 
             if (ks) {
@@ -858,3 +859,198 @@ destroy_keystore_identity(keystore_t * ks)
     return rv;
 }
 
+#define IFOK(X) (KHM_FAILED(rv) || (rv = (X)))
+
+khm_int32
+create_empty_memory_store_for_identity(khm_handle identity, khm_handle * ret_cfg)
+{
+    khm_handle cfg = NULL;
+    wchar_t shortname[KCDB_IDENT_MAXCCH_NAME];
+    khm_size cb = sizeof(shortname);
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    IFOK(kcdb_identity_get_short_name(identity, TRUE, shortname, &cb));
+
+    IFOK(khc_memory_store_create(&cfg));
+
+    IFOK(khc_memory_store_add(cfg, shortname, KC_SPACE, NULL, 0));
+
+    IFOK(khc_memory_store_add(cfg, NULL, KC_ENDSPACE, NULL, 0));
+
+    if (KHM_FAILED(rv) && cfg) {
+        khc_memory_store_release(cfg);
+        cfg = NULL;
+    }
+
+    *ret_cfg = cfg;
+
+    return rv;
+}
+
+#if 0
+/* TODO: Continue this
+
+   This part of the code is necessary for permanently mounting
+   keystore configuration onto an identity.  This way we can monitor
+   and periodically save the configuration space as time permits.
+ */
+typedef struct idk_memstore_data {
+    keystore_t * ks;
+    identkey_t * idk;
+} idk_memstore_data;
+
+static void KHMCALLBACK handle_idk_init(void * ctx, khm_handle s)
+{
+}
+
+static void KHMCALLBACK handle_idk_exit(void * ctx, khm_handle s)
+{
+}
+
+static void KHMCALLBACK handle_idk_open(void * ctx, khm_handle s)
+{
+}
+
+static void KHMCALLBACK handle_idk_close(void * ctx, khm_handle s)
+{
+}
+
+static void KHMCALLBACK handle_idk_modify(void * ctx, khm_handle s)
+{
+}
+
+khm_int32
+prep_memory_store_for_identkey(identkey_t * idk)
+{
+
+}
+#endif
+
+khm_int32
+mount_identkey_configuration(keystore_t * ks, khm_size idx)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    identkey_t * idk;
+
+    assert(is_keystore_t(ks));
+
+    KSLOCK(ks);
+
+    __try {
+        if (idx >= ks->n_keys)
+            return KHM_ERROR_INVALID_PARAM;
+
+        idk = ks->keys[idx];
+
+        if (idk->flags & IDENTKEY_FLAG_CFGMOUNT)
+            return KHM_ERROR_SUCCESS;
+
+        if (idk->cfg_store == NULL &&
+            idk->configuration.cb_data != 0) {
+
+            rv = ks_unserialize_configuration(idk->configuration.data,
+                                              idk->configuration.cb_data,
+                                              &idk->cfg_store);
+
+            if (KHM_FAILED(rv))
+                return rv;
+        }
+
+        {
+            khm_handle identpro = NULL;
+            khm_handle identity = NULL;
+            khm_handle csp_identity = NULL;
+            khm_handle csp_idparent = NULL;
+
+            IFOK(kcdb_identpro_find(idk->provider_name, &identpro));
+
+            IFOK(kcdb_identity_create_ex(identpro, idk->identity_name,
+                                         KCDB_IDENT_FLAG_CREATE, NULL, &identity));
+
+            IFOK(khc_open_space(NULL, L"KCDB\\Identity",
+                                KCONF_FLAG_USER|KCONF_FLAG_SCHEMA, &csp_idparent));
+
+            (idk->cfg_store != NULL ||
+
+             IFOK(create_empty_memory_store_for_identity(identity,
+                                                         &idk->cfg_store)));
+
+#if 0
+            IFOK(prep_memory_store_for_identkey(idk));
+#endif
+
+            IFOK(khc_memory_store_mount(csp_idparent, KCONF_FLAG_USER|KCONF_FLAG_RECURSIVE,
+                                        idk->cfg_store, NULL));
+
+            IFOK(kcdb_identity_get_config(identity, KCONF_FLAG_USER, &csp_identity));
+
+            assert(KHM_SUCCEEDED(rv));
+
+            if (identpro) kcdb_identpro_release(identpro);
+            if (identity) kcdb_identity_release(identity);
+            if (csp_identity) khc_close_space(csp_identity);
+            if (csp_idparent) khc_close_space(csp_idparent);
+
+            if (KHM_SUCCEEDED(rv))
+                idk->flags |= IDENTKEY_FLAG_CFGMOUNT;
+        }
+    } __finally {
+
+        KSUNLOCK(ks);
+
+    }
+
+    return rv;
+}
+
+khm_int32
+unmount_identkey_configuration(keystore_t * ks, khm_size idx)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    identkey_t * idk;
+
+    assert(is_keystore_t(ks));
+
+    KSLOCK(ks);
+
+    __try {
+        if (idx >= ks->n_keys)
+            return KHM_ERROR_INVALID_PARAM;
+
+        idk = ks->keys[idx];
+
+        if (!(idk->flags & IDENTKEY_FLAG_CFGMOUNT))
+            return KHM_ERROR_SUCCESS;
+
+        if (idk->cfg_store == NULL) {
+            assert(FALSE);
+            return KHM_ERROR_INVALID_PARAM;
+        }
+
+        rv = khc_memory_store_unmount(idk->cfg_store);
+
+        if (KHM_SUCCEEDED(rv))
+            idk->flags &= ~IDENTKEY_FLAG_CFGMOUNT;
+
+        {
+            khm_size cb = 0;
+
+            rv = ks_serialize_configuration(idk->cfg_store, NULL, &cb);
+            if (rv == KHM_ERROR_TOO_LONG) {
+                ks_datablob_alloc(&idk->configuration, cb);
+                idk->configuration.cb_data = cb;
+
+                rv = ks_serialize_configuration(idk->cfg_store,
+                                                idk->configuration.data,
+                                                &idk->configuration.cb_data);
+                ks->flags |= KS_FLAG_MODIFIED;
+            }
+        }
+
+    } __finally {
+
+        KSUNLOCK(ks);
+    }
+
+    return rv;
+}

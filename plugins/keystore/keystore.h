@@ -56,6 +56,11 @@ typedef struct tag_identkey {
     khm_int32    flags;
 #define IDENTKEY_FLAG_LOCKED   0x00000001
 #define IDENTKEY_FLAG_DELETED  0x00000002
+#define IDENTKEY_FLAG_CFGMOUNT 0x00000004
+
+    khm_handle   cfg_store;     /*!< Handle to configuration store. */
+
+    khc_provider_interface provider;
 
 } identkey_t;
 

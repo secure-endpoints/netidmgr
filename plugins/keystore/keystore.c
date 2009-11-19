@@ -121,11 +121,12 @@ ks_identkey_create_new(void)
     assert(idk != NULL);
     memset(idk, 0, sizeof(*idk));
 
-    idk->magic = IDENTKEY_MAGIC;
-    idk->provider_name = NULL;
-    idk->identity_name = NULL;
-    idk->display_name = NULL;
+    idk->magic           = IDENTKEY_MAGIC;
+    idk->provider_name   = NULL;
+    idk->identity_name   = NULL;
+    idk->display_name    = NULL;
     idk->key_description = NULL;
+    idk->cfg_store       = NULL;
 
     ks_datablob_init(&idk->key_hash);
     ks_datablob_init(&idk->key);
@@ -160,6 +161,9 @@ ks_identkey_free(identkey_t * idk)
     ks_datablob_free(&idk->key_hash);
     ks_datablob_free(&idk->plain_key);
     ks_datablob_free(&idk->configuration);
+
+    if (idk->cfg_store)
+        khc_memory_store_release(idk->cfg_store);
 
     memset(idk, 0, sizeof(*idk));
     free(idk);
@@ -990,3 +994,4 @@ ks_keystore_release_key(keystore_t * ks)
     }
     KSUNLOCK(ks);
 }
+

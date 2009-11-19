@@ -245,7 +245,7 @@ DLLRESFILE=$(OBJ)\version.res
 
 CONFIGHEADER=$(OBJ)\module_config.h
 
-all: mkdirs $(CONFIGHEADER) $(DLL) lang
+all: mkdirs $(CONFIGHEADER) $(DLL) lang util
 
 $(CONFIGHEADER): Makefile
 	$(CP) << "$@"
@@ -397,6 +397,10 @@ install:
 
 !endif
 
+# 
+# Tests
+# 
+
 test:: kstest
 
 kstest: $(DEST)\test_keystore.exe
@@ -404,3 +408,12 @@ kstest: $(DEST)\test_keystore.exe
 
 $(DEST)\test_keystore.exe: $(OBJ)\test_keystore.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
 	$(LINK) /NOLOGO $(ldebug) $(conlflags) $(conlibsdll) Crypt32.lib $(NIDMLIBDIR)\$(NIDMGRLIB) Rpcrt4.lib /OUT:$@ $**
+
+# 
+# Dump utility
+# 
+
+util:: $(DEST)\ksdump.exe
+
+$(DEST)\ksdump.exe: $(OBJ)\ksdump.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
+	$(LINK) /NOLOGO $(ldebug) $(conlflags)$(conlibsdll) Crypt32.lib $(NIDMLIBDIR)\$(NIDMGRLIB) Rpcrt4.lib /OUT:$@ $**

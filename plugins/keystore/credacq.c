@@ -845,8 +845,16 @@ creddlg_prompt_for_configure(HWND hwnd, khui_new_creds * nc, keystore_t *ks)
         KSUNLOCK(ks);
 
         if (identity) {
+
+            mount_identkey_configuration(ks, idkey_idx);
+
             khui_cw_configure_identity(nc, hwnd, identity);
+
+            unmount_identkey_configuration(ks, idkey_idx);
+
             kcdb_identity_release(identity);
+
+            save_keystore_with_identity(ks);
         }
 
         if (identpro) {

@@ -268,50 +268,55 @@ void
 init_credtype(void);
 
 keystore_t *
-find_keystore_for_identity(khm_handle identity);
-
-khm_int32
-associate_keystore_and_identity(keystore_t * ks, khm_handle identity);
-
-khm_handle
-create_identity_from_keystore(keystore_t * ks);
+create_keystore_for_identity(khm_handle identity);
 
 keystore_t *
 create_keystore_from_location(const wchar_t * path, khm_handle csp);
 
 keystore_t *
-create_keystore_for_identity(khm_handle identity);
+find_keystore_for_identity(khm_handle identity);
 
-void
-update_keystore_list(void);
+khm_boolean
+get_key_if_necessary(HWND hwnd, keystore_t * ks, int res_reason);
 
 khm_handle
-get_keystore_credential(keystore_t * ks);
+create_default_keystore(void);
+
+khm_handle
+create_identity_from_keystore(keystore_t * ks);
 
 khm_handle
 get_identkey_credential(keystore_t * ks, identkey_t * idk);
 
 khm_handle
+get_keystore_credential(keystore_t * ks);
+
+khm_handle
 get_keystore_credential_for_identity(khm_handle identity);
 
-khm_size
-get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks);
+khm_int32
+associate_keystore_and_identity(keystore_t * ks, khm_handle identity);
 
-void
-free_keystores_list(keystore_t ** aks, khm_size n_ks);
+khm_int32
+destroy_keystore_identity(keystore_t * ks);
+
+khm_int32
+mount_identkey_configuration(keystore_t * ks, khm_size idx);
 
 khm_int32
 save_keystore_with_identity(keystore_t * ks);
 
 khm_int32
-destroy_keystore_identity(keystore_t * ks);
+unmount_identkey_configuration(keystore_t * ks, khm_size idx);
 
-khm_handle
-create_default_keystore(void);
+khm_size
+get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks);
 
 void
 add_identkeys_from_credset(keystore_t * ks, khm_handle credset);
 
-khm_boolean
-get_key_if_necessary(HWND hwnd, keystore_t * ks, int res_reason);
+void
+free_keystores_list(keystore_t ** aks, khm_size n_ks);
 
+void
+update_keystore_list(void);

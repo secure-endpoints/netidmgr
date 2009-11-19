@@ -148,30 +148,31 @@ handle_kmsg_ident_notify_create(khm_handle ident)
             ks = NULL;          /* invokes the ks==NULL code below */
         } else {
             ks_keystore_release(ks);
-        }
-        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
-                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
-        kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, NULL, 0);
 
-        {
-            khm_handle csp_p = NULL;
-            wchar_t didname[KCDB_IDENT_MAXCCH_NAME];
-            wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+            kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
+                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
+            kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, NULL, 0);
 
-            cb = sizeof(idname);
+            {
+                khm_handle csp_p = NULL;
+                wchar_t didname[KCDB_IDENT_MAXCCH_NAME];
+                wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
 
-            if (KHM_SUCCEEDED(kmm_get_plugin_config(IDPROV_NAMEW, 0, &csp_p)) &&
-                KHM_SUCCEEDED(khc_read_string(csp_p, L"DefaultIdentity", didname, &cb)) &&
-                (cb = sizeof(idname)) != 0 &&
-                KHM_SUCCEEDED(kcdb_identity_get_name(ident, idname, &cb)) &&
-                !wcscmp(idname, didname)) {
+                cb = sizeof(idname);
 
-                kcdb_identity_set_default_int(ident);
+                if (KHM_SUCCEEDED(kmm_get_plugin_config(IDPROV_NAMEW, 0, &csp_p)) &&
+                    KHM_SUCCEEDED(khc_read_string(csp_p, L"DefaultIdentity", didname, &cb)) &&
+                    (cb = sizeof(idname)) != 0 &&
+                    KHM_SUCCEEDED(kcdb_identity_get_name(ident, idname, &cb)) &&
+                    !wcscmp(idname, didname)) {
 
+                    kcdb_identity_set_default_int(ident);
+
+                }
+
+                if (csp_p)
+                    khc_close_space(csp_p);
             }
-
-            if (csp_p)
-                khc_close_space(csp_p);
         }
     }
 
