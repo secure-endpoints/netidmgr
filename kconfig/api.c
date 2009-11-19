@@ -1608,6 +1608,92 @@ khc_read_multi_string(khm_handle conf, const wchar_t * value,
     return rv;
 }
 
+static khm_boolean
+khcint_set_provider_for_space(kconf_conf_space * s, khm_int32 flags,
+                              const khc_provider_interface * provider,
+                              void * context)
+{
+    khm_boolean added = FALSE;
+
+    if (flags & KCONF_FLAG_NOINIT) {
+
+        if ((flags & KCONF_FLAG_USER) &&
+            khc_provider(s, user) && khc_provider(s, user) != provider) {
+            CExit(s, user);
+            khc_provider(s, user) = NULL;
+        }
+
+        if ((flags & KCONF_FLAG_MACHINE) &&
+            khc_provider(s, machine) && khc_provider(s, machine) != provider) {
+            CExit(s, machine);
+            khc_provider(s, machine) = NULL;
+        }
+
+        if ((flags & KCONF_FLAG_SCHEMA) &&
+            khc_provider(s, schema) && khc_provider(s, schema) != provider) {
+            CExit(s, schema);
+            khc_provider(s, schema) = NULL;
+        }
+
+        khcint_initialize_providers_for_space(s, TPARENT(s), (flags & ~KHM_FLAG_CREATE));
+
+    } else {
+        wchar_t cpath[KCONF_MAXCCH_PATH];
+        khm_int32 create = (flags & KHM_FLAG_CREATE);
+
+        khcint_get_full_path(s, cpath, sizeof(cpath));
+
+        if (flags & KCONF_FLAG_USER) {
+            if (khc_provider(s, user)) {
+                CExit(s, user);
+                khc_provider(s, user) = NULL;
+            }
+            khc_provider(s, user) = provider;
+            if (KHM_FAILED(CInit(s, user, cpath, KCONF_FLAG_USER|create, context))) {
+                khc_provider(s, user) = NULL;
+            } else {
+                added = TRUE;
+            }
+        }
+
+        if (flags & KCONF_FLAG_MACHINE) {
+            if (khc_provider(s, machine)) {
+                CExit(s, machine);
+                khc_provider(s, machine) = NULL;
+            }
+            khc_provider(s, machine) = provider;
+            if (KHM_FAILED(CInit(s, machine, cpath, KCONF_FLAG_MACHINE|create, context))) {
+                khc_provider(s, machine) = NULL;
+            } else {
+                added = TRUE;
+            }
+        }
+
+        if (flags & KCONF_FLAG_SCHEMA) {
+            if (khc_provider(s, schema)) {
+                CExit(s, schema);
+                khc_provider(s, schema) = NULL;
+            }
+            khc_provider(s, schema) = provider;
+            if (KHM_FAILED(CInit(s, schema, cpath, KCONF_FLAG_SCHEMA|create, context))) {
+                khc_provider(s, schema) = NULL;
+            } else {
+                added = TRUE;
+            }
+        }
+    }
+
+    if (flags & KCONF_FLAG_RECURSIVE) {
+        kconf_conf_space * c;
+
+        for (c = TFIRSTCHILD(s); c; c = TNEXTSIBLING(c)) {
+            khcint_set_provider_for_space(c, flags|KCONF_FLAG_NOINIT, provider, NULL);
+        }
+    }
+
+    return added;
+}
+
 KHMEXP khm_int32 KHMAPI
 khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
                    const khc_provider_interface * provider,
@@ -1617,8 +1703,6 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
     kconf_conf_space * p;
     khm_boolean added = FALSE;
     khm_boolean new_config_space = FALSE;
-    khm_int32 create;
-    wchar_t cpath[KCONF_MAXCCH_PATH];
 
     if (!khc_is_config_running())
         return KHM_ERROR_NOT_READY;
@@ -1635,9 +1719,6 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
             return KHM_ERROR_INVALID_PARAM;
     }
 
-    create = (flags & KHM_FLAG_CREATE);
-    flags &= ~KHM_FLAG_CREATE;
-
     EnterCriticalSection(&cs_conf_global);
     p = khc_space_from_any(conf);
 
@@ -1651,49 +1732,14 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
         khcint_space_hold(p);
     }
 
-    khcint_get_full_path(s, cpath, sizeof(cpath));
+    if (khc_is_handle(conf))
+        flags &=
+            ((khc_handle_flags(conf) & (KCONF_FLAG_USER|
+                                        KCONF_FLAG_MACHINE|
+                                        KCONF_FLAG_SCHEMA)) |
+             (KCONF_FLAG_RECURSIVE | KHM_FLAG_CREATE));
 
-    if ((!khc_is_handle(conf) || khc_is_user_handle(conf)) &&
-        (flags & KCONF_FLAG_USER)) {
-        if (khc_provider(s, user)) {
-            CExit(s, user);
-            khc_provider(s, user) = NULL;
-        }
-        khc_provider(s, user) = provider;
-        if (KHM_FAILED(CInit(s, user, cpath, KCONF_FLAG_USER|create, context))) {
-            khc_provider(s, user) = NULL;
-        } else {
-            added = TRUE;
-        }
-    }
-
-    if ((!khc_is_handle(conf) || khc_is_machine_handle(conf)) &&
-        (flags & KCONF_FLAG_MACHINE)) {
-        if (khc_provider(s, machine)) {
-            CExit(s, machine);
-            khc_provider(s, machine) = NULL;
-        }
-        khc_provider(s, machine) = provider;
-        if (KHM_FAILED(CInit(s, machine, cpath, KCONF_FLAG_MACHINE|create, context))) {
-            khc_provider(s, machine) = NULL;
-        } else {
-            added = TRUE;
-        }
-    }
-
-    if ((!khc_is_handle(conf) || khc_is_schema_handle(conf)) &&
-        (flags & KCONF_FLAG_SCHEMA)) {
-        if (khc_provider(s, schema)) {
-            CExit(s, schema);
-            khc_provider(s, schema) = NULL;
-        }
-        khc_provider(s, schema) = provider;
-        if (KHM_FAILED(CInit(s, schema, cpath, KCONF_FLAG_SCHEMA|create, context))) {
-            khc_provider(s, schema) = NULL;
-        } else {
-            added = TRUE;
-        }
-    }
+    added = khcint_set_provider_for_space(s, flags, provider, context);
 
     if (new_config_space) {
         if (KHM_FAILED(khcint_initialize_providers_for_space(s, p, 0))) {
@@ -1705,13 +1751,13 @@ khc_mount_provider(khm_handle conf, const wchar_t * name, khm_int32 flags,
         }
     }
 
-    if (s && added && ret_conf) {
-        *ret_conf = khcint_handle_from_space(s, flags);
-    }
+    flags &= ~KHM_FLAG_CREATE;
 
-    if (s) {
+    if (s && added && ret_conf)
+        *ret_conf = khcint_handle_from_space(s, flags);
+
+    if (s)
         khcint_space_release(s);
-    }
     LeaveCriticalSection(&cs_conf_global);
 
     return (added)? KHM_ERROR_SUCCESS: KHM_ERROR_NO_PROVIDER;

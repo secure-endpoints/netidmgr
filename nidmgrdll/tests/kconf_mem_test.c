@@ -324,11 +324,143 @@ static int mem_rw(void)
     return 0;
 }
 
+typedef struct notify_test_data {
+    int magic;
+#define NOTIFY_TEST_DATA_MAGIC 0x1a2b3c4d
+    int inits;
+    int opens;
+    int closes;
+    int creates;
+} notify_test_data;
+
+static void n_init(void * ctx, khm_handle s)
+{
+    struct notify_test_data * d = (notify_test_data *) ctx;
+
+    CHECK(d && d->magic == NOTIFY_TEST_DATA_MAGIC);
+
+    d->inits++;
+}
+
+static void n_open(void * ctx, khm_handle s)
+{
+    struct notify_test_data * d = (notify_test_data *) ctx;
+
+    CHECK(d && d->magic == NOTIFY_TEST_DATA_MAGIC);
+
+    d->opens++;
+}
+
+static void n_close(void * ctx, khm_handle s)
+{
+    struct notify_test_data * d = (notify_test_data *) ctx;
+
+    CHECK(d && d->magic == NOTIFY_TEST_DATA_MAGIC);
+
+    d->closes++;
+}
+
+static void n_create(void * ctx, khm_handle s, const wchar_t * name, khm_int32 flags)
+{
+    struct notify_test_data * d = (notify_test_data *) ctx;
+
+    CHECK(d && d->magic == NOTIFY_TEST_DATA_MAGIC);
+
+    d->creates++;
+}
+
+static int mem_notify(void)
+{
+    khc_memory_store_notify notify = {
+        n_init,
+        n_open,
+        n_close,
+        n_create
+    };
+
+    khm_handle h_mem = NULL;
+    khm_handle h_csp = NULL;
+    khm_handle h_csp2 = NULL;
+
+    struct notify_test_data td;
+
+    /* Basic open */
+    IS(khc_memory_store_create(&h_mem));
+    ISNT(khc_memory_store_set_notify_interface(h_mem, &notify, &td));
+    make_space(h_mem, with_subsubspace, ARRAYLENGTH(with_subsubspace));
+    memset(&td, 0, sizeof(td));
+    td.magic = NOTIFY_TEST_DATA_MAGIC;
+    IS(khc_memory_store_set_notify_interface(h_mem, &notify, &td));
+    IS(khc_memory_store_mount(NULL, KCONF_FLAG_USER, h_mem, &h_csp));
+    IS(khc_memory_store_release(h_mem));
+    IS(khc_close_space(h_csp));
+
+    printf("init = %d, open = %d, close =%d, create = %d\n",
+           td.inits, td.opens, td.closes, td.creates);
+
+    CHECK(td.inits == 1);
+    CHECK(td.opens == 1);
+    CHECK(td.closes == 0);
+    CHECK(td.creates == 0);
+
+    IS(khc_memory_store_create(&h_mem));
+    make_space(h_mem, with_subsubspace, ARRAYLENGTH(with_subsubspace));
+    memset(&td, 0, sizeof(td));
+    td.magic = NOTIFY_TEST_DATA_MAGIC;
+    IS(khc_memory_store_set_notify_interface(h_mem, &notify, &td));
+    IS(khc_memory_store_mount(NULL, KCONF_FLAG_USER, h_mem, NULL));
+
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 1 && td.opens == 0 && td.closes == 0 && td.creates == 0);
+
+    IS(khc_open_space(NULL, L"Foo", KCONF_FLAG_USER, &h_csp));
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 1 && td.opens == 1 && td.closes == 0 && td.creates == 0);
+
+    IS(khc_close_space(h_csp));
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 1 && td.opens == 1 && td.closes == 1 && td.creates == 0);
+
+    IS(khc_open_space(NULL, L"Foo\\Bar", KCONF_FLAG_USER, &h_csp));
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 2 && td.opens == 2 && td.closes == 1 && td.creates == 1);
+
+    IS(khc_close_space(h_csp));
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 2 && td.opens == 2 && td.closes == 2 && td.creates == 1);
+
+    IS(khc_open_space(NULL, L"Foo\\Bar\\Baz", KCONF_FLAG_USER, &h_csp));
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 3 && td.opens == 3 && td.closes == 2 && td.creates == 2);
+
+    IS(khc_open_space(NULL, L"Foo\\Bar", KCONF_FLAG_USER, &h_csp2));
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 3 && td.opens == 4 && td.closes == 2 && td.creates == 2);
+
+    IS(khc_close_space(h_csp));
+    IS(khc_close_space(h_csp2));
+    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
+        td.inits, td.opens, td.closes, td.creates);
+    CHECK(td.inits == 3 && td.opens == 4 && td.closes == 4 && td.creates == 2);
+
+    IS(khc_memory_store_release(h_mem));
+
+    return 0;
+}
+
 static nim_test tests[] = {
     {"memcreate", "Create test", mem_create},
     {"memenum", "Enum test", mem_enum},
     {"memmount", "Mount test", mem_mount},
     {"memrw", "Read/write test", mem_rw},
+    {"memnotify", "Notify test", mem_notify},
 };
 
 nim_test_suite kconf_mem_suite = {

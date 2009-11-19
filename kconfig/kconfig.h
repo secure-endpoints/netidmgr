@@ -223,7 +223,7 @@ typedef struct tag_kconf_schema {
 
   \see khc_unmount_provider()
  */
-#define KCONF_FLAG_RECURSIVE     0x00001000
+#define KCONF_FLAG_RECURSIVE     0x00010000
 
 /*! \brief Maximum number of allowed characters (including terminating NULL) in a name 
 
@@ -1405,6 +1405,14 @@ typedef struct khc_provider_interface {
   This flag does not affect the behavior of khc_mount_provider(), but
   it will be passed on to the init() function of the provider.
 
+  If ::KCONF_FLAG_RECURSIVE is specified in \a flags, then the
+  provider is assumed to be recursive provider.  In other words, if \a
+  p provides the user store for configuration space \a s, then it also
+  provides the user store for all children of \a s.  In this case,
+  after successfully associating the provider with the configuration
+  space, the provider will be associated with all the child spaces as
+  well.
+
   For each configuration store specified in \a flags, the provider
   indicated by \a provider will be mounted by calling the \a init()
   method.  Each invocation will specify a different store.
@@ -1484,6 +1492,17 @@ khc_memory_store_mount(khm_handle csp_parent, khm_int32 store, khm_handle sp, kh
 
 KHMEXP khm_int32 KHMAPI
 khc_memory_store_unmount(khm_handle sp);
+
+typedef struct khc_memory_store_notify {
+    void (*notify_init)(void * context, khm_handle s);
+    void (*notify_open)(void * context, khm_handle s);
+    void (*notify_close)(void * context, khm_handle s);
+    void (*notify_create)(void * context, khm_handle s, const wchar_t * name, khm_int32 flags);
+} khc_memory_store_notify;
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_set_notify_interface(khm_handle sp, const khc_memory_store_notify * pnotify,
+                                      void * context);
 
 /*@}*/
 

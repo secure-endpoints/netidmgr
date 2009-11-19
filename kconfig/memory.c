@@ -172,6 +172,11 @@ typedef struct p_store {
 
     int open_count;
 
+    const khc_memory_store_notify * to_notify;
+    void * notify_ctx;
+
+    struct p_store * root;
+
     TDCL(struct p_store);
 } p_store;
 
@@ -230,6 +235,9 @@ create_store(p_store * parent, const wchar_t * name)
 
     if (parent) {
         TADDCHILD(parent, s);
+        s->root = parent->root;
+    } else {
+        s->root = s;
     }
 
     return s;
@@ -337,6 +345,10 @@ khm_int32 KHMCALLBACK p_init(khm_handle sp_handle,
     s->store = (flags & (KCONF_FLAG_USER|KCONF_FLAG_MACHINE|KCONF_FLAG_SCHEMA));
     hold_store(s);
 
+    if (s->root && s->root->to_notify && s->root->to_notify->notify_init) {
+        s->root->to_notify->notify_init(s->root->notify_ctx, s->h);
+    }
+
     *r_nodeHandle = s;
 
     return KHM_ERROR_SUCCESS;
@@ -365,6 +377,9 @@ khm_int32 KHMCALLBACK p_open(void * nodeHandle)
 
     s->open_count++;
 
+    if (s->root && s->root->to_notify && s->root->to_notify->notify_open)
+        s->root->to_notify->notify_open(s->root->notify_ctx, s->h);
+
     return KHM_ERROR_SUCCESS;
 }
 
@@ -377,6 +392,9 @@ khm_int32 KHMCALLBACK p_close(void * nodeHandle)
     s->open_count--;
 
     assert(s >= 0);
+
+    if (s->root && s->root->to_notify && s->root->to_notify->notify_close)
+        s->root->to_notify->notify_close(s->root->notify_ctx, s->h);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -415,6 +433,9 @@ khm_int32 KHMCALLBACK p_create(void * nodeHandle, const wchar_t * name, khm_int3
     if (c)
         rv = khc_mount_provider(s->h, name, flags, &khc_memory_provider,
                                 c, NULL);
+
+    if (s->root && s->root->to_notify && s->root->to_notify->notify_create)
+        s->root->to_notify->notify_create(s->root->notify_ctx, s->h, name, flags);
 
     return rv;
 }
@@ -658,6 +679,8 @@ typedef struct p_store_handle {
 
     p_store *root;
     p_store *cursor;
+
+    const khc_provider_interface *provider;
 } p_store_handle;
 
 static p_store_handle *
@@ -672,6 +695,7 @@ create_store_handle(void)
     h->refcount = 1;
     h->root = NULL;
     h->cursor = NULL;
+    h->provider = &khc_memory_provider;
 
     return h;
 }
@@ -858,6 +882,23 @@ KHMEXP khm_int32 KHMAPI
 khc_memory_store_release(khm_handle sp)
 {
     release_store_handle(sp);
+    return KHM_ERROR_SUCCESS;
+}
+
+KHMEXP khm_int32 KHMAPI
+khc_memory_store_set_notify_interface(khm_handle sp,
+                                      const khc_memory_store_notify * pnotify,
+                                      void * ctx)
+{
+    p_store_handle * h = (p_store_handle *) sp;
+
+    if (h == NULL || h->magic != P_STORE_HANDLE_MAGIC ||
+        pnotify == NULL || h->root == NULL)
+        return KHM_ERROR_INVALID_PARAM;
+
+    h->root->to_notify = pnotify;
+    h->root->notify_ctx = ctx;
+
     return KHM_ERROR_SUCCESS;
 }
 

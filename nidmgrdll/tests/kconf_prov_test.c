@@ -737,11 +737,54 @@ static int prov_val_test(void)
     return 0;
 }
 
+static int
+prov_rec_mount_test(void)
+{
+    khm_handle h1 = NULL;
+    khm_handle h2 = NULL;
+    khm_handle h3 = NULL;
+    khm_handle hm = NULL;
+    khm_int32 i = 0;
+
+    IS(khc_open_space(NULL, L"RecMountTest", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h1));
+    IS(khc_open_space(h1, L"Child1", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h2));
+    IS(khc_open_space(h2, L"Child2", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h3));
+    IS(khc_write_int32(h1, L"I", 1));
+    IS(khc_write_int32(h2, L"I", 2));
+    IS(khc_write_int32(h3, L"I", 3));
+
+    IS(khc_read_int32(h1, L"I", &i)); CHECK(i == 1);
+    IS(khc_read_int32(h2, L"I", &i)); CHECK(i == 2);
+    IS(khc_read_int32(h3, L"I", &i)); CHECK(i == 3);
+
+    IS(khc_mount_provider(NULL, L"RecMountTest", KCONF_FLAG_USER|KCONF_FLAG_RECURSIVE,
+                          &test_provider, NULL, &hm));
+
+    ISNT(khc_read_int32(h1, L"I", &i));
+    ISNT(khc_read_int32(h2, L"I", &i));
+    ISNT(khc_read_int32(h3, L"I", &i));
+
+    IS(khc_unmount_provider(hm, &test_provider, KCONF_FLAG_USER | KCONF_FLAG_RECURSIVE));
+
+    IS(khc_read_int32(h1, L"I", &i)); CHECK(i == 1);
+    IS(khc_read_int32(h2, L"I", &i)); CHECK(i == 2);
+    IS(khc_read_int32(h3, L"I", &i)); CHECK(i == 3);
+
+    IS(khc_remove_space(h1));
+
+    IS(khc_close_space(h3));
+    IS(khc_close_space(h2));
+    IS(khc_close_space(h1));
+    
+    return 0;
+}
+
 static nim_test tests[] = {
     {"provmount", "Provider mount/unmount test", prov_mount_test},
     {"provcreate", "Provider create test", prov_create_test},
     {"provrdwr", "Provider read/write test", prov_rd_wr_test},
     {"provval", "Provider validation tests", prov_val_test},
+    {"provrec", "Provider recursive mount tests", prov_rec_mount_test},
 };
 
 nim_test_suite kconf_prov_suite = {
