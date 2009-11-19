@@ -187,6 +187,7 @@ khm_main_wnd_proc(HWND hwnd,
         kmq_subscribe_hwnd(KMSG_CRED, hwnd);
         kmq_subscribe_hwnd(KMSG_ACT, hwnd);
         kmq_subscribe_hwnd(KMSG_KMM, hwnd);
+        kmq_subscribe_hwnd(KMSG_KCDB, hwnd);
         mw_restart_refresh_timer(hwnd);
 
         /* if the plug-ins finished loading before the window was
@@ -202,6 +203,7 @@ khm_main_wnd_proc(HWND hwnd,
         kmq_unsubscribe_hwnd(KMSG_ACT, hwnd);
         kmq_unsubscribe_hwnd(KMSG_CRED, hwnd);
         kmq_unsubscribe_hwnd(KMSG_KMM, hwnd);
+        kmq_unsubscribe_hwnd(KMSG_KCDB, hwnd);
         HtmlHelp(NULL, NULL, HH_CLOSE_ALL, 0);
         PostQuitMessage(0);
         break;
@@ -620,6 +622,10 @@ khm_main_wnd_proc(HWND hwnd,
 
                 kmq_post_message(KMSG_ACT, KMSG_ACT_BEGIN_CMDLINE, 0, 0);
 
+            } else if (MsgIs(KMSG_KCDB, KMSG_KCDB_IDENT)) {
+
+                khm_refresh_identity_menus();
+                khm_refresh_config();
             }
 
 #undef MsgIs
