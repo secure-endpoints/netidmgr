@@ -1558,8 +1558,6 @@ kcdb_identity_refresh(khm_handle vid);
 KHMEXP khm_int32 KHMAPI 
 kcdb_identity_refresh_all(void);
 
-#ifdef NIMPRIVATE
-
 /*! \brief Query the serial number for the identity
 
     Each identity is assigned a serial number at the time it is
@@ -1586,11 +1584,53 @@ kcdb_identity_refresh_all(void);
 KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_serial(khm_handle vid, khm_ui_8 * pserial);
 
+/*! \brief Retrieves a short name representing an identity
+
+  The generated name is used by several different functions that
+  place several constraints on the generated name.  To satisfy these,
+  the following rules are followed:
+
+  1. If the identity was provided by a provider named "Krb5Ident",
+     then the generated name will be just the identity name.  If the
+     generated name is longer than KCDB_MAXCCH_NAME, then rule #3 is
+     applied.
+
+  2. If the identity was not provided by "Krb5Ident", then the
+     generated name will be of the form
+     "<provider-name>:<identity-name>".  If the generated name exceeds
+     KCDB_MAXCCH_NAME, then rule #3 is applied.
+
+  3. If #1 and #2 fail to produce a suitable name, then the generated
+     name will be of the form "NIMIdentity:<serial-number>", where
+     "<serial-number>" will be the upper-case hexadecimal
+     representation of the serial number of the identity.
+
+  The current constraints are:
+
+  - The name should uniquely identify an identity.
+
+  - Passing an unescaped named into kcdb_identity_create() should open
+    the identity if it is still active.
+
+  - The escaped name should be usable as a configuration space name.
+
+  - The unescaped name should be usable as a configuration node name.
+
+  \param[in] vid Handle to the identity
+
+  \param[in] escape_chars Set to \a TRUE if special characters in the
+      generated name should be escaped.  The special characters that
+      are currently recognized are '#' and '\'.
+
+  \param[out] buf Receives the generated short name.
+
+  \param[in,out] pcb_buf On entry, specifies the size of \a buf in
+      bytes. On exit, specifies how many bytes were used (including
+      the trailing NULL).
+ */
 KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_short_name(khm_handle vid, khm_boolean escape_chars,
                              wchar_t * buf, khm_size * pcb_buf);
-#endif
-
 
 /*! \brief Begin enumerating identities
 
