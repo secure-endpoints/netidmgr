@@ -372,3 +372,6 @@ install:
 	candle.exe -?
 
 !endif
+
+test:
+# Nothing here yet
