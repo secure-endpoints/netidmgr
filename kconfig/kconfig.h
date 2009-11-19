@@ -1494,10 +1494,11 @@ KHMEXP khm_int32 KHMAPI
 khc_memory_store_unmount(khm_handle sp);
 
 typedef struct khc_memory_store_notify {
-    void (*notify_init)(void * context, khm_handle s);
-    void (*notify_open)(void * context, khm_handle s);
-    void (*notify_close)(void * context, khm_handle s);
-    void (*notify_create)(void * context, khm_handle s, const wchar_t * name, khm_int32 flags);
+    void (KHMCALLBACK *notify_init)(void * context, khm_handle s);
+    void (KHMCALLBACK *notify_exit)(void * context, khm_handle s);
+    void (KHMCALLBACK *notify_open)(void * context, khm_handle s);
+    void (KHMCALLBACK *notify_close)(void * context, khm_handle s);
+    void (KHMCALLBACK *notify_modify)(void * context, khm_handle s);
 } khc_memory_store_notify;
 
 KHMEXP khm_int32 KHMAPI
@@ -1540,6 +1541,7 @@ namespace nim {
         }
 
         ConfigSpace(const ConfigSpace& that) {
+            csp = NULL;
             last_error = khc_dup_space(that.csp, &csp);
         }
 

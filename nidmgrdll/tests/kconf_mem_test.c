@@ -328,12 +328,13 @@ typedef struct notify_test_data {
     int magic;
 #define NOTIFY_TEST_DATA_MAGIC 0x1a2b3c4d
     int inits;
+    int exits;
     int opens;
     int closes;
-    int creates;
+    int modifys;                /* yes. it's not 'modifies' */
 } notify_test_data;
 
-static void n_init(void * ctx, khm_handle s)
+static void KHMCALLBACK n_init(void * ctx, khm_handle s)
 {
     struct notify_test_data * d = (notify_test_data *) ctx;
 
@@ -342,7 +343,16 @@ static void n_init(void * ctx, khm_handle s)
     d->inits++;
 }
 
-static void n_open(void * ctx, khm_handle s)
+static void KHMCALLBACK n_exit(void * ctx, khm_handle s)
+{
+    struct notify_test_data * d = (notify_test_data *) ctx;
+
+    CHECK(d && d->magic == NOTIFY_TEST_DATA_MAGIC);
+
+    d->exits++;
+}
+
+static void KHMCALLBACK n_open(void * ctx, khm_handle s)
 {
     struct notify_test_data * d = (notify_test_data *) ctx;
 
@@ -351,7 +361,7 @@ static void n_open(void * ctx, khm_handle s)
     d->opens++;
 }
 
-static void n_close(void * ctx, khm_handle s)
+static void KHMCALLBACK n_close(void * ctx, khm_handle s)
 {
     struct notify_test_data * d = (notify_test_data *) ctx;
 
@@ -360,22 +370,23 @@ static void n_close(void * ctx, khm_handle s)
     d->closes++;
 }
 
-static void n_create(void * ctx, khm_handle s, const wchar_t * name, khm_int32 flags)
+static void KHMCALLBACK n_modify(void * ctx, khm_handle s)
 {
     struct notify_test_data * d = (notify_test_data *) ctx;
 
     CHECK(d && d->magic == NOTIFY_TEST_DATA_MAGIC);
 
-    d->creates++;
+    d->modifys++;
 }
 
 static int mem_notify(void)
 {
     khc_memory_store_notify notify = {
         n_init,
+        n_exit,
         n_open,
         n_close,
-        n_create
+        n_modify
     };
 
     khm_handle h_mem = NULL;
@@ -395,13 +406,9 @@ static int mem_notify(void)
     IS(khc_memory_store_release(h_mem));
     IS(khc_close_space(h_csp));
 
-    printf("init = %d, open = %d, close =%d, create = %d\n",
-           td.inits, td.opens, td.closes, td.creates);
-
-    CHECK(td.inits == 1);
-    CHECK(td.opens == 1);
-    CHECK(td.closes == 0);
-    CHECK(td.creates == 0);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 1 && td.exits == 1 && td.opens == 1 && td.closes == 0 && td.modifys == 0);
 
     IS(khc_memory_store_create(&h_mem));
     make_space(h_mem, with_subsubspace, ARRAYLENGTH(with_subsubspace));
@@ -410,45 +417,85 @@ static int mem_notify(void)
     IS(khc_memory_store_set_notify_interface(h_mem, &notify, &td));
     IS(khc_memory_store_mount(NULL, KCONF_FLAG_USER, h_mem, NULL));
 
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 1 && td.opens == 0 && td.closes == 0 && td.creates == 0);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 1 && td.exits == 0 && td.opens == 0 && td.closes == 0 && td.modifys == 0);
 
     IS(khc_open_space(NULL, L"Foo", KCONF_FLAG_USER, &h_csp));
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 1 && td.opens == 1 && td.closes == 0 && td.creates == 0);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 1 && td.exits == 0 && td.opens == 1 && td.closes == 0 && td.modifys == 0);
 
     IS(khc_close_space(h_csp));
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 1 && td.opens == 1 && td.closes == 1 && td.creates == 0);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 1 && td.exits == 0 && td.opens == 1 && td.closes == 1 && td.modifys == 0);
 
     IS(khc_open_space(NULL, L"Foo\\Bar", KCONF_FLAG_USER, &h_csp));
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 2 && td.opens == 2 && td.closes == 1 && td.creates == 1);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 2 && td.exits == 0 && td.opens == 2 && td.closes == 1 && td.modifys == 0);
 
     IS(khc_close_space(h_csp));
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 2 && td.opens == 2 && td.closes == 2 && td.creates == 1);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 2 && td.exits == 0 && td.opens == 2 && td.closes == 2 && td.modifys == 0);
 
     IS(khc_open_space(NULL, L"Foo\\Bar\\Baz", KCONF_FLAG_USER, &h_csp));
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 3 && td.opens == 3 && td.closes == 2 && td.creates == 2);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 3 && td.exits == 0 && td.opens == 3 && td.closes == 2 && td.modifys == 0);
+
+    IS(khc_open_space(NULL, L"Foo\\Bar\\Boo", KCONF_FLAG_USER|KHM_FLAG_CREATE, &h_csp2));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 4 && td.closes == 2 && td.modifys == 1);
+
+    IS(khc_close_space(h_csp2));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 4 && td.closes == 3 && td.modifys == 1);
 
     IS(khc_open_space(NULL, L"Foo\\Bar", KCONF_FLAG_USER, &h_csp2));
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 3 && td.opens == 4 && td.closes == 2 && td.creates == 2);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 5 && td.closes == 3 && td.modifys == 1);
+
+    IS(khc_write_int32(h_csp2, L"Blah", 10));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 5 && td.closes == 3 && td.modifys == 2);
+
+    IS(khc_write_int32(h_csp, L"BlahBlah", 10));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 5 && td.closes == 3 && td.modifys == 3);
+
+    IS(khc_remove_value(h_csp2, L"Blah", KCONF_FLAG_USER));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 5 && td.closes == 3 && td.modifys == 4);
+
+    ISNT(khc_remove_value(h_csp2, L"Blah", KCONF_FLAG_USER));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 5 && td.closes == 3 && td.modifys == 4);
+
+    IS(khc_remove_value(h_csp, L"BlahBlah", KCONF_FLAG_USER));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 5 && td.closes == 3 && td.modifys == 5);
 
     IS(khc_close_space(h_csp));
     IS(khc_close_space(h_csp2));
-    log(KHERR_INFO, "init = %d, open = %d, close =%d, create = %d\n",
-        td.inits, td.opens, td.closes, td.creates);
-    CHECK(td.inits == 3 && td.opens == 4 && td.closes == 4 && td.creates == 2);
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 0 && td.opens == 5 && td.closes == 5 && td.modifys == 5);
+
+    IS(khc_memory_store_unmount(h_mem));
+    log(KHERR_DEBUG_1, "init = %d, exit = %d, open = %d, close =%d, modify = %d\n",
+        td.inits, td.exits, td.opens, td.closes, td.modifys);
+    CHECK(td.inits == 4 && td.exits == 4 && td.opens == 5 && td.closes == 5 && td.modifys == 5);
 
     IS(khc_memory_store_release(h_mem));
 

@@ -187,6 +187,12 @@ hold_store(p_store * s);
 static void
 release_store(p_store * s);
 
+#define NOTIFY(s, n) \
+    do {                                                                \
+        if (s->root && s->root->to_notify && s->root->to_notify->n)     \
+            s->root->to_notify->n(s->root->notify_ctx, s);              \
+    } while(FALSE)
+
 void
 free_value_contents(p_value * v, khm_boolean free_name)
 {
@@ -345,9 +351,7 @@ khm_int32 KHMCALLBACK p_init(khm_handle sp_handle,
     s->store = (flags & (KCONF_FLAG_USER|KCONF_FLAG_MACHINE|KCONF_FLAG_SCHEMA));
     hold_store(s);
 
-    if (s->root && s->root->to_notify && s->root->to_notify->notify_init) {
-        s->root->to_notify->notify_init(s->root->notify_ctx, s->h);
-    }
+    NOTIFY(s, notify_init);
 
     *r_nodeHandle = s;
 
@@ -359,6 +363,8 @@ khm_int32 KHMCALLBACK p_exit(void * nodeHandle)
     p_store * s = (p_store *) nodeHandle;
 
     assert(s && s->magic == P_STORE_MAGIC);
+
+    NOTIFY(s, notify_exit);
 
     s->h = NULL;
     release_store(s);
@@ -377,8 +383,7 @@ khm_int32 KHMCALLBACK p_open(void * nodeHandle)
 
     s->open_count++;
 
-    if (s->root && s->root->to_notify && s->root->to_notify->notify_open)
-        s->root->to_notify->notify_open(s->root->notify_ctx, s->h);
+    NOTIFY(s, notify_open);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -393,8 +398,7 @@ khm_int32 KHMCALLBACK p_close(void * nodeHandle)
 
     assert(s >= 0);
 
-    if (s->root && s->root->to_notify && s->root->to_notify->notify_close)
-        s->root->to_notify->notify_close(s->root->notify_ctx, s->h);
+    NOTIFY(s, notify_close);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -406,6 +410,8 @@ khm_int32 KHMCALLBACK p_remove(void * nodeHandle)
     assert(s && s->magic == P_STORE_MAGIC);
 
     mark_remove_store(s);
+
+    NOTIFY(s, notify_modify);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -427,15 +433,14 @@ khm_int32 KHMCALLBACK p_create(void * nodeHandle, const wchar_t * name, khm_int3
         }
     }
 
-    if (c == NULL && (flags & KHM_FLAG_CREATE))
+    if (c == NULL && (flags & KHM_FLAG_CREATE)) {
         c = create_store(s, name);
+        NOTIFY(s, notify_modify);
+    }
 
     if (c)
         rv = khc_mount_provider(s->h, name, flags, &khc_memory_provider,
                                 c, NULL);
-
-    if (s->root && s->root->to_notify && s->root->to_notify->notify_create)
-        s->root->to_notify->notify_create(s->root->notify_ctx, s->h, name, flags);
 
     return rv;
 }
@@ -619,6 +624,8 @@ khm_int32 KHMCALLBACK p_write_value(void * nodeHandle, const wchar_t * valuename
     if (s->h)
         GetSystemTimeAsFileTime(&s->ft_mtime);
 
+    NOTIFY(s, notify_modify);
+
     return KHM_ERROR_SUCCESS;
 }
 
@@ -645,6 +652,8 @@ khm_int32 KHMCALLBACK p_remove_value(void * nodeHandle, const wchar_t * valuenam
             memmove(v, v + 1, ((s->n_values - 1) - (v - s->values)) * sizeof(*v));
         }
         s->n_values--;
+
+        NOTIFY(s, notify_modify);
 
         return KHM_ERROR_SUCCESS;
     }
