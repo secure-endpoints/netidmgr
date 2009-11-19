@@ -192,6 +192,7 @@ khm_cred_end_new_cred_op(void)
 
     exiting = khm_exiting_application();
     pending = InterlockedDecrement(&pending_new_cred_ops);
+    assert(pending >= 0);
     if (pending == 0) {
         if (exiting)
             khm_exit_application();
@@ -368,8 +369,6 @@ kmsg_cred_completion(kmq_message *m)
 
             nc = (khui_new_creds *) m->vparam;
 
-            khm_new_cred_progress_broadcast(KHERR_CTX_END, NULL, nc);
-
             switch (nc->subtype) {
             case KHUI_NC_SUBTYPE_NEW_CREDS:
             case KHUI_NC_SUBTYPE_PASSWORD:
@@ -420,6 +419,7 @@ kmsg_cred_completion(kmq_message *m)
         /* property sheet stuff */
 
     case KMSG_CRED_PP_BEGIN:
+
         /* all the pages should have been added by now.  Just send out
            the precreate message */
         kmq_post_message(KMSG_CRED, KMSG_CRED_PP_PRECREATE, 0, 
@@ -963,11 +963,13 @@ void khm_cred_obtain_new_creds(wchar_t * title)
 
   Once the new credentials operation has concluded, this function is
   called to check if there are any errors to be reported to the user.
- */
+*/
 khm_boolean
 khm_cred_conclude_processing(khui_new_creds * nc)
 {
     khm_boolean has_error = kherr_is_error();
+
+    khm_new_cred_progress_broadcast(KHERR_CTX_END, NULL, nc);
 
     if(has_error && !nc->ignore_errors) {
         khui_alert * alert;
