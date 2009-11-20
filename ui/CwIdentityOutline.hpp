@@ -128,11 +128,11 @@ namespace nim
 
                     GetSystemTimeAsFileTime(&ftnow);
 
-                    now = FtToInt(&ftnow) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+                    now = FtToInt(&ftnow);
 
                     expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
 
-                    if (expire < now) {
+                    if (expire < now + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL)) {
                         g_theme->DrawCredMeterState(g, bounds, DrawStateExpired, &ms);
                         is_expired = true;
                     } else {

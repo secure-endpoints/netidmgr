@@ -3210,16 +3210,23 @@ FtIntervalToString(const FILETIME * data,
                    khm_size * cb_buf);
 
 
-/* the max difference between two timers (in seconds) that can exist
-   where we consider them to be equivalent. */
+/*! \brief Equivalence threshold
+
+  The max difference between two timers (in seconds) that can exist
+  where we consider them to be equivalent. */
 #define TT_TIMEEQ_ERROR_SMALL 1
 
-/* The minimum half time interval is 60 seconds*/
+/*! \brief The minimum half time interval */
 #define TT_MIN_HALFLIFE_INTERVAL 60
 
-/* The maximum lifetime at which we consider a credential is as good
-   as dead as far as notifications are concerned in seconds*/
+/*! \brief Expired threshold
+
+  The maximum lifetime at which we consider a credential is as good
+  as dead as far as notifications are concerned in seconds*/
 #define TT_EXPIRED_THRESHOLD 60
+
+/*! \brief Maximum allowed clock-skew */
+#define TT_CLOCKSKEW_THRESHOLD 600
 
 #define SECONDS_TO_FT(s)  ((s) * 10000000i64)
 #define FT_TO_MS(ft)      ((ft) / 10000i64)

@@ -448,6 +448,7 @@ namespace nim
         static const int FRAME_DISABLED   = 0;
         static const int FRAME_CRIT_BEGIN = 3;
         static const int FRAME_WARN_BEGIN = 1;
+        static const int FRAME_POSTDATED  = 5;
 
         int frame;
 
@@ -459,6 +460,9 @@ namespace nim
             frame = FRAME_CRIT_BEGIN;
             NextFrameAndRefresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
 				frame, *ms_to_next);
+        } else if (state & DrawStatePostDated) { 
+            frame = FRAME_POSTDATED;
+            *ms_to_next = 0;
         } else {
             frame = FRAME_DISABLED;
             *ms_to_next = 0;
