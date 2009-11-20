@@ -595,7 +595,7 @@ khm_int32 KHMCALLBACK p_write_value(void * nodeHandle, const wchar_t * valuename
     }
 
     if (!v->name)
-        v->name = wcsdup(valuename);
+      v->name = _wcsdup(valuename);
     v->type = vtype;
 
     switch (v->type) {
@@ -608,7 +608,7 @@ khm_int32 KHMCALLBACK p_write_value(void * nodeHandle, const wchar_t * valuename
         break;
 
     case KC_STRING:
-        v->str = wcsdup((wchar_t *) buffer);
+        v->str = _wcsdup((wchar_t *) buffer);
         break;
 
     case KC_BINARY:

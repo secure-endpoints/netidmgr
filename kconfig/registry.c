@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#include "kconfiginternal.h"
 #include <shlwapi.h>
+#include "kconfiginternal.h"
 #include <assert.h>
 
 typedef struct reg_node {

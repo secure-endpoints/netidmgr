@@ -121,7 +121,7 @@ NIDMLIBDIR=$(KFWSDKDIR)
 # Program macros
 
 CD=cd
-RM=del /q
+RM=-del /q
 MKDIR=mkdir
 RMDIR=rmdir
 ECHO=echo
