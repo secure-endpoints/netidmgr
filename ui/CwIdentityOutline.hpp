@@ -143,8 +143,9 @@ namespace nim
 
                         if (lifetime == 0) {
                             g_theme->DrawCredMeterState(g, bounds, DrawStateExpired, &ms);
-                        } else if (expire - lifetime > now) {
+                        } else if (expire - lifetime > now + SECONDS_TO_FT(TT_CLOCKSKEW_THRESHOLD)) {
                             g_theme->DrawCredMeterState(g, bounds, DrawStatePostDated, &ms);
+                            ms = FT_TO_MS((expire - lifetime) - (now + SECONDS_TO_FT(TT_CLOCKSKEW_THRESHOLD)));
                         } else {
                             khm_int64 remainder;
 
@@ -164,15 +165,16 @@ namespace nim
                                     ms += (DWORD) q;
                                 }
                             }
-
-                            if (ms > 0) {
-                                owner->SetTimer(this, ms);
-                            }
                         }
                     }
-                }
-            }
-        }
+
+                    
+                    if (ms > 0) {
+                        owner->SetTimer(this, ms);
+                    }
+                } // default:
+            }     // switch
+        }         // PaintSelf()
     };
 
 
