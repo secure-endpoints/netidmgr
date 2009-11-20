@@ -62,7 +62,7 @@ namespace nim
 
         Identity     identity;
         DrawState    state;
-        std::wstring caption;
+        bool         is_expired;
 
     public:
         CwIdentityMeterElement(Identity& _identity) :
@@ -70,26 +70,25 @@ namespace nim
             identity(_identity) {
 
             state = DrawStateNone;
-
+            is_expired = false;
         }
 
         void OnClick(const Point& pt, UINT keyflags, bool doubleClick) {
-            khm_cred_renew_identity(identity);
+            if (is_expired)
+                khm_cred_obtain_new_creds_for_ident(identity, NULL);
+            else
+                khm_cred_renew_identity(identity);
         }
 
         void OnTimer() {
             Invalidate();
         }
 
-        void SetStatus(DrawState _state, const wchar_t * _caption = NULL) {
-            if (_caption)
-                caption = _caption;
-            else
-                caption = L"";
-
-            state = _state;
-
-            Invalidate();
+        void SetStatus(DrawState _state) {
+            if (state != _state) {
+                state = _state;
+                Invalidate();
+            }
         }
 
         void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
@@ -98,18 +97,25 @@ namespace nim
             switch (state) {
             case DrawStateCritial:
             case DrawStateWarning:
+                {
+                    DWORD ms = 0;
+
+                    g_theme->DrawCredMeterState(g, bounds, state, &ms);
+
+                    if (ms != 0)
+                        owner->SetTimer(this, ms);
+                }
+                break;
+
             case DrawStateBusy:
                 {
                     DWORD ms = 0;
 
-                    if (state == DrawStateBusy)
-                        g_theme->DrawCredMeterBusy(g, bounds, &ms);
-                    else
-                        g_theme->DrawCredMeterState(g, bounds, state, &ms);
+                    g_theme->DrawCredMeterBusy(g, bounds, &ms);
 
-                    if (ms != 0) {
+                    if (ms != 0)
                         owner->SetTimer(this, ms);
-                    }
+                    is_expired = false;
                 }
                 break;
 
@@ -128,9 +134,11 @@ namespace nim
 
                     if (expire < now) {
                         g_theme->DrawCredMeterState(g, bounds, DrawStateExpired, &ms);
+                        is_expired = true;
                     } else {
                         khm_int64 lifetime;
 
+                        is_expired = false;
                         lifetime = identity.GetAttribFileTimeAsInt(KCDB_ATTR_LIFETIME);
 
                         if (lifetime == 0) {
@@ -413,7 +421,7 @@ namespace nim
         }
 
         virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
-            bool has_creds = false;
+            bool has_creds = (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0);
 
             FlowLayout l(layout, g_theme->sz_margin);
 
@@ -422,8 +430,8 @@ namespace nim
             ll
                 .Add(el_icon, FlowLayout::Center)
                 .LineBreak()
-                .Add(el_meter, FlowLayout::Center, FlowLayout::Fixed,
-                     (has_creds = (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0)))
+                .Add(el_meter, FlowLayout::Center, FlowLayout::Fixed)
+                // Formerly, el_meter was conditioned on has_creds
                 ;
 
             FlowLayout lr = l.InsertFillerColumn();
