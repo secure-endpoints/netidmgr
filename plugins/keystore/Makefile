@@ -169,8 +169,8 @@ mkdirs::
 !endif
 
 clean::
-	$(RM) "$(OBJ)\*.*"
-	$(RM) "$(DEST)\*.*"
+	-$(RM) "$(OBJ)\*.*"
+	-$(RM) "$(DEST)\*.*"
 
 .SUFFIXES: .h
 
@@ -275,7 +275,7 @@ $(CONFIGHEADER): Makefile
 <<
 
 clean::
-	$(RM) $(CONFIGHEADER)
+	-$(RM) $(CONFIGHEADER)
 
 $(DLL): $(OBJFILES) $(DLLRESFILE)
 	$(DLLGUILINK) $(LIBFILES)
@@ -284,7 +284,7 @@ $(DLL): $(OBJFILES) $(DLLRESFILE)
 	$(_CODESIGN)
 
 clean::
-	$(RM) $(DLL)
+	-$(RM) $(DLL)
 
 # Language specific resources
 
@@ -305,19 +305,19 @@ $(LANGDLL): $(OBJ)\langres_$(LANG).res $(OBJ)\version_$(LANG).res
 	$(_CODESIGN)
 
 clean::
-	$(RM) $(LANGDLL)
+	-$(RM) $(LANGDLL)
 
 $(OBJ)\version_$(LANG).res: version.rc
 	$(RC) $(RFLAGS) $(rincflags) /d LANGRES /d LANG_$(LANG) /fo $@ $**
 
 clean::
-	$(RM) $(OBJ)\version_$(LANG).res
+	-$(RM) $(OBJ)\version_$(LANG).res
 
 $(OBJ)\langres_$(LANG).res: lang\$(LANG)\langres.rc
 	$(RC2RES)
 
 clean::
-	$(RM) "$(OBJ)\langres_$(LANG).res"
+	-$(RM) "$(OBJ)\langres_$(LANG).res"
 
 # /English-US
 
@@ -366,7 +366,7 @@ $(MSI): "$(OBJ)\installer.wixobj" "$(OBJ)\keystore_fragment.wixobj"
 		$**
 
 clean::
-	$(RM) $(MSI)
+	-$(RM) $(MSI)
 
 $(OBJ)\installer.wixobj: installer.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** \
@@ -387,7 +387,7 @@ $(OBJ)\keystore_fragment.wixobj: keystore_fragment.wxs
 fragment: $(OBJ)\keystore_fragment.wixobj
 
 clean::
-	$(RM) "$(OBJ)\installer.wixobj"
+	-$(RM) "$(OBJ)\installer.wixobj"
 
 !else
 
