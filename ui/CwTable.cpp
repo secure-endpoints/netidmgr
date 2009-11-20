@@ -977,6 +977,29 @@ namespace nim
     {
         Point pm = p;
 
+        // If the user right-clicks on an element that isn't part of
+        // the current selection, then we change the selection
+        // context.
+        {
+            CwOutline * o_el = NULL;
+
+            for (DisplayElement * e = DescendantFromPoint(MapFromScreen(p)); e; e = TQPARENT(e)) {
+                CwOutline * o = dynamic_cast<CwOutline *>(e);
+
+                if (o) {
+                    if (!o_el)
+                        o_el = o;
+
+                    if (!o->selected) {
+                        SelectionContext sctx;
+
+                        o_el->SetContext(sctx);
+                        break;
+                    }
+                }
+            }
+        }
+
         if (p.X == -1 && p.Y == -1) {
             if (el_focus)
                 pm = el_focus->MapToScreen(Point(0,0));

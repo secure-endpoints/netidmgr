@@ -103,6 +103,8 @@ namespace nim {
 
         virtual Point MapToScreen(const Point & p);
 
+        virtual Point MapFromScreen(const Point & p);
+
         virtual Rect& GetClientRect(Rect * cr);
 
         virtual void Invalidate(const Rect & r);

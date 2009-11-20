@@ -33,6 +33,13 @@ namespace nim {
         return Point(wpt.x, wpt.y);
     }
 
+    Point DisplayContainer::MapFromScreen(const Point& p)
+    {
+        POINT wpt = { p.X, p.Y };
+        ScreenToClient(hwnd, &wpt);
+        return Point(wpt.x + scroll.X, wpt.y + scroll.Y - header_height);
+    }
+
     void DisplayContainer::Invalidate(const Rect & r)
     {
         RECT wr;
