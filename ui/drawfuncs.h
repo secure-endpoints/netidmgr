@@ -51,6 +51,7 @@ namespace nim {
         DrawStateWarning      = (1L << 18),
         DrawStateBusy         = (1L << 19),
         DrawStatePostDated    = (1L << 20),
+        DrawStateEmpty        = (1L << 21),
     } DrawState;
 
     typedef enum DrawElement {
@@ -191,92 +192,68 @@ namespace nim {
         DrawTextCredWndNormal
     };
 
+    template <class T,
+              HFONT KhmDraw::*font = &KhmDraw::hf_normal,
+              INT format_flags = 0,
+              StringTrimming trimming = StringTrimmingNone,
+              StringAlignment alignment = StringAlignmentNear,
+              StringAlignment line_alignment = StringAlignmentNear,
+              Color KhmDraw::*clr_normal = &KhmDraw::c_text,
+              Color KhmDraw::*clr_selected = &KhmDraw::c_text_selected
+              >
+    class GenericTextFormatterT : public WithCachedFont< T > {
+        void GetStringFormat(StringFormat& sf) {
+            sf.SetFormatFlags(format_flags);
+            sf.SetTrimming(trimming);
+            sf.SetAlignment(alignment);
+            sf.SetLineAlignment(line_alignment);
+        }
+
+        Font * GetFontCreate(HDC hdc) {
+            return new Font(hdc, g_theme->*font);
+        }
+
+        Color GetForegroundColor() {
+            return (selected)? g_theme->*clr_selected : g_theme->*clr_normal;
+        }
+    };
+
     // Applies to WithTextDisplay<>
     template <class T>
-    class HeaderTextBoxT : public WithCachedFont< T > {
-        void GetStringFormat(StringFormat& sf) {
-            sf.SetFormatFlags(StringFormatFlagsNoWrap);
-            sf.SetTrimming(StringTrimmingEllipsisCharacter);
-        }
-
-        Font * GetFontCreate(HDC hdc) {
-            return new Font(hdc, g_theme->hf_header);
-        }
-
-        Color GetForegroundColor() {
-            return (selected)? g_theme->c_text_selected : g_theme->c_text;
-        }
-    };
+    class HeaderTextBoxT :
+        public GenericTextFormatterT<T, &KhmDraw::hf_header,
+                                     StringFormatFlagsNoWrap, StringTrimmingEllipsisCharacter>
+    {};
 
     // Applies to WithTextDisplay
     template <class T>
-    class SubheaderTextBoxT : public WithCachedFont< T > {
-        void GetStringFormat(StringFormat& sf) {
-            sf.SetFormatFlags(StringFormatFlagsNoWrap);
-            sf.SetTrimming(StringTrimmingEllipsisCharacter);
-        }
-
-        Font * GetFontCreate(HDC hdc) {
-            return new Font(hdc, g_theme->hf_normal);
-        }
-
-        Color GetForegroundColor() {
-            return (selected)? g_theme->c_text_selected : g_theme->c_text;
-        }
-    };
+    class SubheaderTextBoxT :
+        public GenericTextFormatterT<T, &KhmDraw::hf_normal,
+                                     StringFormatFlagsNoWrap, StringTrimmingEllipsisCharacter>
+    {};
 
     // Applies to WithTextDisplay
     template <class T>
-    class IdentityStatusTextT : public WithCachedFont< T > {
-        void GetStringFormat(StringFormat& sf) {
-            sf.SetFormatFlags(0);
-            sf.SetAlignment(StringAlignmentNear);
-        }
-
-        Font * GetFontCreate(HDC hdc) {
-            return new Font(hdc, g_theme->hf_normal);
-        }
-
-        Color GetForegroundColor() {
-            return (selected)? g_theme->c_text_selected : g_theme->c_text;
-        }
-    };
+    class IdentityStatusTextT :
+        public GenericTextFormatterT<T>
+    {};
 
     // Applies to WithTextDisplay
     template <class T>
-    class ColumnCellTextT : public WithCachedFont< T > {
-        void GetStringFormat(StringFormat& sf) {
-            sf.SetFormatFlags(StringFormatFlagsNoWrap);
-            sf.SetAlignment(StringAlignmentNear);
-            sf.SetLineAlignment(StringAlignmentCenter);
-            sf.SetTrimming(StringTrimmingEllipsisCharacter);
-        }
-
-        Font * GetFontCreate(HDC hdc) {
-            return new Font(hdc, g_theme->hf_normal);
-        }
-
-        Color GetForegroundColor() {
-            return (selected)? g_theme->c_text_selected : g_theme->c_text;
-        }
-    };
+    class ColumnCellTextT :
+        public GenericTextFormatterT<T,
+                                     &KhmDraw::hf_normal,
+                                     StringFormatFlagsNoWrap,
+                                     StringTrimmingEllipsisCharacter,
+                                     StringAlignmentNear,
+                                     StringAlignmentCenter>
+    {};
 
     // Applies to WithTextDisplay
     template <class T>
-    class GenericTextT : public WithCachedFont< T > {
-        void GetStringFormat(StringFormat& sf) {
-            sf.SetFormatFlags(0);
-            sf.SetAlignment(StringAlignmentNear);
-        }
-
-        Font * GetFontCreate(HDC hdc) {
-            return new Font(hdc, g_theme->hf_normal);
-        }
-
-        Color GetForegroundColor() {
-            return (selected)? g_theme->c_text_selected : g_theme->c_text;
-        }
-    };
+    class GenericTextT :
+        public GenericTextFormatterT<T>
+    {};
 
     template <class T, void (KhmDraw::*DF)(Graphics&, const Rect&, DrawState)>
     class BackgroundT : public T {
