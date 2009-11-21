@@ -3216,6 +3216,12 @@ FtIntervalToString(const FILETIME * data,
   where we consider them to be equivalent. */
 #define TT_TIMEEQ_ERROR_SMALL 1
 
+/*! \brief Large equivalence threshold
+
+  The max absolute difference between two timers (in seconds) that can
+  exist where we consider both timers to be in the same timeslot. */
+#define TT_TIMEEQ_ERROR 20
+
 /*! \brief The minimum half time interval */
 #define TT_MIN_HALFLIFE_INTERVAL 60
 
@@ -3226,11 +3232,11 @@ FtIntervalToString(const FILETIME * data,
 #define TT_EXPIRED_THRESHOLD 60
 
 /*! \brief Maximum allowed clock-skew */
-#define TT_CLOCKSKEW_THRESHOLD 600
+#define TT_CLOCKSKEW_THRESHOLD 300
 
 #define SECONDS_TO_FT(s)  ((s) * 10000000i64)
-#define FT_TO_MS(ft)      ((ft) / 10000i64)
-#define FT_TO_SECONDS(ft) (FT_TO_MS(ft) / 1000i64)
+#define FT_TO_MS(ft)      ((DWORD)((ft) / 10000i64))
+#define FT_TO_SECONDS(ft) (FT_TO_MS(ft) / 1000)
 
 /* as above, in FILETIME units of 100ns */
 #define FT_MIN_HALFLIFE_INTERVAL SECONDS_TO_FT(TT_MIN_HALFLIFE_INTERVAL)
