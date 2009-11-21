@@ -77,6 +77,10 @@ namespace nim {
         khm_size n_ids, i;
         bool seen_current = false;
         HMENU hm = NULL;
+        bool all_identities = false;
+
+        if (ConfigSpace(L"CredWindow").GetInt32(L"AllIdents") != 0)
+            all_identities = true;
 
         Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_CONFIG,
                                                  KCDB_IDENT_FLAG_CONFIG);
@@ -101,7 +105,13 @@ namespace nim {
         Identity current_id( (nc->n_identities > 0)? nc->identities[0] : NULL, false );
 
         for (; !e.AtEnd(); ++e) {
-            assert(i < n_ids);
+            if (!all_identities) {
+                khm_int32 flags = (*e).GetFlags();
+
+                if (!(flags & KCDB_IDENT_FLAG_STICKY) &&
+                    !(flags & KCDB_IDENT_FLAG_DEFAULT))
+                    continue;
+            }
 
             ids[i++] = PNEW IdentityDisplayData(*e);
 

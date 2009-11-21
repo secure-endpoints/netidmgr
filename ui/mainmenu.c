@@ -979,9 +979,10 @@ khm_refresh_identity_menus(void) {
         }
 
         if (!(idflags & KCDB_IDENT_FLAG_EMPTY)) {
-            khui_menu_insert_action(renew_def, 1000,
-                                    khm_get_identity_renew_action(identity),
-                                    0);
+            if (idflags & KCDB_IDENT_FLAG_RENEWABLE)
+                khui_menu_insert_action(renew_def, 1000,
+                                        khm_get_identity_renew_action(identity),
+                                        0);
 
             khui_menu_insert_action(dest_def, 1000,
                                     khm_get_identity_destroy_action(identity),
@@ -990,8 +991,8 @@ khm_refresh_identity_menus(void) {
         }
 
         if (all_identities ||
-            !(idflags & KCDB_IDENT_FLAG_EMPTY) ||
-            (idflags & KCDB_IDENT_FLAG_STICKY)) {
+            (idflags & KCDB_IDENT_FLAG_STICKY) ||
+            (idflags & KCDB_IDENT_FLAG_DEFAULT)) {
 
             khui_menu_insert_action(setdef_def, 1000,
                                     khm_get_identity_setdef_action(identity),
