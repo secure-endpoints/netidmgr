@@ -208,7 +208,7 @@ k5_kinit_task_release(k5_kinit_task * kt);
 void
 k5_kinit_task_abort_and_release(k5_kinit_task * kt);
 
-void
+khm_int32
 k5_kinit_task_confirm_and_wait(k5_kinit_task * kt);
 
 /* kinit dialog data */

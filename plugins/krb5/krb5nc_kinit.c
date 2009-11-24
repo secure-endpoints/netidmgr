@@ -220,7 +220,26 @@ k5_kinit_task_abort_and_release(k5_kinit_task * kt)
     k5_kinit_task_release(kt);
 }
 
-void
+#define CHECK_TIMEOUT 500
+
+static khm_boolean
+wait_for_parent_or_until_aborted(k5_kinit_task * kt)
+{
+    DWORD result;
+
+    do {
+        result = WaitForSingleObject(kt->h_parent_wait, CHECK_TIMEOUT);
+        if (result == WAIT_OBJECT_0)
+            return TRUE;
+        assert(result == WAIT_TIMEOUT);
+        if (result == WAIT_TIMEOUT && kmq_is_call_aborted()) {
+            k5_kinit_task_abort_and_release(kt);
+            return FALSE;
+        }
+    } while(TRUE);
+}
+
+khm_int32
 k5_kinit_task_confirm_and_wait(k5_kinit_task * kt)
 {
  retry:
@@ -230,7 +249,7 @@ k5_kinit_task_confirm_and_wait(k5_kinit_task * kt)
     case K5_KINIT_STATE_DONE:
         /* The task is not running. */
         LeaveCriticalSection(&kt->cs);
-        return;
+        return KHM_ERROR_SUCCESS;
 
     case K5_KINIT_STATE_PREP:
     case K5_KINIT_STATE_INCALL:
@@ -239,7 +258,8 @@ k5_kinit_task_confirm_and_wait(k5_kinit_task * kt)
            for one and retry. */
         ResetEvent(kt->h_parent_wait);
         LeaveCriticalSection(&kt->cs);
-        WaitForSingleObject(kt->h_parent_wait, INFINITE);
+        if (!wait_for_parent_or_until_aborted(kt))
+            return KHM_ERROR_ABORTED;
         goto retry;
 
     case K5_KINIT_STATE_WAIT:
@@ -258,7 +278,9 @@ k5_kinit_task_confirm_and_wait(k5_kinit_task * kt)
     }
     LeaveCriticalSection(&kt->cs);
 
-    WaitForSingleObject(kt->h_parent_wait, INFINITE);
+    if (!wait_for_parent_or_until_aborted(kt))
+        return KHM_ERROR_ABORTED;
+    return KHM_ERROR_SUCCESS;
 }
 
 /* return TRUE if we should go ahead with creds acquisition */
