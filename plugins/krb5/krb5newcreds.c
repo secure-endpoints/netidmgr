@@ -931,6 +931,8 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
     _report_mr0(KHERR_NONE, MSG_CTX_RENEW_CREDS);
     _describe();
 
+    _progress(0,1);
+
     pctx = khui_cw_get_ctx(nc);
 
     if (pctx->scope == KHUI_SCOPE_IDENT ||
@@ -976,6 +978,8 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
 
             code = 1; /* it just has to be non-zero */
         }
+
+        _progress(1,2);
 
         if (code == 0) {
             _reportf(L"Tickets successfully renewed");
@@ -1035,6 +1039,8 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
                              KHUI_NC_RESPONSE_EXIT | 
                              KHUI_NC_RESPONSE_SUCCESS);
     }
+
+    _progress(1,1);
 
     _end_task();
 }
