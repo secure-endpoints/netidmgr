@@ -178,6 +178,9 @@
  */
 #define KHM_ERROR_READONLY          (KHM_ERROR_BASE + 23)
 
+/*! \brief Aborted */
+#define KHM_ERROR_ABORTED           (KHM_ERROR_BASE + 24)
+
 /*@}*/ /*kherror_codes*/
 
 /*! \brief Tests whether a return value indicates success */
