@@ -387,8 +387,14 @@ kmq_post_message_ex(khm_int32 type, khm_int32 subtype,
 KHMEXP khm_int32 KHMAPI
 kmq_abort_call(kmq_call call)
 {
-    /* TODO: Implement this */
-    return KHM_ERROR_NOT_IMPLEMENTED;
+    if (call == NULL)
+        return KHM_ERROR_INVALID_PARAM;
+
+    EnterCriticalSection(&cs_kmq_msg);
+    call->aborted = TRUE;
+    LeaveCriticalSection(&cs_kmq_msg);
+
+    return KHM_ERROR_SUCCESS;
 }
 
 /*! \internal

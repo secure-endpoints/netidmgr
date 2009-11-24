@@ -120,8 +120,12 @@ kmq_message_ref * kmqint_get_message_ref(void) {
 }
 
 /*! \internal
-    \brief Free a message ref object
-    \note called with cs_kmq_msg_ref and cs_kmq_msg held */
+
+  \brief Free a message ref object
+
+  \note called with cs_kmq_msg_ref and cs_kmq_msg held.  Every call to
+      kmqint_put_message_ref() must be followed by a
+      kmqint_put_message() for r->msg. */
 void kmqint_put_message_ref(kmq_message_ref * r) {
     if(!r)
         return;
@@ -149,6 +153,30 @@ kmq_queue * kmqint_get_thread_queue(void) {
 }
 
 /*! \internal
+  \brief Set the last message
+  \note Obtains kmq_queue::cs
+ */
+void kmqint_set_queue_message(kmq_queue * q, kmq_message * m)
+{
+    EnterCriticalSection(&q->cs);
+    q->last_msg = m;
+    LeaveCriticalSection(&q->cs);
+}
+
+/*! \internal
+  \brief Get the last message
+  \note Obtains kmq_queue::cs
+ */
+kmq_message* kmqint_get_queue_message(kmq_queue * q)
+{
+    kmq_message * r;
+    EnterCriticalSection(&q->cs);
+    r = q->last_msg;
+    LeaveCriticalSection(&q->cs);
+    return r;
+}
+
+/*! \internal
     \brief Get the topmost message ref for a queue
     \note Obtains kmq_queue::cs
     */
@@ -163,13 +191,6 @@ void kmqint_get_queue_message_ref(kmq_queue * q, kmq_message_ref ** r) {
             SetEvent(q->wait_o);
     }
 
-    LeaveCriticalSection(&q->cs);
-}
-
-void kmqint_set_queue_message(kmq_queue * q, kmq_message * m)
-{
-    EnterCriticalSection(&q->cs);
-    q->last_msg = m;
     LeaveCriticalSection(&q->cs);
 }
 
@@ -614,10 +635,30 @@ KHMEXP LRESULT KHMAPI kmq_wm_dispatch(LPARAM lparm, kmq_callback_t cb) {
     return TRUE;
 }
 
+KHMEXP khm_boolean KHMAPI kmq_is_call_aborted_i(kmq_call m)
+{
+    khm_boolean aborted = FALSE;
+
+    if (m) {
+        EnterCriticalSection(&cs_kmq_msg);
+        aborted = m->aborted;
+        LeaveCriticalSection(&cs_kmq_msg);
+    }
+    return aborted;
+}
+
 KHMEXP khm_boolean KHMAPI kmq_is_call_aborted(void)
 {
-    /* TODO: Implement this */
-    return FALSE;
+    kmq_message * m;
+    khm_boolean aborted = FALSE;
+
+    m = kmqint_get_queue_message(kmqint_get_thread_queue());
+    if (m) {
+        EnterCriticalSection(&cs_kmq_msg);
+        aborted = m->aborted;
+        LeaveCriticalSection(&cs_kmq_msg);
+    }
+    return aborted;
 }
 
 KHMEXP khm_int32 KHMAPI
@@ -682,12 +723,6 @@ KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout)
 
             if (m->err_ctx)
                 kherr_push_context(m->err_ctx);
-
-            /* TODO: before dispatching the message, the message being
-               dispatched for this thread needs to be stored so that
-               it can be looked up in kmq_is_call_aborted(). This
-               needs to happen in kmq_wm_dispatch() and
-               kmq_wm_begin() as well. */
 
             kmqint_set_queue_message(q, m);
 

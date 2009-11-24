@@ -42,9 +42,7 @@
 #include "khlist.h"
 #include "kherr.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+BEGIN_C
 
 /* general */
 #ifdef _WIN32
@@ -439,6 +437,8 @@ KHMEXP khm_int32 KHMAPI kmq_duplicate_subscription(khm_handle original,
 
     Equivalent of kmq_post_msg() but only posts the message to the
     specified subscription.
+
+    \see kmq_post_msg()
  */
 KHMEXP khm_int32 KHMAPI kmq_post_sub_msg(
     khm_handle sub, 
@@ -448,6 +448,12 @@ KHMEXP khm_int32 KHMAPI kmq_post_sub_msg(
     void * vparam);
 
 /*! \brief Post a message to a subscription and acquire a handle to the call
+
+  Equivalent to kmq_post_sub_msg(), except returns a handle to the
+  call.  The returned handle should be freed with a call to
+  kmq_free_call().
+
+  \see kmq_post_sub_msg()
  */
 KHMEXP khm_int32 KHMAPI kmq_post_sub_msg_ex(
     khm_handle sub, 
@@ -493,8 +499,8 @@ KHMEXP khm_int32 KHMAPI kmq_post_subs_msg(
     a handle to the call will be returned in \a call.
 
     The returned \a call will reference all of the dispatches that
-    were made.
-*/
+    were made.  The \a call should be freed with a call to
+    kmq_free_call().  */
 KHMEXP khm_int32 KHMAPI kmq_post_subs_msg_ex(
     khm_handle * subs, 
     khm_int32 n_subs, 
@@ -698,6 +704,9 @@ KHMEXP khm_int32 KHMAPI kmq_send_thread_quit_message(
     however, any kmq_dispatch() function that is currently active of
     becomes active will exit with a KHM_ERROR_EXIT code.
     kmq_post_thread_quit_message() will return immediately.
+
+    If \a call is non-NULL, it will receive a handle to the call
+    object.  This should be freed using kmq_free_call().
     */
 KHMEXP khm_int32 KHMAPI kmq_post_thread_quit_message(
     kmq_thread_id thread, 
@@ -777,6 +786,16 @@ KHMEXP khm_int32 KHMAPI kmq_abort_call(kmq_call call);
 */
 KHMEXP khm_boolean KHMAPI kmq_is_call_aborted(void);
 
+/*! \brief Check if the call was aborted
+
+    Similar to kmq_is_call_aborted() but checks whether a specific
+    call was aborted instead of the last dispatched call for this
+    thread.
+
+    \see kmq_is_call_aborted()
+ */
+KHMEXP khm_boolean KHMAPI kmq_is_call_aborted_i(kmq_call call);
+
 /*! \brief Sets the completion handler for a specified message type.
 
     \note Only one completion handler can exist for one message type.
@@ -787,9 +806,7 @@ KHMEXP khm_int32 KHMAPI kmq_set_completion_handler(
     khm_int32 type, 
     kmq_msg_completion_handler hander);
 
-#ifdef __cplusplus
-}
-#endif
+END_C
 
 /*@}*/
 #endif
