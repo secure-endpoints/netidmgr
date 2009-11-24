@@ -1143,10 +1143,8 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
        who's dependencies are all satisfied */
     EnterCriticalSection(&nc->cs);
 
-    if (nc->last_dispatch != NULL) {
-        //kmq_free_call(nc->last_dispatch);
+    if (nc->last_dispatch != NULL)
         nc->last_dispatch = NULL;
-    }
 
     for(i=0; i<nc->n_types && nc->dispatch_state != KHUI_NC_DISPATCH_STATE_ABORTED; i++) {
         t = nc->types[i].nct;
@@ -1190,13 +1188,17 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
                              (void *) nc, &call);
 
         EnterCriticalSection(&nc->cs);
-        if (nc->dispatch_state != KHUI_NC_DISPATCH_STATE_ABORTED) {
+        if (nc->dispatch_state != KHUI_NC_DISPATCH_STATE_ABORTED)
             nc->dispatch_state = KHUI_NC_DISPATCH_STATE_INCALL;
-        } else {
+        else
             kmq_abort_call(call);
-        }
         nc->last_dispatch = call;
         kmq_free_call(call);
+
+        /* We don't keep a reference to 'call'.  An implicit reference
+           exists for the call until after the call completion handler
+           runs and we will relinquish our reference before then. */
+
         LeaveCriticalSection(&nc->cs);
     } else {
         EnterCriticalSection(&nc->cs);
