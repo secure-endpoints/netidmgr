@@ -65,7 +65,7 @@ void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
     DWORD sugg_id = 0;
     kherr_suggestion sugg_code = KHERR_SUGGEST_NONE;
 
-    if (suggestion == NULL || buf == NULL || cbbuf == 0 || suggest_code == 0)
+    if (buf == NULL || cbbuf == 0)
         return;
 
     *buf = L'\0';
@@ -74,8 +74,10 @@ void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
     table_num = code - offset;
     com_err_msg = perror_message(code);
 
-    *suggestion = 0;
-    *suggest_code = KHERR_SUGGEST_NONE;
+    if (suggestion)
+        *suggestion = 0;
+    if (sugg_code)
+        *suggest_code = KHERR_SUGGEST_NONE;
 
     if (WSABASEERR <= code && code < (WSABASEERR + 1064)) {
         /* winsock error */
@@ -92,9 +94,11 @@ void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
     default:
 
         if (code == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
-            *suggestion = MSG_ERR_S_INTEGRITY;
+            if (suggestion)
+                *suggestion = MSG_ERR_S_INTEGRITY;
         }
-        *suggest_code = KHERR_SUGGEST_RETRY;
+        if (suggest_code)
+            *suggest_code = KHERR_SUGGEST_RETRY;
         AnsiStrToUnicode(buf, cbbuf, com_err_msg);
 	return;
     }
@@ -122,12 +126,14 @@ void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
             msg_id = MSG_ERR_PR_UNKNOWN;
             sugg_code = KHERR_SUGGEST_RETRY;
             break;
+
         case GC_TKFIL                : /* 021 Can't read ticket file */
         case GC_NOTKT                : /* 022 Can't find ticket or TGT */
             msg_id = MSG_ERR_TKFIL;
             sugg_id = MSG_ERR_S_TKFIL;
             sugg_code = KHERR_SUGGEST_RETRY;
             break;
+
         case MK_AP_TGTEXP    :  /* 026 TGT Expired */
             /* no extra error msg */
             break;
