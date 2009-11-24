@@ -120,6 +120,10 @@ LRESULT khm_toolbar_notify(LPNMHDR notice) {
                 khm_menu_show_panel(KHUI_MENU_RENEW_CRED,
                                     r.left + nmtb->rcButton.left,
                                     r.top + nmtb->rcButton.bottom);
+            } else if (nmtb->iItem == KHUI_ACTION_NEW_CRED) {
+                khm_menu_show_panel(KHUI_MENU_NEW_CRED,
+                                    r.left + nmtb->rcButton.left,
+                                    r.top + nmtb->rcButton.bottom);
             } else {
                 return TBDDRET_NODEFAULT;
             }

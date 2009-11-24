@@ -901,6 +901,7 @@ khm_refresh_identity_menus(void) {
     khui_menu_def * renew_def = NULL;
     khui_menu_def * dest_def = NULL;
     khui_menu_def * setdef_def = NULL;
+    khui_menu_def * new_def = NULL;
     kcdb_enumeration id_enum = NULL;
     khm_size cb = 0;
     khm_size n_idents = 0;
@@ -936,9 +937,11 @@ khm_refresh_identity_menus(void) {
     renew_def = khui_find_menu(KHUI_MENU_RENEW_CRED);
     dest_def = khui_find_menu(KHUI_MENU_DESTROY_CRED);
     setdef_def = khui_find_menu(KHUI_MENU_SETDEF);
+    new_def = khui_find_menu(KHUI_MENU_NEW_CRED);
     assert(renew_def);
     assert(dest_def);
     assert(setdef_def);
+    assert(new_def);
 
     t = khui_menu_get_size(renew_def);
     while(t) {
@@ -958,6 +961,12 @@ khm_refresh_identity_menus(void) {
         t--;
     }
 
+    t = khui_menu_get_size(new_def);
+    while (t) {
+        khui_menu_remove_action(new_def, 0);
+        t--;
+    }
+
     if (n_idents > 1) {
         khui_menu_insert_action(renew_def, 0, KHUI_ACTION_RENEW_ALL, 0);
         khui_menu_insert_action(renew_def, 1, KHUI_MENU_SEP, 0);
@@ -965,6 +974,9 @@ khm_refresh_identity_menus(void) {
         khui_menu_insert_action(dest_def, 0, KHUI_ACTION_DESTROY_ALL, 0);
         khui_menu_insert_action(dest_def,  1, KHUI_MENU_SEP, 0);
     }
+
+    khui_menu_insert_action(new_def, 0, KHUI_ACTION_NEW_CRED, 0);
+    khui_menu_insert_action(new_def, 1, KHUI_MENU_SEP, 0);
 
     while (id_enum && KHM_SUCCEEDED(kcdb_enum_next(id_enum, &identity))) {
 
@@ -996,6 +1008,9 @@ khm_refresh_identity_menus(void) {
 
             khui_menu_insert_action(setdef_def, 1000,
                                     khm_get_identity_setdef_action(identity),
+                                    0);
+            khui_menu_insert_action(new_def, 1000,
+                                    khm_get_identity_new_creds_action(identity),
                                     0);
             added_setdef = TRUE;
         }

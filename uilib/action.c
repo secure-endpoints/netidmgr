@@ -28,10 +28,6 @@
 #define NIMPRIVATE
 #define _NIMLIB_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include<khuidefs.h>
 #include<intaction.h>
 #include<utils.h>
@@ -56,7 +52,7 @@ khui_action_ref khui_menu_file[] = {
 };
 
 khui_action_ref khui_menu_cred[] = {
-    MENU_ACTION(KHUI_ACTION_NEW_CRED),
+    MENU_SUBMENU(KHUI_MENU_NEW_CRED),
     MENU_SEP(),
     MENU_SUBMENU(KHUI_MENU_RENEW_CRED),
     MENU_ACTION(KHUI_ACTION_IMPORT),
@@ -120,7 +116,7 @@ khui_action_ref khui_menu_help[] = {
 };
 
 khui_action_ref khui_toolbar_standard[] = {
-    MENU_ACTION(KHUI_ACTION_NEW_CRED),
+    MENU_SUBMENU(KHUI_ACTION_NEW_CRED),
     MENU_SUBMENU(KHUI_ACTION_RENEW_CRED),
     MENU_ACTION(KHUI_ACTION_IMPORT),
     MENU_SUBMENU(KHUI_ACTION_DESTROY_CRED),
@@ -159,9 +155,9 @@ khui_action_ref khui_menu_ico_ctx_min[] = {
     MENU_DEFACTION(KHUI_ACTION_OPEN_APP),
     MENU_SEP(),
     MENU_ACTION(KHUI_ACTION_NEW_CRED),
-    MENU_SUBMENU(KHUI_MENU_RENEW_CRED),
+    MENU_SUBMENU(KHUI_ACTION_RENEW_CRED),
     MENU_ACTION(KHUI_ACTION_IMPORT),
-    MENU_SUBMENU(KHUI_MENU_DESTROY_CRED),
+    MENU_SUBMENU(KHUI_ACTION_DESTROY_CRED),
     MENU_SEP(),
     MENU_SUBMENU(KHUI_MENU_SETDEF),
     MENU_SEP(),
@@ -177,7 +173,7 @@ khui_action_ref khui_menu_ico_ctx_min[] = {
 khui_action_ref khui_menu_ico_ctx_normal[] = {
     MENU_DEFACTION(KHUI_ACTION_CLOSE_APP),
     MENU_SEP(),
-    MENU_ACTION(KHUI_ACTION_NEW_CRED),
+    MENU_SUBMENU(KHUI_MENU_NEW_CRED),
     MENU_SUBMENU(KHUI_MENU_RENEW_CRED),
     MENU_ACTION(KHUI_ACTION_IMPORT),
     MENU_SUBMENU(KHUI_MENU_DESTROY_CRED),
@@ -217,6 +213,11 @@ khui_action_ref khui_menu_setdef[] = {
     MENU_END()
 };
 
+khui_action_ref khui_menu_new_cred[] = {
+    MENU_DEFACTION(KHUI_ACTION_NEW_CRED),
+    MENU_END()
+};
+
 khui_action_ref khui_pmenu_tok_sel[] = {
     MENU_ACTION(KHUI_ACTION_RENEW_CRED),
     MENU_ACTION(KHUI_ACTION_DESTROY_CRED),
@@ -243,6 +244,7 @@ khui_menu_def khui_all_menus[] = {
     CONSTMENU(KHUI_MENU_RENEW_CRED, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_renew_cred),
     CONSTMENU(KHUI_MENU_DESTROY_CRED, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_destroy_cred),
     CONSTMENU(KHUI_MENU_SETDEF, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_setdef),
+    CONSTMENU(KHUI_MENU_NEW_CRED, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_menu_new_cred),
 
     /* toolbars */
     CONSTMENU(KHUI_TOOLBAR_STANDARD, KHUI_MENUSTATE_CONSTANT | KHUI_MENUSTATE_SYSTEM, khui_toolbar_standard),
@@ -1672,6 +1674,3 @@ khui_context_cursor_filter(khm_handle cred,
         return 0;
 }
 
-#ifdef __cplusplus
-}
-#endif
