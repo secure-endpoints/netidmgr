@@ -319,6 +319,19 @@ typedef struct tag_khui_new_creds {
                                 /*!< Used to hold a pointer to the
                                   dialog data structure. */
 
+    khm_int32            dispatch_state;
+                                /*!< Dispatch state.  One of the
+                                   following values: */
+#define KHUI_NC_DISPATCH_STATE_NONE    0
+#define KHUI_NC_DISPATCH_STATE_INCALL  1
+#define KHUI_NC_DISPATCH_STATE_ABORTED 2
+
+    kmq_call             last_dispatch;
+                                /*!< Handle to the last batch of
+                                   messages dispatched for this object
+                                   by
+                                   khm_cred_dispatch_process_level(). */
+
 } khui_new_creds;
 
 #define KHUI_NC_MAGIC 0x84270427

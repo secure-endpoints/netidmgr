@@ -859,11 +859,13 @@ namespace nim {
 
             } else {
 
-                khui_cw_lock_nc(nc);
-                nc->result = KHUI_NC_RESULT_CANCEL;
-                khui_cw_unlock_nc(nc);
-                NotifyTypes( WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
-                khm_cred_dispatch_process_message(nc);
+                if (khm_cred_abort_process_message(nc) == KHM_ERROR_NOT_READY) {
+                    khui_cw_lock_nc(nc);
+                    nc->result = KHUI_NC_RESULT_CANCEL;
+                    khui_cw_unlock_nc(nc);
+                    NotifyTypes( WMNC_DIALOG_PREPROCESS, (LPARAM) nc, TRUE);
+                    khm_cred_dispatch_process_message(nc);
+                }
                 m_nav.SetAllControls(0);
                 page = NC_PAGE_PROGRESS;
                 m_nav.EnableState(NewCredNavigation::Cancelled);

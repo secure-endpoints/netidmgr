@@ -95,6 +95,9 @@ khm_cred_dispatch_process_message(khui_new_creds *nc);
 BOOL 
 khm_cred_dispatch_process_level(khui_new_creds *nc);
 
+khm_int32
+khm_cred_abort_process_message(khui_new_creds * nc);
+
 khm_boolean
 khm_cred_conclude_processing(khui_new_creds * nc);
 

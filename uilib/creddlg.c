@@ -84,6 +84,7 @@ khui_cw_destroy_cred_blob(khui_new_creds *c)
     EnterCriticalSection(&c->cs);
 
     assert(c->n_types == 0);
+    assert(c->dispatch_state == KHUI_NC_DISPATCH_STATE_NONE);
 
     for (i=0; i < c->n_identities; i++) {
         kcdb_identity_release(c->identities[i]);

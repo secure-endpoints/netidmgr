@@ -114,10 +114,10 @@ namespace nim {
             case IDC_NC_ABORT:
                 // These messages can result in the New Credentials
                 // Wizard window being destroyed.  Since we don't have
-                // a great reference counting mechanism, this results
-                // in this being freed and bad things happen.
+                // a great reference counting mechanism, we can't
+                // initiate an EndDialog() from here.
                 ::PostMessage(w->hwnd, WM_COMMAND, MAKEWPARAM(IDCANCEL, BN_CLICKED),
-                            (LPARAM) hwndCtl);
+                              (LPARAM) hwndCtl);
                 return;
 
             case IDC_CLOSEIF:

@@ -1143,7 +1143,12 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
        who's dependencies are all satisfied */
     EnterCriticalSection(&nc->cs);
 
-    for(i=0; i<nc->n_types; i++) {
+    if (nc->last_dispatch != NULL) {
+        //kmq_free_call(nc->last_dispatch);
+        nc->last_dispatch = NULL;
+    }
+
+    for(i=0; i<nc->n_types && nc->dispatch_state != KHUI_NC_DISPATCH_STATE_ABORTED; i++) {
         t = nc->types[i].nct;
 
         if (t->flags & (KHUI_NCT_FLAG_PROCESSED |
@@ -1178,9 +1183,27 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
        have the KHUI_NCT_FLAG_PROCESSED set have completed processing.
        Otherwise we have to individually track each message and update
        the type */
-    if(n_subs > 0)
-        kmq_post_subs_msg(subs, n_subs, KMSG_CRED, KMSG_CRED_PROCESS, 0,
-                          (void *) nc);
+    if(n_subs > 0) {
+        kmq_call call = NULL;
+
+        kmq_post_subs_msg_ex(subs, n_subs, KMSG_CRED, KMSG_CRED_PROCESS, 0,
+                             (void *) nc, &call);
+
+        EnterCriticalSection(&nc->cs);
+        if (nc->dispatch_state != KHUI_NC_DISPATCH_STATE_ABORTED) {
+            nc->dispatch_state = KHUI_NC_DISPATCH_STATE_INCALL;
+        } else {
+            kmq_abort_call(call);
+        }
+        nc->last_dispatch = call;
+        kmq_free_call(call);
+        LeaveCriticalSection(&nc->cs);
+    } else {
+        EnterCriticalSection(&nc->cs);
+        assert(nc->last_dispatch == NULL);
+        nc->dispatch_state = KHUI_NC_DISPATCH_STATE_NONE;
+        LeaveCriticalSection(&nc->cs);
+    }
 
     return cont;
 }
@@ -1295,6 +1318,14 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
 
     /* check dependencies and stuff first */
     EnterCriticalSection(&nc->cs);
+
+    /* We shouldn't start a dispatch if one is already in progress. */
+    if (nc->dispatch_state != KHUI_NC_DISPATCH_STATE_NONE) {
+        assert(FALSE);
+        LeaveCriticalSection(&nc->cs);
+        goto _terminate_job;
+    }
+
     for(i=0; i<nc->n_types; i++) {
         nc->types[i].nct->flags &= ~ KHUI_NCT_FLAG_PROCESSED;
     }
@@ -1340,6 +1371,36 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     else
         PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
                     MAKEWPARAM(0, WMNC_DIALOG_PROCESS_COMPLETE), 0);
+}
+
+khm_int32
+khm_cred_abort_process_message(khui_new_creds * nc)
+{
+    khm_int32 rv;
+
+    EnterCriticalSection(&nc->cs);
+    switch (nc->dispatch_state) {
+    case KHUI_NC_DISPATCH_STATE_NONE:
+        rv = KHM_ERROR_NOT_READY;
+        break;
+
+    case KHUI_NC_DISPATCH_STATE_INCALL:
+        nc->dispatch_state = KHUI_NC_DISPATCH_STATE_ABORTED;
+        if (nc->last_dispatch)
+            kmq_abort_call(nc->last_dispatch);
+        rv = KHM_ERROR_SUCCESS;
+        break;
+
+    case KHUI_NC_DISPATCH_STATE_ABORTED:
+        rv = KHM_ERROR_DUPLICATE;
+        break;
+
+    default:
+        rv = KHM_ERROR_INVALID_PARAM;
+        assert(FALSE);
+    }
+    LeaveCriticalSection(&nc->cs);
+    return rv;
 }
 
 void
