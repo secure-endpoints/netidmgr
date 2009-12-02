@@ -1180,9 +1180,7 @@ void khm_init_config(void) {
 
     node = NULL;
     khui_cfg_open(NULL, L"KhmIdentities", &node);
-#ifdef DEBUG
     assert(node);
-#endif
 
     reg.name = L"KhmIdentitiesTab";
     reg.dlg_template = MAKEINTRESOURCE(IDD_CFG_IDS_TAB);
