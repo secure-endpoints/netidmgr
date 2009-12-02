@@ -846,12 +846,14 @@ creddlg_prompt_for_configure(HWND hwnd, khui_new_creds * nc, keystore_t *ks)
 
         if (identity) {
 
+#ifdef MOUNT_KEYSTORE_CONFIG
             mount_identkey_configuration(ks, idkey_idx);
-
+#endif
             khui_cw_configure_identity(nc, hwnd, identity);
 
+#ifdef MOUNT_KEYSTORE_CONFIG
             unmount_identkey_configuration(ks, idkey_idx);
-
+#endif
             kcdb_identity_release(identity);
 
             save_keystore_with_identity(ks);
