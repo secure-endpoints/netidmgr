@@ -115,11 +115,6 @@ namespace nim {
             default:
                 assert(FALSE);
             }
-        } else {
-            /* add this to the dialog chain.  Doing so allows the main
-               message dispatcher to use IsDialogMessage() to dispatch
-               our messages. */
-            khm_add_dialog(hwnd);
         }
 
         khui_cw_lock_nc(nc);
