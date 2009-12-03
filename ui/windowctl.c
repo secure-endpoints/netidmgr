@@ -34,8 +34,6 @@
 
 typedef struct khui_dialog {
     HWND hwnd;
-    HWND hwnd_next;
-    BOOL active;
 
     LDCL(struct khui_dialog);
 } khui_dialog;
@@ -50,8 +48,6 @@ void khm_add_dialog(HWND dlg) {
         khui_dialog * d = PMALLOC(sizeof(*d));
 
         d->hwnd = dlg;
-        d->hwnd_next = NULL;
-        d->active = TRUE;
         LINIT(d);
 
         LPUSH(&khui_dialogs, d);
@@ -105,12 +101,12 @@ BOOL khm_is_dialog_active(void) {
    property sheets should be enough for everybody. */
 #define MAX_UI_PROPSHEETS 256
 
-khui_property_sheet *_ui_propsheets[MAX_UI_PROPSHEETS];
-int _n_ui_propsheets = 0;
+static khui_property_sheet *ui_propsheets[MAX_UI_PROPSHEETS];
+static int n_ui_propsheets = 0;
 
 void khm_add_property_sheet(khui_property_sheet * s) {
-    if(_n_ui_propsheets < MAX_UI_PROPSHEETS)
-        _ui_propsheets[_n_ui_propsheets++] = s;
+    if(n_ui_propsheets < MAX_UI_PROPSHEETS)
+        ui_propsheets[n_ui_propsheets++] = s;
     else {
         assert(FALSE);
     }
@@ -119,28 +115,28 @@ void khm_add_property_sheet(khui_property_sheet * s) {
 void khm_del_property_sheet(khui_property_sheet * s) {
     int i;
 
-    for(i=0;i < _n_ui_propsheets; i++) {
-        if(_ui_propsheets[i] == s)
+    for(i=0;i < n_ui_propsheets; i++) {
+        if(ui_propsheets[i] == s)
             break;
     }
 
-    if(i < _n_ui_propsheets)
-        _n_ui_propsheets--;
+    if(i < n_ui_propsheets)
+        n_ui_propsheets--;
     else
         return;
 
-    for(;i < _n_ui_propsheets; i++) {
-        _ui_propsheets[i] = _ui_propsheets[i+1];
+    for(;i < n_ui_propsheets; i++) {
+        ui_propsheets[i] = ui_propsheets[i+1];
     }
 }
 
 BOOL khm_check_ps_message(LPMSG pmsg) {
     int i;
     khui_property_sheet * ps;
-    for(i=0;i<_n_ui_propsheets;i++) {
-        if(khui_ps_check_message(_ui_propsheets[i], pmsg)) {
-            if(_ui_propsheets[i]->status == KHUI_PS_STATUS_DONE) {
-                ps = _ui_propsheets[i];
+    for(i=0;i<n_ui_propsheets;i++) {
+        if(khui_ps_check_message(ui_propsheets[i], pmsg)) {
+            if(ui_propsheets[i]->status == KHUI_PS_STATUS_DONE) {
+                ps = ui_propsheets[i];
 
                 ps->status = KHUI_PS_STATUS_DESTROY;
                 kmq_post_message(KMSG_CRED, KMSG_CRED_PP_END, 0, (void *) ps);
@@ -158,18 +154,88 @@ BOOL khm_find_and_activate_property_sheet(khui_action_context * pctx)
 {
     int i;
 
-    for (i=0; i < _n_ui_propsheets; i++) {
-        if (_ui_propsheets[i]->ctx.scope == pctx->scope &&
-            kcdb_identity_is_equal(_ui_propsheets[i]->identity, pctx->identity) &&
-            ((pctx->cred == NULL && _ui_propsheets[i]->cred == NULL) ||
-             kcdb_creds_is_equal(pctx->cred, _ui_propsheets[i]->cred)) &&
-            _ui_propsheets[i]->status != KHUI_PS_STATUS_DONE &&
-            _ui_propsheets[i]->status != KHUI_PS_STATUS_DESTROY) {
+    for (i=0; i < n_ui_propsheets; i++) {
+        if (ui_propsheets[i]->ctx.scope == pctx->scope &&
+            kcdb_identity_is_equal(ui_propsheets[i]->identity, pctx->identity) &&
+            ((pctx->cred == NULL && ui_propsheets[i]->cred == NULL) ||
+             kcdb_creds_is_equal(pctx->cred, ui_propsheets[i]->cred)) &&
+            ui_propsheets[i]->status != KHUI_PS_STATUS_DONE &&
+            ui_propsheets[i]->status != KHUI_PS_STATUS_DESTROY) {
             /* found */
-            SetActiveWindow(_ui_propsheets[i]->hwnd);
+            SetActiveWindow(ui_propsheets[i]->hwnd);
             return TRUE;
         }
     }
 
     return FALSE;
+}
+
+typedef struct modal_dialog {
+    HWND modal;
+    HWND *enabled;
+    int n_enabled;
+
+    LDCL(struct modal_dialog);
+} modal_dialog;
+
+modal_dialog * modal_dialogs = NULL;
+
+void khm_enter_modal(HWND hwnd)
+{
+    HWND enabled[MAX_UI_PROPSHEETS + MAX_UI_DIALOGS];
+    int n_enabled = 0;
+    int i;
+    khui_dialog * d;
+    modal_dialog * md;
+
+    for (d = khui_dialogs; d; d = LNEXT(d)) {
+        if (hwnd != d->hwnd && IsWindowEnabled(d->hwnd))
+            enabled[n_enabled++] = d->hwnd;
+    }
+
+    for (i=0; i < n_ui_propsheets; i++) {
+        if (hwnd != ui_propsheets[i]->hwnd &&
+            IsWindowEnabled(ui_propsheets[i]->hwnd))
+            enabled[n_enabled++] = ui_propsheets[i]->hwnd;
+    }
+
+    assert(n_enabled < MAX_UI_PROPSHEETS + MAX_UI_DIALOGS);
+
+    md = PMALLOC(sizeof(*md));
+    memset(md, 0, sizeof(*md));
+
+    md->modal = hwnd;
+    md->n_enabled = n_enabled;
+    if (n_enabled) {
+        md->enabled = PMALLOC(sizeof(HWND) * n_enabled);
+        memcpy(md->enabled, enabled, sizeof(HWND) * n_enabled);
+    } else {
+        md->enabled = NULL;
+    }
+
+    LPUSH(&modal_dialogs, md);
+
+    for (i = 0; i < n_enabled; i++)
+        EnableWindow(enabled[i], FALSE);
+}
+
+void khm_leave_modal(void)
+{
+    modal_dialog * md = NULL;
+    int i;
+
+    LPOP(&modal_dialogs, &md);
+
+    assert(md);
+
+    if (md == NULL)
+        return;
+
+    for (i = 0; i < md->n_enabled; i++) {
+        EnableWindow(md->enabled[i], TRUE);
+    }
+
+    if (md->enabled)
+        PFREE(md->enabled);
+    PFREE(md);
 }
