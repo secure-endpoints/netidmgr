@@ -772,9 +772,12 @@ cfgui_dlgproc(HWND hwnd,
 
         cfgui_hwnd = hwnd;
 
+        khm_enter_modal(hwnd);
+
         return TRUE;
 
     case WM_DESTROY:
+
         cfgui_hwnd = NULL;
 
         khui_cfg_set_configui_handle(NULL);
@@ -854,6 +857,7 @@ cfgui_dlgproc(HWND hwnd,
     case WM_COMMAND:
         switch(wParam) {
         case MAKEWPARAM(IDCANCEL, BN_CLICKED):
+            khm_leave_modal();
             EndDialog(hwnd, 0);
             break;
 
@@ -863,6 +867,7 @@ cfgui_dlgproc(HWND hwnd,
 
         case MAKEWPARAM(IDOK, BN_CLICKED):
             cfgui_apply_settings(NULL);
+            khm_leave_modal();
             EndDialog(hwnd, 0);
             break;
         }
