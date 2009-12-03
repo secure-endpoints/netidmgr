@@ -127,6 +127,8 @@ handle_kmsg_system_init(void)
        options.  We leave the identity specific and identity defaults
        for other configuration panels. */
 
+#ifdef NOT_IMPLEMENTED
+    /* General options aren't implemented yet for Keystores */
     ZeroMemory(&creg, sizeof(creg));
 
     short_desc[0] = L'\0';
@@ -148,6 +150,7 @@ handle_kmsg_system_init(void)
     creg.flags = 0;
 
     khui_cfg_register(NULL, &creg);
+#endif
 
     /* Now we do the identity specific and identity default
        configuration panels. "KhmIdentities" is a predefined
@@ -162,6 +165,7 @@ handle_kmsg_system_init(void)
 
     /* First the tab panel for defaults for all identities */
 
+#ifdef NOT_IMPLEMENTED
     ZeroMemory(&creg, sizeof(creg));
 
     short_desc[0] = L'\0';
@@ -180,6 +184,7 @@ handle_kmsg_system_init(void)
     creg.flags = KHUI_CNFLAG_SUBPANEL;
 
     khui_cfg_register(cnode, &creg);
+#endif
 
     /* Now the panel for per identity configuration */
 
