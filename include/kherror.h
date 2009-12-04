@@ -181,6 +181,9 @@
 /*! \brief Aborted */
 #define KHM_ERROR_ABORTED           (KHM_ERROR_BASE + 24)
 
+/*! \brief Module signature verfication failed */
+#define KHM_ERROR_VERIFY_FAILED     (KHM_ERROR_BASE + 25)
+
 /*@}*/ /*kherror_codes*/
 
 /*! \brief Tests whether a return value indicates success */
