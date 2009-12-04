@@ -679,6 +679,11 @@ void kmmint_init_module(kmm_module_i * m) {
         goto _exit;
     }
 
+    if (verify_module_signatures &&
+        !kmmint_verify_trust_by_full_path(m->path)) {
+        goto _exit;
+    }
+
     /* from this point on, we must record any failure codes */
     record_failure = TRUE;
 
