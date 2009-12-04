@@ -8,6 +8,7 @@ set KH_NO_W2K=1
 set KH_CLVER=vc9
 set WIXDIR=c:\work\wix2
 set ZIP=c:\Program Files\7-Zip\7z.exe
+set CODESIGN=c:\work\codesign\codesign_nim.cmd
 
 if "%1"=="retail" (
 call D:\WindowsSDK\v6.1\Bin\SetEnv.Cmd /x86 /xp /Release
