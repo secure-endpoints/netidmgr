@@ -37,7 +37,8 @@ OBJFILES= \
 	$(OBJ)\kmm_module.obj \
 	$(OBJ)\kmm_reg.obj \
 	$(OBJ)\kmm_registrar.obj \
-	$(OBJ)\kmmconfig.obj
+	$(OBJ)\kmmconfig.obj	\
+	$(OBJ)\verifymodule.obj
 
 MSGRESFILE=$(OBJ)\kmm_msgs.res
 

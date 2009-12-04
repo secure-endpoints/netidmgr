@@ -90,6 +90,7 @@ OBJFILES= \
 	$(KMMDIR)\kmm_reg.obj 		\
 	$(KMMDIR)\kmm_registrar.obj 	\
 	$(KMMDIR)\kmmconfig.obj		\
+	$(KMMDIR)\verifymodule.obj	\
 	$(UIDIR)\rescache.obj 		\
 	$(UIDIR)\action.obj 		\
 	$(UIDIR)\creddlg.obj		\

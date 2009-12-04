@@ -192,6 +192,8 @@ extern HINSTANCE kmm_hInstance;
 
 extern kconf_schema schema_kmmconfig[];
 
+extern khm_boolean verify_module_signatures;
+
 /* Registrar */
 
 khm_boolean KHMAPI 
@@ -252,6 +254,15 @@ kmmint_add_to_module_queue(void);
 
 void
 kmmint_remove_from_module_queue(void);
+
+khm_boolean
+kmmint_verify_trust_by_full_path(const wchar_t * filename);
+
+khm_boolean
+kmmint_verify_trust_by_module_name(const wchar_t * modname);
+
+khm_boolean
+kmmint_verify_core_modules(void);
 
 #define _WAIT_FOR_START \
     do { \

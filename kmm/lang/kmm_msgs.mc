@@ -257,3 +257,146 @@ SymbolicName=MSG_PB_INIT_DONE
 Language=English
 Plug-in running
 .
+
+MessageId=
+SymbolicName=MSG_MOD_VERIFY_FAILED
+Language=English
+Failed to verify integrity of %1 using path %2.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VERIFY_FAILED_NP
+Language=English
+Failed to verify integrity of %1.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_PROVIDER_UNKNOWN
+Language=English
+VerifyTrust failed: "Generic Verify V2" Provider unknown.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_NO_SIGNATURE
+Language=English
+VerfiyTrust failed: Module is not signed.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_EXPLICIT_DISTRUST
+Language=English
+verifytrust failed: Certificate marked as untrusted.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_SUBJECT_NOT_TRUSTED
+Language=English
+VerifyTrust failed: File is not trusted.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_BAD_DIGEST
+Language=English
+VerifyTrust failed: Executable has been modified.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_SECURITY_SETTINGS
+Language=English
+VerifyTrust failed: Local security settings prevent verification.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_GENERIC
+Language=English
+VerifyTrust failed: Error code 0x%3!X!.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_NOT_FOUND
+Language=English
+The specified module could not be loaded.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_NAME_TOO_LONG
+Language=English
+The path name was too long.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_SIG
+Language=English
+Network Identity Manager core binaries are not properly signed.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_SIG_LONG
+Language=English
+
+The signatures of the Network Identity Manager application and it's
+associated files are inconsistent.  The application may not function
+properly when used with core DLLs from different sources due to
+possible incompatibilites.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_SIG_SUG
+Language=English
+
+Try reinstalling the application using an installer from a trusted
+source.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_PATH
+Language=English
+Network Identity Manager core binaries are inconsistent.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_PATH_LONG
+Language=English
+
+The individual core binaries are being loaded from different
+locations.  This usually indicates an inconsistent or corrupt
+installation.  Core binaries from different sources may not function
+properly.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_PATH_SUG
+Language=English
+
+Try reinstalling Network Identity Manager using an installer from a
+trusted source.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_VER
+Language=English
+Network Identity Manager core binaries are inconsistent.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_VER_LONG
+Language=English
+
+The individual core binaries have different version numbers.  This
+usually indicates an inconsistent or corrupt installation.  Core
+binaries from different versions may not function properly together.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VF_CORE_VER_SUG
+Language=English
+
+Try reinstalling Network Identity Manager using an installer from a
+trusted source.
+.
+
+MessageId=
+SymbolicName=MSG_MOD_VERINFO
+Language=English
+Module %1: File version %2, product version %3 (at path "%4")
+.
