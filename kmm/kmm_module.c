@@ -640,6 +640,11 @@ kmm_load_default_modules(void) {
     _report_mr0(KHERR_NONE, MSG_LOAD_DEFAULT);
     _describe();
 
+    if (!kmmint_verify_core_modules()) {
+        _end_task();
+        return KHM_ERROR_VERIFY_FAILED;
+    }
+
     kmmint_add_to_module_queue();
 
     while(KHM_SUCCEEDED(khc_enum_subspaces(csm, cs_mod, &cs_mod))) {
