@@ -161,10 +161,10 @@ kmmint_verify_trust_by_full_path(const wchar_t * filename)
 }
 
 #define NIMEXE_NAME L"netidmgr.exe"
-#ifdef _WIN32
-#define NIMDLL_NAME L"nidmgr32.dll"
-#else
+#ifdef _WIN64
 #define NIMDLL_NAME L"nidmgr64.dll"
+#else
+#define NIMDLL_NAME L"nidmgr32.dll"
 #endif
 
 static khm_boolean
