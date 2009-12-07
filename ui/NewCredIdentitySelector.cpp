@@ -107,7 +107,7 @@ namespace nim {
                 seen_current = true;
         }
 
-        if (!seen_current && current_id.IsValid()) {
+        if (!seen_current && !current_id.IsNull()) {
             ids[i++] = PNEW IdentityDisplayData(current_id);
         }
 

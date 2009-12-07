@@ -4588,10 +4588,10 @@ namespace nim {
             return !pT->IsEqualTo(that);
         }
 
-        bool IsValid() const {
+        bool IsNull() const {
             const T *pT = static_cast<const T*>(this);
 
-            return (pT->h != NULL);
+            return (pT->h == NULL);
         }
 
         typedef _EnumerationImpl<T> Enumeration;

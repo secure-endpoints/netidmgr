@@ -493,7 +493,7 @@ namespace nim
             IdentityProvider p = IdentityProvider::GetDefault();
             Identity i = p.GetDefaultIdentity();
 
-            if (p.IsValid() && i.IsValid()) {
+            if (!p.IsNull() && !i.IsNull()) {
                 DrawState ds = GetIdentityDrawState(i);
                 khm_notif_expstate expstate = KHM_NOTIF_EMPTY;
 
