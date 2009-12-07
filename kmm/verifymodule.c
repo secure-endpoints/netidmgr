@@ -25,7 +25,7 @@
 #include "kmminternal.h"
 #include <wintrust.h>
 
-khm_boolean verify_module_signatures = TRUE;
+khm_boolean verify_module_signatures = FALSE;
 
 static const wchar_t * last_component_of(const wchar_t * path)
 {
@@ -299,10 +299,10 @@ verify_core_module_signatures(void)
 
     b_nim_dll = kmmint_verify_trust_by_module_name(NIMDLL_NAME);
 
-    verify_module_signatures = (b_nim_module && b_nim_dll);
+    verify_module_signatures = (verify_module_signatures && b_nim_module && b_nim_dll);
 
-    if (!verify_module_signatures &&
-        (b_nim_module || b_nim_module)) {
+    if ((b_nim_module && !b_nim_dll) ||
+        (!b_nim_module && b_nim_dll)) {
 
         kherr_report(KHERR_ERROR,
                      (const wchar_t *) MSG_MOD_VF_CORE_SIG,
