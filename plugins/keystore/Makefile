@@ -135,7 +135,7 @@ incflags = -I"$(NIDMINCDIR)" -I"$(OBJ)" -I.
 rincflags = /i "$(NIDMINCDIR)" /i "$(OBJ)" /i .
 
 ldebug = $(ldebug) /DEBUG
-cdebug = $(cdebug) -Os -Zi
+cdebug = $(cdebug) -Os -Fd$(OBJ)\ -Zi
 !ifndef KH_NO_WX
 cdebug = $(cdebug) -WX
 !endif
@@ -237,7 +237,7 @@ OBJFILES= \
 	$(OBJ)\config_main.obj		\
 	$(OBJ)\config_id.obj		\
 	$(OBJ)\config_ids.obj		\
-	$(OBJ)\unlockdlg.obj	\
+	$(OBJ)\unlockdlg.obj		\
 	$(OBJ)\keystore.obj		\
 	$(OBJ)\ks_codec.obj
 
