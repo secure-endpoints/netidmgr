@@ -146,6 +146,8 @@ namespace nim {
 	    return;
 
 	m_iid = new_iid;
+        if (m_severity == KHERR_NONE)
+            SetSeverity(m_severity);
     }
 
     void
@@ -161,8 +163,10 @@ namespace nim {
 	    iid = IDI_NOTIFY_WARN;
 	else if (severity == KHERR_ERROR)
 	    iid = IDI_NOTIFY_ERROR;
-	else
+	else {
 	    iid = m_iid;
+            severity = KHERR_NONE;
+        }
 
 	ZeroMemory(&ni, sizeof(ni));
 
