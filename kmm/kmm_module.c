@@ -640,10 +640,12 @@ kmm_load_default_modules(void) {
     _report_mr0(KHERR_NONE, MSG_LOAD_DEFAULT);
     _describe();
 
+#ifdef VERIFY_MODULES
     if (!kmmint_verify_core_modules()) {
         _end_task();
         return KHM_ERROR_VERIFY_FAILED;
     }
+#endif
 
     kmmint_add_to_module_queue();
 
