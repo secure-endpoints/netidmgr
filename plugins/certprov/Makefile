@@ -135,7 +135,7 @@ incflags = -I"$(NIDMINCDIR)" -I"$(OBJ)" -I.
 rincflags = /i "$(NIDMINCDIR)" /i "$(OBJ)" /i .
 
 ldebug = $(ldebug) /DEBUG
-cdebug = $(cdebug) -Os -Zi
+cdebug = $(cdebug) -Os -Fd$(OBJ)\ -Zi
 
 cdefines = $(cdefines) -DUNICODE -D_UNICODE
 
