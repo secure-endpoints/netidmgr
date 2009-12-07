@@ -101,7 +101,7 @@ kmmint_verify_trust_by_full_path(const wchar_t * filename)
     if ( !hWinTrust )
         return FALSE;
 
-    if (((FARPROC) pWinVerifyTrust =
+    if ((pWinVerifyTrust = (LONG (WINAPI *)(HWND, GUID*, WINTRUST_DATA*))
          GetProcAddress( hWinTrust, "WinVerifyTrust" )) == NULL ) {
         FreeLibrary(hWinTrust);
         return FALSE;
