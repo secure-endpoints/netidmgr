@@ -234,27 +234,7 @@ namespace nim {
 
     void NewCredWizard::OnDeriveFromPrivCred(khui_collect_privileged_creds_data * pcd)
     {
-        khui_new_creds * nc_child = NULL;
-        khm_handle cs_privcred = NULL;
-
-        khui_cw_create_cred_blob(&nc_child);
-        nc_child->subtype = KHUI_NC_SUBTYPE_ACQDERIVED;
-        khui_context_create(&nc_child->ctx,
-                            KHUI_SCOPE_IDENT,
-                            pcd->target_identity,
-                            -1, NULL);
-        kcdb_credset_create(&cs_privcred);
-        kcdb_credset_collect(cs_privcred, pcd->dest_credset, NULL, KCDB_CREDTYPE_ALL, NULL);
-        khui_cw_set_privileged_credential_collector(nc_child, cs_privcred);
-        nc_child->parent = nc;
-        khui_cw_lock_nc(nc);
-        nc->n_children++;
-        khui_cw_unlock_nc(nc);
-        if (khm_cred_begin_new_cred_op()) {
-            kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
-        } else {
-            khui_cw_destroy_cred_blob(nc_child);
-        }
+        khm_cred_derive_identity_from_privileged_creds(pcd);
     }
 
     void NewCredWizard::OnCollectPrivCred(khui_collect_privileged_creds_data * pcd)

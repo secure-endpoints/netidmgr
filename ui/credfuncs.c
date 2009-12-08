@@ -352,8 +352,9 @@ kmsg_cred_completion(kmq_message *m)
             has_error = khm_cred_conclude_processing(nc);
 
             if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
-                kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, 
-                                 m->vparam);
+                if (nc->n_children == 0)
+                    kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, 
+                                     m->vparam);
             } else {
                 PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
                             MAKEWPARAM(has_error, WMNC_DIALOG_PROCESS_COMPLETE),
@@ -405,9 +406,14 @@ kmsg_cred_completion(kmq_message *m)
 
             if (nc->parent) {
                 nc->parent->n_children--;
-                if (nc->parent->n_children == 0)
-                    PostMessage(nc->parent->hwnd, KHUI_WM_NC_NOTIFY,
-                                MAKEWPARAM(0, WMNC_DIALOG_PROCESS_COMPLETE), 0);
+                if (nc->parent->n_children == 0) {
+                    if (nc->parent->hwnd != NULL)
+                        PostMessage(nc->parent->hwnd, KHUI_WM_NC_NOTIFY,
+                                    MAKEWPARAM(0, WMNC_DIALOG_PROCESS_COMPLETE), 0);
+                    else
+                        kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0,
+                                         nc->parent);
+                }
             }
 
             khui_cw_destroy_cred_blob(nc);
@@ -801,23 +807,6 @@ khm_cred_configure_identity(khui_configure_identity_data * pcid)
     khm_show_identity_config_pane(pcid->target_identity);
     return 0;
 }
-
-LRESULT
-khm_cred_collect_privileged_creds(khui_collect_privileged_creds_data * pcpcd)
-{
-    khui_new_creds * nc_child;
-
-    khui_cw_create_cred_blob(&nc_child);
-    nc_child->subtype = KHUI_NC_SUBTYPE_ACQPRIV_ID;
-    khui_context_create(&nc_child->ctx,
-                        KHUI_SCOPE_IDENT,
-                        pcpcd->target_identity,
-                        -1, NULL);
-    nc_child->persist_privcred = TRUE;
-    khui_cw_set_privileged_credential_collector(nc_child, pcpcd->dest_credset);
-    return khm_do_modal_newcredwnd(pcpcd->hwnd_parent, nc_child);
-}
-
 
 void
 khm_cred_obtain_new_creds_for_ident(khm_handle ident, wchar_t * title)
@@ -1473,6 +1462,50 @@ khm_cred_addr_change(void) {
     }
 
     kcdb_enum_end(e);
+}
+
+LRESULT
+khm_cred_collect_privileged_creds(khui_collect_privileged_creds_data * pcpcd)
+{
+    khui_new_creds * nc_child;
+
+    khui_cw_create_cred_blob(&nc_child);
+    nc_child->subtype = KHUI_NC_SUBTYPE_ACQPRIV_ID;
+    khui_context_create(&nc_child->ctx,
+                        KHUI_SCOPE_IDENT,
+                        pcpcd->target_identity,
+                        -1, NULL);
+    nc_child->persist_privcred = TRUE;
+    khui_cw_set_privileged_credential_collector(nc_child, pcpcd->dest_credset);
+    return khm_do_modal_newcredwnd(pcpcd->hwnd_parent, nc_child);
+}
+
+khm_int32
+khm_cred_derive_identity_from_privileged_creds(khui_collect_privileged_creds_data * pcd)
+{
+    khui_new_creds * nc_child = NULL;
+    khm_handle cs_privcred = NULL;
+
+    khui_cw_create_cred_blob(&nc_child);
+    nc_child->subtype = KHUI_NC_SUBTYPE_ACQDERIVED;
+    khui_context_create(&nc_child->ctx,
+                        KHUI_SCOPE_IDENT,
+                        pcd->target_identity,
+                        -1, NULL);
+    kcdb_credset_create(&cs_privcred);
+    kcdb_credset_collect(cs_privcred, pcd->dest_credset, NULL, KCDB_CREDTYPE_ALL, NULL);
+    khui_cw_set_privileged_credential_collector(nc_child, cs_privcred);
+    nc_child->parent = pcd->nc;
+    khui_cw_lock_nc(pcd->nc);
+    pcd->nc->n_children++;
+    khui_cw_unlock_nc(pcd->nc);
+    if (khm_cred_begin_new_cred_op()) {
+        kmq_post_message(KMSG_CRED, KMSG_CRED_RENEW_CREDS, 0, (void *) nc_child);
+        return KHM_ERROR_SUCCESS;
+    } else {
+        khui_cw_destroy_cred_blob(nc_child);
+        return KHM_ERROR_NOT_READY;
+    }
 }
 
 void

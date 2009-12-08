@@ -80,6 +80,9 @@ khm_cred_configure_identity(khui_configure_identity_data * pcid);
 LRESULT
 khm_cred_collect_privileged_creds(khui_collect_privileged_creds_data * pcpcd);
 
+khm_int32
+khm_cred_derive_identity_from_privileged_creds(khui_collect_privileged_creds_data * pcd);
+
 void 
 khm_cred_set_default(void);
 

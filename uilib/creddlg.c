@@ -1567,20 +1567,20 @@ khui_cw_set_privileged_credential_collector(khui_new_creds * c,
 }
 
 KHMEXP khm_int32 KHMAPI
-khui_cw_derive_credentials(khui_new_creds * c,
+khui_cw_derive_credentials(khui_new_creds * nc,
                            khm_handle identity,
                            khm_handle dest_credset)
 {
     khui_collect_privileged_creds_data cpcd;
 
-    ASSERT_NC(c);
+    ASSERT_NC(nc);
 
-    cpcd.nc = c;
+    cpcd.nc = nc;
     cpcd.target_identity = identity;
     cpcd.dest_credset = dest_credset;
 
     return (khm_int32)
-        SendMessage(c->hwnd, KHUI_WM_NC_NOTIFY,
-                    MAKEWPARAM(0, WMNC_DERIVE_FROM_PRIVCRED),
+        SendMessage(khui_hwnd_main, WM_COMMAND, MAKEWPARAM(KHUI_ACTION_ACQ_DERIVED, 0),
                     (LPARAM) &cpcd);
 }
+
