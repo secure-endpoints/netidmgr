@@ -1112,11 +1112,68 @@ show_message_for_edit_control(HWND dlg, UINT id_edit,
     SendDlgItemMessage(dlg, id_edit, EM_SHOWBALLOONTIP, 0, (LPARAM) &bt);
 }
 
+static khm_int32
+derive_keystore_identities(keystore_t * ks, khui_new_creds * nc)
+{
+    size_t i;
+
+    if (ks_keystore_hold_key(ks)) {
+        ks_keystore_unlock(ks);
+        for (i=0; i < ks->n_keys; i++) {
+            identkey_t * idk;
+            khm_handle identpro = NULL;
+            khm_handle identity = NULL;
+            khm_handle credential = NULL;
+            khm_handle credset = NULL;
+
+            _progress((khm_ui_4) i, (khm_ui_4) ks->n_keys);
+
+            idk = ks->keys[i];
+
+            if (idk->plain_key.cb_data == 0)
+                continue;
+
+            kcdb_identpro_find(idk->provider_name, &identpro);
+            if (identpro == NULL) goto done_with_idk;
+
+            kcdb_identity_create_ex(identpro, idk->identity_name,
+                                    KCDB_IDENT_FLAG_CREATE, NULL, &identity);
+            if (identity == NULL) goto done_with_idk;
+
+            kcdb_credset_create(&credset);
+
+            ks_unserialize_credential(idk->plain_key.data, idk->plain_key.cb_data,
+                                      &credential);
+
+            if (credset == NULL || credential == NULL)
+                goto done_with_idk;
+
+            kcdb_credset_add_cred(credset, credential, -1);
+
+            khui_cw_derive_credentials(nc, identity, credset);
+
+        done_with_idk:
+            if (identity) kcdb_identity_release(identity);
+            if (identpro) kcdb_identpro_release(identpro);
+            if (credset) kcdb_credset_delete(credset);
+        }
+        ks_keystore_lock(ks);
+
+        _progress(1,1);
+
+        ks_keystore_release_key(ks);
+
+        return KHM_ERROR_SUCCESS;
+    } else {
+
+        return KHM_ERROR_NOT_FOUND;
+    }
+}
+
 khm_int32
 process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_t * ks,
                                  khm_handle key_source, khm_boolean derive_new)
 {
-    khm_size i;
     khm_boolean ks_was_locked;
 
     assert(hw_privint);
@@ -1255,53 +1312,61 @@ process_keystore_new_credentials(khui_new_creds * nc, HWND hw_privint, keystore_
         goto done;
 
     /* Now go through and derive all possible identities */
-    ks_keystore_unlock(ks);
-    for (i=0; i < ks->n_keys; i++) {
-        identkey_t * idk;
-        khm_handle identpro = NULL;
-        khm_handle identity = NULL;
-        khm_handle credential = NULL;
-        khm_handle credset = NULL;
-
-        _progress((khm_ui_4) i, (khm_ui_4) ks->n_keys);
-
-        idk = ks->keys[i];
-
-        if (idk->plain_key.cb_data == 0)
-            continue;
-
-        kcdb_identpro_find(idk->provider_name, &identpro);
-        if (identpro == NULL) goto done_with_idk;
-
-        kcdb_identity_create_ex(identpro, idk->identity_name,
-                                KCDB_IDENT_FLAG_CREATE, NULL, &identity);
-        if (identity == NULL) goto done_with_idk;
-
-        kcdb_credset_create(&credset);
-
-        ks_unserialize_credential(idk->plain_key.data, idk->plain_key.cb_data,
-                                  &credential);
-
-        if (credset == NULL || credential == NULL)
-            goto done_with_idk;
-
-        kcdb_credset_add_cred(credset, credential, -1);
-
-        khui_cw_derive_credentials(nc, identity, credset);
-
-    done_with_idk:
-        if (identity) kcdb_identity_release(identity);
-        if (identpro) kcdb_identpro_release(identpro);
-        if (credset) kcdb_credset_delete(credset);
-    }
-    ks_keystore_lock(ks);
-
-    _progress(1,1);
+    derive_keystore_identities(ks, nc);
 
  done:
     _end_task();
 
     return KHM_ERROR_SUCCESS;
+}
+
+void
+process_keystore_renew_credentials(khui_new_creds * nc)
+{
+    khui_action_context * pctx = NULL;
+    khm_handle hprov = NULL;
+    keystore_t * ks;
+
+    pctx = khui_cw_get_ctx(nc);
+
+    if (pctx->scope == KHUI_SCOPE_IDENT &&
+        (ks = find_keystore_for_identity(pctx->identity)) != NULL) {
+
+        _begin_task(0);
+        _report_sr1(KHERR_INFO, IDS_S_RENEW_CREDS, _dupstr(ks->display_name));
+        _describe();
+
+        ks_keystore_reset_key_timer(ks);
+
+        if (KHM_SUCCEEDED(derive_keystore_identities(ks, nc))) {
+
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_SUCCESS);
+
+            list_credentials();
+
+        } else {
+
+            /* We failed probably becasue we don't have the private
+               key for the keystore.  We first try reporting this.
+               The NIM UI will prompt for new credentials for the
+               Keystore. */
+
+            _report_sr0(KHERR_ERROR, IDS_PWR_ACQ);
+
+            khui_cw_set_response(nc, credtype_id,
+                                 KHUI_NC_RESPONSE_EXIT | KHUI_NC_RESPONSE_FAILED);
+        }
+
+        _end_task();
+
+        ks_keystore_release(ks);
+
+    } else {
+
+        /* Nothing to do */
+        return;
+    }
 }
 
 /* Handler for KMSG_CRED_PROCESS */
@@ -1320,6 +1385,10 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
     struct nc_dialog_data * d;
 
     khui_cw_find_type(nc, credtype_id, (khui_new_creds_by_type **) &d);
+
+    if (khui_cw_get_subtype(nc) == KHUI_NC_SUBTYPE_RENEW_CREDS) {
+        process_keystore_renew_credentials(nc);
+    }
 
     if (d == NULL) {
         return KHM_ERROR_SUCCESS;

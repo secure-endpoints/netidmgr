@@ -84,8 +84,8 @@ typedef struct tag_keystore {
     FILETIME     ft_mtime;      /*!< Time of last modification */
 
     FILETIME     ft_key_lifetime; /*!< Lifetime of key */
-    /* Default lifetime of a keystore master key is 5 minutes */
-#define KS_DEFAULT_KEY_LIFETIME 3000000000i64
+    /* Default lifetime of a keystore master key is 10 minutes */
+#define KS_DEFAULT_KEY_LIFETIME SECONDS_TO_FT(600)
     LONG         key_refcount;  /*!< Number of key references.  If the
                                   reference count is non-zero, the key
                                   isn't discarded. */
@@ -202,6 +202,9 @@ ks_keystore_hold_key(keystore_t * ks);
 
 extern void
 ks_keystore_release_key(keystore_t * ks);
+
+extern khm_boolean
+ks_keystore_reset_key_timer(keystore_t * ks);
 
 extern khm_int32
 ks_keystore_unlock(keystore_t * ks);

@@ -532,6 +532,12 @@ typedef struct crypt_op {
 
 #define CCall(f) if (!f) goto done;
 
+static void
+reset_encryption_key_timer(keystore_t * ks) {
+    GetSystemTimeAsFileTime(&ks->ft_key_ctime);
+    ks->ft_key_expire = FtAdd(&ks->ft_key_ctime, &ks->ft_key_lifetime);
+}
+
 static khm_boolean
 lock_encryption_key(keystore_t * ks, const void * data, size_t cb_data) {
     DATA_BLOB db_in;
@@ -547,10 +553,8 @@ lock_encryption_key(keystore_t * ks, const void * data, size_t cb_data) {
 
     rv = CryptProtectData(&db_in, NULL, NULL, NULL, NULL, CRYPTPROTECT_UI_FORBIDDEN,
                           &ks->DBenc_key);
-    if (rv) {
-        GetSystemTimeAsFileTime(&ks->ft_key_ctime);
-        ks->ft_key_expire = FtAdd(&ks->ft_key_ctime, &ks->ft_key_lifetime);
-    }
+    if (rv)
+        reset_encryption_key_timer(ks);
 
     return rv;
 }
@@ -602,7 +606,6 @@ has_encryption_key(keystore_t * ks) {
 
     return TRUE;
 }
-
 
 static khm_boolean
 begin_crypt_op(const keystore_t * ks, crypt_op * op)
@@ -995,3 +998,18 @@ ks_keystore_release_key(keystore_t * ks)
     KSUNLOCK(ks);
 }
 
+khm_boolean
+ks_keystore_reset_key_timer(keystore_t * ks)
+{
+    khm_boolean success = FALSE;
+
+    assert(is_keystore_t(ks));
+    KSLOCK(ks);
+    if (ks_keystore_hold_key(ks)) {
+        reset_encryption_key_timer(ks);
+        success = TRUE;
+    }
+    KSUNLOCK(ks);
+
+    return success;
+}

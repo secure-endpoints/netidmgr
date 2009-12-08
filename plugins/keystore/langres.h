@@ -69,6 +69,8 @@
 #define IDS_COL_PASSWORD                155
 #define IDS_PW_NONE                     156
 #define IDS_PW_LOCKED                   157
+#define IDS_S_RENEW_CREDS               158
+#define IDS_PWR_ACQ                     159
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041

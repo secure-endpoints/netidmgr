@@ -419,6 +419,8 @@ BEGIN
     IDS_COL_PASSWORD        "Password"
     IDS_PW_NONE             "(No password found or unable to decode password)"
     IDS_PW_LOCKED           "(Keystore must be unlocked before passwords can be shown)"
+    IDS_S_RENEW_CREDS       "Initializing identities contained in %1!s!"
+    IDS_PWR_ACQ             "Keystore password must be supplied before derived identities can be initialized."
 END
 
 #endif    // English (U.S.) resources
