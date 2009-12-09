@@ -1078,7 +1078,7 @@ change_icon_ident (HWND hwnd, khui_config_init_data * idata)
                                                     &csp_id)))
                 goto _cleanup;
         }
-        
+
         khc_write_string(csp_id, L"IconNormal", path);
 
         /* And now, we perform a lookup with KCDB_RF_SKIPCACHE so that
