@@ -79,6 +79,7 @@ namespace nim
         c_text         .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT));
         c_text_selected.SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_SEL));
         c_text_error   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_ERR));
+        c_tint = Color(100, 0, 0, 0);
 
         b_watermark =   Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_LOGO_SHADE));
         b_credwnd =     LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST), L"PNG");
@@ -197,6 +198,26 @@ namespace nim
         p.SetDashStyle(DashStyleDot);
 
         g.DrawRectangle(&p, fr);
+    }
+
+    void
+    KhmDraw::DrawDragWidgets(Graphics& g, const RectF& rect, int corner)
+    {
+        Pen p(Color::White, 3);
+
+        g.DrawLine(&p,
+                   rect.X, rect.Y + ((corner <= 2)? 0: rect.Height),
+                   rect.X + rect.Width, rect.Y + ((corner <= 2)? 0: rect.Height));
+        g.DrawLine(&p,
+                   rect.X + ((corner & 1)? 0: rect.Width), rect.Y,
+                   rect.X + ((corner & 1)? 0: rect.Width), rect.Y + rect.Height);
+    }
+
+    void
+    KhmDraw::DrawImageNeutralBackground(Graphics& g, const Rect& extents)
+    {
+        HatchBrush brush(HatchStyleLargeCheckerBoard, Color(220, 220, 220), Color(150, 150, 150));
+        g.FillRectangle(&brush, extents);
     }
 
     void 
@@ -798,6 +819,36 @@ namespace nim
             GlobalFree(hgmem);
 
         return rimage;
+    }
+
+    // From the Platform SDK
+    bool GetEncoderClsid(const wchar_t* format, CLSID* pClsid)
+    {
+        UINT  num = 0;
+        UINT  size = 0;
+
+        ImageCodecInfo* pImageCodecInfo = NULL;
+
+        GetImageEncodersSize(&num, &size);
+        if(size == 0)
+            return false;
+
+        pImageCodecInfo = (ImageCodecInfo*)PMALLOC(size);
+        if(pImageCodecInfo == NULL)
+            return false;
+
+        GetImageEncoders(num, size, pImageCodecInfo);
+
+        for(UINT j = 0; j < num; ++j) {
+            if( wcscmp(pImageCodecInfo[j].MimeType, format) == 0 ) {
+                *pClsid = pImageCodecInfo[j].Clsid;
+                free(pImageCodecInfo);
+                return true;
+            }
+        }
+
+        PFREE(pImageCodecInfo);
+        return false;
     }
 
     KhmDraw * g_theme = NULL;

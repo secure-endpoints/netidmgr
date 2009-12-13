@@ -84,6 +84,8 @@ namespace nim {
         Color   c_text_selected; // Selected text color
         Color   c_text_error;    // Error text color
 
+        Color   c_tint;         // Tint color
+
         Image  *b_credwnd; // Credentials window widget images (small icon size)
         Image  *b_watermark;    // Credentials window watermark
         Image  *b_meter_state;  // Life meter state images
@@ -183,6 +185,10 @@ namespace nim {
 	void DrawAlertBackground(Graphics& g, const Rect& extents, DrawState state);
 
 	void DrawAlertSuggestBackground(Graphics& g, const Rect& extents, DrawState state);
+
+        void DrawImageNeutralBackground(Graphics& g, const Rect& extents);
+
+        void DrawDragWidgets(Graphics& g, const RectF& rect, int corner);
     };
 
     typedef enum DrawTextStyle {
@@ -273,6 +279,17 @@ namespace nim {
         return Rect(r->left, r->top, r->right - r->left, r->bottom - r->top);
     }
 
+    inline RECT RECTFromRect(const Rect * r) {
+        RECT R;
+
+        R.left = r->X;
+        R.top = r->Y;
+        R.right = r->X + r->Width;
+        R.bottom = r->Y + r->Height;
+
+        return R;
+    }
+
     inline Color operator * (const Color& left, BYTE right) {
         unsigned int a = (((unsigned int) left.GetAlpha()) * right) / 255;
         return Color((left.GetValue() & (Color::RedMask | Color::GreenMask | Color::BlueMask)) |
@@ -345,6 +362,9 @@ namespace nim {
     IsRemoteSession() {
         return GetSystemMetrics(SM_REMOTESESSION) != 0;
     }
+
+    bool
+    GetEncoderClsid(const wchar_t* format, CLSID* pClsid);
 } /* namespace nim */
 
 
