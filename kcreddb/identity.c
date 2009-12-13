@@ -339,20 +339,23 @@ kcdb_identity_create_ex(khm_handle vidpro,
             /* don't need to set the KCDB_IDENT_FLAG_CONFIG flags
                since kcdb_identity_get_config() sets it for us. */
             khm_int32 sticky;
+            khm_ui_8  serial;
 
             if (KHM_SUCCEEDED(khc_read_int32(h_cfg, L"Sticky", &sticky)) &&
                 sticky) {
                 id->flags |= KCDB_IDENT_FLAG_STICKY;
             }
 
+            if (KHM_SUCCEEDED(khc_read_int64(h_cfg, L"IdentSerial", &serial)))
+                id->serial = serial;
+
             kcdbint_refresh_identity_timer_thresholds(id, h_cfg);
 
             khc_close_space(h_cfg);
         }
-        
-        if (id->serial == kcdb_ident_serial) {
+
+        if (id->serial == kcdb_ident_serial)
             khc_write_int64(h_kcdb, L"IdentSerial", kcdb_ident_serial);
-        }
 
         if (vparam)
             kcdb_identity_set_attr((khm_handle) id, KCDB_ATTR_PARAM,
@@ -996,7 +999,7 @@ kcdb_identity_get_config(khm_handle vid,
             goto _exit;
         }
 
-        if (flags & (KHM_FLAG_CREATE | KHM_PERM_WRITE)) {
+        if (flags & KHM_FLAG_CREATE) {
             khm_size cb;
 
             if (khc_value_exists(hident, L"Name") & KCONF_FLAG_USER) {
@@ -1046,7 +1049,7 @@ kcdb_identity_get_config(khm_handle vid,
                 /* The serial number field doesn't exist. Create */
                 khc_write_int64(hident, L"IdentSerial", id->serial);
             }
-        } /* flags & KHM_FLAG_CREATE | KHM_PERM_WRITE */
+        } /* flags & KHM_FLAG_CREATE */
 
         if (khc_value_exists(hident, L"Name") & KCONF_FLAG_USER) {
             id->flags |= KCDB_IDENT_FLAG_CONFIG;
