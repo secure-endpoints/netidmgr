@@ -23,6 +23,9 @@ KCDB,KC_SPACE,0,Khimaira Credentials DB
       AllowAutoRenew,KC_INT32,1,Boolean.
       RenewAtHalfLife,KC_INT32,1,Attempt to renew at half life intervals.
       IconNormal,KC_STRING,,Resource path for the icon representing the identity.  This path may contain unexpanded environment strings.
+      IconOriginal,KC_STRING,,Path for cached copy of original bitmap used for identity icon.  This path may contain unexpanded environment strings.
+      IconCrop,KC_STRING,,Crop boundaries
+      IconSource,KC_STRING,,Original source string for the identity image
       IdentSerial,KC_INT64,0,Identity serial number.
     _Schema,KC_ENDSPACE,0,
   Identity,KC_ENDSPACE,0,
