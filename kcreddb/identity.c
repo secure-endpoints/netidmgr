@@ -346,7 +346,7 @@ kcdb_identity_create_ex(khm_handle vidpro,
                 id->flags |= KCDB_IDENT_FLAG_STICKY;
             }
 
-            if (KHM_SUCCEEDED(khc_read_int64(h_cfg, L"IdentSerial", &serial)))
+            if (KHM_SUCCEEDED(khc_read_int64(h_cfg, L"IdentSerial", (khm_int64 *) &serial)))
                 id->serial = serial;
 
             kcdbint_refresh_identity_timer_thresholds(id, h_cfg);
