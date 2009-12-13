@@ -505,6 +505,30 @@ BEGIN
     DEFPUSHBUTTON   "Close",IDCANCEL,276,159,50,14
 END
 
+IDD_ICONSELECT DIALOGEX 0, 0, 377, 220
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_CONTEXTHELP
+CAPTION "Select icon"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Static",IDC_IMGEDITOR,7,7,162,206,NOT WS_VISIBLE | WS_BORDER
+    GROUPBOX        "Use picture from file",IDC_FILEGRP,176,7,194,36
+    EDITTEXT        IDC_PATH,182,19,120,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse ...",IDC_BROWSE,305,19,58,14
+    GROUPBOX        "Fetch from URL",IDC_URLGRP,176,48,194,36
+    EDITTEXT        IDC_URL,182,61,146,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Go",IDC_URLGO,334,61,29,14
+    GROUPBOX        "Favicon for domain",IDC_FAVGRP,176,90,194,36
+    EDITTEXT        IDC_DOMAIN,182,102,146,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Go",IDC_FAVGO,334,102,29,14
+    GROUPBOX        "Gravatar for email address",IDC_GRAVGRP,176,131,194,36
+    EDITTEXT        IDC_EMAIL,182,144,146,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Go",IDC_GRAVGO,334,144,29,14
+    CONTROL         "<a>Privacy issues</a>",IDC_PRIVACY_ISSUES,"SysLink",WS_TABSTOP,182,201,72,12
+    DEFPUSHBUTTON   "OK",IDOK,265,199,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,320,199,50,14
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -747,6 +771,20 @@ BEGIN
         VERTGUIDE, 326
         BOTTOMMARGIN, 173
     END
+
+    IDD_ICONSELECT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 370
+        VERTGUIDE, 169
+        VERTGUIDE, 176
+        VERTGUIDE, 182
+        VERTGUIDE, 328
+        VERTGUIDE, 334
+        VERTGUIDE, 363
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 213
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -832,12 +870,12 @@ BEGIN
     IDS_NC_NPR_CHOOSEDIF    "Please choose a different identity."
     IDS_NC_NPR_CLICKFINISH  "Click 'Finish' to obtain new credentials ..."
     IDS_NC_NPR_CHOOSE       "Please choose an identity."
-    IDS_ICON_FILTER         "Icons,*.ICO,Bitmaps,*.BMP,Binaries,*.DLL;*.EXE,All Files,*.*"
+    IDS_ICON_FILTER         "Icons,*.ICO,Bitmaps,*.BMP,JPEG,*.JPG,PNG,*.PNG,Binaries,*.DLL;*.EXE,All Files,*.*"
     IDS_WTPOST_INIT_CREDS   " - Initial credentials"
     IDS_WTPOST_NEW_CREDS    " - New credentials"
     IDS_ACTION_RENEW_CRED   "R&enew credentials"
     IDS_ACTION_DESTROY_CRED "De&stroy credentials"
-    IDS_DEFAULT_FONT        "MS Shell Dlg"
+    IDS_DEFAULT_FONT        "Segoe UI"
     IDS_NC_NPR_VALIDATING   "Validating identity ..."
     IDS_NOTIFY_PREFIX       "Network Identity Manager - "
     IDS_NOTIFY_READY        "Ready"
@@ -1060,6 +1098,11 @@ BEGIN
     IDS_CWTT_STICKY_ID0     "Click to show this identity even when there are no credentials."
     IDS_CWTT_STICKY_ID1     "This identity will always be displayed."
     IDS_MENU_NEW_CRED       "New credentials"
+    IDS_IS_CUE_FILE         "(Type path to picture or select browse)"
+    IDS_IS_CUE_URL          "(Type web address. e.g. http://example.com/myphoto.jpg)"
+    IDS_IS_TITLE_FMT        "Select icon for %s (%s)"
+    IDS_IS_CUE_DOM          "(Type a domain name to fetch a favicon from)"
+    IDS_IS_CUE_EMAIL        "(Type email address to fetch icon for)"
 END
 
 #endif    // English (U.S.) resources

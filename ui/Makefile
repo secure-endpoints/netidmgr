@@ -50,6 +50,7 @@ OBJFILES=				    \
 	$(OBJ)\DisplayColumnList.obj	    \
 	$(OBJ)\DisplayContainer.obj	    \
 	$(OBJ)\DisplayElement.obj	    \
+	$(OBJ)\IconSelectDialog.obj	    \
 	$(OBJ)\NewCredAdvancedPanel.obj	    \
 	$(OBJ)\NewCredBasicPanel.obj	    \
 	$(OBJ)\NewCredIdentitySelector.obj  \
@@ -74,7 +75,9 @@ OBJFILES=				    \
 	$(OBJ)\credwnd.obj		    \
 	$(OBJ)\debugfuncs.obj		    \
 	$(OBJ)\drawfuncs.obj		    \
+	$(OBJ)\envvar.obj		    \
 	$(OBJ)\htwnd.obj		    \
+	$(OBJ)\httpfetch.obj		    \
 	$(OBJ)\iconselectwnd.obj	    \
 	$(OBJ)\main.obj			    \
 	$(OBJ)\mainmenu.obj		    \
@@ -115,7 +118,8 @@ SDKLIBFILES= 			\
 	msimg32.lib		\
 	ole32.lib		\
 	shell32.lib		\
-	shlwapi.lib
+	shlwapi.lib		\
+	winhttp.lib
 
 !if "$(APPVER)" != "5.0"
 SDKLIBFILES = $(SDKLIBFILES) uxtheme.lib

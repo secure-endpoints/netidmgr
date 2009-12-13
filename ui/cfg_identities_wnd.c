@@ -1047,11 +1047,8 @@ static void
 change_icon_ident (HWND hwnd, khui_config_init_data * idata)
 {
     ident_data * d;
-    wchar_t path[MAX_PATH];
-    khm_size cb;
-
-    khm_boolean new_icon;
-    khm_handle csp_id = NULL;
+    HICON hicon = NULL;
+    khm_size cb = sizeof(hicon);
 
     d = find_ident_by_node(idata->ctx_node);
     assert(d);
@@ -1059,63 +1056,14 @@ change_icon_ident (HWND hwnd, khui_config_init_data * idata)
     if (d == NULL)
         return;
 
-    cb = sizeof(path);
-    if (KHM_FAILED(kcdb_identity_get_config(d->ident,
-                                            KHM_PERM_WRITE, &csp_id)) ||
-        KHM_FAILED(khc_read_string(csp_id, L"IconNormal", path, &cb))) {
-        path[0] = L'\0';
-    }
+    khm_select_icon_for_identity(hwnd, d->ident);
 
-    new_icon = khm_show_select_icon_dialog(hwnd, path, sizeof(path));
-
-    if (new_icon) {
-        HICON hicon = NULL;
-        khm_size cb;
-
-        if (csp_id == NULL) {
-            if (KHM_FAILED(kcdb_identity_get_config(d->ident,
-                                                    KHM_FLAG_CREATE|KHM_PERM_WRITE,
-                                                    &csp_id)))
-                goto _cleanup;
-        }
-
-        khc_write_string(csp_id, L"IconNormal", path);
-
-        /* And now, we perform a lookup with KCDB_RF_SKIPCACHE so that
-           the old icon will get flushed out of the cache. */
-
-        cb = sizeof(hicon);
-        kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE | KCDB_RFI_SMALL,
-                          NULL, NULL, &hicon, &cb);
-        kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE | KCDB_RFI_SMALL,
-                          NULL, NULL, &hicon, &cb);
-        kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE,
-                          NULL, NULL, &hicon, &cb);
-        kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE,
-                          NULL, NULL, &hicon, &cb);
-        assert(hicon != NULL);
-
-        /* And set the dialog control while we are at it */
-
-        hicon = (HICON) SendDlgItemMessage(hwnd, IDC_CFG_ICON, STM_SETICON,
-                                           (WPARAM) hicon, 0);
-        assert(hicon != NULL);
-
-        InvalidateRect(GetDlgItem(hwnd, IDC_CFG_ICON), NULL, TRUE);
-
-        hicon = NULL; cb = sizeof(hicon);
-        kcdb_get_resource(d->ident, KCDB_RES_ICON_DISABLED, KCDB_RF_SKIPCACHE,
-                          NULL, NULL, &hicon, &cb);
-
-        kcdb_identity_hold(d->ident);
-        kmq_post_message(KMSG_KCDB, KMSG_KCDB_IDENT, KCDB_OP_RESUPDATE, (void *) d->ident);
-        /* d->ident will be automatically released when the message
-           handling is completed. */
-    }
-
- _cleanup:
-    if (csp_id)
-        khc_close_space(csp_id);
+    kcdb_get_resource(d->ident, KCDB_RES_ICON_NORMAL, KCDB_RF_SKIPCACHE,
+                      NULL, NULL, &hicon, &cb);
+    assert(hicon != NULL);
+    SendDlgItemMessage(hwnd, IDC_CFG_ICON, STM_SETICON,
+                       (WPARAM) hicon, 0);
+    InvalidateRect(GetDlgItem(hwnd, IDC_CFG_ICON), NULL, TRUE);
 }
 
 static void

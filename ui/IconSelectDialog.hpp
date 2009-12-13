@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Secure Endpoints Inc.
+ * Copyright (c) 2009 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -22,24 +22,48 @@
  * SOFTWARE.
  */
 
-/* $Id$ */
+#pragma once
+#include "PictureCropWindow.hpp"
 
-#ifndef __NETIDMGR_ICONSELECTWND_H__
-#define __NETIDMGR_ICONSELECTWND_H__
+namespace nim {
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+    class IconSelectDialog :
+        virtual public DialogWindow {
 
-khm_boolean
-khm_show_select_icon_dialog(HWND hw_parent, wchar_t * path, khm_size cb_path);
+        Identity m_identity;
+        AutoRef<PictureCropWindow> m_cropper;
 
-khm_int32
-khm_select_icon_for_identity(HWND parent, khm_handle identity);
+        enum {
+            MAXCCH_URL = 2048
+        };
 
-#ifdef __cplusplus
+    public:
+        IconSelectDialog(Identity&);
+
+        ~IconSelectDialog();
+
+        bool PrepareIdentityIconDirectory(wchar_t path[MAX_PATH]);
+
+        void DoBrowse();
+
+        void DoFetchURL();
+
+        void DoFetchFavicon();
+
+        void DoFetchGravatar();
+
+        void DoOk();
+
+        virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam);
+
+        virtual void OnClose() {
+            EndDialog(1);
+        }
+
+        virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
+
+        virtual void OnDestroy(void);
+
+    };
+
 }
-#endif
-
-
-#endif

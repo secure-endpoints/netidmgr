@@ -258,6 +258,8 @@
 #define IDD_DIALOG1                     238
 #define IDD_ALERTS                      238
 #define IDS_PACTION_DISCARD             239
+#define IDD_DIALOG2                     239
+#define IDD_ICONSELECT                  239
 #define IDS_CFG_IT_MOD                  240
 #define IDS_CFG_IT_APP                  241
 #define IDS_CFG_IT_NONE                 242
@@ -350,6 +352,11 @@
 #define IDS_CWTT_STICKY_ID0             328
 #define IDS_CWTT_STICKY_ID1             329
 #define IDS_MENU_NEW_CRED               330
+#define IDS_IS_CUE_FILE                 331
+#define IDS_IS_CUE_URL                  332
+#define IDS_IS_TITLE_FMT                333
+#define IDS_IS_CUE_DOM                  334
+#define IDS_IS_CUE_EMAIL                335
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027
@@ -455,6 +462,21 @@
 #define IDC_LIST1                       1189
 #define IDC_CFGLIST                     1190
 #define IDC_PANELNAME                   1191
+#define IDC_BUTTON1                     1192
+#define IDC_IMGEDITOR                   1205
+#define IDC_URLGO                       1207
+#define IDC_URL                         1210
+#define IDC_DOMAIN                      1211
+#define IDC_FAVGO                       1212
+#define IDC_EMAIL                       1213
+#define IDC_GRAVGO                      1214
+#define IDC_PATH                        1215
+#define IDC_BROWSE                      1216
+#define IDC_PRIVACY_ISSUES              1217
+#define IDC_FILEGRP                     1218
+#define IDC_URLGRP                      1219
+#define IDC_FAVGRP                      1220
+#define IDC_GRAVGRP                     1221
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -468,9 +490,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        239
+#define _APS_NEXT_RESOURCE_VALUE        243
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1192
+#define _APS_NEXT_CONTROL_VALUE         1222
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

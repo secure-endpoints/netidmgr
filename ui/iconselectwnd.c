@@ -118,7 +118,9 @@ ofn_load_icons(struct ch_icon_data * c, HWND hwnd, HWND hw_ofn)
         else if (!_wcsicmp(pext, L".ico")) {
             restype = KHM_RESTYPE_ICON;
             flags = 0; n_icons = 1;
-        } else if (!_wcsicmp(pext, L".bmp")) {
+        } else if (!_wcsicmp(pext, L".bmp") ||
+                   !_wcsicmp(pext, L".jpg") ||
+                   !_wcsicmp(pext, L".png")) {
             restype = KHM_RESTYPE_BITMAP;
             flags = 0; n_icons = 1;
         } else if (!_wcsicmp(pext, L".dll") ||
@@ -148,6 +150,11 @@ ofn_load_icons(struct ch_icon_data * c, HWND hwnd, HWND hw_ofn)
     c->flags = flags;
     StringCchCopy(c->pathname, ARRAYLENGTH(c->pathname), path);
 
+    if (!(flags & KHUI_LIFR_FROMLIB)) {
+        c->index = 0;
+        return TRUE;
+    }
+
     if (n_icons > ARRAYLENGTH(icbuf))
         picons = PMALLOC(sizeof(HICON) * n_icons);
     else
@@ -163,8 +170,7 @@ ofn_load_icons(struct ch_icon_data * c, HWND hwnd, HWND hw_ofn)
         khui_load_icons_from_path(path, restype, 0, flags,
                                   picons, &t);
 
-        if ((flags & KHUI_LIFR_FROMLIB) &&
-            n_icons > t) {
+        if (n_icons > t) {
             khm_size t2;
             khm_int32 rv;
 
@@ -412,7 +418,9 @@ khm_show_select_icon_dialog(HWND hw_parent, wchar_t * path, khm_size cb_path)
             }
         }
 
+#if 0
         unexpand_env_var_prefix(icondata.pathname, sizeof(icondata.pathname));
+#endif
 
         if (icondata.index > 0) {
             StringCbPrintf(resstring, sizeof(resstring), L"%s%s,%d",
@@ -427,56 +435,4 @@ khm_show_select_icon_dialog(HWND hw_parent, wchar_t * path, khm_size cb_path)
     }
 
     return bSetIcon;
-}
-
-static const wchar_t * _exp_env_vars[] = {
-    L"TMP",
-    L"TEMP",
-    L"USERPROFILE",
-    L"ALLUSERSPROFILE",
-    L"SystemRoot"
-#if 0
-    /* Replacing this is not typically useful */
-    L"SystemDrive"
-#endif
-};
-
-const int _n_exp_env_vars = ARRAYLENGTH(_exp_env_vars);
-
-static int
-check_and_replace_env_prefix(wchar_t * s, size_t cb_s, const wchar_t * env) {
-    wchar_t evalue[MAX_PATH];
-    DWORD len;
-    size_t sz;
-
-    evalue[0] = L'\0';
-    len = GetEnvironmentVariable(env, evalue, ARRAYLENGTH(evalue));
-    if (len > ARRAYLENGTH(evalue) || len == 0)
-        return 0;
-
-    if (_wcsnicmp(s, evalue, len))
-        return 0;
-
-    if (SUCCEEDED(StringCbPrintf(evalue, sizeof(evalue), L"%%%s%%%s",
-                                 env, s + len)) &&
-        SUCCEEDED(StringCbLength(evalue, sizeof(evalue), &sz)) &&
-        sz <= cb_s) {
-        StringCbCopy(s, cb_s, evalue);
-    }
-
-    return 1;
-}
-
-/* We use this instead of PathUnexpandEnvStrings() because that API
-   doesn't take process TMP and TEMP.  The string is modified
-   in-place.  The usual case is to call it with a buffer big enough to
-   hold MAX_PATH characters. */
-void
-unexpand_env_var_prefix(wchar_t * s, size_t cb_s) {
-    int i;
-
-    for (i=0; i < _n_exp_env_vars; i++) {
-        if (check_and_replace_env_prefix(s, cb_s, _exp_env_vars[i]))
-            return;
-    }
 }
