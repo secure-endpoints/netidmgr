@@ -200,6 +200,7 @@ namespace nim {
 	    HANDLE_MSG(hwnd, WM_HELP, cw->HandleHelp);
 	    HANDLE_MSG(hwnd, WM_TIMER, cw->HandleTimer);
 	    HANDLE_MSG(hwnd, WM_GETDLGCODE, cw->HandleGetDlgCode);
+            HANDLE_MSG(hwnd, WM_SETCURSOR, cw->HandleSetCursor);
 #ifdef KMQ_WM_DISPATCH
 	    HANDLE_MSG(hwnd, KMQ_WM_DISPATCH, cw->HandleDispatch);
 #endif

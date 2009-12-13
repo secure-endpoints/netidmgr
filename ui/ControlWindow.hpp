@@ -100,6 +100,8 @@ namespace nim {
 
         virtual LRESULT OnSync() { return 0; }
 
+        virtual BOOL OnSetCursor(HWND hwndCursor, UINT codeHitTest, UINT msg) { return FALSE; }
+
 #ifdef KMQ_WM_DISPATCH
         virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype, khm_ui_4 uparam,
                                        void * vparam) { return 0; }
@@ -215,6 +217,10 @@ namespace nim {
 
         LRESULT HandleDispatch(LPARAM lParam);
 
+        BOOL HandleSetCursor(HWND hwnd, HWND hwndCursor, UINT codeHitTest, UINT msg) {
+            return OnSetCursor(hwndCursor, codeHitTest, msg);
+        }
+
         static BOOL HandleOnCreate(HWND hwnd, LPCREATESTRUCT lpc);
 
         static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
@@ -228,6 +234,11 @@ namespace nim {
 
         BOOL Invalidate() {
             return ::InvalidateRect(hwnd, NULL, TRUE);
+        }
+
+        BOOL Invalidate(const Rect& r) {
+            RECT R = { r.GetLeft(), r.GetTop(), r.GetRight(), r.GetBottom() };
+            return ::InvalidateRect(hwnd, &R, TRUE);
         }
 
 	BOOL PostMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
