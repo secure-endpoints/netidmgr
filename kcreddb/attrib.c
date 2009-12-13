@@ -555,6 +555,35 @@ kcdb_attrib_init(void)
     attrib.compute_max_cbsize = sizeof(FILETIME);
 
     kcdb_attrib_register(&attrib, NULL);
+
+    /* E-Mail */
+    attrib.id          = KCDB_ATTR_NAME_EMAIL;
+    attrib.name        = KCDB_ATTRNAME_NAME_EMAIL;
+    attrib.type        = KCDB_TYPE_STRING;
+    LoadString(hinst_kcreddb, IDS_NAME_EMAIL, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY;
+    attrib.compute_cb  = NULL;
+    attrib.compute_min_cbsize = 0;
+    attrib.compute_max_cbsize = 0;
+
+    kcdb_attrib_register(&attrib, NULL);
+
+    /* Domain */
+    attrib.id          = KCDB_ATTR_NAME_DOMAIN;
+    attrib.name        = KCDB_ATTRNAME_NAME_DOMAIN;
+    attrib.type        = KCDB_TYPE_STRING;
+    LoadString(hinst_kcreddb, IDS_NAME_DOMAIN, sbuf, ARRAYLENGTH(sbuf));
+    attrib.short_desc  = sbuf;
+    attrib.long_desc   = NULL;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_PROPERTY;
+    attrib.compute_cb  = NULL;
+    attrib.compute_min_cbsize = 0;
+    attrib.compute_max_cbsize = 0;
+
+    kcdb_attrib_register(&attrib, NULL);
+
 }
 
 void 

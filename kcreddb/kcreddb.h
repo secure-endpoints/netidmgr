@@ -3939,6 +3939,22 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
  */
 #define KCDB_ATTR_THR_CRIT      (KCDB_ATTR_MIN_PROP_ID + 6)
 
+/*! \brief E-Mail
+
+  E-mail address associated with identity.  This is an optional
+  property that should be provided by an identity provider or a
+  credentials provider when the attribute is relevant.
+ */
+#define KCDB_ATTR_NAME_EMAIL    (KCDB_ATTR_MIN_PROP_ID + 7)
+
+/*! \brief Domain
+
+  DNS domain associated with identity.  This is an optional property
+  that should be provided by an identity provider or a credentials
+  provider when the attribute is relevant.
+ */
+#define KCDB_ATTR_NAME_DOMAIN   (KCDB_ATTR_MIN_PROP_ID + 8)
+
 /*@}*/
 
 /*!\name Attribute names */
@@ -3971,7 +3987,8 @@ kcdb_attrib_get_ids(khm_int32 and_flags,
 #define KCDB_ATTRNAME_THR_RENEW     L"IdentityRenewalThreshold"
 #define KCDB_ATTRNAME_THR_WARN      L"IdentityWarningThreshold"
 #define KCDB_ATTRNAME_THR_CRIT      L"IdentityCriticalThreshold"
-
+#define KCDB_ATTRNAME_NAME_EMAIL    L"IdentityNameEmail"
+#define KCDB_ATTRNAME_NAME_DOMAIN   L"IdentityNameDomain"
 /*@}*/
 
 /*@}*/
@@ -5010,6 +5027,12 @@ namespace nim {
             khm_int32 f = 0;
             kcdb_identity_get_flags(h, &f);
             return f;
+        }
+
+        khm_ui_8 GetSerial() const {
+            khm_ui_8 serial = 0;
+            kcdb_identity_get_serial(h, &serial);
+            return serial;
         }
 
         std::wstring GetName() const {

@@ -140,6 +140,8 @@ BEGIN
     IDS_THR_RENEW           "Renewal threshold"
     IDS_THR_WARN            "Warning threshold"
     IDS_THR_CRIT            "Critical threshold"
+    IDS_NAME_EMAIL          "E-Mail"
+    IDS_NAME_DOMAIN         "Domain"
 END
 
 #endif    // English (U.S.) resources
