@@ -203,6 +203,9 @@ cppdebug=/GR
 cppdebug=
 !endif
 
+# GDI+
+gdipflags=-DGDIPVER=0x0110
+
 # Profiling
 !ifdef KH_PROFILE
 cprof=/GL
@@ -250,7 +253,7 @@ khldllconflags=$(khldllconflags) $(conlibsdll)
 
 C2OBJ=$(CC) $(khcflags) $(KH_AUXCFLAGS) /Fo"$@" /c $**
 
-CPP2OBJ=$(CC) $(khcflags) $(KH_AUXCFLAGS) $(cppdebug) /EHsc /Fo"$@" /c $**
+CPP2OBJ=$(CC) $(khcflags) $(gdipflags) $(KH_AUXCFLAGS) $(cppdebug) /EHsc /Fo"$@" /c $**
 
 EXECONLINK=$(LINK) /NOLOGO $(khlconflags) /OUT:$@ $**
 
