@@ -81,6 +81,10 @@ namespace nim {
             return ::GetDlgItemText(hwnd, nIDDlgItem, lpString, nMaxCount);
         }
 
+        UINT GetItemTextLength(int nIDDlgItem) {
+            return SendItemMessage(nIDDlgItem, WM_GETTEXTLENGTH, 0, 0);
+        }
+
         LRESULT SendItemMessage(int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {
             return SendDlgItemMessage(hwnd, nIDDlgItem, Msg, wParam, lParam);
         }
