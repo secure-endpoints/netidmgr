@@ -860,6 +860,7 @@ k5_ident_notify_create(khm_int32 msg_type,
     char * princ_nameA = NULL;
     wchar_t princ_nameW[KCDB_IDENT_MAXCCH_NAME];
     wchar_t id_nameW[KCDB_IDENT_MAXCCH_NAME];
+    char id_nameA[KCDB_IDENT_MAXCCH_NAME];
     khm_size cb;
     khm_handle ident;
 
@@ -879,6 +880,45 @@ k5_ident_notify_create(khm_int32 msg_type,
 
     kcdb_identity_set_attr(ident, KCDB_ATTR_DISPLAY_NAME,
                            id_nameW, KCDB_CBSIZE_AUTO);
+
+    /* Get name and realm */
+    {
+        UnicodeStrToAnsi(id_nameA, sizeof(id_nameA), id_nameW);
+
+        code = pkrb5_parse_name(k5_identpro_ctx, id_nameA, &princ);
+        assert(code == 0);
+
+        if (code == 0) {
+            wchar_t realmW[K5_MAXCCH_REALM] = L"";
+            wchar_t fcW[KCDB_MAXCCH_NAME] = L"";
+            wchar_t idW[KCDB_IDENT_MAXCCH_NAME] = L"";
+            int l;
+
+            l = MultiByteToWideChar(CP_UTF8, 0,
+                                    krb5_princ_realm(k5_identpro_ctx, princ)->data,
+                                    krb5_princ_realm(k5_identpro_ctx, princ)->length,
+                                    realmW, ARRAYLENGTH(realmW));
+            realmW[max(l, ARRAYLENGTH(realmW) - 1)] = L'\0';
+
+            kcdb_identity_set_attr(ident, KCDB_ATTR_NAME_DOMAIN,
+                                   realmW, KCDB_CBSIZE_AUTO);
+
+            l = MultiByteToWideChar(CP_UTF8, 0,
+                                    krb5_princ_name(k5_identpro_ctx, princ)->data,
+                                    krb5_princ_name(k5_identpro_ctx, princ)->length,
+                                    fcW, ARRAYLENGTH(fcW));
+
+            fcW[max(l, ARRAYLENGTH(fcW) - 1)] = L'\0';
+
+            StringCbPrintf(idW, sizeof(idW), L"%s@%s", fcW, realmW);
+
+            kcdb_identity_set_attr(ident, KCDB_ATTR_NAME_EMAIL,
+                                   idW, KCDB_CBSIZE_AUTO);
+
+            pkrb5_free_principal(k5_identpro_ctx, princ);
+            princ = NULL;
+        }
+    }
 
     /* if there is a default identity already, we assume we don't need
        to check this one. */
@@ -1406,6 +1446,10 @@ k5_ident_resource_req(kcdb_resource_request * preq)
             hicon = LoadImage(hResModule, MAKEINTRESOURCE(IDI_KERBEROS),
                               IMAGE_ICON, 0, 0,
                               LR_DEFAULTSIZE | LR_DEFAULTCOLOR);
+            break;
+
+        case KCDB_RES_INSTANCE:
+            LoadString(hResModule, IDS_ID_INSTANCE, buf, ARRAYLENGTH(buf));
             break;
 
             /* failover to NIM */
