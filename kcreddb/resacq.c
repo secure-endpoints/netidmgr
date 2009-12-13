@@ -76,6 +76,43 @@ get_resource_from_cred_type(kcdb_resource_request * preq)
 }
 
 static khm_int32
+get_resource_from_identpro(kcdb_resource_request * preq)
+{
+    kcdb_identpro_i * idp = kcdb_identpro_from_handle(preq->h_obj);
+    khm_int32 rv;
+    khm_handle old_obj;
+
+    assert(kcdb_is_identpro(idp));
+
+    if (!kcdb_is_identpro(idp) || idp->sub == NULL)
+        return KHM_ERROR_INVALID_PARAM;
+
+    old_obj = preq->h_obj;
+    preq->h_obj = NULL;
+
+    rv = kmq_send_sub_msg(idp->sub, KMSG_IDENT, KMSG_IDENT_RESOURCE_REQ,
+                          0, preq);
+
+    preq->h_obj = old_obj;
+
+    if (KHM_FAILED(rv))
+        return rv;
+
+    if (preq->code == KHM_ERROR_NOT_IMPLEMENTED ||
+        preq->code == KHM_ERROR_NOT_FOUND) {
+
+        rv = KHM_ERROR_NOT_FOUND;
+
+        switch (preq->res_id) {
+        }
+
+        assert(rv != KHM_ERROR_NOT_FOUND);
+    }
+
+    return rv;
+}
+
+static khm_int32
 get_resource_from_identity(kcdb_resource_request * preq)
 {
     kcdb_identity * id = (kcdb_identity *) preq->h_obj;
@@ -183,43 +220,10 @@ get_resource_from_identity(kcdb_resource_request * preq)
             rv = kcdb_get_resource(preq->h_obj, KCDB_RES_DISPLAYNAME, preq->flags,
                                    &preq->rflags, preq->vparam, preq->buf, &preq->cb_buf);
             break;
-        }
 
-        assert(rv != KHM_ERROR_NOT_FOUND);
-    }
-
-    return rv;
-}
-
-static khm_int32
-get_resource_from_identpro(kcdb_resource_request * preq)
-{
-    kcdb_identpro_i * idp = kcdb_identpro_from_handle(preq->h_obj);
-    khm_int32 rv;
-    khm_handle old_obj;
-
-    assert(kcdb_is_identpro(idp));
-
-    if (!kcdb_is_identpro(idp) || idp->sub == NULL)
-        return KHM_ERROR_INVALID_PARAM;
-
-    old_obj = preq->h_obj;
-    preq->h_obj = NULL;
-
-    rv = kmq_send_sub_msg(idp->sub, KMSG_IDENT, KMSG_IDENT_RESOURCE_REQ,
-                          0, preq);
-
-    preq->h_obj = old_obj;
-
-    if (KHM_FAILED(rv))
-        return rv;
-
-    if (preq->code == KHM_ERROR_NOT_IMPLEMENTED ||
-        preq->code == KHM_ERROR_NOT_FOUND) {
-
-        rv = KHM_ERROR_NOT_FOUND;
-
-        switch (preq->res_id) {
+        case KCDB_RES_INSTANCE:
+            rv = get_resource_from_identpro(preq);
+            break;
         }
 
         assert(rv != KHM_ERROR_NOT_FOUND);
