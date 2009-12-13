@@ -28,12 +28,15 @@
 #ifndef __KHIMAIRA_APPGLOBAL_H
 #define __KHIMAIRA_APPGLOBAL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+BEGIN_C
+
+/* Application data */
+#define NIDM_APPDATA_DIR        L"NetIDMgr"
+#define NIDM_APPDATA_EXP        L"%APPDATA%\\" NIDM_APPDATA_DIR
+#define NIDM_IDIMAGES_DIR       L"IdentityImages"
 
 /* Helpfile */
-#define NIDM_HELPFILE              L"netidmgr.chm"
+#define NIDM_HELPFILE           L"netidmgr.chm"
 
 /* global data */
 extern HINSTANCE khm_hInstance;
@@ -174,8 +177,6 @@ void test_action_trigger(int);
 
 #define ELLIPSIS L"..."
 
-#ifdef __cplusplus
-}
-#endif
+END_C
 
 #endif
