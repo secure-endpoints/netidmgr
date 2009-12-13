@@ -1,0 +1,104 @@
+
+User Interface Testing
+----------------------
+
+This document provides an outline of user interface tests to run
+manually (or automatically, some day).
+
+* Command line
+
+** Credential actions
+
+   These should be tested twice.  Once with a running instance of NIM
+   and once without.  The outcome on both runs should be the same.
+   
+*** -i
+
+    Should show the new credentials dialog with the default identity
+    already preselected.
+
+    - [ ] Fresh installation with no default identity.
+
+    - [ ] Invoked with aliases (--kinit or -kinit)
+
+*** -a
+
+    Should behave identically to -i if no identity credentials are
+    present for the default identity.
+
+    - [ ] Invoked with aliases (--autoinit or -autoinit)
+
+*** -r
+
+    Should renew all renewable identities.
+
+    - [ ] Should do nothing if there are no renewable identities.
+
+    - [ ] No errors reported for non-renewable identities.
+
+    - [ ] Invoked with aliases (--renew or -renew)
+
+*** -m
+
+    Import from MSLSA cache.
+
+    - [ ] Should do nothing if there is no identity to import.
+
+    - [ ] Invoked with aliases (--import or -import)
+
+*** -d
+
+    Destroy the default identity
+
+    - [ ] Should do nothing if no credentials for default identity.
+
+    - [ ] Invoked with aliases (--destroy or -destroy)
+
+** Other
+
+*** -x
+
+    Exit the running instance.
+
+    - [ ] Should do nothing if no running instance.
+
+    - [ ] Invoked with aliases( --exit or -exit)
+
+*** --minimized
+
+    - [ ] Should start NIM minimized if not already running
+
+    - [ ] Nothing if it is already running.
+
+*** --hide
+
+    - [ ] Hide the running instance
+
+    - [ ] Nothing if it isn't already running
+
+    - [ ] Nothing if it is already hidden.
+
+*** --show
+
+    - [ ] Unhide the running instance.
+
+    - [ ] Nothing if it is already shown.
+
+    - [ ] Nothing if it isn't already running.
+
+*** Anything else
+
+    Any other command line option should display the command line
+    options dialog.
+
+    - [ ] Shows command line options dialog.
+
+    - [ ] Doesn't start NIM.
+
+    - [ ] Version string is accurate.
+
+    - [ ] Copyright string is up-to-date.
+
+    - * Standard dialog testing template
+
+
