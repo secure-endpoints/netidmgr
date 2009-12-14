@@ -31,6 +31,8 @@
 #include "khmapp.h"
 
 #include<stdio.h>
+#include<share.h>
+#include<process.h>
 
 #if DEBUG
 #include<assert.h>
@@ -203,12 +205,7 @@ void khm_start_file_log(void) {
 
     khm_get_file_log_path(sizeof(temppath), temppath);
 
-    logfile = NULL;
-#if _MSC_VER >= 1400 && __STDC_WANT_SECURE_LIB__
-    _wfopen_s(&logfile, temppath, L"w");
-#else
-    logfile = _wfopen(temppath, L"w");
-#endif
+    logfile = _wfsopen(temppath, L"w", _SH_DENYWR);
     kherr_add_ctx_handler(debug_event_handler,
 			  KHERR_CTX_BEGIN |
 			  KHERR_CTX_END |
@@ -244,13 +241,120 @@ void khm_stop_file_log(void) {
     LeaveCriticalSection(&cs_log);
 }
 
+static HANDLE h_ods_kill = NULL;
+static HANDLE h_ods_mmap = NULL;
+static HANDLE h_ods_buffer_ready = NULL;
+static HANDLE h_ods_data_ready = NULL;
+static DWORD  dw_proc_id = 0;
+
+static unsigned __stdcall ods_collector(void * param)
+{
+    LPVOID * dbg = NULL;
+    HANDLE handles[2];
+
+    if (!log_started)
+        return 0;
+
+    h_ods_buffer_ready = CreateEvent(NULL, FALSE, FALSE, L"DBWIN_BUFFER_READY");
+    h_ods_data_ready = CreateEvent(NULL, FALSE, FALSE, L"DBWIN_DATA_READY");
+
+    if (h_ods_buffer_ready == NULL || h_ods_data_ready == NULL) {
+        EnterCriticalSection(&cs_log);
+        fprintf(logfile, "Can't create DBWIN_BUFFER_READY event or DBWIN_DATA_READY event.\n");
+        LeaveCriticalSection(&cs_log);
+        goto cleanup;
+    }
+
+    h_ods_mmap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 4096, L"DBWIN_BUFFER");
+    if (h_ods_mmap == NULL) {
+        EnterCriticalSection(&cs_log);
+        fprintf(logfile, "Can't create memory mapped file DBWIN_BUFFER.  GLE=%d\n", GetLastError());
+        LeaveCriticalSection(&cs_log);
+        goto cleanup;
+    }
+
+    dbg = MapViewOfFile(h_ods_mmap, FILE_MAP_READ, 0, 0, 4096);
+    if (dbg == NULL) {
+        EnterCriticalSection(&cs_log);
+        fprintf(logfile, "Can't map view of debug shared memory mapping GLE=%d\n", GetLastError());
+        LeaveCriticalSection(&cs_log);
+        goto cleanup;
+    }
+
+    handles[0] = h_ods_data_ready;
+    handles[1] = h_ods_kill;
+
+    do {
+        DWORD o;
+
+        SetEvent(h_ods_buffer_ready);
+        o = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+
+        if (o == WAIT_OBJECT_0) {
+            DWORD thread_id = *((DWORD *) dbg);
+            char *text = (char *)(&((DWORD *) dbg)[1]);
+            size_t len;
+
+            if (thread_id != dw_proc_id)
+                continue;       /* We are only listening for our own
+                                   debug messages for now. */
+
+            EnterCriticalSection(&cs_log);
+            fprintf(logfile, "[%d]DBG %.4091s", thread_id, text);
+            if (FAILED(StringCchLengthA(text, 4092, &len)) ||
+                len == 0 || text[len - 1] != '\n')
+                fprintf(logfile, "\n");
+            LeaveCriticalSection(&cs_log);
+        } else if (o == WAIT_OBJECT_0 + 1) {
+            break;
+        } else if (o == WAIT_FAILED) {
+            break;
+        } else {
+            continue;
+        }
+    } while(TRUE);
+
+ cleanup:
+    if (dbg != NULL)
+        UnmapViewOfFile(dbg);
+    if (h_ods_buffer_ready)
+        CloseHandle(h_ods_buffer_ready);
+    if (h_ods_data_ready)
+        CloseHandle(h_ods_data_ready);
+    if (h_ods_mmap)
+        CloseHandle(h_ods_mmap);
+
+    return 0;
+}
+
+static HANDLE thrd_ods = NULL;
+
+static void start_ods_collector(void)
+{
+    h_ods_kill = CreateEvent(NULL, FALSE, FALSE, NULL);
+    dw_proc_id = GetCurrentProcessId();
+    thrd_ods = (HANDLE) _beginthreadex(NULL, 8192, ods_collector, NULL, 0, NULL);
+}
+
+static void end_ods_collector(void)
+{
+    SetEvent(h_ods_kill);
+    WaitForSingleObject(thrd_ods, INFINITE);
+    CloseHandle(thrd_ods);
+    CloseHandle(h_ods_kill);
+    thrd_ods = NULL;
+    h_ods_kill = NULL;
+}
+
 void khm_init_debug(void) {
     InitializeCriticalSection(&cs_log);
 
     khm_start_file_log();
+    start_ods_collector();
 }
 
 void khm_exit_debug(void) {
+    end_ods_collector();
     khm_stop_file_log();
 
     DeleteCriticalSection(&cs_log);
