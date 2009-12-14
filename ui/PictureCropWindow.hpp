@@ -224,7 +224,9 @@ namespace nim {
                 {
                     Graphics g(&imgx64);
                     g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
-                    g.DrawImage(m_image, RectF(0, 0, 64, 64), m_crop, UnitPixel, NULL);
+                    g.DrawImage(m_image, RectF(0, 0, 64, 64),
+                                m_crop.X, m_crop.Y, m_crop.Width, m_crop.Height,
+                                UnitPixel, NULL);
                 }
 
                 if (FAILED(StringCchPrintf(path, ARRAYLENGTH(path), L"%s-64.bmp", opath)))
@@ -257,7 +259,9 @@ namespace nim {
 
             g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
 
-            g.DrawImage(m_image, m_dest, m_source, UnitPixel, (ImageAttributes *) NULL);
+            g.DrawImage(m_image, m_dest,
+                        m_source.X, m_source.Y, m_source.Width, m_source.Height,
+                        UnitPixel, (ImageAttributes *) NULL);
 
             RectF rcrop = ImageToClient(m_crop);
 
@@ -275,8 +279,12 @@ namespace nim {
                 g.DrawRectangle(&p, rcrop);
             }
 
-            g.DrawImage(m_image, m_p_small, m_crop, UnitPixel, (ImageAttributes *) NULL);
-            g.DrawImage(m_image, m_p_large, m_crop, UnitPixel, (ImageAttributes *) NULL);
+            g.DrawImage(m_image, m_p_small,
+                        m_crop.X, m_crop.Y, m_crop.Width, m_crop.Height,
+                        UnitPixel, (ImageAttributes *) NULL);
+            g.DrawImage(m_image, m_p_large,
+                        m_crop.X, m_crop.Y, m_crop.Width, m_crop.Height,
+                        UnitPixel, (ImageAttributes *) NULL);
 
             _g.DrawImage(m_buffer, 0, 0);
         }

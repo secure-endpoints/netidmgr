@@ -82,7 +82,7 @@ namespace nim {
         }
 
         UINT GetItemTextLength(int nIDDlgItem) {
-            return SendItemMessage(nIDDlgItem, WM_GETTEXTLENGTH, 0, 0);
+          return (UINT) SendItemMessage(nIDDlgItem, WM_GETTEXTLENGTH, 0, 0);
         }
 
         LRESULT SendItemMessage(int nIDDlgItem, UINT Msg, WPARAM wParam, LPARAM lParam) {

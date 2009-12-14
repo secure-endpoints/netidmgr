@@ -22,11 +22,13 @@
  * SOFTWARE.
  */
 
+#define NO_STRSAFE
+#include <shlwapi.h>
+#include <shlobj.h>
 #include "khmapp.h"
 #include "IconSelectDialog.hpp"
 #include "httpfetch.h"
-#include <shlwapi.h>
-#include <shlobj.h>
+#include <strsafe.h>
 #include <assert.h>
 
 namespace nim {
@@ -88,8 +90,11 @@ namespace nim {
             m_cropper->Create(hwnd, RectFromRECT(&r_cropper));
         }
 
-        if (!m_cropper->LoadImage(m_identity.GetConfig(0)))
-            m_cropper->SetImage(m_identity.GetResourceIcon(KCDB_RES_ICON_NORMAL));
+        {
+            ConfigSpace csp = m_identity.GetConfig(0);
+            if (!m_cropper->LoadImage(csp))
+                m_cropper->SetImage(m_identity.GetResourceIcon(KCDB_RES_ICON_NORMAL));
+        }
 
         return FALSE;
     }
@@ -318,9 +323,10 @@ namespace nim {
     }
 
     extern "C" khm_int32
-    khm_select_icon_for_identity(HWND parent, khm_handle identity)
+    khm_select_icon_for_identity(HWND parent, khm_handle _identity)
     {
-        AutoRef<IconSelectDialog> d(new IconSelectDialog(Identity(identity, FALSE)),
+        Identity identity(_identity, FALSE);
+        AutoRef<IconSelectDialog> d(new IconSelectDialog(identity),
                                     RefCount::TakeOwnership);
 
         return (d->DoModal(parent) == IDOK)? KHM_ERROR_SUCCESS : KHM_ERROR_CANCELLED;

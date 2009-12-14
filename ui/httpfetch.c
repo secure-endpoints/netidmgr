@@ -364,7 +364,7 @@ khm_get_gravatar_for_email(const wchar_t * wemail, wchar_t * path)
             goto done;
 
         d = sizeof(ehash);
-        if (KHM_FAILED(hash_data(email, len, CALG_MD5, ehash, &d)))
+        if (KHM_FAILED(hash_data((BYTE *) email, len, CALG_MD5, (BYTE *) ehash, &d)))
             goto done;
     }
 
