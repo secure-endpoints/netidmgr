@@ -40,7 +40,7 @@
 
 #define LOGFILENAME "nidmdbg.log"
 
-CRITICAL_SECTION cs_log;
+static CRITICAL_SECTION cs_dbg;
 FILE * logfile = NULL;
 BOOL log_started = FALSE;
 
@@ -96,7 +96,7 @@ debug_event_handler(enum kherr_ctx_event e,
 		    kherr_context * c) {
     kherr_event * evt;
 
-    EnterCriticalSection(&cs_log);
+    EnterCriticalSection(&cs_dbg);
 
     if (!logfile)
 	goto _done;
@@ -115,14 +115,19 @@ debug_event_handler(enum kherr_ctx_event e,
                 "\t<< Context begin --\n");
 
     } else if (e == KHERR_CTX_DESCRIBE) {
+
+        LeaveCriticalSection(&cs_dbg);
 	evt = kherr_get_desc_event(c);
 	if (evt) {
 	    kherr_evaluate_event(evt);
+            EnterCriticalSection(&cs_dbg);
 	    fprintf(logfile,
 		    "%d\t  Description: %S\n",
 		    c->serial,
 		    (evt->long_desc)? evt->long_desc: evt->short_desc);
-	}
+	} else {
+            EnterCriticalSection(&cs_dbg);
+        }
     } else if (e == KHERR_CTX_END) {
         SYSTEMTIME systime;
 
@@ -137,13 +142,15 @@ debug_event_handler(enum kherr_ctx_event e,
                 "\t>> Context end --\n");
 
     } else if (e == KHERR_CTX_EVTCOMMIT) {
+        LeaveCriticalSection(&cs_dbg);
 	evt = kherr_get_last_event(c);
 	if (evt && (evt->short_desc || evt->long_desc)) {
 	    SYSTEMTIME systime;
 
 	    kherr_evaluate_event(evt);
 	    FileTimeToSystemTime(&evt->time_ft, &systime);
-	    
+
+            EnterCriticalSection(&cs_dbg);
 	    fprintf(logfile,
 		    "%d[%d](%S)\t",
 		    c->serial,
@@ -167,12 +174,15 @@ debug_event_handler(enum kherr_ctx_event e,
 		    (evt->suggestion ? evt->suggestion: L""),
 		    (evt->suggestion ? L"]":L"")
 		    );
-	}
+	} else {
+            EnterCriticalSection(&cs_dbg);
+        }
     }
 
  _done:
+    fflush(logfile);
 
-    LeaveCriticalSection(&cs_log);
+    LeaveCriticalSection(&cs_dbg);
 }
 
 void khm_get_file_log_path(khm_size cb_buf, wchar_t * buf) {
@@ -191,8 +201,6 @@ void khm_start_file_log(void) {
     khm_handle cs_cw = NULL;
     khm_int32 t = 0;
 
-    EnterCriticalSection(&cs_log);
-
     if (log_started)
 	goto _done;
 
@@ -202,6 +210,8 @@ void khm_start_file_log(void) {
     if (KHM_FAILED(khc_read_int32(cs_cw, L"LogToFile", &t)) ||
 	!t)
 	goto _done;
+
+    EnterCriticalSection(&cs_dbg);
 
     khm_get_file_log_path(sizeof(temppath), temppath);
 
@@ -215,21 +225,21 @@ void khm_start_file_log(void) {
 
     log_started = TRUE;
 
+    LeaveCriticalSection(&cs_dbg);
+
  _done:
     if (cs_cw)
 	khc_close_space(cs_cw);
-
-    LeaveCriticalSection(&cs_log);
 }
 
 void khm_stop_file_log(void) {
-
-    EnterCriticalSection(&cs_log);
 
     if (!log_started)
 	goto _done;
 
     kherr_remove_ctx_handler(debug_event_handler, 0);
+
+    EnterCriticalSection(&cs_dbg);
 
     if (logfile)
 	fclose (logfile);
@@ -237,8 +247,10 @@ void khm_stop_file_log(void) {
 
     log_started = FALSE;
 
+    LeaveCriticalSection(&cs_dbg);
+
  _done:
-    LeaveCriticalSection(&cs_log);
+    ;
 }
 
 static HANDLE h_ods_kill = NULL;
@@ -259,25 +271,25 @@ static unsigned __stdcall ods_collector(void * param)
     h_ods_data_ready = CreateEvent(NULL, FALSE, FALSE, L"DBWIN_DATA_READY");
 
     if (h_ods_buffer_ready == NULL || h_ods_data_ready == NULL) {
-        EnterCriticalSection(&cs_log);
+        EnterCriticalSection(&cs_dbg);
         fprintf(logfile, "Can't create DBWIN_BUFFER_READY event or DBWIN_DATA_READY event.\n");
-        LeaveCriticalSection(&cs_log);
+        LeaveCriticalSection(&cs_dbg);
         goto cleanup;
     }
 
     h_ods_mmap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 4096, L"DBWIN_BUFFER");
     if (h_ods_mmap == NULL) {
-        EnterCriticalSection(&cs_log);
+        EnterCriticalSection(&cs_dbg);
         fprintf(logfile, "Can't create memory mapped file DBWIN_BUFFER.  GLE=%d\n", GetLastError());
-        LeaveCriticalSection(&cs_log);
+        LeaveCriticalSection(&cs_dbg);
         goto cleanup;
     }
 
     dbg = MapViewOfFile(h_ods_mmap, FILE_MAP_READ, 0, 0, 4096);
     if (dbg == NULL) {
-        EnterCriticalSection(&cs_log);
+        EnterCriticalSection(&cs_dbg);
         fprintf(logfile, "Can't map view of debug shared memory mapping GLE=%d\n", GetLastError());
-        LeaveCriticalSection(&cs_log);
+        LeaveCriticalSection(&cs_dbg);
         goto cleanup;
     }
 
@@ -299,12 +311,13 @@ static unsigned __stdcall ods_collector(void * param)
                 continue;       /* We are only listening for our own
                                    debug messages for now. */
 
-            EnterCriticalSection(&cs_log);
+            EnterCriticalSection(&cs_dbg);
             fprintf(logfile, "[%d]DBG %.4091s", thread_id, text);
-            if (FAILED(StringCchLengthA(text, 4092, &len)) ||
+            if (FAILED(StringCchLengthA(text, 4096 - sizeof(DWORD), &len)) ||
                 len == 0 || text[len - 1] != '\n')
                 fprintf(logfile, "\n");
-            LeaveCriticalSection(&cs_log);
+            fflush(logfile);
+            LeaveCriticalSection(&cs_dbg);
         } else if (o == WAIT_OBJECT_0 + 1) {
             break;
         } else if (o == WAIT_FAILED) {
@@ -347,7 +360,7 @@ static void end_ods_collector(void)
 }
 
 void khm_init_debug(void) {
-    InitializeCriticalSection(&cs_log);
+    InitializeCriticalSection(&cs_dbg);
 
     khm_start_file_log();
     start_ods_collector();
@@ -357,5 +370,5 @@ void khm_exit_debug(void) {
     end_ods_collector();
     khm_stop_file_log();
 
-    DeleteCriticalSection(&cs_log);
+    DeleteCriticalSection(&cs_dbg);
 }
