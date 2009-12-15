@@ -471,23 +471,25 @@ free_event(kherr_event * e)
 #endif
 
 #ifdef DEBUG_CONTEXT
-    if (!(e->flags & KHERR_RF_STR_RESOLVED))
-        resolve_event_strings(e);
+    if (IsDebuggerPresent()) {
+        if (!(e->flags & KHERR_RF_STR_RESOLVED))
+            resolve_event_strings(e);
+        
+        if (e->short_desc && e->long_desc) {
+            kherr_debug_printf(L"E:%s (%s)\n", e->short_desc, e->long_desc);
+        } else if (e->short_desc) {
+            kherr_debug_printf(L"E:%s\n", e->short_desc);
+        } else if (e->long_desc) {
+            kherr_debug_printf(L"E:%s\n", e->long_desc);
+        } else {
+            kherr_debug_printf(L"E:[No description for event 0x%p]\n", e);
+        }
 
-    if (e->short_desc && e->long_desc) {
-        kherr_debug_printf(L"E:%s (%s)\n", e->short_desc, e->long_desc);
-    } else if (e->short_desc) {
-        kherr_debug_printf(L"E:%s\n", e->short_desc);
-    } else if (e->long_desc) {
-        kherr_debug_printf(L"E:%s\n", e->long_desc);
-    } else {
-        kherr_debug_printf(L"E:[No description for event 0x%p]\n", e);
+        if (e->suggestion)
+            kherr_debug_printf(L"  Suggest:[%s]\n", e->suggestion);
+        if (e->facility)
+            kherr_debug_printf(L"  Facility:[%s]\n", e->facility);
     }
-
-    if (e->suggestion)
-        kherr_debug_printf(L"  Suggest:[%s]\n", e->suggestion);
-    if (e->facility)
-        kherr_debug_printf(L"  Facility:[%s]\n", e->facility);
 #endif
 
     if(e->flags & KHERR_RF_FREE_SHORT_DESC) {
@@ -548,7 +550,8 @@ free_context(kherr_context * c)
     assert(IS_KHERR_CTX(c));
 
 #ifdef DEBUG_CONTEXT
-    kherr_debug_printf(L"Freeing context 0x%x\n", c);
+    if (IsDebuggerPresent())
+        kherr_debug_printf(L"Freeing context 0x%x\n", c);
 #endif
 
     EnterCriticalSection(&cs_error);
@@ -574,7 +577,8 @@ free_context(kherr_context * c)
     LeaveCriticalSection(&cs_error);
 
 #ifdef DEBUG_CONTEXT
-    kherr_debug_printf(L"Done with context 0x%x\n", c);
+    if (IsDebuggerPresent())
+        kherr_debug_printf(L"Done with context 0x%x\n", c);
 #endif
 }
 
@@ -965,7 +969,8 @@ kherr_reportf_ex(enum kherr_severity severity,
     va_start(vl, long_desc_fmt);
     StringCbVPrintf(buf, sizeof(buf), long_desc_fmt, vl);
 #ifdef DEBUG
-    OutputDebugString(buf);
+    if (IsDebuggerPresent())
+        OutputDebugString(buf);
 #endif
     va_end(vl);
 

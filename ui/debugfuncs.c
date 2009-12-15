@@ -29,69 +29,111 @@
 
 #include<shlwapi.h>
 #include "khmapp.h"
+#include "netidmgr_intver.h"
 
 #include<stdio.h>
 #include<share.h>
 #include<process.h>
 
-#if DEBUG
 #include<assert.h>
-#endif
 
 #define LOGFILENAME "nidmdbg.log"
 
+/* Note: Due to the OutputDebugString() capture code using cs_dbg and
+   the fact that any code what-so-ever could be generating debug
+   output, any code protected using cs_dbg MUST NOT obtain any other
+   critical section. */
 static CRITICAL_SECTION cs_dbg;
+
 FILE * logfile = NULL;
 BOOL log_started = FALSE;
 
-wchar_t *
+/*! \page logformat Format of the debug log file
+
+  The format of the log file created by Network Identity Manager is as
+  follows:
+
+  When logging starts, the debug runtime will write out several
+  diagnostic messages that indicate the version of Network Identity
+  Manager running as well as information about the plug-ins that have
+  been loaded.
+
+  The prologue of the log file is:
+
+  Logging started for Network Identity Manager
+  Version: x.x.x.x
+  Plug-ins active:
+     plug-in-Name plug-in-Version
+  Active threads:
+     thread-ID[*] thread-Name
+  Begin logging at long-Timestamp
+
+  Each logging context that is started will be annotated as follows:
+
+  timestamp [context-ID] Begin: description
+
+  Each reported event is recorded as:
+
+  timestamp thread-ID[context-ID] severity:(facility) message
+
+  The end of the logging context is recorded as:
+
+  timestamp [context-ID] End
+
+  timestamp [DBG] debug string
+  */
+
+static wchar_t *
 severity_string(kherr_severity severity) {
     switch(severity) {
     case KHERR_FATAL:
-	return L"FATAL";
+	return L"FATAL:";
 
     case KHERR_ERROR:
-	return L"ERROR";
+	return L"ERROR:";
 
     case KHERR_WARNING:
-	return L"Warning";
+	return L"Warning:";
 
     case KHERR_INFO:
-	return L"Info";
+	return L"Info:";
 
     case KHERR_DEBUG_3:
-	return L"Debug(3)";
+	return L"Debug(3):";
 
     case KHERR_DEBUG_2:
-	return L"Debug(2)";
+	return L"Debug(2):";
 
     case KHERR_DEBUG_1:
-	return L"Debug(1)";
+	return L"Debug(1):";
 
     case KHERR_NONE:
-	return L"(None)";
+	return L"";
 
     default:
-	return L"(Unknown severity)";
+	return L"(Unknown severity):";
     }
 }
 
-void
-fprint_systime(FILE * f, SYSTEMTIME *psystime) {
-    fprintf(logfile,
-            "%d-%d-%d %02d:%02d:%02d.%03d",
+static void
+fwprint_systime(FILE * f, SYSTEMTIME *psystime, BOOL full) {
+    if (full)
+        fwprintf(logfile,
+                 L"%d-%d-%d ",
+                 (int) psystime->wYear,
+                 (int) psystime->wMonth,
+                 (int) psystime->wDay);
 
-            (int) psystime->wYear,
-            (int) psystime->wMonth,
-            (int) psystime->wDay,
+    fwprintf(logfile,
+             L"%02d:%02d:%02d.%03d ",
 
-            (int) psystime->wHour,
-            (int) psystime->wMinute,
-            (int) psystime->wSecond,
-            (int) psystime->wMilliseconds);
+             (int) psystime->wHour,
+             (int) psystime->wMinute,
+             (int) psystime->wSecond,
+             (int) psystime->wMilliseconds);
 }
 
-void KHMAPI
+static void KHMAPI
 debug_event_handler(enum kherr_ctx_event e,
 		    kherr_context * c) {
     kherr_event * evt;
@@ -102,44 +144,33 @@ debug_event_handler(enum kherr_ctx_event e,
 	goto _done;
 
     if (e == KHERR_CTX_BEGIN) {
-        SYSTEMTIME systime;
-
-        GetSystemTime(&systime);
-	fprintf(logfile,
-		"%d\t",
-		c->serial);
-
-        fprint_systime(logfile, &systime);
-
-        fprintf(logfile,
-                "\t<< Context begin --\n");
-
+        ;                       /* Nothing to do here.  We don't
+                                   report context begin events until
+                                   we have a description. */
     } else if (e == KHERR_CTX_DESCRIBE) {
+        SYSTEMTIME systime;
 
         LeaveCriticalSection(&cs_dbg);
 	evt = kherr_get_desc_event(c);
 	if (evt) {
 	    kherr_evaluate_event(evt);
+            FileTimeToSystemTime(&evt->time_ft, &systime);
+
             EnterCriticalSection(&cs_dbg);
-	    fprintf(logfile,
-		    "%d\t  Description: %S\n",
-		    c->serial,
-		    (evt->long_desc)? evt->long_desc: evt->short_desc);
+            fwprint_systime(logfile, &systime, FALSE);
+	    fwprintf(logfile,
+                     L"[%d] Begin: %s\n",
+                     c->serial,
+                     (evt->long_desc)? evt->long_desc: evt->short_desc);
 	} else {
             EnterCriticalSection(&cs_dbg);
         }
     } else if (e == KHERR_CTX_END) {
         SYSTEMTIME systime;
 
-	fprintf(logfile,
-		"%d\t",
-		c->serial);
-
         GetSystemTime(&systime);
-        fprint_systime(logfile, &systime);
-
-        fprintf(logfile,
-                "\t>> Context end --\n");
+        fwprint_systime(logfile, &systime, FALSE);
+        fwprintf(logfile, L"[%d] End\n", c->serial);
 
     } else if (e == KHERR_CTX_EVTCOMMIT) {
         LeaveCriticalSection(&cs_dbg);
@@ -151,29 +182,31 @@ debug_event_handler(enum kherr_ctx_event e,
 	    FileTimeToSystemTime(&evt->time_ft, &systime);
 
             EnterCriticalSection(&cs_dbg);
-	    fprintf(logfile,
-		    "%d[%d](%S)\t",
-		    c->serial,
-		    evt->thread_id,
-		    (evt->facility ? evt->facility: L""));
 
-            fprint_systime(logfile, &systime);
+            fwprint_systime(logfile, &systime, FALSE);
+	    fwprintf(logfile,
+                     L"%d[%d] %s",
+                     evt->thread_id,
+                     c->serial,
+                     severity_string(evt->severity));
 
-            fprintf(logfile,
-                    "\t%S: %S %S%S%S %S%S%S\n",
+            fwprintf(logfile,
+                     L"%s%s%s%s%s%s%s%s%s%s\n",
 
-		    severity_string(evt->severity),
+                     (evt->facility ? L"(": L""),
+                     (evt->facility ? evt->facility : L""),
+                     (evt->facility ? L") ": L" "),
 
-		    (evt->short_desc ? evt->short_desc: L""),
+                     (evt->short_desc ? evt->short_desc: L""),
 
-		    (evt->short_desc ? L"(":L""),
-		    (evt->long_desc ? evt->long_desc: L""),
-		    (evt->short_desc ? L")":L""),
+                     (evt->short_desc ? L" (":L""),
+                     (evt->long_desc ? evt->long_desc: L""),
+                     (evt->short_desc ? L")":L""),
 
-		    (evt->suggestion ? L"[":L""),
-		    (evt->suggestion ? evt->suggestion: L""),
-		    (evt->suggestion ? L"]":L"")
-		    );
+                     (evt->suggestion ? L" [":L""),
+                     (evt->suggestion ? evt->suggestion: L""),
+                     (evt->suggestion ? L"]":L"")
+                     );
 	} else {
             EnterCriticalSection(&cs_dbg);
         }
@@ -186,14 +219,32 @@ debug_event_handler(enum kherr_ctx_event e,
 }
 
 void khm_get_file_log_path(khm_size cb_buf, wchar_t * buf) {
-#ifdef DEBUG
     assert(cb_buf > sizeof(wchar_t));
-#endif
     *buf = L'\0';
 
     GetTempPath((DWORD) cb_buf / sizeof(wchar_t), buf);
 
     StringCbCat(buf, cb_buf, _T(LOGFILENAME));
+}
+
+static void
+fwprint_prologue(FILE * f)
+{
+    SYSTEMTIME systime;
+
+    GetSystemTime(&systime);
+
+    fwprintf(f, L"Logging started for Network Identity Manager at ");
+    fwprint_systime(f, &systime, TRUE);
+    fwprintf(f, L"\n");
+    fwprintf(f, L"Product: %s\n", _T(KH_VERSTR_PRODUCT_1033));
+    fwprintf(f, L"         %s\n", _T(KH_VERSTR_COPYRIGHT_1033));
+#ifdef KH_VERSTR_BUILDINFO_1033
+    fwprintf(f, L"         %s\n", _T(KH_VERSTR_BUILDINFO_1033));
+#endif
+
+    fwprint_systime(f, &systime, FALSE);
+    fwprintf(f, L"Begin logging\n");
 }
 
 void khm_start_file_log(void) {
@@ -222,10 +273,11 @@ void khm_start_file_log(void) {
 			  KHERR_CTX_DESCRIBE |
 			  KHERR_CTX_EVTCOMMIT,
 			  0);
-
     log_started = TRUE;
 
     LeaveCriticalSection(&cs_dbg);
+
+    fwprint_prologue(logfile);
 
  _done:
     if (cs_cw)
@@ -264,6 +316,8 @@ static unsigned __stdcall ods_collector(void * param)
     LPVOID * dbg = NULL;
     HANDLE handles[2];
 
+    PDESCTHREAD(L"OutputDebugString() collector", L"NIM");
+
     if (!log_started)
         return 0;
 
@@ -272,7 +326,7 @@ static unsigned __stdcall ods_collector(void * param)
 
     if (h_ods_buffer_ready == NULL || h_ods_data_ready == NULL) {
         EnterCriticalSection(&cs_dbg);
-        fprintf(logfile, "Can't create DBWIN_BUFFER_READY event or DBWIN_DATA_READY event.\n");
+        fwprintf(logfile, L"Can't create DBWIN_BUFFER_READY event or DBWIN_DATA_READY event.\n");
         LeaveCriticalSection(&cs_dbg);
         goto cleanup;
     }
@@ -280,7 +334,7 @@ static unsigned __stdcall ods_collector(void * param)
     h_ods_mmap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, 4096, L"DBWIN_BUFFER");
     if (h_ods_mmap == NULL) {
         EnterCriticalSection(&cs_dbg);
-        fprintf(logfile, "Can't create memory mapped file DBWIN_BUFFER.  GLE=%d\n", GetLastError());
+        fwprintf(logfile, L"Can't create memory mapped file DBWIN_BUFFER.  GLE=%d\n", GetLastError());
         LeaveCriticalSection(&cs_dbg);
         goto cleanup;
     }
@@ -288,7 +342,7 @@ static unsigned __stdcall ods_collector(void * param)
     dbg = MapViewOfFile(h_ods_mmap, FILE_MAP_READ, 0, 0, 4096);
     if (dbg == NULL) {
         EnterCriticalSection(&cs_dbg);
-        fprintf(logfile, "Can't map view of debug shared memory mapping GLE=%d\n", GetLastError());
+        fwprintf(logfile, L"Can't map view of debug shared memory mapping GLE=%d\n", GetLastError());
         LeaveCriticalSection(&cs_dbg);
         goto cleanup;
     }
@@ -303,19 +357,23 @@ static unsigned __stdcall ods_collector(void * param)
         o = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
 
         if (o == WAIT_OBJECT_0) {
-            DWORD thread_id = *((DWORD *) dbg);
+            DWORD proc_id = *((DWORD *) dbg);
             char *text = (char *)(&((DWORD *) dbg)[1]);
             size_t len;
+            SYSTEMTIME systime;
 
-            if (thread_id != dw_proc_id)
+            if (proc_id != dw_proc_id)
                 continue;       /* We are only listening for our own
                                    debug messages for now. */
 
+            GetSystemTime(&systime);
+
             EnterCriticalSection(&cs_dbg);
-            fprintf(logfile, "[%d]DBG %.4091s", thread_id, text);
+            fwprint_systime(logfile, &systime, FALSE);
+            fwprintf(logfile, L"[DBG] %.4091hs", text);
             if (FAILED(StringCchLengthA(text, 4096 - sizeof(DWORD), &len)) ||
                 len == 0 || text[len - 1] != '\n')
-                fprintf(logfile, "\n");
+                fwprintf(logfile, L"\n");
             fflush(logfile);
             LeaveCriticalSection(&cs_dbg);
         } else if (o == WAIT_OBJECT_0 + 1) {
