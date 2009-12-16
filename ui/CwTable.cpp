@@ -398,6 +398,15 @@ namespace nim
             identity.GetAttribInt32(KCDB_ATTR_N_CREDS) > 0;
     }
 
+    khm_boolean KHMCALLBACK FilterByViable(const Identity& identity, void * param)
+    {
+        khm_int32 flags = identity.GetFlags();
+
+        return (!(flags & KCDB_IDENT_FLAG_EMPTY) ||
+                (flags & KCDB_IDENT_FLAG_CONFIG) ||
+                (flags & KCDB_IDENT_FLAG_DEFAULT));
+    }
+
     int
     CwTable::InsertDerivedIdentities(CwOutlineBase * o, Identity * id)
     {
@@ -407,6 +416,7 @@ namespace nim
         FilterByParentData d;
         d.parent = id;
         e.Filter(FilterByParent, &d);
+        e.Filter(FilterByViable, NULL);
         e.Sort(IdentityNameComparator);
 
         for (; !e.AtEnd(); ++e) {
@@ -465,6 +475,7 @@ namespace nim
                 columns[0]->group) {
 
                 Identity::Enumeration e = Identity::Enum(0,0);
+                e.Filter(FilterByViable, NULL);
                 if (!view_all_idents)
                     e.Filter(FilterByAlwaysVisible, NULL);
                 e.Sort(IdentityNameComparator);
@@ -681,6 +692,11 @@ namespace nim
             else
                 OutputDebugString(L"KCDB_IDENT <KCDB_OP_MODIFY>\n");
 #endif
+            UpdateOutline();
+            Invalidate();
+            break;
+
+        case KCDB_OP_DELCONFIG:
             UpdateOutline();
             Invalidate();
             break;
