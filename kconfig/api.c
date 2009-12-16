@@ -256,7 +256,6 @@ khcint_handle_dup(kconf_handle * o)
     return r;
 }
 
-#ifdef USE_TRY_FREE
 /* called with cs_conf_global */
 void
 khcint_try_free_space(kconf_conf_space * s)
@@ -276,7 +275,6 @@ khcint_try_free_space(kconf_conf_space * s)
             khcint_space_release(p);
     }
 }
-#endif
 
 /* obtains cs_conf_global */
 void 
@@ -295,17 +293,14 @@ khcint_space_release(kconf_conf_space * s)
 
     l = InterlockedDecrement(&s->refcount);
     if (l == 0) {
-#ifdef USE_TRY_FREE
         /* even if the refcount is zero, we shouldn't free a
            configuration space just yet since that doesn't play well
            with the configuration space enumeration mechanism which
            expects the spaces to dangle around if there is a
            corresponding registry key or schema. */
 
-        /* TODO: if there are no providers, then its safe to remove
-           this */
-        khcint_try_free_space(s);
-#endif
+        if (!khc_provider(s, user) && !khc_provider(s, machine) && !khc_provider(s, schema))
+            khcint_try_free_space(s);
     }
     assert(l >= 0);
 
@@ -1499,6 +1494,8 @@ khc_enum_subspaces(khm_handle conf,
         (prev != NULL && !khc_is_handle(prev)))
         return KHM_ERROR_INVALID_PARAM;
 
+    *next = NULL;
+
     EnterCriticalSection(&cs_conf_global);
 
     s = khc_space_from_handle(conf);
@@ -1519,18 +1516,21 @@ khc_enum_subspaces(khm_handle conf,
         else
             c = NULL;
     }
+
+    while (c && *next == NULL) {
+        *next = khcint_handle_from_space(c, khc_handle_flags(conf));
+        if (*next == NULL) {
+            c = LNEXT(c);
+        }
+    }
     LeaveCriticalSection(&cs_conf_global);
 
-    if(prev != NULL)
+    if(prev != NULL) {
         khc_close_space(prev);
-
-    if(c) {
-        *next = khcint_handle_from_space(c, khc_handle_flags(conf));
-        rv = KHM_ERROR_SUCCESS;
-    } else {
-        *next = NULL;
-        rv = KHM_ERROR_NOT_FOUND;
+        prev = NULL;
     }
+
+    rv = ((*next != NULL)? KHM_ERROR_SUCCESS : KHM_ERROR_NOT_FOUND);
 
     return rv;
 }
