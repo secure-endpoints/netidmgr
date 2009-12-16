@@ -100,7 +100,7 @@ namespace nim {
 
         virtual LRESULT OnSync() { return 0; }
 
-        virtual BOOL OnSetCursor(HWND hwndCursor, UINT codeHitTest, UINT msg) { return FALSE; }
+        virtual BOOL OnSetCursor(HWND hwndCursor, UINT codeHitTest, UINT msg);
 
 #ifdef KMQ_WM_DISPATCH
         virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype, khm_ui_4 uparam,

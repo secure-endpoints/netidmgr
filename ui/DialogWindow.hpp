@@ -108,6 +108,8 @@ namespace nim {
 
         virtual LRESULT OnHelp(HELPINFO * info) { DoDefault(); return 0; }
 
+        virtual BOOL OnSetCursor(HWND hwndCursor, UINT codeHitTest, UINT msg) { return FALSE; }
+
 #ifdef KHUI_WM_NC_NOTIFY
     public:
         virtual void OnDeriveFromPrivCred(khui_collect_privileged_creds_data * pcd) { }

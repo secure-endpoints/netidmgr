@@ -135,6 +135,11 @@ namespace nim {
 	return 0;
     }
 
+    BOOL ControlWindow::OnSetCursor(HWND hwndCursor, UINT codeHitTest, UINT msg)
+    {
+        return FORWARD_WM_SETCURSOR(hwnd, hwndCursor, codeHitTest, msg, DefWindowProc);
+    }
+
     UINT ControlWindow::HandleGetDlgCode(HWND hwnd, LPMSG pMsg)
     {
 	return OnGetDlgCode(pMsg);
