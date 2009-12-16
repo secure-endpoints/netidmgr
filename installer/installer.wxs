@@ -441,9 +441,9 @@
                           Directory="dirShortcut"
                           LongName="Network Identity Manager.lnk"
                           Name="netidmgr.lnk"
-                          Target="[dirbin]netidmgr.exe"
+                          Target="[APPDIR]netidmgr.exe"
                           Show="minimized"
-                          WorkingDirectory="dirbin"
+                          WorkingDirectory="APPDIR"
                           />
                 <Condition>VersionNT &gt; 500</Condition>
               </Component>
@@ -475,8 +475,8 @@
                           Directory="dirShortcut"
                           LongName="Network Identity Manager Documentation.lnk"
                           Name="netidchm.lnk"
-                          Target="[dirbin]netidmgr.chm"
-                          WorkingDirectory="dirbin"
+                          Target="[APPDIR]netidmgr.chm"
+                          WorkingDirectory="APPDIR"
                           />
               </Component>
 
@@ -516,9 +516,9 @@
                           Directory="dirShortcut"
                           LongName="Network Identity Manager.lnk"
                           Name="netidmgr.lnk"
-                          Target="[dirbin]netidmgr.exe"
+                          Target="[APPDIR]netidmgr.exe"
                           Show="minimized"
-                          WorkingDirectory="dirbin"
+                          WorkingDirectory="APPDIR"
                           />
 
                 <Condition>VersionNT &lt;= 500</Condition>
@@ -560,7 +560,7 @@
                           Directory="StartupFolder"
                           LongName="Network Identity Manager.lnk"
                           Name="netidmgr.lnk"
-                          Target="[dirbin]netidmgr.exe"
+                          Target="[APPDIR]netidmgr.exe"
                           Show="minimized"
                           />
               </Component>
