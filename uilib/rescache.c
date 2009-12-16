@@ -33,6 +33,8 @@
 #include<assert.h>
 #include<strsafe.h>
 
+extern HWND khui_hwnd_main;
+
 CRITICAL_SECTION cs_res;
 
 typedef struct tag_cached_resource {
@@ -371,7 +373,6 @@ khui_create_ilist(int cx, int cy, int n, int ng, int opt) {
     il->n = n;
     il->ng = ng;
     il->nused = 0;
-    hdc = GetDC(NULL);
     head.bV5Size = sizeof(head);
     head.bV5Width = cx * n;
     head.bV5Height = cy;
@@ -389,7 +390,9 @@ khui_create_ilist(int cx, int cy, int n, int ng, int opt) {
     head.bV5ProfileData = 0;
     head.bV5ProfileSize = 0;
     head.bV5Reserved = 0;
+    hdc = GetDC(khui_hwnd_main);
     il->img = CreateDIBitmap(hdc, (BITMAPINFOHEADER *) &head, 0, NULL, NULL, DIB_RGB_COLORS);
+    ReleaseDC(khui_hwnd_main, hdc);
     il->mask = CreateBitmap(cx * n, cy, 1, 1, NULL);
     il->idlist = PMALLOC(sizeof(int) * n);
 
@@ -440,11 +443,11 @@ khui_ilist_add_masked(khui_ilist * il, HBITMAP hbm, COLORREF cbkg) {
     int sx, i;
     int x,y;
 
-    dcr = GetDC(NULL);
+    dcr = GetDC(khui_hwnd_main);
     dci = CreateCompatibleDC(dcr);
     dct = CreateCompatibleDC(dcr);
     dcb = CreateCompatibleDC(dcr);
-    ReleaseDC(NULL,dcr);
+    ReleaseDC(khui_hwnd_main,dcr);
 
     i = il->nused++;
     il->idlist[i] = -1;
