@@ -896,6 +896,17 @@ khm_get_identity_config_action(khm_handle ident) {
         return 0;
 }
 
+static khm_boolean KHMCALLBACK filter_for_viable_identities(khm_handle h,
+                                                            void * v)
+{
+    khm_int32 flags = 0;
+
+    return (KHM_SUCCEEDED(kcdb_identity_get_flags(h, &flags)) &&
+            (!(flags & KCDB_IDENT_FLAG_EMPTY) ||
+             (flags & KCDB_IDENT_FLAG_CONFIG) ||
+             (flags & KCDB_IDENT_FLAG_DEFAULT)));
+}
+
 void
 khm_refresh_identity_menus(void) {
     khui_menu_def * renew_def = NULL;
@@ -933,6 +944,11 @@ khm_refresh_identity_menus(void) {
                                             KCDB_IDENT_FLAG_ACTIVE,
                                             &id_enum, &n_idents)))
         n_idents = 0;
+
+    if (n_idents > 0) {
+        kcdb_enum_filter(id_enum, filter_for_viable_identities, NULL);
+        kcdb_enum_get_size(id_enum, &n_idents);
+    }
 
     renew_def = khui_find_menu(KHUI_MENU_RENEW_CRED);
     dest_def = khui_find_menu(KHUI_MENU_DESTROY_CRED);
