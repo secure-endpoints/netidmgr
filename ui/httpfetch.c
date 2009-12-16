@@ -72,7 +72,7 @@ struct content_type_to_extension {
 
 #define MAX_ICON_SIZE (128*1024)
 
-#define USER_AGENT L"Network Identity Manager (K5)"
+#define USER_AGENT L"Network Identity Manager"
 
 static khm_int32
 get_http_resource(const wchar_t * domain,
@@ -104,6 +104,22 @@ get_http_resource(const wchar_t * domain,
                                   mimetypes, WINHTTP_FLAG_ESCAPE_PERCENT);
 
     if (hRequest == NULL) goto done;
+
+    {
+        DWORD opt;
+
+        opt = WINHTTP_DISABLE_AUTHENTICATION;
+        if (!WinHttpSetOption(hRequest, WINHTTP_OPTION_DISABLE_FEATURE, &opt, sizeof(opt)))
+            goto done;
+
+        opt = WINHTTP_DISABLE_COOKIES;
+        if (!WinHttpSetOption(hRequest, WINHTTP_OPTION_DISABLE_FEATURE, &opt, sizeof(opt)))
+            goto done;
+
+        opt = WINHTTP_DISABLE_KEEP_ALIVE;
+        if (!WinHttpSetOption(hRequest, WINHTTP_OPTION_DISABLE_FEATURE, &opt, sizeof(opt)))
+            goto done;
+    }
 
     rv = KHM_ERROR_NOT_FOUND;
 
