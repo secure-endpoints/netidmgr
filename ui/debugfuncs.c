@@ -81,7 +81,7 @@ BOOL log_started = FALSE;
   timestamp [context-ID] End
 
   timestamp [DBG] debug string
-  */
+*/
 
 static wchar_t *
 severity_string(kherr_severity severity) {
