@@ -99,6 +99,14 @@ namespace nim {
         return FALSE;
     }
 
+    LRESULT IconSelectDialog::OnNotify(int id, NMHDR * pnmh)
+    {
+        if (pnmh->idFrom == IDC_PRIVACY_ISSUES && pnmh->code == NM_CLICK) {
+            khm_html_help(hwnd, L"::/html/wnd_icons_privacy.htm", HH_DISPLAY_TOPIC, 0);
+        }
+        return 0;
+    }
+
     void IconSelectDialog::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
     {
         if (codeNotify == EN_CHANGE && id == IDC_EMAIL) {
@@ -320,6 +328,12 @@ namespace nim {
         kmq_post_message(KMSG_KCDB, KMSG_KCDB_IDENT, KCDB_OP_RESUPDATE, m_identity.GetHandle());
 
         EndDialog(0);
+    }
+
+    LRESULT IconSelectDialog::OnHelp(HELPINFO * info)
+    {
+        DoDefault();
+        return 0;
     }
 
     extern "C" khm_int32

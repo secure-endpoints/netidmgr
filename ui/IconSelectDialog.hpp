@@ -64,6 +64,9 @@ namespace nim {
 
         virtual void OnDestroy(void);
 
+        virtual LRESULT OnHelp(HELPINFO * info);
+
+        virtual LRESULT OnNotify(int id, NMHDR * pnmh);
     };
 
 }

@@ -1,0 +1,132 @@
+<html>
+<head>
+  <title>Network Identity Manager - Privacy Issues with Fetching Remote Resources</title>
+  <meta name="description" content="Privacy Issues with Fetching Remote Resources">
+  <link rel="stylesheet" type="text/css" href="nidmgr.css">
+  <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+    <param name="Keyword" value="Privacy">
+    <param name="Keyword" value="Remote resources">
+    <param name="Keyword" value="Gravatar">
+    <param name="Keyword" value="HTTP">
+  </object>
+</head>
+
+<body>
+
+<h1>Privacy Issues with Fetching Remote Resources</h1>
+
+<p>The identity icon selection dialog presents you with options for
+using a custom image for an identity, including images from remote
+sources.
+</p>
+
+<p>Network Identity Manager
+uses <a href="http://msdn.microsoft.com/en-us/library/aa384273(VS.85).aspx">WinHTTP</a>
+to fetch resources via HTTP with these settings:
+</p>
+
+<ul>
+  <li>The user-agent string is (currently) set
+  to <span class="pre">Network Identity Manager</span>.</li>
+  <li>Cookies are disabled.</li>
+  <li>Automatic authentication is disabled.</li>
+  <li>SSL is disabled.  Only plain HTTP connections are allowed.</li>
+</ul>
+
+<p>These settings are intended to minimize the set of features that
+are used and to avoid unexpected exposure of information.  Fetching a
+remote resource through Network Identity Manager is similar to
+fetching a resource through any web browser and has similar associated
+risks.</p>
+
+<p>Details about specifc methods that are available for specifying
+remote resources are given below:</p>
+
+<ul>
+  <li><a href="#url">Fetching an image from a URL</a></li>
+  <li><a href="#favicon">Fetching a favicon from a domain</a></li>
+  <li><a href="#gravatar">Fetching an icon from Gravatar.com</a></li>
+</ul>
+
+<a name="url"></a>
+<h3>Fetching an image from a URL</h3>
+
+<p>When invoked, Network Identity Manager will attempt to fetch an
+image file from the specified URL using an HTTP GET request.</p>
+
+<a name="favicon"></a>
+<h3>Fetching a Favicon from a domain</h3>
+
+<p>When invoked, Network Identity Manager will attempt to fetch the
+Favicon associated with the given domain or any parent domains.
+First, the Favicon for the given domain will be queried.  If a Favicon
+is not found, then the Favicon for the <span class="pre">www</span>
+subdomain of the domain will be queried.  If an icon is still not
+found, then the parent domains will be queried in the same manner
+until there is only one components left in the domain name.
+</p>
+
+<p>For example: if the Favicon
+for <class span="pre">FOO.BAR.EXAMPLE.COM</span> is being requested
+the following sequence of events will occur.</p>
+
+<ol>
+  <li>An HTTP GET request for <span class="pre">/favicon.ico</span>
+    will be issued to host <span class="pre">FOO.BAR.EXAMPLE.COM</span>.</li>
+
+  <li>Failing which, an HTTP GET request
+    for <span class="pre">/favicon.ico</span> will be issued to
+    host <span class="pre">WWW.FOO.BAR.EXAMPLE.COM</span>.</li>
+
+  <li>Failing which, an HTTP GET request
+    for <span class="pre">/favicon.ico</span> will be issued to
+    host <span class="pre">BAR.EXAMPLE.COM</span>.</li>
+
+  <li>Failing which, an HTTP GET request
+    for <span class="pre">/favicon.ico</span> will be issued to
+    host <span class="pre">WWW.BAR.EXAMPLE.COM</span>.</li>
+
+  <li>Failing which, an HTTP GET request
+    for <span class="pre">/favicon.ico</span> will be issued to
+    host <span class="pre">EXAMPLE.COM</span>.</li>
+
+  <li>Failing which, an HTTP GET request
+    for <span class="pre">/favicon.ico</span> will be issued to
+    host <span class="pre">WWW.EXAMPLE.COM</span>.</li>
+</ol>
+
+<p>This method is officially discouraged for fetching Favicons by the
+W3C <a href="http://www.w3.org/2005/10/howto-favicon">as seen
+here</a>.  However it is used as an interim measure until full support
+for Favicons is implemented.</p>
+
+<a name="gravatar"></a>
+<h3>Fetching an icon from Gravatar.com</h3>
+
+<p>Please visit <a href="http://gravatar.com">Gravatar.com</a> for
+details about the Gravatar service and
+their <a href="http://automattic.com/privacy/">Privacy Policy</a> and
+the <a href="http://en.gravatar.com/site/terms-of-service">Terms of
+Service</a>.  The information in this document only applies to how
+Network Identity Manager uses the Gravatar service.</p>
+
+<p>It is assumed that the images downloaded by Network Identity
+Manager using Gravatar.com are only used by the application for the
+purpose of identifying one or more identities.</p>
+
+<p>When an email address is specified for the purpose of fetching the
+image associated with it on Gravatar.com, Network Identity Manager
+assembles a URL in accordance
+with <a href="http://en.gravatar.com/site/implement/url">the
+documentation</a> and fetches 64x64 pixel Jpeg image.  If there is no
+image associated with that email address, then the operation will
+fail.  No default or autogenerated images will be used in thise case.
+Network Identity Manager does not attempt to validate the email
+address.</p>
+
+<p>Network Identity Manager, MIT nor Secure-Endpoints are associated
+with Gravatar.com or Automattic.com.</p>
+
+</body>
+
+</html>

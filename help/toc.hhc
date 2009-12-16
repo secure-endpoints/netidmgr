@@ -169,6 +169,11 @@
 			<param name="Name" value="Main Window">
 			<param name="Local" value="html\wnd_main.htm">
 			</OBJECT>
+
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Privacy Issues with Icon Selection">
+			<param name="Local" value="html\wnd_icons_privacy.htm">
+			</OBJECT>
 	</UL>
 </UL>
 </BODY></HTML>
