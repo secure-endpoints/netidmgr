@@ -167,6 +167,18 @@ kcdb_enum_sort(kcdb_enumeration e,
 }
 
 KHMEXP khm_int32 KHMAPI
+kcdb_enum_get_size(kcdb_enumeration e,
+                   khm_size * psz)
+{
+    if (!kcdb_is_enum(e))
+        return KHM_ERROR_INVALID_PARAM;
+
+    *psz = e->n;
+
+    return KHM_ERROR_SUCCESS;
+}
+
+KHMEXP khm_int32 KHMAPI
 kcdb_enum_filter(kcdb_enumeration e,
                  kcdb_filter_func f,
                  void * vparam)

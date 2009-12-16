@@ -519,6 +519,14 @@ kcdb_enum_reset(kcdb_enumeration e);
 KHMEXP khm_int32 KHMAPI
 kcdb_enum_end(kcdb_enumeration e);
 
+/*! \brief Get the size of an enumeration
+
+  Returns the number of items contained in the enumeration.
+ */
+KHMEXP khm_int32 KHMAPI
+kcdb_enum_get_size(kcdb_enumeration e,
+                   khm_size * psz);
+
 /*! \brief Generic comparison function
 
   Used with kcdb_enum_sort().  The two handles \a h1 and \a h2 will be
