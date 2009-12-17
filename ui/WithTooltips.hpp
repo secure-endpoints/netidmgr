@@ -59,7 +59,8 @@ namespace nim {
             SetWindowPos(hwnd_tooltip, HWND_TOPMOST, 0, 0,
                          0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
-            TOOLINFO ti = { sizeof(TOOLINFO), TTF_ABSOLUTE | TTF_TRACK, hwnd, TOOL_ID, {0,0,0,0},
+            TOOLINFO ti = { sizeof(TOOLINFO), TTF_ABSOLUTE | TTF_TRACK | TTF_TRANSPARENT,
+                            hwnd, TOOL_ID, {0,0,0,0},
                             khm_hInstance, LPSTR_TEXTCALLBACK, 0 };
             ::GetClientRect(hwnd, &ti.rect);
 
