@@ -137,6 +137,27 @@ namespace nim {
         return allow_persist;
     }
 
+    khui_new_creds_privint_panel * NewCredPanels::GetPrivintPanel(HWND parent)
+    {
+        khui_new_creds_privint_panel * p;
+        
+        p = khui_cw_get_current_privint_panel(nc);
+
+        if (p == NULL) {
+            khui_cw_get_next_privint(nc, &p);
+            khui_cw_set_current_privint_panel(nc, p);
+        }
+
+        /* Fill in some blanks */
+        if (p && p->hwnd == NULL && p->use_custom)
+            p->hwnd = khm_create_custom_prompter_dialog(nc, parent, p);
+
+        if (p && p->caption[0] == L'\0')
+            LoadStringResource(p->caption, IDS_NC_IDENTITY);
+
+        return p;
+    }
+
     HWND NewCredPanels::UpdateLayout()
     {
         HWND hw_r_p = NULL;
@@ -145,7 +166,7 @@ namespace nim {
         RECT r_persist = {0,0,0,0};
         bool allow_persist = false;
         khm_handle  parent_id = NULL;
-        khui_new_creds_privint_panel * p;
+        khui_new_creds_privint_panel * p = NULL;
         DialogWindow * dw;
         const NewCredPage page = NewCredWizard::FromNC(nc)->page;
 
@@ -173,20 +194,6 @@ namespace nim {
 
         allow_persist = IsSavePasswordAllowed();
 
-        p = khui_cw_get_current_privint_panel(nc);
-
-        if (p == NULL) {
-            khui_cw_get_next_privint(nc, &p);
-            khui_cw_set_current_privint_panel(nc, p);
-        }
-
-        /* Fill in some blanks */
-        if (p && p->hwnd == NULL && p->use_custom)
-            p->hwnd = khm_create_custom_prompter_dialog(nc, dw->hwnd, p);
-
-        if (p && p->caption[0] == L'\0')
-            LoadStringResource(p->caption, IDS_NC_IDENTITY);
-
         if (page == NC_PAGE_CREDOPT_ADV) {
             int panel_idx;
 
@@ -204,6 +211,7 @@ namespace nim {
             khui_cw_lock_nc(nc);
 
             if (panel_idx == NC_PRIVINT_PANEL) {
+                p = GetPrivintPanel(dw->hwnd);
                 hw_target = (p)? p->hwnd : NULL;
             } else {
                 /* We have to show the credentials options panel for some
@@ -244,6 +252,7 @@ namespace nim {
             }
 
             if (panel_idx == NC_PRIVINT_PANEL) {
+                p = GetPrivintPanel(dw->hwnd);
                 hw_target = (p)? p->hwnd : NULL;
                 if (p->caption)
                     m_cfgwiz.SetItemText(IDC_PANELNAME, p->caption);
@@ -265,6 +274,7 @@ namespace nim {
             idx_current = panel_idx;
 
         } else {
+            p = GetPrivintPanel(dw->hwnd);
             hw_target = (p)? p->hwnd : NULL;
             if (hw_target != hwnd_current && hwnd_current != NULL)
                 SetWindowPos(hwnd_current, NULL, 0, 0, 0, 0, SWP_HIDEONLY);

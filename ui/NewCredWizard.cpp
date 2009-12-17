@@ -755,7 +755,6 @@ namespace nim {
                         p = khui_cw_get_current_privint_panel(nc);
                         if (p)
                             p = QPREV(p);
-                        khui_cw_set_current_privint_panel(nc, p);
                         if (p == NULL) {
                             int i;
 
@@ -765,6 +764,8 @@ namespace nim {
 
                             i--;
                             m_privint.idx_current = i;
+                        } else {
+                            khui_cw_set_current_privint_panel(nc, p);
                         }
                     } else {
                         if (idx > 0)

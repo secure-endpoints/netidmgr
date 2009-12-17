@@ -72,5 +72,7 @@ namespace nim {
         HWND UpdateLayout();
 
         bool IsSavePasswordAllowed();
+
+        khui_new_creds_privint_panel * GetPrivintPanel(HWND);
     };
 }
