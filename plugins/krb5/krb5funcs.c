@@ -1548,6 +1548,8 @@ khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
     char scc_src[KRB5_MAXCCH_CCNAME];
     int t;
 
+    _reportf(L"Trying to copy CC %s to %s", wscc_src, wscc_dest);
+
     t = UnicodeStrToAnsi(scc_dest, sizeof(scc_dest), wscc_dest);
     if (t == 0)
         return KHM_ERROR_TOO_LONG;
@@ -1599,6 +1601,8 @@ khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
     if (free_ctx && ctx)
         pkrb5_free_context(ctx);
 
+    _reportf(L"Code = %d", code);
+
     return code;
 }
 
@@ -1609,6 +1613,8 @@ khm_krb5_sync_default_id_with_mslsa(void)
     khm_handle def_id = NULL;
     wchar_t ccname[KRB5_MAXCCH_CCNAME];
     khm_size cb;
+
+    _reportf(L"Attempting to synchronize default identity into MSLSA:");
 
     if (k5_identpro == NULL ||
         KHM_FAILED(kcdb_identity_get_default_ex(k5_identpro, &def_id)))
@@ -1624,7 +1630,7 @@ khm_krb5_sync_default_id_with_mslsa(void)
         goto _cleanup;
     }
 
-    rv = khm_krb5_copy_ccache_by_name(NULL, ccname, L"MSLSA:");
+    rv = khm_krb5_copy_ccache_by_name(NULL, L"MSLSA:", ccname);
 
  _cleanup:
     if (def_id)
