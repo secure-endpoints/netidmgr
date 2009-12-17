@@ -1158,8 +1158,14 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
                 break;
             }
 
-            if(!(d->flags & KHUI_NC_RESPONSE_COMPLETED)) {
-                _reportf(L"Credtype %s(%d) still waiting for completion of %s(%d)",
+            if (d->flags & KHUI_NCT_FLAG_DISABLED) {
+                _reportf(L"Credtype %s(%d) waiting for disabled credtype %s(%d). Ignoring dependency.",
+                         nc->types[i].display_name, t->type, d->name, d->type);
+                continue;
+            }
+
+            if (!(d->flags & KHUI_NC_RESPONSE_COMPLETED)) {
+                _reportf(L"Credtype %s(%d) waiting for completion of %s(%d)",
                          nc->types[i].display_name, t->type, d->name, d->type);
                 break;
             }
