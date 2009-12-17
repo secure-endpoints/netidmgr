@@ -114,7 +114,6 @@ __inline int kcdb_is_active_identity(const void * v) {
     if (((const kcdb_identity *)v)->flags & KCDB_IDENT_FLAG_ACTIVE)
         return 1;
 
-    assert(0);
     return 0;
 }
 
