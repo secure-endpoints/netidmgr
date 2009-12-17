@@ -258,9 +258,6 @@ namespace nim {
 
     void DisplayContainer::OnPaint(Graphics& g, const Rect& clip)
     {
-#ifdef DEBUG
-        kherr_debug_printf(L"OnPaint for %dx%d region at (%d,%d)\n", clip.Width, clip.Height, clip.X, clip.Y);
-#endif
         Rect b;
 
         if (recalc_extents)
@@ -750,10 +747,6 @@ namespace nim {
     void DisplayContainer::SetTimer(TimerQueueClient * cb, DWORD milliseconds)
     {
         UINT_PTR timer_id;
-#ifdef DEBUG
-        kherr_debug_printf(L"SetTimer(%S, %d ms)\n",
-                           typeid(*cb).name(), milliseconds);
-#endif
         m_killed_timers.remove_if( IsKilledTimerEqualTo(cb) );
 
         timer_id = ::SetTimer(hwnd, (UINT_PTR) cb, milliseconds, NULL);
