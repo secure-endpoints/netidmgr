@@ -1128,6 +1128,8 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
     BOOL cont = FALSE;
     khui_new_creds_by_type *t, *d;
 
+    _reportf(L"Preparing to dispatch batch of KMSG_CRED_PROCESS messages");
+
     /* at each level, we dispatch a wave of notifications to plug-ins
        who's dependencies are all satisfied */
     EnterCriticalSection(&nc->cs);
@@ -1140,21 +1142,34 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
 
         if (t->flags & (KHUI_NCT_FLAG_PROCESSED |
                         KHUI_NC_RESPONSE_COMPLETED |
-                        KHUI_NCT_FLAG_DISABLED))
+                        KHUI_NCT_FLAG_DISABLED)) {
+            _reportf(L"Skipping credtype %s(%d).  Marked as %s",
+                     nc->types[i].display_name, t->type,
+                     ((t->flags & KHUI_NCT_FLAG_DISABLED)? L"disabled" :
+                      (t->flags & KHUI_NCT_FLAG_PROCESSED)? L"processed" :
+                      (t->flags & KHUI_NC_RESPONSE_COMPLETED)? L"completed": L"(unknown)"));
             continue;
+        }
 
         for(j=0; j<t->n_type_deps; j++) {
-            if(KHM_FAILED(khui_cw_find_type(nc, t->type_deps[j], &d)))
+            if(KHM_FAILED(khui_cw_find_type(nc, t->type_deps[j], &d))) {
+                _reportf(L"Credtype %s(%d) has invalid dependency.  Depends on type %d, that is not participating in the current operation.",
+                         nc->types[i].display_name, t->type, t->type_deps[j]);
                 break;
+            }
 
-            if(!(d->flags & KHUI_NC_RESPONSE_COMPLETED))
+            if(!(d->flags & KHUI_NC_RESPONSE_COMPLETED)) {
+                _reportf(L"Credtype %s(%d) still waiting for completion of %s(%d)",
+                         nc->types[i].display_name, t->type, d->name, d->type);
                 break;
+            }
         }
 
         if (j < t->n_type_deps) /* there are unmet dependencies */
             continue;
 
         /* all dependencies for this type have been met. */
+        _reportf(L"Queuing credtype %s(%d) for processing", nc->types[i].display_name, t->type);
         subs[n_subs++] = kcdb_credtype_get_sub(t->type);
         t->flags |= KHUI_NCT_FLAG_PROCESSED;
         cont = TRUE;
@@ -1190,6 +1205,7 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
 
         LeaveCriticalSection(&nc->cs);
     } else {
+        _reportf(L"Done with processing");
         EnterCriticalSection(&nc->cs);
         assert(nc->last_dispatch == NULL);
         nc->dispatch_state = KHUI_NC_DISPATCH_STATE_NONE;
