@@ -164,6 +164,7 @@ namespace nim {
 
         LRESULT OnHeaderTrack(NMHEADER * pnmh);
 
+        void SetHeaderPosition(void);
 
     public:                     // Overridables
         virtual void OnColumnContextMenu(int idx, const Point& p) {}

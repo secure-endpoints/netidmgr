@@ -126,6 +126,8 @@ namespace nim {
     void DisplayContainer::ScrollBy(const Point& delta)
     {
         ScrollWindowEx(hwnd, -delta.X, -delta.Y, NULL, NULL, NULL, NULL, SW_INVALIDATE);
+        if (delta.X != 0)
+            SetHeaderPosition();
     }
 
     void DisplayContainer::OnHScroll(UINT code, int pos)
@@ -164,7 +166,7 @@ namespace nim {
 
         case SB_THUMBTRACK:
         case SB_THUMBPOSITION:
-            GetScrollInfo(hwnd, SB_VERT, &si);
+            GetScrollInfo(hwnd, SB_HORZ, &si);
             scroll.X = si.nTrackPos;
             break;
 
@@ -362,7 +364,7 @@ namespace nim {
             header_height = 0;
     }
 
-    void DisplayContainer::UpdateLayoutPost(Graphics& g, const Rect& layout)
+    void DisplayContainer::SetHeaderPosition(void)
     {
         if (show_header && hwnd_header != NULL) {
             RECT rc_client;
@@ -379,6 +381,11 @@ namespace nim {
 
             SetWindowPos(hwnd_header, wp.hwndInsertAfter, wp.x, wp.y, wp.cx, wp.cy, wp.flags | SWP_SHOWWINDOW);
         }
+    }
+
+    void DisplayContainer::UpdateLayoutPost(Graphics& g, const Rect& layout)
+    {
+        SetHeaderPosition();
     }
 
     void DisplayContainer::OnPosChanged(LPWINDOWPOS lp)
