@@ -813,6 +813,10 @@ resolve_string(kherr_event * e,
                               &vl);
 
         if ((e->flags & mask) == free_if) {
+            assert(FALSE);
+            /* We can't safely free *str here since other threads may
+               have references to it.  Threads access event objects
+               without locks. */
             PFREE((void *) *str);
         }
 
@@ -834,11 +838,15 @@ resolve_string(kherr_event * e,
 
 }
 
+/* MUST be called with cs_error held. */
 void
 resolve_event_strings(kherr_event * e)
 {
     DWORD_PTR args[8];
     va_list vl = (va_list) args;
+
+    if ((e->flags & KHERR_RF_STR_RESOLVED) != 0)
+        return;
 
     va_args_from_event(vl, e, sizeof(args));
 
