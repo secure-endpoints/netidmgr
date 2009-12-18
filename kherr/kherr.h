@@ -167,16 +167,18 @@ typedef enum tag_kherr_suggestion kherr_suggestion;
 /*! \brief An event */
 typedef struct tag_kherr_event {
     khm_int32   magic;          /*!< Magic number.  Always set to
-                                  KHERR_EVENT_MAGIC */
+                                  KHERR_EVENT_MAGIC.  Invariant. */
     DWORD       thread_id;      /*!< The thread which reported this
-                                  event. */
+                                  event.  Invariant. */
     const wchar_t * short_desc; /*!< Short description or title
                                    (localized) */
     const wchar_t * facility;   /*!< Facility name of the reporter
-                                  (not localized) */
+                                  (not localized).  Constant if
+                                  non-zero. */
     const wchar_t * location;   /*!< Location.  Usually the function
 			          name or such of where the event
-			          occured (not localized) */
+			          occured (not localized).  Constant
+			          if non-zero.*/
     const wchar_t * long_desc;  /*!< A long description of what went
 			          wrong (localized, formatted) */
     const wchar_t * suggestion; /*!< A suggested way to fix it
@@ -185,33 +187,34 @@ typedef struct tag_kherr_event {
     kherr_severity   severity;  
                                 /*!< Severity level.  One of the
 				  severity levels listed in
-				  enumeration ::kherr_severity */
+				  enumeration ::kherr_severity.
+				  Invariant. */
     khm_int32   facility_id;    /*!< Left to the application to
-				  interpret */
+				  interpret. Invariant. */
     kherr_suggestion suggestion_id; 
                                 /*!< One of the suggestion ID's from
 				  the enumeration
-				  ::kherr_suggestion */
+				  ::kherr_suggestion. Invriant. */
 
     int         flags;          /*!< Flags. */
 
-    kherr_param p1;             /*!< Parameter 1 for formatting */
-    kherr_param p2;             /*!< Parameter 2 for formatting */
-    kherr_param p3;             /*!< Parameter 3 for formatting */
-    kherr_param p4;             /*!< Parameter 4 for formatting */
+    kherr_param p1;             /*!< Parameter 1 for formatting. Internal. */
+    kherr_param p2;             /*!< Parameter 2 for formatting. Internal. */
+    kherr_param p3;             /*!< Parameter 3 for formatting. Internal. */
+    kherr_param p4;             /*!< Parameter 4 for formatting. Internal. */
 
     DWORD       time_ticks;     /*!< Time at which event was reported
-                                  (as returned by GetTickCount(). */
+                                  (as returned by GetTickCount().  Invariant. */
     FILETIME    time_ft;        /*!< Time at which event was reported.
-                                  Current system time as FILETIME. */
+                                  Current system time as FILETIME.  Invariant. */
 
 #ifdef _WIN32
     HMODULE     h_module;       /*!< Handle to the module which should
                                   resolve any unresolved resources
-                                  references above.  */
+                                  references above. Internal. */
 #endif
 
-    LDCL(struct tag_kherr_event);
+    LDCL(struct tag_kherr_event); /*!< Internal. */
 } kherr_event;
 
 #define KHERR_EVENT_MAGIC 0x0423e84f

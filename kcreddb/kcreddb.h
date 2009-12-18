@@ -541,11 +541,10 @@ kcdb_enum_get_size(kcdb_enumeration e,
   - equal to 0 : If \a h1 should be considered equal to \a h2
 
   \note Although the function may return zero, in practice the
-  comparion function will not be called if \a h1 and \a h2 are handles
-  t othe same identity provider.
+    comparion function will not be called if \a h1 and \a h2 are
+    handles to the same identity provider.
 
-  \note Both \a h1 and \a h2 will be valid handles to
-  identity providers.
+  \note Both \a h1 and \a h2 will be valid handles.
 */
 typedef khm_int32 (KHMCALLBACK * kcdb_comp_func)(khm_handle h1,
                                                  khm_handle h2,
