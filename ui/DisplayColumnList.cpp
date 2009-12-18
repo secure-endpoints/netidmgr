@@ -33,13 +33,13 @@ namespace nim {
         for (DisplayColumnList::iterator column = begin();
              column != end(); column++) {
 
-            (*column)->CheckFlags();
-
             if (!(*column)->group)
                 do_grouping = false;
 
             if (!do_grouping && (*column)->group)
                 (*column)->group = false;
+
+            (*column)->CheckFlags();
         }
     }
 
@@ -108,7 +108,8 @@ namespace nim {
 
             (*i)->GetHDITEM(hdi);
             hdi.mask &= mask;
-            Header_SetItem(hwnd_header, hidx, &hdi);
+            if (hdi.mask != 0)
+                Header_SetItem(hwnd_header, hidx, &hdi);
             ord++;
         }
     }

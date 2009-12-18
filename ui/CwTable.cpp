@@ -370,13 +370,18 @@ namespace nim
     {
         std::wstring dn1 = i1.GetResourceString(KCDB_RES_DISPLAYNAME);
         std::wstring dn2 = i2.GetResourceString(KCDB_RES_DISPLAYNAME);
+        int factor = (*(reinterpret_cast<bool *>(param)) ? 1 : -1);
 
-        return CompareString(LOCALE_USER_DEFAULT,
-                             NORM_IGNORECASE | NORM_IGNORENONSPACE |
-                             NORM_IGNORESYMBOLS | NORM_IGNOREWIDTH |
-                             SORT_STRINGSORT,
-                             dn1.c_str(), (int) dn1.size(),
-                             dn2.c_str(), (int) dn2.size());
+        int cmp = CompareString(LOCALE_USER_DEFAULT,
+                                NORM_IGNORECASE | NORM_IGNORENONSPACE |
+                                NORM_IGNORESYMBOLS | NORM_IGNOREWIDTH |
+                                SORT_STRINGSORT,
+                                dn1.c_str(), (int) dn1.size(),
+                                dn2.c_str(), (int) dn2.size());
+        if (cmp == 0)
+            return factor * dn1.compare(dn2);
+        else
+            return factor * (cmp - 2);
     }
 
     struct FilterByParentData {
@@ -414,10 +419,12 @@ namespace nim
 
         Identity::Enumeration e = Identity::Enum(0,0);
         FilterByParentData d;
+        bool increasing = true;
+
         d.parent = id;
         e.Filter(FilterByParent, &d);
         e.Filter(FilterByViable, NULL);
-        e.Sort(IdentityNameComparator);
+        e.Sort(IdentityNameComparator, &increasing);
 
         for (; !e.AtEnd(); ++e) {
             int n_child_ids = 0;
@@ -473,12 +480,13 @@ namespace nim
             if (columns.size() > 0 &&
                 dynamic_cast<CwColumn *>(columns[0])->attr_id == KCDB_ATTR_ID_DISPLAY_NAME &&
                 columns[0]->group) {
+                bool increasing = columns[0]->sort_increasing;
 
                 Identity::Enumeration e = Identity::Enum(0,0);
                 e.Filter(FilterByViable, NULL);
                 if (!view_all_idents)
                     e.Filter(FilterByAlwaysVisible, NULL);
-                e.Sort(IdentityNameComparator);
+                e.Sort(IdentityNameComparator, &increasing);
 
                 for (; !e.AtEnd(); ++e) {
                     this->Insert(*e, columns, 0);
@@ -582,6 +590,7 @@ namespace nim
     {
         is_custom_view = true;
         columns_dirty = true;
+        UpdateCredentials();
         UpdateOutline();
         SaveView();
     }

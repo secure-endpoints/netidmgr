@@ -548,8 +548,9 @@ namespace nim {
         hdi.mask = HDI_LPARAM | HDI_WIDTH | HDI_ORDER;
         if (Header_GetItem(pnmh->hdr.hwndFrom, pnmh->iItem, &hdi) &&
             hdi.lParam != 0) {
-            DisplayColumn * col = reinterpret_cast<DisplayColumn *>(
-                reinterpret_cast<void *>(hdi.lParam));
+            DisplayColumn * col =
+                reinterpret_cast<DisplayColumn *>
+                (reinterpret_cast<void *>(hdi.lParam));
             assert(col != NULL);
             col->width = pnmh->pitem->cxy;
 
@@ -602,6 +603,8 @@ namespace nim {
         if (col->sort) {
             if (col->sort_increasing)
                 col->sort_increasing = false;
+            else if (col->group)
+                col->sort_increasing = true;
             else
                 col->sort = false;
         } else {
