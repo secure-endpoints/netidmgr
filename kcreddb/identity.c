@@ -912,6 +912,20 @@ kcdb_identity_get_identpro(khm_handle h_ident,
     return (*ph_identpro != NULL)? KHM_ERROR_SUCCESS : KHM_ERROR_NO_PROVIDER;
 }
 
+KHMEXP khm_boolean KHMAPI
+kcdb_identity_by_provider(khm_handle h_ident, const wchar_t * provider_name)
+{
+    kcdb_identity * id;
+
+    if (!kcdb_is_identity(h_ident) ||
+        provider_name == NULL)
+        return FALSE;
+
+    id = (kcdb_identity *) h_ident;
+
+    return !wcscmp(id->id_pro->name, provider_name);
+}
+
 #pragma warning(push)
 #pragma warning(disable: 4995)
 

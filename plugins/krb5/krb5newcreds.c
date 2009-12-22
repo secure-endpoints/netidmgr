@@ -1479,18 +1479,10 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
             khui_cw_get_primary_id(nc, &ident);
 
-            {
-                khm_handle idpro = NULL;
+            if (!kcdb_identity_by_provider(ident, L"Krb5Ident")) {
+                /* This is not an identity we want to deal with */
 
-                if (KHM_FAILED(kcdb_identity_get_identpro(ident, &idpro)) ||
-                    !kcdb_identpro_is_equal(idpro, k5_identpro)) {
-                    /* This is not an identity we want to deal with */
-
-                    foreign_identity = TRUE;
-                }
-
-                if (idpro)
-                    kcdb_identity_release(idpro);
+                foreign_identity = TRUE;
             }
 
             /* If we already have a k5_kinit_task object, we want to

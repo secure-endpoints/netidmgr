@@ -1365,6 +1365,15 @@ kcdb_identity_get_provider(khm_handle * sub);
 KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_identpro(khm_handle h_ident, khm_handle * h_identpro);
 
+/*! \brief Checks whether the given identity was provided by the named provider
+
+    Return TRUE if the provider of \a h_ident is \a provider_name.
+    FALSE otherwise.  If the identity is invalid, the return value is
+    FALSE.
+ */
+KHMEXP khm_boolean KHMAPI
+kcdb_identity_by_provider(khm_handle h_ident, const wchar_t * provider_name);
+
 /*! \brief Retrieve the identity provider credentials type
 
     This is the credentials type that the identity provider has

@@ -99,14 +99,12 @@ handle_khui_wm_nc_notify(HWND hwnd, WPARAM wParam, LPARAM lParam) {
         assert(h_idprov != NULL);
 
         {
-            khm_handle hprov = NULL;
             khm_handle ident = NULL;
 
             khui_cw_get_primary_id(d->nct.nc, &ident);
 
             if (ident &&
-                KHM_SUCCEEDED(kcdb_identity_get_identpro(ident, &hprov)) &&
-                hprov == h_idprov) {
+                kcdb_identity_by_provider(ident, IDPROV_NAMEW)) {
                 khui_cw_enable_type(d->nct.nc, credtype_id, TRUE);
 
                 khui_cw_notify_identity_state(d->nct.nc, NULL, L"",
@@ -118,8 +116,6 @@ handle_khui_wm_nc_notify(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 
             if (ident)
                 kcdb_identity_release(ident);
-            if (hprov)
-                kcdb_identpro_release(hprov);
         }
 
         break;

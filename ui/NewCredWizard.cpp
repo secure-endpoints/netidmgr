@@ -908,8 +908,6 @@ namespace nim {
     // NOT be called with nc locked.
     void NewCredWizard::NotifyNewIdentity(bool notify_ui)
     {
-        khm_handle  k5idpro = NULL;
-        khm_handle  idpro = NULL;
         khm_boolean default_off;
         khm_boolean isk5 = FALSE;
 
@@ -918,18 +916,14 @@ namespace nim {
            Kerberos v5 identity provider, then the default for all
            plug-ins is to be disabled and must be explicitly enabled. */
 
-        kcdb_identpro_find(L"Krb5Ident", &k5idpro);
-
         /* All the privileged interaction panels are assumed to no longer
            be valid */
         khui_cw_clear_all_privints(nc);
 
         khui_cw_lock_nc(nc);
 
-        if (k5idpro == NULL ||
-            nc->n_identities == 0 ||
-            KHM_FAILED(kcdb_identity_get_identpro(nc->identities[0], &idpro)) ||
-            !kcdb_identpro_is_equal(idpro, k5idpro))
+        if (nc->n_identities == 0 ||
+            !kcdb_identity_by_provider(nc->identities[0], L"Krb5Ident"))
 
             default_off = TRUE;
 
@@ -938,16 +932,6 @@ namespace nim {
             isk5 = TRUE;
             default_off = FALSE;
 
-        }
-
-        if (k5idpro) {
-            kcdb_identpro_release(k5idpro);
-            k5idpro = NULL;
-        }
-
-        if (idpro) {
-            kcdb_identpro_release(idpro);
-            idpro = NULL;
         }
 
         if (default_off) {
