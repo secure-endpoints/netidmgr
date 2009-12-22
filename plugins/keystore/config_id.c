@@ -376,11 +376,7 @@ config_id_dlgproc(HWND hwnd,
             if (d->cfg.ctx_node == d->cfg.ref_node) {
                 d->init_rv = KHM_ERROR_GENERAL;
             } else {
-                khm_handle prov = NULL;
-
-                kcdb_identity_get_identpro(d->ident, &prov);
-
-                if (prov == h_idprov) {
+                if (kcdb_identity_by_provider(d->ident, IDPROV_NAMEW)) {
                     d->child_panel = CreateDialogParam(hResModule,
                                                        MAKEINTRESOURCE(IDD_CONFIG_ID_KS),
                                                        hwnd,
@@ -397,9 +393,6 @@ config_id_dlgproc(HWND hwnd,
                 SetWindowPos(d->child_panel, NULL, 0, 0, 0, 0,
                              SWP_NOACTIVATE | SWP_SHOWWINDOW |
                              SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER);
-
-                if (prov)
-                    kcdb_identpro_release(prov);
             }
 
 #pragma warning(push)
