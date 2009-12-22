@@ -113,6 +113,9 @@ khm_boolean k4_should_identity_get_k4(khm_handle ident) {
     if (KHM_FAILED(kcdb_identity_get_flags(ident, &idflags)))
         return FALSE;
 
+    if (!kcdb_identity_by_provider(ident, L"Krb5Ident"))
+        return FALSE;
+
     if (!(idflags & KCDB_IDENT_FLAG_DEFAULT)) {
         /* we only support k4 for one identity, and that is the
            default identity.  If we are trying to get tickets for a
