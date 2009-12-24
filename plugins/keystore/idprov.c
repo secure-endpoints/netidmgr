@@ -149,8 +149,11 @@ handle_kmsg_ident_notify_create(khm_handle ident)
         } else {
             ks_keystore_release(ks);
 
-            kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
-                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
+            kcdb_identity_set_flags(ident,
+                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE |
+                                    KCDB_IDENT_FLAG_CRED_INIT,
+                                    KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE |
+                                    KCDB_IDENT_FLAG_CRED_INIT);
             kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, NULL, 0);
 
             {
