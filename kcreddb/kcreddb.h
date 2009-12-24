@@ -293,11 +293,17 @@ Functions, macros etc. for manipulating identities.
  */
 #define KCDB_IDENT_FLAG_NEED_NOTIFY 0x00020000L
 
+/*! \brief Identity contains destroyable credentials */
+#define KCDB_IDENT_FLAG_CRED_DEST   0x00040000L
+
+/*! \brief Identity is initializable */
+#define KCDB_IDENT_FLAG_CRED_INIT   0x00080000L
+
 /*! \brief Read/write flags mask.
 
     A bitmask that correspond to all the read/write flags in the mask.
 */
-#define KCDB_IDENT_FLAGMASK_RDWR    0x0003ffffL
+#define KCDB_IDENT_FLAGMASK_RDWR    0x000fffffL
 
 /*@}*/
 
@@ -2409,6 +2415,14 @@ kcdb_cred_comp_generic(khm_handle cred1,
     are never duplicated.
  */
 #define KCDB_CRED_FLAG_PRIVILEGED  0x00000200
+
+/*! \brief Destroyable credential
+
+    The credential can be destroyed.  This bit is set by default when
+    a new credential is created, and must be turned off if the
+    credential cannot be destoyed.
+ */
+#define KCDB_CRED_FLAG_DESTROYABLE 0x00000400
 
 /*! \brief Bitmask indicating all known credential flags
  */

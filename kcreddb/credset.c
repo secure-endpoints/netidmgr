@@ -156,7 +156,8 @@ kcdb_credset_delete(khm_handle vcredset)
 
 static void
 check_and_set_refresh_bit_for_identity(khm_handle cred,
-                                       khm_handle * plast_identity) {
+                                       khm_handle * plast_identity)
+{
     khm_handle this_identity;
 
     if (KHM_SUCCEEDED(kcdb_cred_get_identity(cred,

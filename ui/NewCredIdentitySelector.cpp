@@ -78,8 +78,8 @@ namespace nim {
         bool seen_current = false;
         HMENU hm = NULL;
 
-        Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_CONFIG,
-                                                 KCDB_IDENT_FLAG_CONFIG);
+        Identity::Enumeration e = Identity::Enum(KCDB_IDENT_FLAG_CONFIG|KCDB_IDENT_FLAG_CRED_INIT,
+                                                 KCDB_IDENT_FLAG_CONFIG|KCDB_IDENT_FLAG_CRED_INIT);
         n_ids = e.Size() + 2;
         ids = reinterpret_cast<IdentityDisplayData **>(PMALLOC(n_ids * sizeof(ids[0])));
         if (ids == NULL) {

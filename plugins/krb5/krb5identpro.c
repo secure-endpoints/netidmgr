@@ -880,6 +880,8 @@ k5_ident_notify_create(khm_int32 msg_type,
 
     kcdb_identity_set_attr(ident, KCDB_ATTR_DISPLAY_NAME,
                            id_nameW, KCDB_CBSIZE_AUTO);
+    kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_CRED_INIT,
+                            KCDB_IDENT_FLAG_CRED_INIT);
 
     /* Get name and realm */
     {

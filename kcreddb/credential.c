@@ -92,7 +92,7 @@ kcdb_cred_create(const wchar_t * name,
     cred->name = PMALLOC(cb_name);
     StringCbCopy(cred->name, cb_name, name);
     cred->type = cred_type;
-
+    cred->flags = KCDB_CRED_FLAG_DESTROYABLE;
     cred->refcount = 1; /* initially held */
     
     LINIT(cred);

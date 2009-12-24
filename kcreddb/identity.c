@@ -1164,9 +1164,11 @@ kcdbint_idref_proc(khm_handle cred, void * r)
             kcdb_cred_get_flags(cred, &flags);
             kcdb_cred_get_type(cred, &ctype);
 
-            if (flags & KCDB_CRED_FLAG_RENEWABLE) {
+            if (flags & KCDB_CRED_FLAG_RENEWABLE)
                 result->flags |= KCDB_IDENT_FLAG_CRED_RENEW;
-            }
+
+            if (flags & KCDB_CRED_FLAG_DESTROYABLE)
+                result->flags |= KCDB_IDENT_FLAG_CRED_DEST;
 
             if (ctype == result->ident->id_pro->cred_type) {
                 result->n_id_credentials++;
@@ -1232,7 +1234,8 @@ kcdb_identity_refresh(khm_handle vid)
                             KCDB_IDENT_FLAGMASK_RDWR &
                             ~(KCDB_IDENT_FLAG_DEFAULT |
                               KCDB_IDENT_FLAG_SEARCHABLE |
-                              KCDB_IDENT_FLAG_STICKY));
+                              KCDB_IDENT_FLAG_STICKY |
+                              KCDB_IDENT_FLAG_CRED_INIT));
 
     EnterCriticalSection(&cs_ident);
 
