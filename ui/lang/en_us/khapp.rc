@@ -452,9 +452,10 @@ STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Click 'Finish' to obtain credentials ...",IDC_TEXT,7,7,336,11
-    LTEXT           "  ",IDC_TEXT2,7,18,336,13
+    LTEXT           "Click 'Finish' to obtain credentials ...",IDC_TEXT,33,7,310,11
+    LTEXT           "  ",IDC_TEXT2,33,18,310,13
     CONTROL         "",IDC_PROGRESS,"msctls_progress32",NOT WS_VISIBLE,7,34,336,10
+    ICON            "",IDC_ICONCTL,7,7,21,20
 END
 
 IDD_NC_PROGRESS DIALOGEX 0, 0, 370, 120
@@ -727,6 +728,7 @@ BEGIN
     BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 343
+        VERTGUIDE, 33
         TOPMARGIN, 7
         BOTTOMMARGIN, 77
         HORZGUIDE, 18
@@ -1103,6 +1105,11 @@ BEGIN
     IDS_IS_TITLE_FMT        "Select icon for %s (%s)"
     IDS_IS_CUE_DOM          "(Type a domain name to fetch a favicon from)"
     IDS_IS_CUE_EMAIL        "(Type email address to fetch icon for)"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_NC_CANTINIT         "The selected identity cannot be used to obtain initial credentials."
 END
 
 #endif    // English (U.S.) resources

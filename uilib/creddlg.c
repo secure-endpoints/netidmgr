@@ -648,6 +648,19 @@ khui_cw_is_ready(khui_new_creds * c)
 
     EnterCriticalSection(&c->cs);
     {
+        if (c->n_identities > 0 && c->identities[0] != NULL) {
+            khm_int32 flags = 0;
+
+            kcdb_identity_get_flags(c->identities[0], &flags);
+            ready = (!(flags & KCDB_IDENT_FLAG_INVALID) &&
+                     !(flags & KCDB_IDENT_FLAG_UNKNOWN) &&
+                     (flags & KCDB_IDENT_FLAG_CRED_INIT));
+        } else {
+            ready = FALSE;
+        }
+    }
+
+    {
         khui_new_creds_privint_panel * p;
         khm_size i;
 

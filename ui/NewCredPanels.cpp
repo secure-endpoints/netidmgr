@@ -184,7 +184,6 @@ namespace nim {
             break;
 
         default:
-            assert(false);
             return NULL;
         }
 
@@ -254,10 +253,14 @@ namespace nim {
             if (panel_idx == NC_PRIVINT_PANEL) {
                 p = GetPrivintPanel(dw->hwnd);
                 hw_target = (p)? p->hwnd : NULL;
-                if (p->caption)
+                if (p->caption && p->caption[0]) {
                     m_cfgwiz.SetItemText(IDC_PANELNAME, p->caption);
-                SetWindowPos(m_cfgwiz.GetItem(IDC_PANELNAME), NULL,
-                             0, 0, 0, 0, SWP_SHOWONLY);
+                    SetWindowPos(m_cfgwiz.GetItem(IDC_PANELNAME), NULL,
+                                 0, 0, 0, 0, SWP_SHOWONLY);
+                } else {
+                    SetWindowPos(m_cfgwiz.GetItem(IDC_PANELNAME), NULL,
+                                 0, 0, 0, 0, SWP_HIDEONLY);
+                }
             } else {
                 hw_target = nc->types[panel_idx].nct->hwnd_panel;
                 allow_persist = false;
@@ -400,6 +403,13 @@ namespace nim {
             dw->CheckButton(IDC_NC_MAKEDEFAULT,
                             ((idf & KCDB_IDENT_FLAG_DEFAULT)? BST_CHECKED : BST_UNCHECKED));
             dw->EnableItem(IDC_NC_MAKEDEFAULT, !(idf & KCDB_IDENT_FLAG_DEFAULT));
+
+            if (page == NC_PAGE_CREDOPT_BASIC) {
+                m_basic.EnableItem(IDC_NC_ADVANCED,
+                                   !(idf & KCDB_IDENT_FLAG_INVALID) &&
+                                   !(idf & KCDB_IDENT_FLAG_UNKNOWN) &&
+                                   (idf & KCDB_IDENT_FLAG_CRED_INIT));
+            }
         }
 
         /* if there are more privileged interaction panels to be

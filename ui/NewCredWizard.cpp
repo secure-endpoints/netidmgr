@@ -317,8 +317,7 @@ namespace nim {
 
             assert(FALSE);
             LoadStringResource(buf, IDS_NC_NPR_CHOOSE);
-            m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
-            m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
+            m_privint.m_noprompts.SetText(KHERR_WARNING, buf);
             m_privint.m_noprompts.SetProgress(0, false);
             khui_cw_unlock_nc(nc);
             goto done;
@@ -337,7 +336,7 @@ namespace nim {
             // Finished validating the identity
             if (nflags & KHUI_CWNIS_VALIDATED) {
 
-                khm_int32 idflags;
+                khm_int32 idflags = 0;
 
                 kcdb_identity_get_flags(nc->identities[0], &idflags);
 
@@ -345,8 +344,7 @@ namespace nim {
                     wchar_t buf[80];
 
                     LoadStringResource(buf, IDS_NC_NPR_CLICKFINISH);
-                    m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
-                    m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
+                    m_privint.m_noprompts.SetText(KHERR_NONE, buf);
                     m_idsel.SetStatus( (notif->state_string)? notif->state_string : L"");
 
                 } else {
@@ -359,9 +357,7 @@ namespace nim {
                                        ((idflags & KCDB_IDENT_FLAG_INVALID)?
                                         IDS_NC_INVALIDID : IDS_NC_UNKNOWNID));
                     m_idsel.SetStatus(buf);
-                    m_privint.m_noprompts.SetItemText(IDC_TEXT,
-                                                      (notif->state_string)? notif->state_string : L"");
-                    m_privint.m_noprompts.SetItemText(IDC_TEXT2, L"");
+                    m_privint.m_noprompts.SetText(KHERR_ERROR, notif->state_string);
                     nflags &= ~KHUI_CWNIS_VALIDATED;
                 }
 
@@ -371,11 +367,7 @@ namespace nim {
                 wchar_t buf[80];
 
                 LoadStringResource(buf, IDS_NC_NPR_VALIDATING);
-                m_privint.m_noprompts.SetItemText(IDC_TEXT, buf);
-
-                m_privint.m_noprompts.SetItemText(IDC_TEXT2,
-                                                  (notif->state_string)? notif->state_string : L"");
-
+                m_privint.m_noprompts.SetText(KHERR_INFO, buf);
                 if (nflags & KHUI_CWNIS_NOPROGRESS) {
                     m_privint.m_noprompts.SetProgress(0, false);
                 } else {
@@ -386,6 +378,7 @@ namespace nim {
 
     done:
 
+        m_privint.UpdateLayout();
         m_nav.CheckControls();
         m_nav.UpdateLayout();
 
@@ -394,6 +387,22 @@ namespace nim {
     void NewCredWizard::OnNewIdentity()
     {
         NotifyNewIdentity( TRUE );
+
+        {
+            khm_handle identity = NULL;
+            khm_int32 flags = 0;
+
+            if (KHM_SUCCEEDED(khui_cw_get_primary_id(nc, &identity))) {
+                kcdb_identity_get_flags(identity, &flags);
+                kcdb_identity_release(identity);
+            }
+
+            if ((flags & (KCDB_IDENT_FLAG_CONFIG |
+                          KCDB_IDENT_FLAG_INVALID)) ||
+                !(flags & KCDB_IDENT_FLAG_CRED_INIT)) {
+                Navigate( NC_PAGE_CREDOPT_BASIC );
+            }
+        }
     }
 
     void NewCredWizard::OnDialogActivate()
@@ -434,7 +443,9 @@ namespace nim {
                    we can continue in basic mode.  Otherwise we should
                    start in advanced mode so that the user can specify
                    identity options to be used the next time. */
-                if (idflags & KCDB_IDENT_FLAG_CONFIG) {
+                if ((idflags & (KCDB_IDENT_FLAG_CONFIG |
+                                KCDB_IDENT_FLAG_INVALID)) ||
+                    !(idflags & KCDB_IDENT_FLAG_CRED_INIT)) {
                     Navigate( NC_PAGE_CREDOPT_BASIC);
                 } else {
                     Navigate( NC_PAGE_CREDOPT_WIZ);
@@ -908,8 +919,8 @@ namespace nim {
     // NOT be called with nc locked.
     void NewCredWizard::NotifyNewIdentity(bool notify_ui)
     {
-        khm_boolean default_off;
-        khm_boolean isk5 = FALSE;
+        bool default_off = true;
+        bool isk5 = false;
 
         /* For backwards compatibility, we assume that if there is no
            primary identity or if the primary identity is not from the
@@ -925,12 +936,12 @@ namespace nim {
         if (nc->n_identities == 0 ||
             !kcdb_identity_by_provider(nc->identities[0], L"Krb5Ident"))
 
-            default_off = TRUE;
+            default_off = true;
 
         else {
 
-            isk5 = TRUE;
-            default_off = FALSE;
+            isk5 = true;
+            default_off = false;
 
         }
 
@@ -980,6 +991,12 @@ namespace nim {
 
             if (!(f & KCDB_IDENT_FLAG_DEFAULT)) {
                 nc->set_default = FALSE;
+            }
+
+            if (!(f & KCDB_IDENT_FLAG_CRED_INIT)) {
+                std::wstring cant = LoadStringResource(IDS_NC_CANTINIT);
+
+                m_privint.m_noprompts.SetText(KHERR_ERROR, cant.c_str());
             }
         }
 

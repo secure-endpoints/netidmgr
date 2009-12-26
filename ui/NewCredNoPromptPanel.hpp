@@ -42,5 +42,9 @@ namespace nim {
         {}
 
         void SetProgress(int progress, bool show);
+
+        void SetText(kherr_severity severity,
+                     const wchar_t * text,
+                     const wchar_t * status = NULL);
     };
 }

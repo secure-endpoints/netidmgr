@@ -22,6 +22,8 @@
  * SOFTWARE.
  */
 
+#define OEMRESOURCE
+
 #include "khmapp.h"
 #include "NewCredWizard.hpp"
 #include <assert.h>
@@ -64,5 +66,36 @@ namespace nim {
         }
 
         ::ShowWindow(GetDlgItem(hwnd, IDC_PROGRESS), (show?SW_SHOW:SW_HIDE));
+    }
+
+    void NewCredNoPromptPanel::SetText(kherr_severity severity,
+                                       const wchar_t * text,
+                                       const wchar_t * status)
+    {
+        UINT res = 0;
+
+        SetItemText(IDC_TEXT, (text)? text : L"");
+        SetItemText(IDC_TEXT2, (status)? status : L"");
+
+        switch (severity) {
+        case KHERR_INFO:
+            res = OIC_INFORMATION;
+            break;
+
+        case KHERR_WARNING:
+            res = OIC_WARNING;
+            break;
+
+        case KHERR_ERROR:
+            res = OIC_ERROR;
+            break;
+
+        default:
+            SendItemMessage(IDC_ICONCTL, STM_SETICON, NULL, 0);
+            return;
+        }
+
+        SendItemMessage(IDC_ICONCTL, STM_SETICON,
+                        (WPARAM) LoadIconResource(res, false, true, NULL), 0);
     }
 }

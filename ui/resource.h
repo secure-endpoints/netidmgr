@@ -250,15 +250,12 @@
 #define IDS_PACTION_YESALL              235
 #define IDB_BATT_LIFE                   235
 #define IDS_PACTION_NOALL               236
-#define IDB_PNG3                        236
 #define IDB_BATT_RENEW                  236
 #define IDS_PACTION_KEEP                237
 #define IDB_PROGRESS                    237
 #define IDS_PACTION_REMOVE              238
-#define IDD_DIALOG1                     238
 #define IDD_ALERTS                      238
 #define IDS_PACTION_DISCARD             239
-#define IDD_DIALOG2                     239
 #define IDD_ICONSELECT                  239
 #define IDS_CFG_IT_MOD                  240
 #define IDS_CFG_IT_APP                  241
@@ -347,7 +344,6 @@
 #define IDS_ACTION_OPT_IDENT            324
 #define IDS_ACTIONT_OPT_IDENT           325
 #define IDS_CWTT_DEFAULT_ID0            326
-#define IDS_CWTT_DEFAULT1               327
 #define IDS_CWTT_DEFAULT_ID1            327
 #define IDS_CWTT_STICKY_ID0             328
 #define IDS_CWTT_STICKY_ID1             329
@@ -357,6 +353,7 @@
 #define IDS_IS_TITLE_FMT                333
 #define IDS_IS_CUE_DOM                  334
 #define IDS_IS_CUE_EMAIL                335
+#define IDS_NC_CANTINIT                 336
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027
@@ -459,7 +456,6 @@
 #define IDC_BORDER                      1185
 #define IDC_IDICON                      1186
 #define IDC_PERSIST                     1187
-#define IDC_LIST1                       1189
 #define IDC_CFGLIST                     1190
 #define IDC_PANELNAME                   1191
 #define IDC_BUTTON1                     1192
@@ -477,6 +473,7 @@
 #define IDC_URLGRP                      1219
 #define IDC_FAVGRP                      1220
 #define IDC_GRAVGRP                     1221
+#define IDC_ICONCTL                     1222
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -492,7 +489,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        243
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1222
+#define _APS_NEXT_CONTROL_VALUE         1223
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

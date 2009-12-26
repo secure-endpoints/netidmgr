@@ -148,7 +148,7 @@ namespace nim {
         } else if (i == 1) {
             /* Navigate to the identity specification window if the user
                wants to specify a new identity. */
-            reinterpret_cast<NewCredWizard *>(nc->wizard)->Navigate( NC_PAGE_IDSPEC );
+            NewCredWizard::FromNC(nc)->Navigate( NC_PAGE_IDSPEC );
         }
 
     _cleanup:
