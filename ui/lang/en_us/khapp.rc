@@ -877,7 +877,7 @@ BEGIN
     IDS_WTPOST_NEW_CREDS    " - New credentials"
     IDS_ACTION_RENEW_CRED   "R&enew credentials"
     IDS_ACTION_DESTROY_CRED "De&stroy credentials"
-    IDS_DEFAULT_FONT        "Segoe UI"
+    IDS_DEFAULT_FONT        "MS Shell Dlg"
     IDS_NC_NPR_VALIDATING   "Validating identity ..."
     IDS_NOTIFY_PREFIX       "Network Identity Manager - "
     IDS_NOTIFY_READY        "Ready"
