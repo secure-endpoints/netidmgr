@@ -253,7 +253,7 @@ namespace nim {
             if (panel_idx == NC_PRIVINT_PANEL) {
                 p = GetPrivintPanel(dw->hwnd);
                 hw_target = (p)? p->hwnd : NULL;
-                if (p->caption && p->caption[0]) {
+                if (p && p->caption && p->caption[0]) {
                     m_cfgwiz.SetItemText(IDC_PANELNAME, p->caption);
                     SetWindowPos(m_cfgwiz.GetItem(IDC_PANELNAME), NULL,
                                  0, 0, 0, 0, SWP_SHOWONLY);
