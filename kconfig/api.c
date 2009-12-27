@@ -857,14 +857,25 @@ khcint_get_parent_config_space(khm_handle pconf,
 
         if(KHM_FAILED(khc_open_space(pconf,
                                      path,
-                                     KCONF_FLAG_TRAILINGVALUE | (pconf?khc_handle_flags(pconf):0) | add_flags, 
+                                     KCONF_FLAG_TRAILINGVALUE |
+                                     (pconf?khc_handle_flags(pconf):0) |
+                                     add_flags, 
                                      ppconf)))
             return KHM_ERROR_INVALID_PARAM;
 
         *pvalue = ++value;
     } else {
         *pvalue = path;
-        *ppconf = pconf;
+        if (pconf != NULL &&
+            (khc_handle_flags(pconf)|add_flags) == khc_handle_flags(pconf)) {
+            *ppconf = pconf;
+        } else {
+            if (KHM_FAILED(khc_open_space(pconf, NULL,
+                                          ((pconf)?khc_handle_flags(pconf):0) |
+                                          add_flags,
+                                          ppconf)))
+                return KHM_ERROR_INVALID_PARAM;
+        }
     }
 
     {
