@@ -129,6 +129,15 @@ namespace nim
 
 #undef  DEL_BITMAP
 
+#define DEL_FONT(f) if (f) { DeleteObject(f); f = NULL; }
+
+        DEL_FONT(hf_normal);
+        DEL_FONT(hf_header);
+        DEL_FONT(hf_select);
+        DEL_FONT(hf_select_header);
+
+#undef DEL_FONT
+
         isThemeLoaded = FALSE;
     }
 
@@ -874,6 +883,14 @@ namespace nim
             g_theme = NULL;
 
             GdiplusShutdown(gdiplus_token);
+        }
+    }
+
+    extern "C" void khm_reinit_drawfuncs(void)
+    {
+        if (g_theme != NULL) {
+            g_theme->UnloadTheme();
+            g_theme->LoadTheme();
         }
     }
 

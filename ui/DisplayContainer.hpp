@@ -166,6 +166,8 @@ namespace nim {
 
         void SetHeaderPosition(void);
 
+        void SetHeaderFont(void);
+
     public:                     // Overridables
         virtual void OnColumnContextMenu(int idx, const Point& p) {}
 

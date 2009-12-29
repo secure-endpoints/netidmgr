@@ -914,6 +914,7 @@ namespace nim
             return;
 
         case KHUI_ACTION_LAYOUT_RELOAD:
+            SetHeaderFont();
             LoadView();
             UpdateCredentials();
             UpdateOutline();

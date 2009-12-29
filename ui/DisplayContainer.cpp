@@ -337,8 +337,7 @@ namespace nim {
 
             assert(hwnd_header != NULL);
 
-            HFONT hf = GetHFONT();
-            ::SendMessage(hwnd_header, WM_SETFONT, (WPARAM) hf, 0);
+            SetHeaderFont();
             columns.AddColumnsToHeaderControl(hwnd_header);
 
             // Since child elements might depend on what
@@ -362,6 +361,14 @@ namespace nim {
 
         if (!show_header)
             header_height = 0;
+    }
+
+    void DisplayContainer::SetHeaderFont(void)
+    {
+        if (hwnd_header != NULL) {
+            HFONT hf = GetHFONT();
+            ::SendMessage(hwnd_header, WM_SETFONT, (WPARAM) hf, 0);
+        }
     }
 
     void DisplayContainer::SetHeaderPosition(void)

@@ -105,9 +105,8 @@ khm_set_element_color(khm_ui_element element, COLORREF cr);
 khm_int32
 khm_load_theme(const wchar_t * theme);
 
-khm_int32
-khm_draw_text(HDC hdc, const wchar_t * text, khm_ui_element font,
-              unsigned int dt_flags, RECT * r);
+void
+khm_refresh_theme(void);
 
 void
 khm_init_themes(void);

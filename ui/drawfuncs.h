@@ -375,6 +375,8 @@ extern "C" {
 
     void khm_exit_drawfuncs(void);
 
+    void khm_reinit_drawfuncs(void);
+
 #ifdef __cplusplus
 }
 #endif

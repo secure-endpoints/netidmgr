@@ -70,6 +70,7 @@ write_params(dlg_data * d) {
     khui_cfg_set_flags(d->node,
                        (applied)? KHUI_CNFLAG_APPLIED: 0,
                        KHUI_CNFLAG_APPLIED | KHUI_CNFLAG_MODIFIED);
+    khm_refresh_theme();
 }
 
 static void
@@ -428,7 +429,6 @@ khm_cfg_appearance_proc(HWND hwnd,
 
         if (HIWORD(wParam) == WMCFG_APPLY) {
             write_params(d);
-            khui_action_trigger(KHUI_ACTION_LAYOUT_RELOAD, NULL);
         }
 
         return TRUE;

@@ -135,22 +135,10 @@ HFONT
 khm_get_element_font(khm_ui_element element)
 {
     HFONT hf = NULL;
-    khm_size cb;
+    LOGFONT lf;
 
-    cb = sizeof(hf);
-    if (KHM_FAILED(khui_cache_get_resource(&g_owner, element,
-                                           KHM_RESTYPE_FONT, &hf, &cb))) {
-
-        LOGFONT lf;
-
-        if (KHM_SUCCEEDED(khm_get_element_lfont(NULL, element, FALSE, &lf))) {
-            hf = CreateFontIndirect(&lf);
-            if (hf) {
-                khui_cache_add_resource(&g_owner, element, KHM_RESTYPE_FONT,
-                                        &hf, sizeof(hf));
-            }
-        }
-    }
+    if (KHM_SUCCEEDED(khm_get_element_lfont(NULL, element, FALSE, &lf)))
+        hf = CreateFontIndirect(&lf);
 
     return hf;
 }
@@ -452,6 +440,13 @@ khm_load_theme(const wchar_t * theme)
 }
 
 void
+khm_refresh_theme(void)
+{
+    khm_reinit_drawfuncs();
+    khui_action_trigger(KHUI_ACTION_LAYOUT_RELOAD, NULL);
+}
+
+void
 khm_init_themes(void)
 {
     open_theme_handle(NULL);
@@ -470,40 +465,3 @@ khm_exit_themes(void)
 
     khui_cache_del_by_owner(&g_owner);
 }
-
-khm_int32
-khm_draw_text(HDC hdc, const wchar_t * text, khm_ui_element font,
-              unsigned int dt_flags, RECT * r)
-{
-    HFONT hf_old;
-    HFONT hf_new;
-    size_t cch;
-    int right;
-
-    if (FAILED(StringCchLength(text, KHUI_MAXCCH_MESSAGE, &cch)))
-        return KHM_ERROR_TOO_LONG;
-
-    hf_new = khm_get_element_font(font);
-
-    if (hf_new == NULL)
-        return KHM_ERROR_INVALID_PARAM;
-
-    hf_old = SelectFont(hdc, hf_new);
-
-    right = r->right;
-
-    DrawText(hdc, text, (int) cch, r, dt_flags);
-
-    if ((dt_flags & DT_CALCRECT) == DT_CALCRECT &&
-        (dt_flags & DT_SINGLELINE) != DT_SINGLELINE) {
-        /* We preserve the right margin if we are calculating the
-           extents and it's not a single line.  Otherwise DrawText()
-           will adjust the right side to tightly fit the text. */
-        r->right = right;
-    }
-
-    SelectFont(hdc, hf_old);
-
-    return KHM_ERROR_SUCCESS;
-}
-
