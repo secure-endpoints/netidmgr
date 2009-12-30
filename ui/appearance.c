@@ -151,7 +151,7 @@ khm_get_element_lfont(HDC hdc, khm_ui_element element, khm_boolean use_default,
     const wchar_t * element_name = NULL;
     LOGFONT lf;
     khm_int32 rv = KHM_ERROR_SUCCESS;
-    khm_boolean adjust_size = TRUE;
+    khm_boolean adjust_size = FALSE;
 
 #ifdef DEBUG
     assert(is_font_id(element));

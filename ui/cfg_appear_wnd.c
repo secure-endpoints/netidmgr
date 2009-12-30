@@ -200,11 +200,10 @@ update_selection(dlg_data * d, BOOL update_fonts, BOOL update_effects) {
         pt_height = MulDiv(d->lf_work.lfHeight, 72,
                            GetDeviceCaps(hdc, LOGPIXELSY));
 
-
         ReleaseDC(d->hwnd, hdc);
 
         if (pt_height < 0)
-            pt_height = - pt_height;
+            pt_height = -pt_height;
 
         for (i=0; i < ARRAYLENGTH(text_sizes); i++) {
             if (text_sizes[i] >= pt_height)
@@ -302,6 +301,7 @@ khm_cfg_appearance_proc(HWND hwnd,
             update_selection(d, TRUE, TRUE);
 
             refresh_view(hwnd, d);
+
         }
         return FALSE;
 
