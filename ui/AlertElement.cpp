@@ -192,7 +192,7 @@ namespace nim {
             .LineBreak()
             .Add(el_suggestion)
             .LineBreak()
-            .Add(el_progress)
+            .Add(el_progress, !m_err_completed)
             .LineBreak()
             .PopIndent()
             .PushIndent(g_theme->sz_margin.Width + g_theme->sz_icon.Width - g_theme->sz_icon_sm.Width)
@@ -371,7 +371,15 @@ namespace nim {
                         khui_alert_set_message(m_alert, ev->short_desc);
 		    }
 
-		    UpdateIcon();
+                    if (ev->suggestion) {
+                        khui_alert_set_suggestion(m_alert, ev->suggestion);
+                    } else {
+                        khui_alert_set_suggestion(m_alert, NULL);
+                    }
+
+                    UpdateIcon();
+                    MarkForExtentUpdate();
+                    Invalidate();
 		}
 	    }
 	    break;
