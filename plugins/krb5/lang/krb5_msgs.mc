@@ -34,13 +34,13 @@ Initial placeholder message
 MessageId=
 SymbolicName=MSG_CTX_INITAL_CREDS
 Language=English
-Obtaining initial Krb5 credentials
+Obtaining initial Kerberos v5 tickets
 .
 
 MessageId=
 SymbolicName=MSG_CTX_RENEW_CREDS
 Language=English
-Renewing Krb5 credentials
+Renewing Kerberos v5 tickets
 .
 
 MessageId=
@@ -64,7 +64,7 @@ The tickets could not be accessed from the memory location where they were store
 MessageId=
 SymbolicName=MSG_ERR_S_TKFIL
 Language=English
-This may be due to a problem with the memory where your tickets are stored.  Restarting your computer might be worth a try.
+This may be due to a problem with the memory where your tickets are stored.  Restarting your computer might help.
 .
 
 MessageId=
@@ -100,7 +100,7 @@ There were no identities for which to renew credentials.
 MessageId=
 SymbolicName=MSG_CTX_PASSWD
 Language=English
-Changing Kerberos 5 Password
+Changing Kerberos v5 Password
 .
 
 MessageId=
