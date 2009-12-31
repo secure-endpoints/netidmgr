@@ -166,6 +166,10 @@ namespace nim {
             Squish
         };
 
+        FlowLayout& Add(DisplayElement * e, bool condition) {
+            return Add(e, Left, Fixed, condition);
+        }
+
         FlowLayout& Add(DisplayElement * e, Alignment opt = Left,
                         Type etype = Fixed, bool condition = true) {
 
