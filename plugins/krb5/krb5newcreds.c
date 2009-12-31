@@ -790,9 +790,7 @@ k5_handle_process_new_creds(khui_new_creds *nc,
            reset the IMPORTED flag now since the tickets are not
            imported. */
 
-        khm_krb5_set_identity_flags(ident,
-                                    K5IDFLAG_IMPORTED,
-                                    0);
+        khm_krb5_set_identity_flags(ident, K5IDFLAG_IMPORTED, 0);
     }
 
     if(d->kinit_task && d->kinit_task->kinit_code != 0) {

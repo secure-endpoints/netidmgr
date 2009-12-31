@@ -169,7 +169,7 @@ void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
             /* no error msg yet */
             sugg_code = KHERR_SUGGEST_RETRY;
             break;
-	  
+
             /* Values returned by send_to_kdc */
         case SKDC_RETRY   :     /* 56    Retry count exceeded */
         case SKDC_CANT    :     /* 57    Can't send request */

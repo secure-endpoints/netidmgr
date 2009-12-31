@@ -177,6 +177,7 @@ typedef struct tag_kinit_task {
     char                   *password;
     char                   *ccache;
     k5_params               params;
+    krb5_context            context;
 
     krb5_error_code         kinit_code;
     int                     prompt_set_index;

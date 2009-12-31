@@ -55,6 +55,7 @@ k5_kinit_task_create(khui_new_creds * nc)
     kt->nc = nc;
     kt->dlg_data = d;
     kt->nct = &d->nct;
+    kt->context = 0;
 
     khui_cw_get_primary_id(nc, &kt->identity);
     cbbuf = sizeof(idname);
@@ -170,6 +171,9 @@ kinit_task_free(k5_kinit_task * kt)
 
     if (kt->ccache)
         PFREE(kt->ccache);
+
+    if (kt->context)
+        pkrb5_free_context(kt->context);
 
     LeaveCriticalSection(&kt->cs);
 
@@ -579,7 +583,7 @@ kinit_prompter(krb5_context context,
         }
     }
 
-    if(pkrb5_get_prompt_types)
+    if (pkrb5_get_prompt_types)
         ptypes = pkrb5_get_prompt_types(context);
 
     /* check if we are already showing the right prompts */
@@ -933,8 +937,11 @@ kinit_task_proc(void * vparam)
 
     LeaveCriticalSection(&kt->cs);
 
+    if (kt->context == 0)
+        pkrb5_init_context(&kt->context);
+
     l = khm_krb5_kinit
-        (0,
+        (kt->context,
          kt->principal,
          kt->password,
          kt->ccache,
