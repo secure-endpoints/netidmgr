@@ -457,12 +457,14 @@ free_alert(khui_alert * alert)
         alert->title = NULL;
         alert->flags &= ~KHUI_ALERT_FLAG_FREE_TITLE;
     }
+
     if(alert->flags & KHUI_ALERT_FLAG_FREE_MESSAGE) {
         assert(alert->message);
         PFREE(alert->message);
         alert->message = NULL;
         alert->flags &= ~KHUI_ALERT_FLAG_FREE_MESSAGE;
     }
+
     if(alert->flags & KHUI_ALERT_FLAG_FREE_SUGGEST) {
         assert(alert->suggestion);
         PFREE(alert->suggestion);
