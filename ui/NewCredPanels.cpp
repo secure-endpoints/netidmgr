@@ -400,16 +400,17 @@ namespace nim {
                 kcdb_identity_release(vid);
             }
 
+            bool good_id =
+                !(idf & KCDB_IDENT_FLAG_INVALID) &&
+                !(idf & KCDB_IDENT_FLAG_UNKNOWN) &&
+                (idf & KCDB_IDENT_FLAG_CRED_INIT);
+
             dw->CheckButton(IDC_NC_MAKEDEFAULT,
                             ((idf & KCDB_IDENT_FLAG_DEFAULT)? BST_CHECKED : BST_UNCHECKED));
-            dw->EnableItem(IDC_NC_MAKEDEFAULT, !(idf & KCDB_IDENT_FLAG_DEFAULT));
+            dw->EnableItem(IDC_NC_MAKEDEFAULT, !(idf & KCDB_IDENT_FLAG_DEFAULT) && good_id);
 
-            if (page == NC_PAGE_CREDOPT_BASIC) {
-                m_basic.EnableItem(IDC_NC_ADVANCED,
-                                   !(idf & KCDB_IDENT_FLAG_INVALID) &&
-                                   !(idf & KCDB_IDENT_FLAG_UNKNOWN) &&
-                                   (idf & KCDB_IDENT_FLAG_CRED_INIT));
-            }
+            if (page == NC_PAGE_CREDOPT_BASIC)
+                m_basic.EnableItem(IDC_NC_ADVANCED, good_id);
         }
 
         /* if there are more privileged interaction panels to be
