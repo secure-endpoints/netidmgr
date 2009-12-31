@@ -584,6 +584,26 @@ free_context(kherr_context * c)
 
 /* MUST be called with cs_error held */
 static void
+commit_event(kherr_context * c, kherr_event * e)
+{
+    if (e->flags & KHERR_RF_COMMIT)
+        return;
+
+    notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
+    e->flags |= KHERR_RF_COMMIT;
+
+    if(c->severity >= e->severity) {
+        c->severity = e->severity;
+        c->err_event = e;
+        c->flags &= ~KHERR_CF_DIRTY;
+
+        if (e->severity <= KHERR_ERROR)
+            notify_ctx_event(KHERR_CTX_ERROR, c);
+    }
+}
+
+/* MUST be called with cs_error held */
+static void
 add_event(kherr_context * c, kherr_event * e)
 {
     kherr_event * te;
@@ -596,19 +616,10 @@ add_event(kherr_context * c, kherr_event * e)
 
     te = QBOTTOM(c);
     if (te && !(te->flags & KHERR_RF_COMMIT)) {
-	notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
-	te->flags |= KHERR_RF_COMMIT;
+        commit_event(c, te);
     }
 
     QPUT(c,e);
-    if(c->severity >= e->severity) {
-        c->severity = e->severity;
-        c->err_event = e;
-        c->flags &= ~KHERR_CF_DIRTY;
-
-        if (e->severity <= KHERR_ERROR)
-            notify_ctx_event(KHERR_CTX_ERROR, c);
-    }
 }
 
 static void
@@ -1448,15 +1459,18 @@ release_context(kherr_context * c)
 {
     if (IS_KHERR_CTX(c)) {
         c->refcount--;
-        if (c->refcount == 0) {
+
+        {
             kherr_event * e;
-            kherr_context * p;
 
             e = QBOTTOM(c);
             if (IS_KHERR_EVENT(e) && !(e->flags & KHERR_RF_COMMIT)) {
-                notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
-                e->flags |= KHERR_RF_COMMIT;
+                commit_event(c, e);
             }
+        }
+
+        if (c->refcount == 0) {
+            kherr_context * p;
 
             if (CTX_USES_OWN_PROGRESS(c)) {
                 set_and_notify_progress_change(c, 256, 256);
@@ -1467,6 +1481,8 @@ release_context(kherr_context * c)
             notify_ctx_event(KHERR_CTX_END, c);
 
             if (IS_KHERR_CTX(p)) {
+                kherr_event * e;
+
                 e = fold_context(c);
                 if (e)
                     add_event(p, e);
@@ -1532,10 +1548,23 @@ kherr_is_error(void)
 KHMEXP khm_boolean KHMAPI
 kherr_is_error_i(kherr_context * c)
 {
-    if(IS_KHERR_CTX(c) && c->severity <= KHERR_ERROR)
-        return TRUE;
-    else
+    khm_boolean is_error = FALSE;
+
+    if(IS_KHERR_CTX(c)) {
+        kherr_context * cc;
+
+        EnterCriticalSection(&cs_error);
+        if (c->severity <= KHERR_ERROR)
+            is_error = TRUE;
+        for (cc = TFIRSTCHILD(c); cc && !is_error; cc = TNEXTSIBLING(cc)) {
+            is_error = kherr_is_error_i(cc);
+        }
+        LeaveCriticalSection(&cs_error);
+
+        return is_error;
+    } else {
         return FALSE;
+    }
 }
 
 KHMEXP void KHMAPI
