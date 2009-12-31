@@ -346,7 +346,16 @@ namespace nim {
 		AutoLock<Alert> a_lock(&m_alert);
 		kherr_event * ev;
 
-		ev = kherr_get_last_event(m_err_context);
+                if (e == KHERR_CTX_EVTCOMMIT) {
+                    ev = kherr_get_last_event(m_err_context);
+                    if (ev->severity > m_alert->severity)
+                        break;
+                } else {
+                    ev = kherr_get_err_event(m_err_context);
+                }
+
+                if (ev == NULL)
+                    break;
 
 		if (((m_alert->monitor_flags & KHUI_AMP_SHOW_EVT_ERR) &&
 		     ev->severity <= KHERR_ERROR) ||
