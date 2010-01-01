@@ -97,9 +97,7 @@ namespace nim {
             return IsDlgButtonChecked(hwnd, nIDButton);
         }
 
-        BOOL EnableItem(int nID, BOOL bEnable = TRUE) {
-            return EnableWindow(GetItem(nID), bEnable);
-        }
+        BOOL EnableItem(int nID, BOOL bEnable = TRUE);
 
     public:
         virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam) { return FALSE; }

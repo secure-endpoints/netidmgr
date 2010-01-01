@@ -56,6 +56,20 @@ namespace nim {
                               (LPARAM) &d);
     }
 
+    BOOL DialogWindow::EnableItem(int nID, BOOL bEnable) {
+        HWND hwnd_item = GetItem(nID);
+
+        if (hwnd_item == NULL)
+            return FALSE;
+
+        if (!bEnable && GetFocus() == hwnd_item) {
+            PostMessage(WM_NEXTDLGCTL, 0, 0);
+        }
+
+        return EnableWindow(hwnd_item, bEnable);
+    }
+
+
     INT_PTR CALLBACK DialogWindow::HandleOnInitDialog(HWND hwnd, HWND hwnd_focus, LPARAM lParam)
     {
         DialogWindowCreateData *pd = (DialogWindowCreateData *) lParam;
