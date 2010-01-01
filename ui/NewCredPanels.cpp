@@ -401,8 +401,7 @@ namespace nim {
             }
 
             bool good_id =
-                !(idf & KCDB_IDENT_FLAG_INVALID) &&
-                !(idf & KCDB_IDENT_FLAG_UNKNOWN) &&
+                (idf & KCDB_IDENT_FLAG_VALID) &&
                 (idf & KCDB_IDENT_FLAG_CRED_INIT);
 
             dw->CheckButton(IDC_NC_MAKEDEFAULT,
