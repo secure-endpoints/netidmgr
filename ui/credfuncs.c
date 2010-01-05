@@ -96,24 +96,26 @@ khm_cred_end_dialog(khui_new_creds * nc) {
         in_dialog = FALSE;
         SetEvent(in_dialog_evt);
     }
-    dialog_result = nc->result;
-#ifdef DEBUG
-    assert(dialog_nc == nc);
-#endif
-    dialog_nc = NULL;
-    if ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-         nc->subtype == KHUI_NC_SUBTYPE_IDSPEC) &&
-        nc->n_identities > 0 &&
-        nc->identities[0]) {
-        khm_size cb;
+    if (nc != NULL) {
+        dialog_result = nc->result;
+        assert(dialog_nc == nc);
+        dialog_nc = NULL;
+        if ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+             nc->subtype == KHUI_NC_SUBTYPE_IDSPEC) &&
+            nc->n_identities > 0 &&
+            nc->identities[0]) {
+            khm_size cb;
 
-        cb = sizeof(dialog_identity);
-        if (KHM_FAILED(kcdb_identity_get_short_name(nc->identities[0],
-                                                    FALSE,
-                                                    dialog_identity, &cb)))
+            cb = sizeof(dialog_identity);
+            if (KHM_FAILED(kcdb_identity_get_short_name(nc->identities[0],
+                                                        FALSE,
+                                                        dialog_identity, &cb)))
+                dialog_identity[0] = 0;
+        } else {
             dialog_identity[0] = 0;
+        }
     } else {
-        dialog_identity[0] = 0;
+        assert(dialog_nc == NULL);
     }
     LeaveCriticalSection(&cs_dialog);
 }
@@ -752,6 +754,11 @@ void khm_cred_change_password(wchar_t * title)
     if (!khm_cred_begin_dialog())
         return;
 
+    if (!khm_cred_begin_new_cred_op()) {
+        khm_cred_end_dialog(NULL);
+        return;
+    }
+
     khui_cw_create_cred_blob(&nc);
     nc->subtype = KMSG_CRED_PASSWORD;
     dialog_nc = nc;
@@ -842,9 +849,13 @@ void khm_cred_obtain_new_creds(wchar_t * title)
     khm_size cb;
     khm_handle def_idpro = NULL;
 
-    if (!khm_cred_begin_dialog() ||
-        !khm_cred_begin_new_cred_op())
+    if (!khm_cred_begin_dialog())
         return;
+
+    if (!khm_cred_begin_new_cred_op()) {
+        khm_cred_end_dialog(NULL);
+        return;
+    }
 
     khui_cw_create_cred_blob(&nc);
     nc->subtype = KHUI_NC_SUBTYPE_NEW_CREDS;
