@@ -311,14 +311,14 @@ kmsg_cred_completion(kmq_message *m)
 
         /* all the controls have been created.  Now initialize them */
         if (nc->n_types > 0) {
-            kmq_post_subs_msg(nc->type_subs, 
-                              nc->n_types, 
-                              KMSG_CRED, 
-                              KMSG_CRED_DIALOG_PRESTART, 
-                              0, 
+            kmq_post_subs_msg(nc->type_subs,
+                              nc->n_types,
+                              KMSG_CRED,
+                              KMSG_CRED_DIALOG_PRESTART,
+                              0,
                               m->vparam);
         } else {
-            PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
+            PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY,
                         MAKEWPARAM(0, WMNC_DIALOG_PROCESS_COMPLETE), 0);
         }
         break;
@@ -327,7 +327,7 @@ kmsg_cred_completion(kmq_message *m)
         /* all prestart stuff is done.  Now to activate the dialog */
         nc = (khui_new_creds *) m->vparam;
         khm_show_newcredwnd(nc->hwnd);
-        
+
         kmq_post_subs_msg(nc->type_subs,
                           nc->n_types,
                           KMSG_CRED, 
@@ -771,9 +771,7 @@ void khm_cred_change_password(wchar_t * title)
             cb += sizeof(wchar_t);
 
             nc->window_title = PMALLOC(cb);
-#ifdef DEBUG
             assert(nc->window_title);
-#endif
             StringCbCopy(nc->window_title, cb, title);
         }
     } else if (nc->ctx.cb_vparam == sizeof(NETID_DLGINFO) &&
@@ -783,13 +781,14 @@ void khm_cred_change_password(wchar_t * title)
                SUCCEEDED(StringCchLength(pdlginfo->in.title,
                                          NETID_TITLE_SZ,
                                          &cb))) {
-
         cb = (cb + 1) * sizeof(wchar_t);
         nc->window_title = PMALLOC(cb);
-#ifdef DEBUG
         assert(nc->window_title);
-#endif
         StringCbCopy(nc->window_title, cb, pdlginfo->in.title);
+    }
+
+    if (nc->ctx.identity != NULL) {
+        khui_cw_set_primary_id(nc, nc->ctx.identity);
     }
 
     khm_create_newcredwnd(khm_hwnd_main, nc);

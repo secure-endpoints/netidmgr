@@ -460,7 +460,7 @@ namespace nim {
 
         case KHUI_NC_SUBTYPE_PASSWORD:
             if (nc->n_identities > 0) {
-                NotifyNewIdentity( FALSE );
+                NotifyNewIdentity( TRUE );
                 Navigate( NC_PAGE_PASSWORD);
             } else {
                 Navigate( NC_PAGE_IDSPEC);
@@ -572,7 +572,7 @@ namespace nim {
             return FALSE;
 
         ::SendMessage(m_privint.hwnd_current, KHUI_WM_NC_NOTIFY, 
-                    MAKEWPARAM(0, WMNC_DIALOG_MOVE), (LPARAM) nc);
+                      MAKEWPARAM(0, WMNC_DIALOG_MOVE), (LPARAM) nc);
 
         return FALSE;
     }
