@@ -705,6 +705,7 @@ cw_create_privint_panel(HWND hwnd,
     p->magic = KHUI_NEW_CREDS_PRIVINT_PANEL_MAGIC;
     p->hwnd = hwnd;
     p->identity_state = KHUI_CWNIS_READY;
+    p->ctype = KCDB_CREDTYPE_AUTO;
     if (caption)
         StringCbCopy(p->caption, sizeof(p->caption), caption);
 
@@ -887,8 +888,7 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
             QDEL(&c->privint.shown, p);
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
-            if (c->privint.legacy_panel == p)
-                c->privint.legacy_panel = NULL;
+            assert(c->privint.legacy_panel != p);
             khui_cw_free_privint(p);
             do_set_prompts = TRUE;
         }
@@ -902,8 +902,7 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
             ASSERT_PP(p);
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
-            if (c->privint.legacy_panel == p)
-                c->privint.legacy_panel = NULL;
+            assert(c->privint.legacy_panel != p);
             khui_cw_free_privint(p);
             do_set_prompts = TRUE;
         }
@@ -931,6 +930,7 @@ khui_cw_clear_all_privints(khui_new_creds * c)
 
     QGET(&c->privint.shown, &p);
     while (p) {
+        assert(p != c->privint.legacy_panel);
         khui_cw_free_privint(p);
         QGET(&c->privint.shown, &p);
     }
@@ -938,8 +938,7 @@ khui_cw_clear_all_privints(khui_new_creds * c)
     for (i=0; i < c->n_types; i++) {
         while (QTOP(&c->types[i])) {
             QGET(&c->types[i], &p);
-            if (c->privint.legacy_panel == p)
-                c->privint.legacy_panel = NULL;
+            assert(c->privint.legacy_panel != p);
             khui_cw_free_privint(p);
         }
     }
@@ -1266,16 +1265,12 @@ khui_cw_add_prompt(khui_new_creds * c,
 
     if (p == NULL || p->n_prompts >= p->nc_prompts || p->hwnd || p->use_custom) {
         LeaveCriticalSection(&c->cs);
-#ifdef DEBUG
         assert(FALSE);
-#endif
 
         return KHM_ERROR_INVALID_OPERATION;
     }
 
-#ifdef DEBUG
     assert(p->prompts != NULL);
-#endif
 
     pr = cw_create_prompt(p->n_prompts, type, prompt, def, flags);
     if(pr == NULL) {
@@ -1301,8 +1296,8 @@ khui_cw_add_prompt(khui_new_creds * c,
 
 KHMEXP khm_int32 KHMAPI 
 khui_cw_get_prompt_count(khui_new_creds * c,
-                         khm_size * np) {
-
+                         khm_size * np)
+{
     ASSERT_NC(c);
 
     EnterCriticalSection(&c->cs);
