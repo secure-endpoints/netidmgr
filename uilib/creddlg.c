@@ -887,6 +887,8 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
             QDEL(&c->privint.shown, p);
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
+            if (c->privint.legacy_panel == p)
+                c->privint.legacy_panel = NULL;
             khui_cw_free_privint(p);
             do_set_prompts = TRUE;
         }
@@ -900,6 +902,8 @@ khui_cw_revoke_privileged_dialogs(khui_new_creds * c, khm_int32 ctype)
             ASSERT_PP(p);
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
+            if (c->privint.legacy_panel == p)
+                c->privint.legacy_panel = NULL;
             khui_cw_free_privint(p);
             do_set_prompts = TRUE;
         }
@@ -934,6 +938,8 @@ khui_cw_clear_all_privints(khui_new_creds * c)
     for (i=0; i < c->n_types; i++) {
         while (QTOP(&c->types[i])) {
             QGET(&c->types[i], &p);
+            if (c->privint.legacy_panel == p)
+                c->privint.legacy_panel = NULL;
             khui_cw_free_privint(p);
         }
     }
@@ -961,6 +967,9 @@ khui_cw_purge_deleted_shown_panels(khui_new_creds * c)
 
             if (c->privint.shown.current_panel == p)
                 c->privint.shown.current_panel = NULL;
+
+            if (c->privint.legacy_panel == p)
+                c->privint.legacy_panel = NULL;
 
             p->hwnd = NULL;
             khui_cw_free_privint(p);
@@ -1066,10 +1075,8 @@ cw_free_prompt(khui_new_creds_prompt * p) {
         PFREE(p->value);
     }
 
-#ifdef DEBUG
     assert(p->hwnd_static == NULL);
     assert(p->hwnd_edit == NULL);
-#endif
 
     PFREE(p);
 }
@@ -1107,9 +1114,7 @@ cw_free_prompts(khui_new_creds_privint_panel * p)
     p->n_prompts = 0;
     p->use_custom = FALSE;
 
-#ifdef DEBUG
     assert(p->hwnd == NULL);
-#endif
 }
 
 KHMEXP khm_int32 KHMAPI 
@@ -1127,9 +1132,8 @@ khui_cw_clear_prompts(khui_new_creds * c)
         /* Is this the current privileged interaction panel? */
         if (p == c->privint.shown.current_panel &&
             !c->privint.shown.show_blank) {
-#ifdef DEBUG
             assert(p->use_custom);
-#endif
+
             p->use_custom = FALSE;
 
             LeaveCriticalSection(&c->cs);
@@ -1137,8 +1141,6 @@ khui_cw_clear_prompts(khui_new_creds * c)
                         MAKEWPARAM(0, WMNC_SET_PROMPTS),
                         (LPARAM) c);
             EnterCriticalSection(&c->cs);
-
-            QDEL(&c->privint.shown, p);
         }
 
         /* If p is in the shown queue, we should dequeue it since we

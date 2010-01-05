@@ -1342,7 +1342,7 @@ khui_action_context khui_ctx = {
     NULL,
     0};
 
-khm_int32 KHMAPI
+static khm_int32 KHMAPI
 set_cred_select_flag(khm_handle cred, void * rock) {
     kcdb_cred_set_flags(cred, KCDB_CRED_FLAG_SELECTED,
                         KCDB_CRED_FLAG_SELECTED);
@@ -1465,7 +1465,7 @@ khui_context_set_ex(khui_scope scope,
     tctx.int_cb_used = 0;
 
     khuiint_copy_context(&khui_ctx, &tctx);
-    
+
     khui_context_refresh();
 
     LeaveCriticalSection(&cs_actions);
@@ -1536,9 +1536,7 @@ khui_context_get(khui_action_context * ctx)
 KHMEXP void KHMAPI 
 khui_context_release(khui_action_context * ctx)
 {
-#ifdef DEBUG
     assert(ctx->magic == KHUI_ACTION_CONTEXT_MAGIC);
-#endif
 
     khuiint_context_release(ctx);
     if (ctx->credset) {
