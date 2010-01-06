@@ -1063,8 +1063,6 @@ k5_handle_process_password(khui_new_creds * nc,
     _report_mr0(KHERR_NONE, MSG_CTX_PASSWD);
     _describe();
 
-    khui_cw_lock_nc(nc);
-
     ident = NULL;
     khui_cw_get_primary_id(nc, &ident);
 
@@ -1102,9 +1100,7 @@ k5_handle_process_password(khui_new_creds * nc,
 
         _progress(0,1);
 
-        khui_cw_unlock_nc(nc);
         khui_cw_sync_prompt_values(nc);
-        khui_cw_lock_nc(nc);
 
         khui_cw_get_prompt_count(nc, &n_prompts);
         assert(n_prompts == 3);
@@ -1321,7 +1317,7 @@ k5_handle_process_password(khui_new_creds * nc,
             }
 
             khui_cw_set_response(nc, credtype_id_krb5, 
-                                 KHUI_NC_RESPONSE_NOEXIT|
+                                 KHUI_NC_RESPONSE_NOEXIT |
                                  KHUI_NC_RESPONSE_FAILED);
         } else {
             khui_cw_set_response(nc, credtype_id_krb5,
@@ -1329,8 +1325,6 @@ k5_handle_process_password(khui_new_creds * nc,
                                  KHUI_NC_RESPONSE_EXIT);
         }
     }
-
-    khui_cw_unlock_nc(nc);
 
     if (ident)
         kcdb_identity_release(ident);
