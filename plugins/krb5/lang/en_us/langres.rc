@@ -394,6 +394,7 @@ END
 STRINGTABLE 
 BEGIN
     IDS_OFN_IDCCT           "Select credential cache file"
+    IDS_PNAME_PW            "Kerberos 5 password"
     IDS_KRB5_FLAGS_SHORT_DESC "Kerberos v5 Flags"
     IDS_RENEW_TILL_SHORT_DESC "Renew Till"
     IDS_RENEW_TILL_LONG_DESC "Renewable Till"

@@ -46,6 +46,7 @@
 #define IDS_KRB4_SHORT_DESC             128
 #define IDS_OFN_IDCCT                   128
 #define IDS_KRB4_LONG_DESC              129
+#define IDS_PNAME_PW                    129
 #define IDS_KRB5_FLAGS_SHORT_DESC       130
 #define IDS_RENEW_TILL_SHORT_DESC       131
 #define IDS_RENEW_TILL_LONG_DESC        132

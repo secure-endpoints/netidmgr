@@ -468,6 +468,9 @@ cached_kinit_prompter(k5_kinit_task * kt) {
                                        wpname, &cb)))
             wpname[0] = 0;
 
+        if (wpname[0] == L'\0')
+            LoadString(hResModule, IDS_PNAME_PW, wpname, ARRAYLENGTH(wpname));
+
         khui_cw_begin_custom_prompts(kt->nc,
                                      n_prompts,
                                      (wbanner[0]? wbanner: NULL),
@@ -702,14 +705,11 @@ kinit_prompter(krb5_context context,
         if(name)
             AnsiStrToUnicode(wname, sizeof(wname), name);
         else
-            wname[0] = L'\0';
+            LoadString(hResModule, IDS_PNAME_PW, wname, ARRAYLENGTH(wname));
 
         khui_cw_clear_prompts(kt->nc);
 
-        khui_cw_begin_custom_prompts(kt->nc, 
-                                     num_prompts,
-                                     (banner)? wbanner : NULL,
-                                     (name)? wname : NULL);
+        khui_cw_begin_custom_prompts(kt->nc, num_prompts, wbanner, wname);
 
         if (csp_prcache) {
             FILETIME current;
@@ -719,7 +719,7 @@ kinit_prompter(krb5_context context,
             khm_int32 t = 0;
 
             khc_write_string(csp_prcache, L"Banner", wbanner);
-            khc_write_string(csp_prcache, L"Name", wname);
+            khc_write_string(csp_prcache, L"Name", (name)? wname: L"");
             khc_write_int32(csp_prcache, L"PromptCount", (khm_int32) num_prompts);
 
             GetSystemTimeAsFileTime(&current);
