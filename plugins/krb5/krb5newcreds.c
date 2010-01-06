@@ -215,7 +215,17 @@ k5_handle_wmnc_notify(HWND hwnd,
         {
             /* There has been a change of identity */
             if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_PASSWORD) {
-                k5_force_password_change(d);
+                khm_handle p_identity = NULL;
+
+                if (KHM_FAILED(khui_cw_get_primary_id(d->nct.nc, &p_identity)) ||
+                    !kcdb_identity_by_provider(p_identity, L"Krb5Ident")) {
+                    khui_cw_enable_type(d->nct.nc, credtype_id_krb5, FALSE);
+                } else {
+                    k5_force_password_change(d);
+                }
+
+                if (p_identity)
+                    kcdb_identity_release(p_identity);
             } else {
                 kmq_post_sub_msg(k5_sub, KMSG_CRED, 
                                  KMSG_CRED_DIALOG_NEW_IDENTITY, 
