@@ -203,6 +203,11 @@ namespace nim {
                which case we will re-initialize the tab control
                housing the panels. */
 
+            // Need to call this before calling InitializeTabs()
+            // because the p->caption (if applicable) is only filled
+            // in GetPrivintPanel().
+            p = GetPrivintPanel(dw->hwnd);
+
             if (!nc->privint.initialized)
                 m_advanced.InitializeTabs();
 
@@ -211,7 +216,6 @@ namespace nim {
             khui_cw_lock_nc(nc);
 
             if (panel_idx == NC_PRIVINT_PANEL) {
-                p = GetPrivintPanel(dw->hwnd);
                 hw_target = (p)? p->hwnd : NULL;
             } else {
                 /* We have to show the credentials options panel for some

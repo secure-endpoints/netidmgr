@@ -189,33 +189,6 @@ nc_layout_custom_prompter(HWND hwnd, khui_new_creds_privint_panel * p, BOOL crea
         hdwp = BeginDeferWindowPos((int) (2 + p->n_prompts * 2));
     }
 
-    if (p->pname) {
-        StringCchLength(p->pname, KHUI_MAXCCH_PNAME, &cch);
-        SetRect(&r, 0, 0, banner.cx - margin.cx, 0);
-        DrawText(hdc, p->pname, (int) cch, &r, DT_CALCRECT | DT_WORDBREAK);
-        assert(r.bottom > 0);
-
-        r.right = banner.cx;
-        r.bottom += margin.cy / 2;
-        OffsetRect(&r, x, y);
-
-        if (create) {
-            hw = CreateWindow(L"STATIC", p->pname,
-                              SS_CENTER | SS_SUNKEN | WS_CHILD | SS_CENTERIMAGE,
-                              r.left, r.top, r.right - r.left, r.bottom - r.top,
-                              hwnd, (HMENU) IDC_NCC_PNAME,
-                              khm_hInstance, NULL);
-            assert(hw != NULL);
-            SendMessage(hw, WM_SETFONT, (WPARAM) hf, 0);
-        } else {
-            hw = GetDlgItem(hwnd, IDC_NCC_PNAME);
-            assert(hw != NULL);
-            hdwp = DeferWindowPos(hdwp, hw, NULL, rect_coords(r), SWP_MOVESIZE);
-        }
-
-        y = r.bottom + margin.cy / 2;
-    }
-
     if (p->banner) {
         StringCchLength(p->banner, KHUI_MAXCCH_BANNER, &cch);
         SetRect(&r, 0, 0, banner.cx - margin.cx, 0);

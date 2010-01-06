@@ -52,7 +52,10 @@ typedef struct tag_khui_new_creds_privint_panel {
 
     HWND       hwnd;                            /*!< (Invariant) */
 
-    wchar_t    caption[KCDB_MAXCCH_SHORT_DESC]; /*!< (Invariant) */
+    wchar_t    caption[KCDB_MAXCCH_SHORT_DESC]; /*!< Caption.  An
+                                                   invariant unless
+                                                   this is the
+                                                   legacy_panel. */
 
     khui_new_creds * nc;        /*!< New Credentials dialog that owns
                                   this panel.  */
@@ -74,7 +77,6 @@ typedef struct tag_khui_new_creds_privint_panel {
                                          processed. */
 
     wchar_t    *banner;         /*!< Banner text */
-    wchar_t    *pname;          /*!< Heading */
     khui_new_creds_prompt ** prompts; /*!< Individual prompts */
     khm_size   n_prompts;            /*!< Number of prompts */
     khm_size   nc_prompts;           /*!< Total number of prompts allocated */

@@ -1092,11 +1092,6 @@ cw_free_prompts(khui_new_creds_privint_panel * p)
         p->banner = NULL;
     }
 
-    if(p->pname != NULL) {
-        PFREE(p->pname);
-        p->pname = NULL;
-    }
-
     for (i=0; i < p->n_prompts; i++) {
         if (p->prompts[i]) {
             cw_free_prompt(p->prompts[i]);
@@ -1218,15 +1213,10 @@ khui_cw_begin_custom_prompts(khui_new_creds * c,
     }
 
     if(SUCCEEDED(StringCbLength(pname, KHUI_MAXCB_PNAME, &cb)) && 
-       cb > 0) {
-
-        cb += sizeof(wchar_t);
-        p->pname = PMALLOC(cb);
-        StringCbCopy(p->pname, cb, pname);
-
-    } else {
-        p->pname = NULL;
-    }
+       cb > 0)
+        StringCbCopy(p->caption, sizeof(p->caption), pname);
+    else
+        StringCbCopy(p->caption, sizeof(p->caption), L"");
 
     if(n_prompts > 0) {
         p->prompts = PMALLOC(sizeof(*(p->prompts)) * n_prompts);
