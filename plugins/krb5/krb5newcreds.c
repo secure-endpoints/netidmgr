@@ -1081,6 +1081,10 @@ k5_handle_process_password(khui_new_creds * nc,
         khui_cw_set_response(nc, credtype_id_krb5,
                              KHUI_NC_RESPONSE_FAILED |
                              KHUI_NC_RESPONSE_NOEXIT);
+    } else if (!kcdb_identity_by_provider(ident, L"Krb5Ident")) {
+        khui_cw_set_response(nc, credtype_id_krb5,
+                             KHUI_NC_RESPONSE_SUCCESS |
+                             KHUI_NC_RESPONSE_EXIT);
     } else {
         wchar_t   widname[KCDB_IDENT_MAXCCH_NAME];
         char      idname[KCDB_IDENT_MAXCCH_NAME];
@@ -1096,6 +1100,8 @@ k5_handle_process_password(khui_new_creds * nc,
         khm_int32 rv = KHM_ERROR_SUCCESS;
         long code = 0;
 
+        _progress(0,1);
+
         khui_cw_unlock_nc(nc);
         khui_cw_sync_prompt_values(nc);
         khui_cw_lock_nc(nc);
@@ -1106,9 +1112,7 @@ k5_handle_process_password(khui_new_creds * nc,
         cb = sizeof(widname);
         rv = kcdb_identity_get_name(ident, widname, &cb);
         if (KHM_FAILED(rv)) {
-#ifdef DEBUG
             assert(FALSE);
-#endif
             _report_mr0(KHERR_ERROR, MSG_PWD_UNKNOWN);
             goto _pwd_exit;
         }
@@ -1116,9 +1120,7 @@ k5_handle_process_password(khui_new_creds * nc,
         cb = sizeof(wpwd);
         rv = khui_cw_get_prompt_value(nc, 0, wpwd, &cb);
         if (KHM_FAILED(rv)) {
-#ifdef DEBUG
             assert(FALSE);
-#endif
             _report_mr0(KHERR_ERROR, MSG_PWD_UNKNOWN);
             goto _pwd_exit;
         }
@@ -1126,9 +1128,7 @@ k5_handle_process_password(khui_new_creds * nc,
         cb = sizeof(wnpwd);
         rv = khui_cw_get_prompt_value(nc, 1, wnpwd, &cb);
         if (KHM_FAILED(rv)) {
-#ifdef DEBUG
             assert(FALSE);
-#endif
             _report_mr0(KHERR_ERROR, MSG_PWD_UNKNOWN);
             goto _pwd_exit;
         }
@@ -1136,9 +1136,7 @@ k5_handle_process_password(khui_new_creds * nc,
         cb = sizeof(wnpwd2);
         rv = khui_cw_get_prompt_value(nc, 2, wnpwd2, &cb);
         if (KHM_FAILED(rv)) {
-#ifdef DEBUG
             assert(FALSE);
-#endif
             _report_mr0(KHERR_ERROR, MSG_PWD_UNKNOWN);
             goto _pwd_exit;
         }
@@ -1162,6 +1160,8 @@ k5_handle_process_password(khui_new_creds * nc,
         UnicodeStrToAnsi(npwd, sizeof(npwd), wnpwd);
 
         result = NULL;
+
+        _progress(1, 2);
 
         code = khm_krb5_changepwd(idname, pwd, npwd, &result);
 
@@ -1290,9 +1290,7 @@ k5_handle_process_password(khui_new_creds * nc,
 
             StringCchLengthA(result, KHERR_MAXCCH_STRING, &len);
             wresult = PMALLOC((len + 1) * sizeof(wchar_t));
-#ifdef DEBUG
             assert(wresult);
-#endif
             AnsiStrToUnicode(wresult, (len + 1) * sizeof(wchar_t), result);
 
             _report_cs1(KHERR_ERROR, L"%1!s!", _cstr(wresult));
@@ -1336,6 +1334,8 @@ k5_handle_process_password(khui_new_creds * nc,
 
     if (ident)
         kcdb_identity_release(ident);
+
+    _progress(1,1);
 
     _end_task();
 }
