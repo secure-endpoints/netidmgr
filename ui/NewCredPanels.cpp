@@ -171,6 +171,7 @@ namespace nim {
         const NewCredPage page = NewCredWizard::FromNC(nc)->page;
 
         switch (page) {
+        case NC_PAGE_PASSWORD:
         case NC_PAGE_CREDOPT_BASIC:
             dw = static_cast<DialogWindow *>(&m_basic);
             break;
@@ -344,7 +345,9 @@ namespace nim {
             MapWindowRect(NULL, dw->hwnd, &r_p);
         }
 
-        if (allow_persist && page != NC_PAGE_CREDOPT_BASIC) {
+        if (allow_persist &&
+            (page == NC_PAGE_CREDOPT_ADV ||
+             page == NC_PAGE_CREDOPT_WIZ)) {
             RECT r;
 
             r_persist = r_p;
@@ -384,12 +387,18 @@ namespace nim {
            above the tab control. */
         SetWindowPos(hw_target, HWND_TOP, rect_coords(r_p), SWP_MOVESIZEZ);
 
-        if (page != NC_PAGE_CREDOPT_BASIC && allow_persist) {
+        if ((page == NC_PAGE_CREDOPT_ADV ||
+             page == NC_PAGE_CREDOPT_WIZ) && allow_persist) {
             SetParent(m_persist.hwnd, dw->hwnd);
             SetWindowPos(m_persist.hwnd, hw_target, rect_coords(r_persist), SWP_MOVESIZEZ);
         }
 
-        {
+        if (page == NC_PAGE_PASSWORD) {
+            m_basic.EnableItem(IDC_NC_ADVANCED, false);
+            m_basic.EnableItem(IDC_NC_MAKEDEFAULT, false);
+            SetWindowPos(m_basic.GetItem(IDC_NC_ADVANCED), NULL, 0, 0, 0, 0, SWP_HIDEONLY);
+            SetWindowPos(m_basic.GetItem(IDC_NC_MAKEDEFAULT), NULL, 0, 0, 0, 0, SWP_HIDEONLY);
+        } else {
             khm_int32 idf = 0;
             khm_handle vid = NULL;
 
