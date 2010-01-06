@@ -795,7 +795,7 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
     if (rv == KHUI_NC_RESULT_PROCESS) {
         add_identkeys_from_credset(d->ks, credset);
     } else {
-        assert(FALSE);          /* for debugging */
+        /* Do nothing */
     }
 
     kcdb_credset_delete(credset);
