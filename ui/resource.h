@@ -456,9 +456,7 @@
 #define IDC_BORDER                      1185
 #define IDC_IDICON                      1186
 #define IDC_PERSIST                     1187
-#define IDC_CFGLIST                     1190
 #define IDC_PANELNAME                   1191
-#define IDC_BUTTON1                     1192
 #define IDC_IMGEDITOR                   1205
 #define IDC_URLGO                       1207
 #define IDC_URL                         1210
@@ -474,7 +472,6 @@
 #define IDC_FAVGRP                      1220
 #define IDC_GRAVGRP                     1221
 #define IDC_ICONCTL                     1222
-#define IDC_DEBUG                       1223
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
