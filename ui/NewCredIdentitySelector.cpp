@@ -187,7 +187,7 @@ namespace nim {
             case CDDS_POSTPAINT:
                 DrawState ds =
                     static_cast<DrawState>
-                    (DrawStateNoBackground |
+                    (DrawStateNoBackground | DrawStateButton |
                      ((pcd->uItemState & CDIS_SELECTED)? DrawStateSelected : DrawStateNone) |
                      ((pcd->uItemState & CDIS_HOT)? DrawStateHotTrack : DrawStateHotTrack));
                 RECT r;
