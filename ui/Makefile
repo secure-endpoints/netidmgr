@@ -42,6 +42,7 @@ OBJFILES=				    \
 	$(OBJ)\AlertElement.obj		    \
 	$(OBJ)\AlertWindow.obj		    \
 	$(OBJ)\ControlWindow.obj	    \
+	$(OBJ)\CwIdentityOutline.obj	    \
 	$(OBJ)\CwOutline.obj		    \
 	$(OBJ)\CwOutlineBase.obj	    \
 	$(OBJ)\CwTable.obj		    \

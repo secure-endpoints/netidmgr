@@ -263,13 +263,90 @@ namespace nim
         }
     };
 
+    class CwIdentityCredentialTypesListElement :
+        public IdentityCredentialListTextT< WithStaticCaption < > >,
+        public TimerQueueClient {
+
+        Identity identity;
+
+        enum {
+            PixelsPerFrame = 2,
+            MillisecondsPerPixel = 100
+        };
+
+    public:
+        CwIdentityCredentialTypesListElement(Identity& _identity) :
+            identity(_identity) {}
+
+        void UpdateLayoutPost(Graphics& g, const Rect& layout);
+
+        REAL GetMarqueePosition(REAL width, DWORD * wait_time) {
+            DWORD ticks = GetTickCount();
+            DWORD dwidth = (DWORD) width;
+
+            *wait_time = ((ticks % MillisecondsPerPixel) == 0)? PixelsPerFrame * MillisecondsPerPixel :
+                (ticks % MillisecondsPerPixel) + (PixelsPerFrame - 1) * MillisecondsPerPixel;
+
+            return (REAL)((ticks / MillisecondsPerPixel) % dwidth);
+        }
+
+        void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {
+            std::wstring caption = GetCaption();
+
+            if (caption.length() == 0)
+                return;
+
+            StringFormat sf;
+            GetStringFormat(sf);
+
+            RectF rf((REAL) bounds.X, (REAL) bounds.Y, (REAL) bounds.Width, (REAL) bounds.Height);
+
+            RectF bb(0,0,0,0);
+            g.MeasureString(caption.c_str(), (int) caption.length(), GetFont(g), PointF(0,0), &bb);
+
+            bool saved = false;
+            bool repeat = false;
+            DWORD wait = 0;
+            GraphicsState gs;
+
+            if (bb.Width > rf.Width) {
+                REAL overflow = bb.Width - rf.Width;
+
+                gs = g.Save();
+                g.SetClip(rf, CombineModeReplace);
+                saved = true;
+                rf.Width = bb.Width;
+                rf.X -= GetMarqueePosition(rf.Width, &wait);
+                repeat = (rf.GetRight() < bounds.GetRight());
+            }
+
+            Color fgc = GetForegroundColor();
+            SolidBrush br(fgc);
+            g.DrawString(caption.c_str(), (int) caption.length(), GetFont(g), rf, &sf, &br);
+            if (repeat) {
+                rf.X += rf.Width + g_theme->sz_margin.Width;
+                g.DrawString(caption.c_str(), (int) caption.length(), GetFont(g), rf, &sf, &br);
+            }
+
+            if (saved) {
+                g.Restore(gs);
+                if (wait > 0)
+                    owner->SetTimer(this, wait);
+            }
+        }
+
+        void OnTimer() {
+            Invalidate();
+        }
+    };
+
 
     /*! \brief Default identity control
 
       This is the control which allows the user to set an identity as
       the default.  It also indicates whether the current identity is
       default.
-     */
+    */
     class CwDefaultIdentityElement : public ButtonElement< &KhmDraw::DrawStarWidget > {
         Identity * pidentity;
 
@@ -359,6 +436,7 @@ namespace nim
         CwIdentityMeterElement   *el_meter;
         CwProgressBarElement     *el_progress;
         CwSticktyIdentityElement *el_sticky;
+        CwIdentityCredentialTypesListElement *el_creds;
 
         bool                     monitor_progress;
 
@@ -392,6 +470,9 @@ namespace nim
 
             InsertChildAfter(el_progress =
                              PNEW CwProgressBarElement());
+
+            InsertChildAfter(el_creds =
+                             PNEW CwIdentityCredentialTypesListElement(identity));
         }
 
         ~CwIdentityOutline() {
@@ -402,6 +483,7 @@ namespace nim
             el_status           = NULL;
             el_meter            = NULL;
             el_progress         = NULL;
+            el_creds            = NULL;
         }
 
         virtual bool Represents(const Credential& credential) {
@@ -424,6 +506,7 @@ namespace nim
 
         virtual void UpdateLayoutPost(Graphics& g, const Rect& layout) {
             bool has_creds = (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0);
+            bool is_basic = (owner->columns.size() == 1);
 
             FlowLayout l(layout, g_theme->sz_margin);
 
@@ -446,6 +529,8 @@ namespace nim
                 .Add(el_sticky, FlowLayout::Left, FlowLayout::Fixed)
                 .Add(el_status, FlowLayout::Left, FlowLayout::Squish, has_creds)
                 .Add(el_progress, FlowLayout::Right, FlowLayout::Squish, monitor_progress)
+                .LineBreak()
+                .Add(el_creds, FlowLayout::Left, FlowLayout::Squish, is_basic)
                 .LineBreak()
                 ;
 

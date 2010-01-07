@@ -208,6 +208,7 @@ namespace nim {
               Color KhmDraw::*clr_selected = &KhmDraw::c_text_selected
               >
     class GenericTextFormatterT : public WithCachedFont< T > {
+    public:
         void GetStringFormat(StringFormat& sf) {
             sf.SetFormatFlags(format_flags);
             sf.SetTrimming(trimming);
@@ -242,6 +243,15 @@ namespace nim {
     template <class T>
     class IdentityStatusTextT :
         public GenericTextFormatterT<T>
+    {};
+
+    // Applies to WithTextDisplay
+    template <class T>
+    class IdentityCredentialListTextT :
+        public GenericTextFormatterT<T, &KhmDraw::hf_normal,
+                                     StringFormatFlagsNoWrap, StringTrimmingNone,
+                                     StringAlignmentNear, StringAlignmentNear,
+                                     &KhmDraw::c_tint>
     {};
 
     // Applies to WithTextDisplay
