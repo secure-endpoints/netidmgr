@@ -45,6 +45,7 @@ namespace nim {
         DrawStateFocusRect    = (1L << 5),
         DrawStateNoBackground = (1L << 6),
         DrawStateSkipAux      = (1L << 7),
+        DrawStateButton       = (1L << 8),
 
         DrawStateExpired      = (1L << 16),
         DrawStateCritial      = (1L << 17),

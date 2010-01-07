@@ -602,6 +602,7 @@ namespace nim
         SIZE s;
         COLORREF cr_title, cr_subtitle, cr_aux;
         HFONT hf_old = NULL;
+        bool is_button = !!(state & DrawStateButton);
 
         r = extents;
 
@@ -620,7 +621,7 @@ namespace nim
             if (!(state & DrawStateNoBackground)) {
                 HBRUSH hbr;
 
-                hbr = GetSysColorBrush(COLOR_MENU);
+                hbr = GetSysColorBrush((is_button)? COLOR_BTNFACE : COLOR_MENU);
                 FillRect(hdc, &r, hbr);
             }
 
@@ -628,13 +629,13 @@ namespace nim
                 cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_GRAYTEXT);
             } else {
                 if (state & DrawStateWarning) {
-                    cr_title = GetSysColor(COLOR_MENUTEXT);
+                    cr_title = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
                     cr_subtitle = c_text_error.ToCOLORREF();
                 } else {
-                    cr_title = GetSysColor(COLOR_MENUTEXT);
-                    cr_subtitle = GetSysColor(COLOR_MENUTEXT);
+                    cr_title = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
+                    cr_subtitle = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
                 }
-                cr_aux = GetSysColor(COLOR_MENUTEXT);
+                cr_aux = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
             }
         }
 
