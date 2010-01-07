@@ -270,6 +270,7 @@ namespace nim {
         if (dbuffer == NULL ||
             dbuffer->GetWidth() < (unsigned) b.Width ||
             dbuffer->GetHeight() < (unsigned) b.Height) {
+
             if (dbuffer)
                 delete dbuffer;
 
@@ -283,6 +284,14 @@ namespace nim {
             Rect client_clip = clip;
             Graphics ig(dbuffer);
             client_clip.Y -= header_height;
+
+            {
+                SolidBrush bb(Color(0,255,255,255));
+                Region rb(client_b);
+                rb.Exclude(Rect(-scroll.X, -scroll.Y, extents.Width, extents.Height));
+                ig.FillRegion(&bb, &rb);
+            }
+
             DisplayElement::OnPaint(ig, client_b, client_clip);
         }
 
