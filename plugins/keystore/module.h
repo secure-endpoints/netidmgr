@@ -320,3 +320,6 @@ free_keystores_list(keystore_t ** aks, khm_size n_ks);
 
 void
 update_keystore_list(void);
+
+khm_handle
+get_identkey_identity(identkey_t * idk);
