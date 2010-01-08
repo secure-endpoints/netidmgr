@@ -1003,10 +1003,22 @@ namespace nim {
             }
 
             if (!(f & KCDB_IDENT_FLAG_CRED_INIT)) {
-                std::wstring cant = LoadStringResource(IDS_NC_CANTINIT);
 
+                std::wstring cant = LoadStringResource(IDS_NC_CANTINIT);
                 m_privint.m_noprompts.SetText(KHERR_ERROR, cant.c_str());
             }
+        }
+
+        /* The m_noprompts panel will be shown if the provider does
+           not provide us with a password change dialog.  The default
+           text would need to be changed to indicate that the identity
+           does not support password changes. */
+        if (nc->subtype == KHUI_NC_SUBTYPE_PASSWORD &&
+            nc->n_identities > 0 &&
+            nc->identities[0]) {
+
+            std::wstring wont = LoadStringResource(IDS_NC_NOPWCHANGE);
+            m_privint.m_noprompts.SetText(KHERR_ERROR, wont.c_str());
         }
 
         khui_cw_unlock_nc(nc);
