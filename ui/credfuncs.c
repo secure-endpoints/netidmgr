@@ -896,9 +896,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
             cb += sizeof(wchar_t);
 
             nc->window_title = PMALLOC(cb);
-#ifdef DEBUG
             assert(nc->window_title);
-#endif
             StringCbCopy(nc->window_title, cb, title);
         }
     } else if (nc->ctx.cb_vparam == sizeof(NETID_DLGINFO) &&
@@ -911,9 +909,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
 
         cb = (cb + 1) * sizeof(wchar_t);
         nc->window_title = PMALLOC(cb);
-#ifdef DEBUG
         assert(nc->window_title);
-#endif
         StringCbCopy(nc->window_title, cb, pdlginfo->in.title);
     }
 
