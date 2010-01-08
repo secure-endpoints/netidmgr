@@ -606,6 +606,25 @@ get_provider_key_type(const wchar_t * provider_name)
     return ctype;
 }
 
+/* Must be called with ks locked  */
+khm_handle
+get_identkey_identity(identkey_t * idk)
+{
+    khm_handle identpro = NULL;
+    khm_handle identity = NULL;
+
+    kcdb_identpro_find(idk->provider_name, &identpro);
+    if (identpro == NULL) goto done_with_idk;
+
+    kcdb_identity_create_ex(identpro, idk->identity_name,
+                            KCDB_IDENT_FLAG_CREATE, NULL, &identity);
+
+ done_with_idk:
+    if (identpro) kcdb_identpro_release(identpro);
+
+    return identity;
+}
+
 khm_handle
 get_identkey_credential(keystore_t * ks, identkey_t * idk)
 {
