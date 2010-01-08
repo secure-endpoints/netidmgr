@@ -915,17 +915,28 @@ void khm_cred_obtain_new_creds(wchar_t * title)
 
     /* Preselect primary identity */
 
-    if (nc->ctx.identity) {
-        khui_cw_set_primary_id(nc, nc->ctx.identity);
-    } else {
+    {
         khm_handle ident = NULL;
+        khm_int32 f = 0;
 
-        /* Use the default identity */
-
-        if (KHM_SUCCEEDED(kcdb_identity_get_default_ex(def_idpro, &ident))) {
-            khui_cw_set_primary_id(nc, ident);
-            kcdb_identity_release(ident);
+        if (nc->ctx.identity) {
+            ident = nc->ctx.identity;
+            kcdb_identity_hold(ident);
+        } else {
+            /* Use the default identity */
+            kcdb_identity_get_default_ex(def_idpro, &ident);
         }
+
+        if (ident && KHM_SUCCEEDED(kcdb_identity_get_flags(ident, &f)) &&
+            !(f & KCDB_IDENT_FLAG_CRED_INIT)) {
+            kcdb_identity_release(ident);
+            ident = NULL;
+        }
+
+        khui_cw_set_primary_id(nc, ident);
+
+        if (ident)
+            kcdb_identity_release(ident);
     }
 
     khm_create_newcredwnd(khm_hwnd_main, nc);
