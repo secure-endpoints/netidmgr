@@ -254,7 +254,6 @@ reg_read_value(void * nodeHandle, const wchar_t * valuename,
     assert(is_reg_node(node));
 
     if (!open_key(node, FALSE)) {
-        assert(FALSE);
         return KHM_ERROR_NOT_FOUND;
     }
 
