@@ -189,7 +189,7 @@ namespace nim {
                     static_cast<DrawState>
                     (DrawStateNoBackground | DrawStateButton |
                      ((pcd->uItemState & CDIS_SELECTED)? DrawStateSelected : DrawStateNone) |
-                     ((pcd->uItemState & CDIS_HOT)? DrawStateHotTrack : DrawStateHotTrack));
+                     ((pcd->uItemState & CDIS_HOT)? DrawStateHotTrack : DrawStateNone));
                 RECT r;
 
                 ::GetClientRect(hwnd, &r);

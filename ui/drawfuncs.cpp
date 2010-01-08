@@ -607,7 +607,7 @@ namespace nim
         r = extents;
 
         if ((state & (DrawStateHotTrack | DrawStateSelected)) &&
-            !(state & DrawStateDisabled)) {
+            !(state & DrawStateDisabled) && !is_button) {
 
             cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_HIGHLIGHTTEXT);
 
