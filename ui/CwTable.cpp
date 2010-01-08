@@ -684,6 +684,7 @@ namespace nim
             }
             break;
 
+        case KCDB_OP_NEWPARENT:
         case KCDB_OP_INSERT:
             {
                 kmq_message * m;
@@ -698,8 +699,8 @@ namespace nim
 #ifdef DEBUG
             if (uparam == KCDB_OP_INSERT)
                 OutputDebugString(L"KCDB_IDENT <KCDB_OP_INSERT>\n");
-            else
-                OutputDebugString(L"KCDB_IDENT <KCDB_OP_MODIFY>\n");
+            else if (uparam == KCDB_OP_NEWPARENT)
+                OutputDebugString(L"KCDB_IDENT <KCDB_OP_NEWPARENT>\n");
 #endif
             UpdateOutline();
             Invalidate();

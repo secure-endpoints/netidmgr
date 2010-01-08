@@ -4291,6 +4291,7 @@ kcdb_credtype_get_id(const wchar_t * name,
 #define KCDB_OP_NEW_DEFAULT 10
 #define KCDB_OP_DELCONFIG   11
 #define KCDB_OP_RESUPDATE   12
+#define KCDB_OP_NEWPARENT   13
 
 /*@}*/
 

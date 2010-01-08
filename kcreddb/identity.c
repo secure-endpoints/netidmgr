@@ -820,7 +820,7 @@ kcdb_identity_set_parent(khm_handle vid,
         kcdb_identity_release(old_parent);
 
     if (notify)
-        kcdbint_ident_post_message(KCDB_OP_MODIFY, id);
+        kcdbint_ident_post_message(KCDB_OP_NEWPARENT, id);
 
     return KHM_ERROR_SUCCESS;
 }
