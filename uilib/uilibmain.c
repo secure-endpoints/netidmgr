@@ -43,10 +43,12 @@ uilib_process_attach(void) {
     alert_init();
     ps_init();
     cfgui_init();
+    uibind_init();
 }
 
 void
 uilib_process_detach(void) {
+    uibind_exit();
     cfgui_exit();
     ps_exit();
     alert_exit();
