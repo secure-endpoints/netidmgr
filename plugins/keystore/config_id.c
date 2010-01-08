@@ -106,7 +106,7 @@ config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
     if ((n_to_del = ListView_GetSelectedCount(hw_list)) == 0)
         return TRUE;            /* nothing to do */
 
-    if (get_key_if_necessary(hwnd, d->ks, IDS_PWR_DEL)) {
+    {
         int    idx = -1;
 
         {
@@ -158,7 +158,6 @@ config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
         ks_keystore_lock(d->ks);
         save_keystore_with_identity(d->ks);
         creddlg_refresh_idlist(hw_list, d->ks);
-        ks_keystore_release_key(d->ks);
 
         kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, NULL);
     }
