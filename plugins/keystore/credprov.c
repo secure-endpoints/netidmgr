@@ -211,6 +211,8 @@ handle_kmsg_system_init(void)
 
     init_credtype();
 
+    kmq_subscribe(KMSG_KCDB, credprov_msg_proc);
+
     return KHM_ERROR_SUCCESS;
 }
 
@@ -220,6 +222,8 @@ handle_kmsg_system_exit(void)
     khui_config_node cnode;
     khui_config_node cn_idents;
     khm_size i;
+
+    kmq_unsubscribe(KMSG_KCDB, credprov_msg_proc);
 
     /* It should not be assumed that initialization of the plugin went
        well at this point since we receive a KMSG_SYSTEM_EXIT even if
@@ -574,6 +578,30 @@ handle_kmsg_cred (khm_int32 msg_type,
     return rv;
 }
 
+khm_int32
+handle_kmsg_kcdb(khm_int32 msg_type,
+                 khm_int32 msg_subtype,
+                 khm_ui_4 uparam,
+                 void * vparam)
+{
+    /* if the configuration for an identity was deleted, we should
+       remove any passwords we have for it from all the keystores we
+       keep track of. */
+
+    if (msg_type == KMSG_KCDB &&
+        msg_subtype == KMSG_KCDB_IDENT &&
+        uparam == KCDB_OP_DELCONFIG) {
+
+        if (KHM_SUCCEEDED(delete_identkey_from_all_keystores((khm_handle) vparam))) {
+            kcdb_identity_set_parent((khm_handle) vparam, NULL);
+            kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, NULL);
+        }
+
+    }
+
+    return KHM_ERROR_SUCCESS;
+}
+
 
 khm_int32 KHMAPI
 handle_idk_kmsg_cred (khm_int32 msg_type,
@@ -624,6 +652,9 @@ credprov_msg_proc (khm_int32 msg_type, khm_int32 msg_subtype,
 
     case KMSG_CRED:
         return handle_kmsg_cred(msg_type, msg_subtype, uparam, vparam);
+
+    case KMSG_KCDB:
+        return handle_kmsg_kcdb(msg_type, msg_subtype, uparam, vparam);
     }
 
     return KHM_ERROR_SUCCESS;
