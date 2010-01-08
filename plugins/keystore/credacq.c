@@ -1138,7 +1138,6 @@ derive_keystore_identities(keystore_t * ks, khui_new_creds * nc)
         ks_keystore_unlock(ks);
         for (i=0; i < ks->n_keys; i++) {
             identkey_t * idk;
-            khm_handle identpro = NULL;
             khm_handle identity = NULL;
             khm_handle credential = NULL;
             khm_handle credset = NULL;
@@ -1150,11 +1149,7 @@ derive_keystore_identities(keystore_t * ks, khui_new_creds * nc)
             if (idk->plain_key.cb_data == 0)
                 continue;
 
-            kcdb_identpro_find(idk->provider_name, &identpro);
-            if (identpro == NULL) goto done_with_idk;
-
-            kcdb_identity_create_ex(identpro, idk->identity_name,
-                                    KCDB_IDENT_FLAG_CREATE, NULL, &identity);
+            identity = get_identkey_identity(idk);
             if (identity == NULL) goto done_with_idk;
 
             kcdb_credset_create(&credset);
@@ -1171,8 +1166,8 @@ derive_keystore_identities(keystore_t * ks, khui_new_creds * nc)
 
         done_with_idk:
             if (identity) kcdb_identity_release(identity);
-            if (identpro) kcdb_identpro_release(identpro);
             if (credset) kcdb_credset_delete(credset);
+            if (credential) kcdb_cred_release(credential);
         }
         ks_keystore_lock(ks);
 
