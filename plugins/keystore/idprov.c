@@ -137,12 +137,16 @@ handle_kmsg_ident_notify_create(khm_handle ident)
     }
 
     if (ks) {
+        khm_boolean can_init = TRUE;
+
         KSLOCK(ks);
-        if (ks->display_name) {
+        if (ks->display_name)
             kcdb_identity_set_attr(ident, KCDB_ATTR_DISPLAY_NAME, ks->display_name,
                                    KCDB_CBSIZE_AUTO);
-        }
         KSUNLOCK(ks);
+
+        can_init = (ks_keystore_has_key(ks) || ks_is_keystore_locked(ks));
+
         if (KHM_FAILED(associate_keystore_and_identity(ks, ident))) {
             ks_keystore_release(ks);
             ks = NULL;          /* invokes the ks==NULL code below */
@@ -151,7 +155,7 @@ handle_kmsg_ident_notify_create(khm_handle ident)
 
             kcdb_identity_set_flags(ident,
                                     KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE |
-                                    KCDB_IDENT_FLAG_CRED_INIT,
+                                    ((can_init)? KCDB_IDENT_FLAG_CRED_INIT : 0),
                                     KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE |
                                     KCDB_IDENT_FLAG_CRED_INIT);
             kcdb_identity_set_attr(ident, KCDB_ATTR_STATUS, NULL, 0);
@@ -204,17 +208,24 @@ handle_kmsg_ident_update(khm_handle ident) {
 
     ks = find_keystore_for_identity(ident);
     if (ks != NULL) {
+        khm_boolean can_init;
+
         if (ks_keystore_has_key(ks)) {
             KSLOCK(ks);
             kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, sizeof(FILETIME));
             kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, sizeof(FILETIME));
             KSUNLOCK(ks);
+            can_init = TRUE;
         } else {
             kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, NULL, 0);
             kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, NULL, 0);
+            can_init = ks_is_keystore_locked(ks);
         }
-        kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
-                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
+        kcdb_identity_set_flags(ident,
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE |
+                                ((can_init)? KCDB_IDENT_FLAG_CRED_INIT : 0),
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE |
+                                KCDB_IDENT_FLAG_CRED_INIT);
     } else {
         kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, NULL, 0);
         kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, NULL, 0);
