@@ -95,6 +95,7 @@ INT_PTR CALLBACK get_key_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lP
                 if (KHM_SUCCEEDED(ks_keystore_set_key_password(d->ks, pw, cb))) {
                     d->got_pw = TRUE;
                     EndDialog(hwnd, 1);
+                    list_credentials();
                     return TRUE;
                 } else {
                     MessageBox(hwnd, L"Incorrect password", L"Bad password", MB_OK);
