@@ -323,3 +323,6 @@ update_keystore_list(void);
 
 khm_handle
 get_identkey_identity(identkey_t * idk);
+
+khm_int32
+delete_identkey_from_all_keystores(khm_handle s_identity);
