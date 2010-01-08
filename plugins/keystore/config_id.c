@@ -88,6 +88,8 @@ config_id_ks_add_new_identkey(HWND hwnd, config_id_dlg_data * d)
         save_keystore_with_identity(d->ks);
         creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
         ks_keystore_release_key(d->ks);
+
+        kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, NULL);
     }
 
     return TRUE;
@@ -157,6 +159,8 @@ config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
         save_keystore_with_identity(d->ks);
         creddlg_refresh_idlist(hw_list, d->ks);
         ks_keystore_release_key(d->ks);
+
+        kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, NULL);
     }
 
     return TRUE;
