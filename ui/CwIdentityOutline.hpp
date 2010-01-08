@@ -307,7 +307,7 @@ namespace nim
             bool saved = false;
             bool repeat = false;
             DWORD wait = 0;
-            GraphicsState gs;
+            GraphicsState gs = 0;
 
             if (bb.Width > rf.Width) {
                 REAL overflow = bb.Width - rf.Width;
