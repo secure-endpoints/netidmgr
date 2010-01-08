@@ -859,6 +859,8 @@ destroy_keystore_identity(keystore_t * ks)
     return rv;
 }
 
+#ifdef USE_CONFIG_STORE
+
 #define IFOK(X) (KHM_FAILED(rv) || (rv = (X)))
 
 khm_int32
@@ -1054,3 +1056,5 @@ unmount_identkey_configuration(keystore_t * ks, khm_size idx)
 
     return rv;
 }
+
+#endif
