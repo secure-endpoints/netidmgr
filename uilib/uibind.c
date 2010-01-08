@@ -29,9 +29,7 @@
 #include<khuidefs.h>
 #include<intaction.h>
 
-#ifdef DEBUG
 #include <assert.h>
-#endif
 
 static HANDLE h_main_window = NULL;
 
