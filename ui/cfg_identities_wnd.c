@@ -1196,6 +1196,31 @@ khm_cfg_id_tab_proc(HWND hwnd,
                 break;
 
             case IDC_CFG_REMOVE:
+                {
+                    wchar_t title[KCDB_IDENT_MAXCCH_NAME];
+                    wchar_t text[KCDB_IDENT_MAXCCH_NAME + 256];
+                    wchar_t fmt[256];
+                    wchar_t idname[KCDB_IDENT_MAXCCH_NAME] = L"";
+                    ident_data * d;
+                    khm_size cb;
+
+                    d = find_ident_by_node(idata->ctx_node);
+                    if (d == NULL)
+                        break;
+
+                    cb = sizeof(idname);
+                    kcdb_get_resource(d->ident, KCDB_RES_DISPLAYNAME, 0, NULL, NULL, idname, &cb);
+
+                    LoadString(khm_hInstance, IDS_MBT_IDREMOVE, fmt, ARRAYLENGTH(fmt));
+                    StringCbPrintf(title, sizeof(title), fmt, idname);
+
+                    LoadString(khm_hInstance, IDS_MB_IDREMOVE, fmt, ARRAYLENGTH(fmt));
+                    StringCbPrintf(text, sizeof(text), fmt, idname);
+
+                    if (MessageBox(hwnd, text, title, MB_YESNO | MB_ICONWARNING) != IDYES)
+                        break;
+                }
+
                 mark_remove_ident(hwnd, idata);
                 if (cfg_idents.hwnd)
                     PostMessage(cfg_idents.hwnd, KHUI_WM_CFG_NOTIFY,

@@ -355,6 +355,8 @@
 #define IDS_IS_CUE_EMAIL                335
 #define IDS_NC_CANTINIT                 336
 #define IDS_NC_NOPWCHANGE               337
+#define IDS_MBT_IDREMOVE                338
+#define IDS_MB_IDREMOVE                 339
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027
