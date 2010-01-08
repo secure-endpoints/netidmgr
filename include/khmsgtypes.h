@@ -470,6 +470,8 @@
 
 #define KMSG_CRED_PREPROCESS_ID       28
 
+#define KMSG_CRED_IDSPEC              29
+
 /*! \brief Destroy credentials
 
     Notification that the specified credentials should be destroyed.

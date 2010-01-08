@@ -112,6 +112,11 @@ namespace nim {
                 }
                 break;
 
+            case KHUI_NC_SUBTYPE_IDSPEC:
+                kmq_post_message(KMSG_CRED, KMSG_CRED_IDSPEC, 0,
+                                 (void *) nc);
+                break;
+
             default:
                 assert(FALSE);
             }
@@ -882,11 +887,15 @@ namespace nim {
                             ::DestroyWindow(nc->types[i].nct->hwnd_panel);
                             nc->types[i].nct->hwnd_panel = NULL;
                         }
+
                     EndDialog(nc->result);
                 } else {
                     DestroyWindow();
                 }
-                kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, (void *) nc);
+                if (nc->subtype == KHUI_NC_SUBTYPE_IDSPEC)
+                    khm_cred_end_dialog(nc);
+                else
+                    kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, (void *) nc);
                 Release();
 
                 return;

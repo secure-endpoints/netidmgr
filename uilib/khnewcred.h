@@ -392,7 +392,7 @@ typedef enum khui_nc_subtypes {
     KHUI_NC_SUBTYPE_ACQPRIV_ID  = KMSG_CRED_ACQPRIV_ID,
     /*!< Acquire privileged information for an identity */
 
-    KHUI_NC_SUBTYPE_IDSPEC      = 256,
+    KHUI_NC_SUBTYPE_IDSPEC      = KMSG_CRED_IDSPEC,
     /*!< Choose an identity */
 
     KHUI_NC_SUBTYPE_CONFIG_ID,

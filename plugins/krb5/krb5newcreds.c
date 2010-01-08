@@ -1379,6 +1379,14 @@ k5_msg_cred_dialog(khm_int32 msg_type,
         }
         break;
 
+    case KMSG_CRED_IDSPEC:
+        {
+            nc = (khui_new_creds *) vparam;
+
+            khui_cw_add_selector(nc, k5_idselector_factory, NULL);
+        }
+        break;
+
     case KMSG_CRED_RENEW_CREDS:
         {
             nc = (khui_new_creds *) vparam;

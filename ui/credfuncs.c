@@ -282,6 +282,11 @@ kmsg_cred_completion(kmq_message *m)
                          m->vparam);
         break;
 
+    case KMSG_CRED_IDSPEC:
+        nc = (khui_new_creds *) m->vparam;
+        khm_show_newcredwnd(nc->hwnd);
+        break;
+
     case KMSG_CRED_RENEW_CREDS:
         nc = (khui_new_creds *) m->vparam;
 
@@ -390,9 +395,10 @@ kmsg_cred_completion(kmq_message *m)
 
                 /* IDSPEC subtypes are only spawned by
                    khm_cred_prompt_for_identity_modal() and requires
-                   that nc be kept alive after the dialog dies. */
+                   that nc be kept alive after the dialog dies.  They
+                   do not post KMSG_CRED_END messages. */
 
-                khm_cred_end_dialog(nc);
+                assert(FALSE);
                 return;
 
             case KHUI_NC_SUBTYPE_RENEW_CREDS:
@@ -543,15 +549,7 @@ void khm_cred_prompt_for_identity_modal(const wchar_t * w_title,
     if (*pidentity)
         khui_cw_set_primary_id(nc, *pidentity);
 
-    khm_create_newcredwnd(khm_hwnd_main, nc);
-
-#ifdef DEBUG
-    assert(in_dialog);
-#endif
-
-    khm_show_newcredwnd(nc->hwnd);
-
-    khm_message_loop_int(&in_dialog);
+    khm_do_modal_newcredwnd(khm_hwnd_main, nc);
 
     if (nc->n_identities > 0) {
         if (!kcdb_identity_is_equal(nc->identities[0], *pidentity)) {

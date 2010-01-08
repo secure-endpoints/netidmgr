@@ -398,6 +398,10 @@ INT_PTR khm_do_modal_newcredwnd(HWND parent, khui_new_creds * c)
             LoadStringResource(wtitle, IDS_WT_ACQ_PRIV_ID);
             break;
 
+        case KHUI_NC_SUBTYPE_IDSPEC:
+            LoadStringResource(wtitle, IDS_WT_IDSPEC);
+            break;
+
         default:
             assert(FALSE);
         }
