@@ -33,14 +33,32 @@
 #include <assert.h>
 #endif
 
+static HANDLE h_main_window = NULL;
+
+void uibind_init(void)
+{
+    h_main_window = CreateEvent(NULL, TRUE, FALSE, L"NIMUIBIND Main Window Waiter");
+}
+
+void uibind_exit(void)
+{
+    CloseHandle(h_main_window);
+    h_main_window = NULL;
+}
+
+void uibind_notify_main_window(void)
+{
+    SetEvent(h_main_window);
+}
+
 KHMEXP khm_int32 KHMAPI
 khui_request_UI_callback(khm_ui_callback cb, void * rock) {
 
     khui_ui_callback_data cbdata;
 
-#ifdef DEBUG
+    WaitForSingleObject(h_main_window, INFINITE);
+
     assert(khui_hwnd_main);
-#endif
 
     if (khui_hwnd_main == NULL)
         return KHM_ERROR_NOT_READY;

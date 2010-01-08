@@ -488,9 +488,12 @@ khui_menu_create(khm_int32 action)
     return d;
 }
 
+void uibind_notify_main_window(void);
+
 KHMEXP void KHMAPI
 khui_set_main_window(HWND hwnd) {
     khui_hwnd_main = hwnd;
+    uibind_notify_main_window();
 }
 
 KHMEXP void KHMAPI

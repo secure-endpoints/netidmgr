@@ -35,6 +35,8 @@ extern void ps_init(void);
 extern void ps_exit(void);
 extern void cfgui_init(void);
 extern void cfgui_exit(void);
+extern void uibind_init(void);
+extern void uibind_exit(void);
 
 void
 uilib_process_attach(void) {
