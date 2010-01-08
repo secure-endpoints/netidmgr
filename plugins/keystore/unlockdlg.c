@@ -126,6 +126,9 @@ get_key_if_necessary(HWND hwnd, keystore_t * ks, int res_reason)
     if (ks_keystore_hold_key(ks))
         return TRUE;
 
+    if (!ks_is_keystore_locked(ks))
+        return FALSE;
+
     d.ks = ks;
     d.res_reason = res_reason;
     d.got_pw = FALSE;
