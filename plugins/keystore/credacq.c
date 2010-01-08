@@ -50,7 +50,10 @@ struct nc_dialog_data {
     HWND hw_privint;
 
     keystore_t * ks;
-    khm_boolean  foreign_id;
+    khm_boolean  foreign_id;    /* Set when we are acting as a
+                                   keystore for the new credentials
+                                   operation for some other
+                                   identity. */
 
     /* for password changing */
     khm_size n_ks;
@@ -74,7 +77,7 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 #pragma warning(pop)
     SetProp(hwnd, L"KeyStoreIndex", (HANDLE) d->cur_idx);
 
-    if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
+    if (d->ks != NULL)
         ks = d->ks;
     else {
         wchar_t desc[KHUI_MAXCCH_SHORT_DESC];
@@ -114,12 +117,21 @@ privint_WM_INITDIALOG(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 
     if (ks_is_keystore_locked(ks)) {
         EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), TRUE);
-        ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_HIDE);
-        ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_HIDE);
-        ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), SW_HIDE);
-        ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_HIDE);
-        Button_SetCheck(GetDlgItem(hwnd, IDC_CHPW), BST_UNCHECKED);
-        EnableWindow(GetDlgItem(hwnd, IDC_CHPW), TRUE);
+        if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_PASSWORD) {
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_SHOW);
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_SHOW);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), SW_SHOW);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_SHOW);
+            Button_SetCheck(GetDlgItem(hwnd, IDC_CHPW), BST_CHECKED);
+            EnableWindow(GetDlgItem(hwnd, IDC_CHPW), FALSE);
+        } else {
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_HIDE);
+            ShowWindow(GetDlgItem(hwnd, IDC_NEWPW2), SW_HIDE);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW1), SW_HIDE);
+            ShowWindow(GetDlgItem(hwnd, IDC_LBL_NEWPW2), SW_HIDE);
+            Button_SetCheck(GetDlgItem(hwnd, IDC_CHPW), BST_UNCHECKED);
+            EnableWindow(GetDlgItem(hwnd, IDC_CHPW), TRUE);
+        }
     } else {
         EnableWindow(GetDlgItem(hwnd, IDC_PASSWORD), FALSE);
         ShowWindow(GetDlgItem(hwnd, IDC_NEWPW1), SW_SHOW);
@@ -143,7 +155,7 @@ privint_CheckIfReady(HWND hwnd)
     d = (struct nc_dialog_data *)GetWindowLongPtr(hwnd, DWLP_USER);
     assert(d);
 
-    if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
+    if (d->ks != NULL)
         ks = d->ks;
     else
         ks = d->aks[(int) GetProp(hwnd, L"KeyStoreIndex")];
@@ -526,10 +538,19 @@ creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
         free(d->aks);
     if (d->hw_privints)
         free(d->hw_privints);
+    if (d->ks)
+        ks_keystore_release(d->ks);
 
-    d->aks = NULL; d->n_ks = 0; d->hw_privints = NULL;
+    d->ks = NULL; d->aks = NULL; d->n_ks = 0; d->hw_privints = NULL;
 
-    if (KHM_FAILED(khui_cw_get_primary_id(d->nct.nc, &identity)) ||
+    khui_cw_get_primary_id(d->nct.nc, &identity);
+
+    if (identity != NULL && kcdb_identity_by_provider(identity, IDPROV_NAMEW)) {
+        kcdb_identity_release(identity);
+        return creddlg_WMNC_IDENTITY_CHANGE_new_creds(hwnd, d);
+    }
+
+    if (identity == NULL ||
         KHM_FAILED(kcdb_identity_get_attr(identity, KCDB_ATTR_TYPE, NULL, &id_type, &cb)) ||
         (d->n_ks = get_keystores_with_identkey(identity, &d->aks)) == 0) {
         khui_cw_enable_type(d->nct.nc, credtype_id, FALSE);
@@ -695,8 +716,10 @@ creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, khui_wm_nc_notification notification,
 
         if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_NEW_CREDS)
             return creddlg_WMNC_IDENTITY_CHANGE_new_creds(hwnd, d);
-        else
+        else if (khui_cw_get_subtype(d->nct.nc) == KHUI_NC_SUBTYPE_PASSWORD)
             return creddlg_WMNC_IDENTITY_CHANGE_password(hwnd, d);
+        else
+            return TRUE;
 
     case WMNC_COLLECT_PRIVCRED:
         return creddlg_WMNC_COLLECT_PRIVCRED(hwnd, d);
@@ -1004,12 +1027,6 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
     wchar_t wshortdesc[KHUI_MAXCCH_SHORT_DESC];
     size_t cb = 0;
     struct nc_dialog_data * d;
-
-    /* This is a minimal handler that just adds a dialog pane to the
-       new credentials window to handle new credentials acquisition
-       for this credentials type. */
-
-    /* TODO: add additional initialization etc. as needed */
 
     d = malloc(sizeof(*d));
     ZeroMemory(d, sizeof(*d));
@@ -1411,6 +1428,9 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
             khm_size i;
             khm_handle credset = NULL;
             khm_boolean failed = FALSE;
+
+            if (d->ks != NULL)
+                process_keystore_new_credentials(nc, d->hw_privint, d->ks, NULL, FALSE);
 
             khui_cw_get_privileged_credential_collector(nc, &credset);
             for (i=0; i < d->n_ks; i++) {

@@ -203,11 +203,16 @@ handle_kmsg_ident_update(khm_handle ident) {
     keystore_t * ks;
 
     ks = find_keystore_for_identity(ident);
-    if (ks != NULL && ks_keystore_has_key(ks)) {
-        KSLOCK(ks);
-        kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, sizeof(FILETIME));
-        kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, sizeof(FILETIME));
-        KSUNLOCK(ks);
+    if (ks != NULL) {
+        if (ks_keystore_has_key(ks)) {
+            KSLOCK(ks);
+            kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, sizeof(FILETIME));
+            kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, sizeof(FILETIME));
+            KSUNLOCK(ks);
+        } else {
+            kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, NULL, 0);
+            kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, NULL, 0);
+        }
         kcdb_identity_set_flags(ident, KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE,
                                 KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_KEY_STORE);
     } else {
