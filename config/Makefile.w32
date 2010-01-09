@@ -189,6 +189,12 @@ khdefines=$(khdefines) -D_USE_32BIT_TIME_T
 ldebug=$(ldebug) /DEBUG
 cdebug=$(cdebug) -Fd$(OBJ)\ -Zi
 
+!ifdef NODEBUG
+# Fix for buggy SDKs
+cdebug=$(cdebug:-DDEBUG=)
+cdebug=$(cdebug:-DNDEBUG=) -DNDEBUG
+!endif
+
 # Optimization
 !ifndef NODEBUG
 copt=
