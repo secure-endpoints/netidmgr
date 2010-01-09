@@ -135,11 +135,13 @@ namespace nim {
 
 #undef HANDLE_MSG
 #define HANDLE_MSG(hwnd, message, fn)                                   \
-    case (message): ::SetWindowLongPtr( hwnd, DWLP_MSGRESULT, (LONG_PTR) HANDLE_##message((hwnd), (wParam), (lParam), (fn)) ); break
+    case (message): lr = HANDLE_##message((hwnd), (wParam), (lParam), (fn)); break
 
     INT_PTR CALLBACK DialogWindow::DialogProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         AutoRef<DialogWindow> dw (static_cast<DialogWindow *>((void *)(LONG_PTR) GetWindowLongPtr(hwnd, DWLP_USER)));
+        INT_PTR old_bHandled;
+        LRESULT lr = 0;
 
         if (dw.IsNull()) {
             if (uMsg == WM_INITDIALOG)
@@ -153,6 +155,7 @@ namespace nim {
             return TRUE;
         }
 
+        old_bHandled = dw->bHandled;
         dw->bHandled = TRUE;
 
         switch (uMsg) {
@@ -182,15 +185,14 @@ namespace nim {
 #pragma warning(pop)
         }
 
-        if (!dw->bHandled) {
-            LRESULT lr = 0;
-
+        if (!dw->bHandled)
             dw->bHandled = dw->HandleMessage(uMsg, wParam, lParam, &lr);
-            if (dw->bHandled && lr)
-                dw->SetDlgResult(lr);
-        }
 
-        return dw->bHandled;
+        {
+            INT_PTR rv = ((dw->bHandled) ? SetDlgMsgResult(hwnd, uMsg, lr) : 0);
+            dw->bHandled = old_bHandled;
+            return rv;
+        }
     }
 
 } // namespace nim
