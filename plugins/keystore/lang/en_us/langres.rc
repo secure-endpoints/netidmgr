@@ -379,7 +379,7 @@ BEGIN
     IDS_ID_DESCRIPTION      "KeyStore Identity Collection"
     IDS_ID_INSTANCE         "KeyStore"
     IDS_ID_TOOLTIP          "KeyStore Identity Collection"
-    IDS_NCPRIV_CAPTION      "Password"
+    IDS_NCPRIV_CAPTION      "Password for %s"
     IDS_NCLC_ID             "Identity name"
 END
 

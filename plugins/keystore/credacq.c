@@ -499,10 +499,14 @@ creddlg_WMNC_IDENTITY_CHANGE_new_creds(HWND hwnd, struct nc_dialog_data * d)
                                    nc_privint_dlg_proc,
                                    (LPARAM) d);
     {
-        wchar_t caption[256];
-        LoadString(hResModule, IDS_NCPRIV_CAPTION, caption,
-                   ARRAYLENGTH(caption));
-
+        wchar_t caption[KCDB_MAXCCH_NAME] = L"";
+        wchar_t ksname[KCDB_MAXCCH_NAME] = L"";
+        wchar_t fmt[64] = L"";
+        khm_size cb = sizeof(ksname);
+        LoadString(hResModule, IDS_NCPRIV_CAPTION, fmt,
+                   ARRAYLENGTH(fmt));
+        ks_keystore_get_string(d->ks, KCDB_RES_DISPLAYNAME, ksname, &cb);
+        StringCbPrintf(caption, sizeof(caption), fmt, ksname);
         khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
                                        hw_privint, caption);
         privint_CheckIfReady(hw_privint);
@@ -624,8 +628,13 @@ creddlg_WMNC_COLLECT_PRIVCRED(HWND hwnd, struct nc_dialog_data * d)
                                        (LPARAM) d);
         {
             wchar_t caption[256];
-            LoadString(hResModule, IDS_NCPRIV_CAPTION, caption,
-                       ARRAYLENGTH(caption));
+            wchar_t ksname[KCDB_MAXCCH_NAME] = L"";
+            wchar_t fmt[64] = L"";
+            khm_size cb = sizeof(ksname);
+            LoadString(hResModule, IDS_NCPRIV_CAPTION, fmt,
+                       ARRAYLENGTH(fmt));
+            ks_keystore_get_string(d->ks, KCDB_RES_DISPLAYNAME, ksname, &cb);
+            StringCbPrintf(caption, sizeof(caption), fmt, ksname);
 
             khui_cw_show_privileged_dialog(d->nct.nc, credtype_id,
                                            hw_privint, caption);

@@ -474,7 +474,7 @@ ks_keystore_set_string(keystore_t * ks, kcdb_resource_id r_id, const wchar_t * b
 
 khm_int32
 ks_keystore_get_string(keystore_t * ks, kcdb_resource_id r_id,
-              wchar_t * buffer, khm_size *pcb_buffer)
+                       wchar_t * buffer, khm_size *pcb_buffer)
 {
     const wchar_t * src = NULL;
     size_t maxlen = 0;
