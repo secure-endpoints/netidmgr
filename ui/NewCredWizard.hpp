@@ -75,6 +75,12 @@ namespace nim {
 
         bool                            flashing_enabled;
 
+        // If auto_configure is true, then if the identity status
+        // transitions from unknown->valid, then the wizard will
+        // automatically navigate to the 'wizard' mode from the
+        // 'basic' mode.
+        bool                            auto_configure;
+
     public:
         NewCredWizard(khui_new_creds * _nc):
             DialogWindow(MAKEINTRESOURCE(IDD_NC_CONTAINER),
@@ -89,6 +95,7 @@ namespace nim {
             page = NC_PAGE_NONE;
             flashing_enabled = false;
             is_modal = false;
+            auto_configure = false;
             nc->wizard = this;
         }
 
@@ -138,6 +145,8 @@ namespace nim {
         void PrepCredTypes();
 
         void PositionSelf();
+
+        bool HaveValidIdentity();
 
     public:
         static NewCredWizard * FromNC(khui_new_creds * _nc) {

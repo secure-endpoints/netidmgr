@@ -188,7 +188,7 @@ namespace nim {
 
             if (ctxids[i] != 0)
                 hw = khm_html_help(hw_ctrl,
-                                   L"::popups_newcreds.txt",
+                                   L"::/popups_newcreds.txt",
                                    HH_TP_HELP_WM_HELP,
                                    (DWORD_PTR) ctxids);
         }
@@ -351,6 +351,12 @@ namespace nim {
                     LoadStringResource(buf, IDS_NC_NPR_CLICKFINISH);
                     m_privint.m_noprompts.SetText(KHERR_NONE, buf);
                     m_idsel.SetStatus( (notif->state_string)? notif->state_string : L"");
+
+                    if (auto_configure && page == NC_PAGE_CREDOPT_BASIC) {
+                        m_privint.m_noprompts.SetProgress(0, false);
+                        Navigate( NC_PAGE_CREDOPT_WIZ );
+                        return;
+                    }
 
                 } else {
                     wchar_t buf[80];
@@ -605,10 +611,29 @@ namespace nim {
         }
     }
 
+    bool NewCredWizard::HaveValidIdentity()
+    {
+        khm_handle identity = NULL;
+        khm_int32 flags = 0;
+        bool is_valid = false;
+
+        if (KHM_SUCCEEDED(khui_cw_get_primary_id(nc, &identity)) &&
+            KHM_SUCCEEDED(kcdb_identity_get_flags(identity, &flags)) &&
+            (flags & KCDB_IDENT_FLAG_VALID)) {
+            is_valid = true;
+        }
+
+        if (identity)
+            kcdb_identity_release(identity);
+        return is_valid;
+    }
+
     void NewCredWizard::Navigate( NewCredPage new_page )
     {
-    /* All the page transitions in the new credentials wizard happen
-       here. */
+        auto_configure = false;
+
+        /* All the page transitions in the new credentials wizard
+           happen here. */
 
         switch (new_page) {
         case NC_PAGE_NONE:
@@ -662,7 +687,12 @@ namespace nim {
                     case KHUI_NC_SUBTYPE_NEW_CREDS:
                         m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
                         m_privint.idx_current = 0;
-                        page = NC_PAGE_CREDOPT_WIZ;
+                        if (HaveValidIdentity()) {
+                            page = NC_PAGE_CREDOPT_WIZ;
+                        } else {
+                            page = NC_PAGE_CREDOPT_BASIC;
+                            auto_configure = true;
+                        }
                         break;
 
                     case KHUI_NC_SUBTYPE_ACQPRIV_ID:
