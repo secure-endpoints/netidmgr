@@ -54,7 +54,9 @@ namespace nim {
                                 /*!< Index of currently selected panel
                                   in nc or NC_PRIVINT_PANEL if it's
                                   the privileged interaction panel. */
-#define NC_PRIVINT_PANEL -1
+
+        // The privileged interaction panel
+#define NC_PRIVINT_PANEL    -1
 
         NewCredPanels(khui_new_creds *_nc) :
             nc(_nc),

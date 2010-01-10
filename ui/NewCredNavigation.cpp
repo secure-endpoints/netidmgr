@@ -167,7 +167,7 @@ namespace nim {
                 if ((idx + 1 < (int) nc->n_types &&
                      !(nc->types[idx + 1].nct->flags & KHUI_NCT_FLAG_DISABLED)) ||
                     p != NULL ||
-                    KHM_SUCCEEDED(khui_cw_get_next_privint(nc, &p)))
+                    KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
                     EnableControl(Next);
 
                 if (idx > 0)
