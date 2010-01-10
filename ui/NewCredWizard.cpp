@@ -666,6 +666,7 @@ namespace nim {
         case NC_PAGE_CREDOPT_WIZ:
             m_nav.DisableControl(NewCredNavigation::Abort | NewCredNavigation::ShowCloseIf);
             page = NC_PAGE_CREDOPT_WIZ;
+            m_privint.idx_current = 0;
             break;
 
         case NC_PAGE_PASSWORD:
