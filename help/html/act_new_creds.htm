@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Network Identity Manager - New Credentials</title>
+    <title>New Credentials Aquisition</title>
     <meta name="description" content="obtain new credentials">
     <meta name="keywords" content="new creds">
     <link rel="stylesheet" type="text/css" href="nidmgr.css">
@@ -16,102 +16,257 @@
   </head>
   <body>
 
-    <h1>Network Identity Manager - New Credentials</h1>
+    <h1>New Credentials Aquisition</h1>
 
-    <p>The new credentials dialog can be invoked from
+    <p>Acquiring new credentials can be done through the New
+      Credentials Wizard, which can be invoked from
       the <a href="menu_credential.htm">Credentials</a> menu, by
       typing <span class="pre">Ctrl + N</span>, using the context menu
       in the credentials window or using the context menu in the
-      NetIDMgr icon in the system notification area.
+      Network Identity Manager icon in the system notification area.
     </p>
 
-    <p>Once invoked, you will be presented with a dialog similar to the
-      following:
+    <p>The first time it is invoked, the new credentials wizard shows
+      you the identity specification page:
     </p>
 
-    <p>
-      <img src="images/screen_new_creds.png" alt="New credentials dialog"/>
-    <p class="caption">New credentials dialog with a valid identity
-      selected.</p> 
+    <a name="idspec"/>
+    <h3>Identity Specification Page</h3>
 
-    <p>If the Kerberos v5 identity provider is used, the dialog will ask
-      for a username and a realm to determine the identity for which new
-      credentials will be obtained for.  Depending on the selected identity,
-      you may be required to provide a password or other form of
-      authentication for new credentials to be obtained.
+    <div class="imgbox">
+      <img src="images/new-creds-idspec.png" alt="New credentials wizard - Identity specification"/>
+      <p class="caption">The identity specification page</p>
+    </div>
+
+    <p>If the Kerberos v5 identity provider is used, the dialog will
+      ask for a username and a realm to determine the identity for
+      which new credentials will be obtained.  Depending on the
+      selected identity, you may be required to provide a password or
+      other form of authentication before new credentials can be
+      obtained.
     </p>
 
-    <p>Below the prompts is the credentials summary window.  This window
-      provides an overview of the credentials that will be obtained when the
-      dialog is completed.
+    <p>By default, the only identity selector available is Kerberos
+      v5.  If you have other plug-ins installed that provide identity
+      selectors, they will appear in the identity selection panel
+      allowing you to choose other identity types.
     </p>
 
-    <h3>Expanded view</h3>
-
-    <p>If you click any of the credentials type hyperlinks in the
-      credentials summary window or select the <span class="pre">&gt;&gt;</span> button, the dialog will switch to the expanded view.
-      An example of this is shown below:
+    <p>Once the desired identity has been specified, you can select
+      the <span class="pre">Next</span> button to advance to the next
+      page of the wizard.
     </p>
 
-    <p>
-      <img src="images/screen_new_creds_exp.png"
-           alt="Expanded new credentials window" />
-
-    <p class="caption">Expanded view of the new credentials dialog</p>
-
-    <p>
-      The expanded view provides access to additional options available for
-      each credential provider.  For example, the Kerberos v5 credentials
-      provider allows you to set the lifetime of the obtained Kerberos
-      ticket as well as ticket flags such as <i>renewable</i> or
-      <i>forwardable</i>.
-    </p>
-    <p>
-      <i>Note that the above screenshot is
-        from an instance of NetIDMgr with Kerberos v5, Kerberos v4, OpenAFS and 
-        Kerberized Certificate Authority providers with a Kerberos v5 identity provider.  Actual display may be
-        different depending on the providers that are active.</i></p>
-
-    <h3>Credentials summary window</h3>
-
-    <p>The credentials summary window provides an overview of the
-      credentials that will be obtained after the successful completion of
-      the new credentials dialog.  The window contains hyperlinks that will
-      take you to the corresponding credentials option panels where you will
-      be able to set additional options for each type.
+    <p>If you arrived at the identity specification page from another
+      page in the new credentials wizard, selecting
+      the <span class="pre">Back</span> button will take you back to
+      that previous page.
     </p>
 
-    <p>If there is a problem with the selected identity, the credentials
-      window will display a message describing the problem.  For example:
+    <div class="note">
+      <img src="images/note.png" alt="Note:"/>
+      <p>If the selected identity requires validation, then the
+        identity specification page will take you to the identity
+        validation page next.  From here, you will be able to observe
+        progress of the validation process and also observe any
+        problems it might encounter.</p>
+
+      <p>You will only be able to proceed with identity configuration
+        or credentials acquisition if the identity passes
+        validation.</p>
+    </div>
+
+    <a name="idsel" />
+    <h3>Identity Selection</h3>
+
+    <p>Most of the pages on the new credentials wizard have a large
+      button on the top that shows the currently selected identity.
+      Clicking the button will present you with the identity selection
+      menu:</p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-idsel.png" alt="New credentials wizard - Identity selection"/>
+      <p class="caption">Identity selection menu</p>
+    </div>
+
+    <p>The list of identities shown are the identities that you
+      supports acquiring new credentials.  In addition,
+      the <span class="pre">New identity</span> option allows you to
+      specify an identity that is not listed or configured.  Selecting
+      this option takes you to the <a href="#idspec">Identity
+      Specification</a> page.</p>
+
+    <p>If you had already selected an identity, then the corresponding
+      menu item will appear disabled.</p>
+
+    <a name="idcfg" />
+    <h3>New Identity Configuration</h3>
+
+    <p>When a new identity is specified, the New Credentials Wizard
+      switches over to the New Identity Configuration Wizard and
+      guides you through the available options for this identity.  You
+      only need to do this once for an identity.
     </p>
 
-    <p>
-      <img src="images/screen_new_creds_err01.png" alt="Credentials summary window showing an invalid identity" />
+    <div class="imgbox">
+      <img src="images/new-creds-wiz-k5.png" alt="New credentials wizard - Identity configuration" />
+      <p class="caption">New credentials wizard during identity
+      configuration</p>
+    </div>
+
+    <p>The <span class="pre">Next</span>
+      and <span class="pre">Back</span> buttons will take you through
+      the available options pages and finally the password page, where
+      you will be asked for the password for the identity.
     </p>
 
-    <p>
-      The above is an example of what you would see if the provided identity
-      is invalid.  Once the identity provider (in this case, Kerberos v5)
-      indicates that the identity is invalid, it will be displayed as above
-      along with a brief description of why the identity was found to be
-      invalid.  Here, the Kerberos v5 identity provider is reporting that the
-      specified principal does not exist in the Kerberos database.
+    <p>If the identity does not require a password, then you can
+      select <span class="pre">Finish</span> at any time to obtain
+      credentials using the default settings.
     </p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-wiz-k5-pw.png" alt="New credentials wizard - the password page of the identity configuration wizard"/>
+      <p class="caption">New credentials wizard showing the password
+      page of identity configuration</p>
+    </div>
+
+    <div class="note">
+      <img src="images/note.png" alt="Note:" />
+      <p>The password that you enter here will not be stored by
+        Network Identity Manager unless you also check
+        the <span class="pre">Save password</span> check box.  Network
+        Identity Manager ships with a default key storage provider
+        called KeyStore which lets you store multiple passwords that
+        are protected by a master password.
+      </p>
+
+      <p>For more information about saving passwords, please
+        see <a href="act_new_creds_persistence.htm">'Password
+          persistence'</a></p>
+
+      <p>For more information about the key store provider, please
+        see <a href="keystore.htm">KeyStore</a>.
+    </div>
+
+    <a name="progress"/>
+    <h3>Progress</h3>
+
+    <p>As the final step of the New Credentials Wizard, you will be
+      shown the progress page, where you can monitor the progress of
+      the credential acquisition operation.</p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-progress.png" alt="New credentials wizard - Progress page"/>
+      <p class="caption">New credentials wizard at the progress
+      page</p>
+    </div>
+
+    <p>If there are any problems with acquring new credentials, they
+      will be shown to you here as illustrated below:</p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-progress-error.png" alt="Progress page showing error"/>
+      <p class="caption">Progress page showing an error while acquiring new credentials</p>
+    </div>
+
+    <p>If an error occurs, you may select
+      the <span class="pre">Back</span> button to go back to the
+      password page or the credentials options pages and take any
+      necessary corrective action.  If you believe the error was due
+      to a transient condition, you can select
+      the <span class="pre">Retry</span> button to retry the operation
+      using the current settings and the previously entered password
+      (if any).</p>
+
+    <a name="basic"/>
+    <h3>New credentials wizard - For a known identity</h3>
+
+    <p>Once one or more identities are configured, the new credentials
+      wizard will take on a different appearance.
+    </p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-k5-pw.png" alt="New credentials wizard - Kerberos v5 password"/>
+      <p class="caption">New credentials wizard - Kerberos v5 password</p>
+    </div>
+
+    <p>Since Network Identity Manager already has the configuration
+      information it needs to process the new credentials operation,
+      all it needs from you is the password for the Kerberos v5
+      principal.  Once you enter the password and
+      select <span class="pre">Finish</span> you will be taken to the
+      'Progress' panel.
+    </p>
+
+    <p>In addition, you may also make the selected identity the
+      default identity using the <span class="pre">Make this the
+      default identity</span> check box before clicking
+      the <span class="pre">Finish</span> button.
+    </p>
+
+    <div class="note">
+      <img src="images/note.png" alt="Note:" />
+      <p>The password that you enter here will not be stored by
+        Network Identity Manager unless you also check
+        the <span class="pre">Save password</span> check box.  Network
+        Identity Manager ships with a default key storage provider
+        called KeyStore which lets you store multiple passwords that
+        are protected by a master password.
+      </p>
+
+      <p>For more information about saving passwords, please
+        see <a href="act_new_creds_persistence.htm">'Password
+          persistence'</a></p>
+
+      <p>For more information about the key store provider, please
+        see <a href="keystore.htm">KeyStore</a>.
+    </div>
+
+    <a name="advanced"/>
+    <h3>New credential wizard - Advanced options</h3>
+
+    <p>Clicking on the <span class="pre">Advanced options</span>
+      button from the <a href="#basic">password page</a> will bring
+      you to this pane.</p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-adv.png" alt="New credentials wizard - Advanced panel"/>
+      <p class="caption">New credentials wizard - Advanced page</p>
+    </div>
+
+    <p>This page presents you with all the options available for
+      obtaining credentials for the selected identity.  Each pane in
+      the tabbed area corresponds to a credentials provider that is
+      participating in the credentials acquisition.  You may see
+      additional tabs here if you have other plug-ins installed.</p>
+
+    <div class="note">
+      <img src="images/note.png" alt="Note:"/>
+      <p>Any changes you make in the credentials type configuration
+      panels here may not be saved unless you proceed with the new
+      credentials operation.  If you wish to make changes to the
+      identity configuration without obtaining new credentials, you
+      should use the <a href="use_config.htm">Configuration
+      dialog</a>.</p>
+    </div>
 
     <h3>Additional notes</h3>
 
     <p>The new credentials dialog can be invoked from the command line using
       the <span class="pre"> -i </span> or <span class="pre"> --kinit
-      </span> command line option.  Additionally, if you specify the <span
-                                                                        class="pre"> -a </span> or <span class="pre"> --autoinit </span>
-      command line option, the new credentials dialog will be displayed if
-      there are no credentials available.
+      </span> command line option.  Additionally, if you specify the
+      <span class="pre"> -a </span> or <span class="pre">
+      --autoinit </span> command line option, the new credentials
+      dialog will be displayed if there are no credentials available.
     </p>
 
     <p>
-      Setting the <span class="pre">Obtain new credentials at startup (if none are present)</span> option in the <span
-                                                                                                                    class="pre">General</span> configuration panel causes NetIDMgr to behave as if 
-      the <span class="pre">--autoinit</span> option is specified at each execution.
+      Setting the <span class="pre">Obtain new credentials at startup
+      (if none are present)</span> option in
+      the <span class="pre">General</span> configuration panel causes
+      NetIDMgr to behave as if the <span class="pre">--autoinit</span>
+      option is specified at the beginning of each session.
     </p>
 
   </body>

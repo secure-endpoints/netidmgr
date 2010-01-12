@@ -1,6 +1,6 @@
 .topic IDH_NC_IDSEL
 Click here to see a list of available identities.  If you would like
-to select an identity that is not listed, you can click on the `(New
+to select an identity that is not listed, you can select the `(New
 identity ...)' item.
 
 .topic IDH_NC_MAKEDEFAULT

@@ -8,7 +8,7 @@ Default topic=html/welcome.htm
 Display compile progress=No
 Index file=Index.hhk
 Language=0x409 English (United States)
-Title=NetIDMgr
+Title=Network Identity Manager
 
 [WINDOWS]
 MainHelpWnd="NetIDMgr Help","toc.hhc","Index.hhk","html/welcome.htm","html/welcome.htm",,,,,0x42120,,0x384e,[271,372,894,1131],0x830000,,,,,,0
