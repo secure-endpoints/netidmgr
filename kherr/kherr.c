@@ -47,6 +47,7 @@ peek_context(void);
 
 #ifdef DEBUG
 #define DEBUG_CONTEXT
+#endif
 
 KHMEXP void 
 kherr_debug_printf(wchar_t * fmt, ...)
@@ -59,7 +60,6 @@ kherr_debug_printf(wchar_t * fmt, ...)
     OutputDebugString(buf);
     va_end(vl);
 }
-#endif
 
 /* Called with cs_error held */
 static void
