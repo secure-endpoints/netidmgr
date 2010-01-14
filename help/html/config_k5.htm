@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <title>Configuration - Kerberos v5</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Kerberos v5 configuration">
+    </object>
+  </head>
+
+  <body>
+    <h1>Kerberos v5 Configuration</h1>
+
+    <p><img src="images/options-k5.png" /> </p>
+    <p>The <b>Kerberos v5 Configuration</b> tab allows you to alter
+      the behavior of&nbsp; the Kerberos v5 identity
+      provider.&nbsp; </p>
+    <p>In the <b>Default Realm</b> field, select a Kerberos realm from
+      the dropdown list.</p>
+    <p>The <b>Include all configured realms in New Credentials realm
+        list</b> determines whether all of the realms declared in the
+        Kerberos v5 Configuration file are included in the realms list
+        of the <b>Obtain New Credentials</b> dialog.&nbsp; If
+        disabled, only the realms previously used to obtain
+        credentials are displayed.</p>
+    <p>The <b>Configuration File
+      </b>field displays the path to the Kerberos v5 configuration
+      file, krb5.ini.</p>
+    <p><span style="display: none">The Kerberos libraries depend on
+        configuration files for their proper operation.&nbsp;
+        When <b>Create file if missing </b>is checked, NetIdMgr will
+        construct replacements for missing configuration files upon
+        startup.&nbsp; This is performed by extracting Kerberos
+        configuration information from the local Windows registry and
+        the Domain Name System.&nbsp; The contents of the created file
+        may then be edited using the <b> Kerberos Properties
+        Dialog</b>.&nbsp; [This functionality is not available in this
+        release.]</span></p>
+    <p>The field labeled <b>Host Name</b> displays the name of your
+      local machine.&nbsp; The <b>Domain Name</b> field displays the
+      domain to which your local machine currently belongs.&nbsp;</p>
+    <p>The <b>Import Tickets</b> listbox allows you to configure how
+      NetIdMgr interacts with the Microsoft Kerberos Authentication
+      Provider.&nbsp; NetIdMgr will automatically import Kerberos
+      Tickets from the Microsoft LSA at startup depending upon the
+      selected option and whether or not the Kerberos Authentication
+      Provider was used for Windows Logon authorization.&nbsp; </p>
+    <ul>
+      <li><b>Never</b> means do not import tickets from the 
+	MSLSA; </li>
+      <li><b>Always</b> means do import tickets from the MSLSA; 
+	and </li>
+      <li><b>Only when the Principal matches</b> means import 
+	tickets from the MSLSA only if the MSLSA Kerberos principal belongs to the 
+	Default Realm.</li>
+    </ul>
+
+    <p>When the Windows Logon identity is imported and is configured
+      as the default identity, the MIT credential cache will be used
+      in preference to the MSLSA credential cache.</p>
+
+    <h3>Kerberos v5 Credential Cache Configuration</h3>
+    <p><img src="images/options-k5-cc.png" /> </p>
+    <p>The Kerberos Realm Configuration dialog can be used to manage
+      the contents of the [Realms] and [Domain_Realm] sections of the
+      Kerberos v5 configuration file.</p>
+
+  </body>
+</html>
+
+

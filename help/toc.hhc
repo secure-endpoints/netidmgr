@@ -37,32 +37,32 @@
 			<param name="Name" value="Registry Reference">
 			<param name="Local" value="html\registry.htm">
 			</OBJECT>
-                  <UL>
-                    <LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Configuration Database Registry Reference">
-			<param name="Local" value="html\kcdbconfig.html">
-		      </OBJECT>
-                    <LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Module Manager Registry Reference">
-			<param name="Local" value="html\kmmconfig.html">
-		      </OBJECT>
-                    <LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Message Queue Registry Reference">
-			<param name="Local" value="html\kmqconfig.html">
-		      </OBJECT>
-                    <LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Kerberos v4 plug-in Registry Reference">
-			<param name="Local" value="html\krb4config.html">
-		      </OBJECT>
-                    <LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Kerberos v5 plug-in Registry Reference">
-			<param name="Local" value="html\krb5config.html">
-		      </OBJECT>
-                    <LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Network Identity Manager Application Registry Reference">
-			<param name="Local" value="html\uiconfig.html">
-		      </OBJECT>
-                  </UL>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Configuration Database Registry Reference">
+				<param name="Local" value="html\kcdbconfig.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Module Manager Registry Reference">
+				<param name="Local" value="html\kmmconfig.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Message Queue Registry Reference">
+				<param name="Local" value="html\kmqconfig.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Kerberos v4 plug-in Registry Reference">
+				<param name="Local" value="html\krb4config.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Kerberos v5 plug-in Registry Reference">
+				<param name="Local" value="html\krb5config.html">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Network Identity Manager Application Registry Reference">
+				<param name="Local" value="html\uiconfig.html">
+				</OBJECT>
+		</UL>
 	</UL>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Concepts">
@@ -91,20 +91,54 @@
 			<param name="Name" value="Starting">
 			<param name="Local" value="html\use_start.htm">
 			</OBJECT>
-                <LI> <OBJECT type="text/sitemap">
-                        <param name="Name" value="Notification icon">
-                        <param name="Local" value="html\use_icon.htm">
-                        </OBJECT>
-
-                <LI> <OBJECT type="text/sitemap">
-                        <param name="Name" value="Managing the credentials view layout">
-                        <param name="Local" value="html\use_layout.htm">
-                        </OBJECT>
-
-                <LI> <OBJECT type="text/sitemap">
-                        <param name="Name" value="Configuring NetIDMgr and identities">
-                        <param name="Local" value="html\use_config.htm">
-                        </OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Notification icon">
+			<param name="Local" value="html\use_icon.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Managing the credentials view layout">
+			<param name="Local" value="html\use_layout.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Configuration of identities and NetIDMgr">
+			<param name="Local" value="html\use_config.htm">
+			</OBJECT>
+		<UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="General options">
+				<param name="Local" value="html\config_general.htm">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Appearance">
+				<param name="Local" value="html\config_appearance.htm">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Global defaults for all identities">
+				<param name="Local" value="html\config_identities.htm">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Per identity settings">
+				<param name="Local" value="html\config_identity.htm">
+				</OBJECT>
+			<UL>
+				<LI> <OBJECT type="text/sitemap">
+					<param name="Name" value="Changing the identity icon">
+					<param name="Local" value="html\config_idicon.htm">
+					</OBJECT>
+			</UL>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Notifications">
+				<param name="Local" value="html\config_notifications.htm">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Plug-ins">
+				<param name="Local" value="html\config_plugins.htm">
+				</OBJECT>
+			<LI> <OBJECT type="text/sitemap">
+				<param name="Name" value="Settings for Kerberos v5">
+				<param name="Local" value="html\config_k5.htm">
+				</OBJECT>
+		</UL>
 	</UL>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Menus and Toolbars">
@@ -169,7 +203,6 @@
 			<param name="Name" value="Main Window">
 			<param name="Local" value="html\wnd_main.htm">
 			</OBJECT>
-
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Privacy Issues with Icon Selection">
 			<param name="Local" value="html\wnd_icons_privacy.htm">

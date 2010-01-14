@@ -1,0 +1,87 @@
+<html>
+  <head>
+    <title>Password Persistence</title>
+    <meta name="description" content="obtain new credentials">
+    <meta name="keywords" content="new creds">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Password Persistence">
+      <param name="Keyword" value="Password Saving">
+      <param name="Keyword" value="KeyStore">
+      <param name="Keyword" value="Key Store">
+    </object>
+  </head>
+  <body>
+
+    <h1>Password Persistence</h1>
+
+    <p>Starting with Network Identity Manager 2.0, you have the option
+      of securely storing your passwords using the included KeyStore
+      plug-in.</p>
+
+    <p>The utility of storing passwords is most apparent if you have
+      more than one identity that you obtain initial credentials for
+      at once.  When you acquire credentials for a key store, Network
+      Identity Manager automatically initializes all the identities
+      that are stored there.  Therefore, with a single password you
+      can obtain credentials for multiple identities.</p>
+
+    <h4>Saving your password</h4>
+
+    <p>The password entry pages in the new credentials wizard will ask
+      you whether you would like to save the entered password.  Simply
+      check the option.  You will then be asked for the master
+      password the KeyStore.  If you haven't set up a master password,
+      it will ask you to enter the password twice, since you are
+      setting up a new password.  Once the dialog completes, your
+      password will be added to the key store.</p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-wiz-k5-pw.png" alt="New credentials wizard showing the Kerberos v5 password page"/>
+      <p class="caption">New credentials wizard showing the Kerberos
+        v5 password page with the <span class="pre">Save
+        password</span> option.</p>
+    </div>
+
+    <p>&nbsp;</p>
+
+    <div class="imgbox">
+      <img src="images/new-creds-k5-pw.png" alt="New credentials wizard showing the Kerberos v5 password page"/>
+      <p class="caption">New credentials wizard showing the Kerberos
+        v5 password page in basic mode with the <span class="pre">Save
+        password</span> option.</p>
+    </div>
+
+    <h4>Obtaining new credentials using the key store</h4>
+
+    <p>Select an identity that is stored in the key store and invoke
+      the <a href="act_new_creds.htm">New credentials wizard</a>.  You
+      will automatically be prompted for the key store
+      credentials.</p>
+
+    <p>After you supply the key store master password, credentials for
+      all the identities stored in the key store will be obtained.</p>
+
+    <h4>Removing stored passwords from a key store</h4>
+
+    <p>Start the <a href="use_config.htm">configuration dialog</a> and
+      select the key store identity. (Alternatively, right-click the
+      key store identity in the credentials display and
+      select <span class="pre">show identity options</span>).</p>
+
+    <p>In the identity configuration page for the key store, select
+      the <span class="pre">Keystore</span> tab.</p>
+
+    <p>Select the identity you want to remove the stored password for,
+      and select <span class="pre">Remove</span>.
+    </p>
+
+    <div class="note">
+      <img src="images/note.png" alt="Note:"/>
+      <p>If you remove the configuration information for an identity
+        using the <a href="use_config.htm">configuration dialog</a>,
+        any passwords stored for that identity will be automatically
+        removed.</p>
+  </body>
+</html>

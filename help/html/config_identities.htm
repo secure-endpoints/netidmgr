@@ -1,0 +1,133 @@
+<html>
+  <head>
+    <title>Configuration - Identities</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Defaults for all identities">
+    </object>
+  </head>
+
+  <body>
+
+    <h1>Configuration of default settings for all identities</h1>
+
+    <p>The <span class="pre">Identities</span> configuration panel
+      allows you to set the defaults that will be used for all
+      identities. However, most of the settings displayed here can be
+      overridden with specific per-identity settings. </p>
+    <p>The panel will have a number of sub panels (or tabs)
+      corresponding to each plug-in that maintains per-identity
+      configuration. </p>
+    <p>A list of identities for which configuration information is
+      maintained will be shown under the
+      main <span class="pre">Identities</span> configuration panel
+      name.  Each of these correspond to
+      a <a href="config_identity.htm">per identity</a> configuration
+      panel. </p>
+
+    <div class="note">
+      <img src="images/note.png" alt="Note:"/>
+      <p>
+        Adding or removing an identity in the configuration panel only
+        has the effect of adding or removing the identity to or from
+        the list of identities for which configuration information is
+        maintained.</p>
+
+      <p>
+        If an identity being removed has a saved password in a key
+        store (see <a href="act_new_creds_persistence.htm">Password
+        Persistence</a>), then the MyKeystore plug-in will remove the
+        stored password as well.
+      </p>
+    </div>
+
+    <h3>Global Identity Settings</h3>
+
+    <p><img src="images/options-id-global.png" /> </p>
+    <p>There are three general settings that can be used to set global
+      defaults.</p>
+    <p>The <b>Monitor credential expiration</b> setting determines
+      whether or not NetIdMgr should monitor the credential lifetimes
+      and issue expiration notifications.&nbsp;&nbsp; This value is
+      used as the default for all new identities.</p>
+    <p>The <b>Automatically renew</b> setting determines if <i>
+        renewable</i> credentials are automatically renewed prior to
+        expiration.&nbsp; This value is used as the default for all
+        new identities.</p>
+    <p>The <b>Always show in the credentials list (Pinned)</b> setting
+      determines whether new identities are always pinned within the
+      credentials list.&nbsp; A pinned identity will always be
+      displayed regardless of whether or not there are credentials
+      associated with it.</p>
+
+    <h3>Global Kerberos v5 Identity Settings</h3>
+
+    <p><img src="images/screen_config_global_krb5.png" /> </p>
+    <p>The global Kerberos v5 settings define default credential
+      lifetimes and minimum and maximum values for use in constructing
+      the slider controls used to set the lifetimes.&nbsp; </p>
+    <p>There are two expiration times associated with Kerberos
+      tickets.&nbsp; The first specifies the length of the time period
+      during which the tickets are valid for use.&nbsp; The second
+      specifies the length of the renewable lifetime.&nbsp; Valid
+      Kerberos tickets may have their valid use lifetime repeatedly
+      extended up until the renewable lifetime expires.&nbsp; The
+      settings on this page are used to configure default lifetime
+      values for NetIdMgr to use when requesting Kerberos tickets from
+      the Kerberos server (key distribution center).&nbsp; The
+      Kerberos server may issue tickets with shorter lifetimes than
+      were requested.</p>
+    <p>The <b>Renewable</b>, <b>Forwardable</b>, and <b>
+        Addressless</b> options determine whether or not new
+        identities default to obtaining Kerberos v5 tickets with these
+        options.</p>
+    <p>When <b>Forwardable </b>tickets are received from the Kerberos
+      Server, these tickets can be forwarded to a remote host when you
+      connect via telnet, ssh, ftp, rlogin, or similar
+      applications.&nbsp; When tickets are forwarded, there is no need
+      to obtain Kerberos tickets again to access Kerberized services
+      on the remote host.&nbsp;&nbsp; <b>Forwardable</b> tickets are
+      often required when authenticating to a remote host using ssh or
+      ftp when the remote host requires the ability to authenticate to
+      a remote file system such as AFS.</p>
+    <p>When <b>Renewable</b> tickets are received from the Kerberos
+      Server, the ticket lifetimes may be renewed without prompting
+      the user for her password.&nbsp; This allows Kerberos tickets to
+      be issued with short lifetimes allowing compromised accounts to
+      be disabled on short notice without requiring the user to enter
+      a password every few hours.&nbsp; When combined with <b>
+      Automatic Ticket Renewal</b>, NetIdMgr can maintain valid
+      tickets for a week, a month, or longer by automatically renewing
+      tickets prior to their expiration.&nbsp; The ability to renew
+      tickets without a password is limited by the ticket’s
+      renewable lifetime as issued by the Kerberos Server.</p>
+    <p>When <b>Addressless</b> is selected, the tickets do not contain
+      IP address information.&nbsp; This enables the tickets to be
+      used from behind Network Address Translators which are
+      frequently found in Cable and DSL Modems.</p>
+    <p>The minimum and maximum ranges are used by the ticket
+      initialization dialog box when constructing the Lifetime and
+      Renewable Lifetime sliders.&nbsp; These sliders can be used to
+      modify the requested ticket lifetimes when Kerberos tickets are
+      initialized.</p>
+
+    <h3>Global Kerberos v4 Identity Settings</h3>
+
+    <p><img src="images/screen_config_global_krb4.png" /> </p>
+
+    <p>When the <b>Obtain Kerberos v4 credentials</b> button is
+      checked, NetIdMgr will attempt to retrieve Kerberos v4
+      credentials when ticket initialization, renewal, or importation
+      is performed. &nbsp;Kerberos realms are increasingly configured
+      to support only Kerberos v5 (e.g., Windows Active Directory
+      Domains.)&nbsp; If the realms you use do not support Kerberos v4
+      it is suggested that this button be unchecked.</p>
+    <p>Be aware that only the default identity can obtain Kerberos v4
+      credentials.&nbsp;&nbsp; This limitation is due to the inability
+      of Kerberos v4 applications on Microsoft Windows to specify a
+      credentials cache. </p>
+
+
+  </body>
+</html>

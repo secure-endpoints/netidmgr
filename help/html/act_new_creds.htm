@@ -18,16 +18,42 @@
 
     <h1>New Credentials Aquisition</h1>
 
-    <p>Acquiring new credentials can be done through the New
-      Credentials Wizard, which can be invoked from
-      the <a href="menu_credential.htm">Credentials</a> menu, by
-      typing <span class="pre">Ctrl + N</span>, using the context menu
-      in the credentials window or using the context menu in the
-      Network Identity Manager icon in the system notification area.
+    <p>
+      Acquiring new credentials can be done through the New
+      Credentials Wizard, which can be invoked through one of the
+      following methods:
+
+      <ul>
+        <li><p>Selecting <span class="pre">Credential -> Obtain new credentials</span> from the <a href="menu_credential.htm">Credentials</a> menu</p></li>
+
+        <li><p>By typing <span class="pre">Ctrl + N</span>.</p></li>
+
+        <li><p>Selecting <span class="pre">Obtain new credentials ...</span> from the context menu in the credentials display area</p></li>
+
+        <li><p>Using the context menu in the Network Identity Manager
+            icon in the system notification area.</p></li>
+      </ul>
     </p>
 
     <p>The first time it is invoked, the new credentials wizard shows
-      you the identity specification page:
+      you the <a href="#idspec">identity specification page</a>.  The
+      workflow in this case is illustrated below:
+
+      <div class="imgbox">
+        <img src="images/new-creds-wf-new.png" alt="Workflow for obtaining new credentials for an identity for the first time"/>
+        <p class="caption">Workflow for obtaining new credentials for
+        an identity for the first time.</p>
+      </div>
+    </p>
+
+    <p>However, on subsequent invocations, the new credentials wizard
+      will take you directly to the <a href="#basic">password</a>
+      page, as illustrated below:
+
+      <div class="imgbox">
+        <img src="images/new-creds-wf-next.png" alt="Workflow for obtaining new credentials after an identity is configured"/>
+        <p class="caption">Workflow for obtaining new credentials after an identity is configured.</p>
+      </div>
     </p>
 
     <a name="idspec"/>
@@ -96,8 +122,12 @@
       this option takes you to the <a href="#idspec">Identity
       Specification</a> page.</p>
 
-    <p>If you had already selected an identity, then the corresponding
-      menu item will appear disabled.</p>
+    <p>Selecting any other identity will take you either to the
+      password page for that identity or the identity configuration
+      pages depending on whether this is the first time you are
+      getting credentials for that identity.  If you had already
+      selected an identity, then the corresponding menu item will
+      appear disabled.</p>
 
     <a name="idcfg" />
     <h3>New Identity Configuration</h3>
@@ -111,7 +141,7 @@
     <div class="imgbox">
       <img src="images/new-creds-wiz-k5.png" alt="New credentials wizard - Identity configuration" />
       <p class="caption">New credentials wizard during identity
-      configuration</p>
+        configuration</p>
     </div>
 
     <p>The <span class="pre">Next</span>

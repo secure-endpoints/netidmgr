@@ -1,0 +1,93 @@
+<html>
+  <head>
+    <title>Configuration - Identity</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Identity configuration">
+    </object>
+  </head>
+
+  <body>
+    <h1>Per identity configuration</h1>
+
+    <p>You can access the per-identity configuration panel for a
+      specific identity by selecting the identity name from the list
+      of configuration panels in the configuration dialog. </p>
+
+    <p>These panels are similar to
+      the <a href="config_identities.htm"><span class="pre">Identities</span>
+      configuration panel</a>, but they change per-identity
+      settings. Changes you make in these panels will override the
+      defaults set in the <span class="pre">Identities</span>
+      panel. </p>
+
+    <h3>Per identity General Configuration</h3>
+
+    <p><img src="images/options-id-single.png" /> </p>
+    <p>The General page contains a <b>Remove
+        Identity</b> button that can be used to delete this Identity
+      from the Network Identity Manager.</p>
+    <p>The <b>Monitor credential expiration</b> setting determines
+      whether or not NetIdMgr should monitor the credential lifetimes
+      and issue expiration notifications.&nbsp;&nbsp; This value is
+      used as the default for all new identities.</p>
+    <p>The <b>Automatically renew</b> setting determines if <i>
+        renewable</i> credentials are automatically renewed prior to
+        expiration.&nbsp; This value is used as the default for all
+        new identities.</p>
+    <p>The <b>Always show in the credentials list (Pinned)</b> setting
+      determines whether new identities are always pinned within the
+      credentials list.&nbsp; A pinned identity will always be
+      displayed regardless of whether or not there are credentials
+      associated with it.</p>
+      
+    <div class="note">
+      <img src="images/note.png" alt="Note:"/>
+      <p>
+        Adding or removing an identity in the configuration panel only
+        has the effect of adding or removing the identity to or from
+        the list of identities for which configuration information is
+        maintained.</p>
+
+      <p>
+        If an identity being removed has a saved password in a key
+        store (see <a href="act_new_creds_persistence.htm">Password
+        Persistence</a>), then the MyKeystore plug-in will remove the
+        stored password as well.
+      </p>
+    </div>
+
+    <div class="inline">
+      <img src="images/task.png" alt="Tip"/>
+    </div>
+    <p>
+      The <span class="pre">Change icon</span> button invokes the
+      <a href="config_idicon.htm">identity icon dialog</a> that you
+      can use to change the icon associated with the identity.
+    </p>
+
+    <p>
+      You can revert back to the default icon by clicking on
+      the <span class="pre">Reset icon</span> button.  Note that
+      changing the identity icon is an immediate action that takes
+      effect immediately.  You don't need to click on
+      the <span class="pre">Apply</span> button.
+    </p>
+
+    <h3>Per identity Kerberos v5 Configuration</h3>
+
+    <p><img src="images/screen_config_ident_krb5.png" /> </p>
+    <p>The Kerberos v5 page displays the name of the
+      credential cache currently associated with the Identity.</p>
+
+    <h3>Per identity Kerberos v4 Configuration</h3>
+
+    <p><img src="images/screen_config_ident_krb4.png" /></p>
+    <p>The Kerberos v4 page is optional and may not appear on all
+      systems.&nbsp; Only one identity can obtain Kerberos v4
+      credentials at a time.&nbsp; </p>
+  </body>
+</html>
+
+

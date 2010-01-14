@@ -1,0 +1,50 @@
+<html>
+  <head>
+    <title>Configuration - General Options</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <Object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="General Options">
+    </OBJECT>
+  </head>
+
+  <body>
+
+    <h1>Configuration - General Options</h1>
+
+    <p>The General options dialog, accessed via the Options menu,
+      allows you to configure operational properties specific to the
+      NetIdMgr application.</p>
+    <p><img src="images/options-general.png" /> </p>
+    <p>The <b>Obtain new credentials at startup (if none are
+      present)</b> checkbox will determine whether or not NetIdMgr
+      will display the New Credentials dialog at startup when no valid
+      credentials exist.</p>
+    <p>The <b>Destroy all credentials on exit </b>option can be used
+      to empty all of the credential caches when the NetIdMgr is
+      terminated.</p>
+    <p>The <b>Run NetIdMgr in taskbar notification area after window
+      close </b>checkbox determines the behavior of the window close
+      button. When checked, NetIdMgr will close the window but will
+      continue running and can be accessed from the taskbar
+      notification area. When unchecked, NetIdMgr will behave as if
+      File-&gt;Exit was selected from the menu.</p>
+    <p><b>Clicking on the notification icon</b> can be configured to
+      either Show Network Identity Manager or Obtain New
+      Credentials. This option controls which menu item on the
+      notification icon menu is the default action.</p>
+    <p>The <b>Monitor network connectivity</b> option determines
+      whether or not NetIdMgr monitors the configuration of IP
+      addresses on the machine. When IP addresses are added or removed
+      and this feature is activated, the NetIdMgr will probe the
+      identity management servers (e.g., Kerberos Key Distribution
+      Centers) to determine if they are reachable and if so will
+      automatically obtain credentials.</p>
+    <p>The <b>Log trace events to trace log at the following
+      location</b> option is used to activate a log file that can be
+      used to help debug the behavior of NetIdMgr and its
+      plug-ins. Press the <b>Show log</b> button to view the log file
+      in Windows Notepad.</p>
+
+  </body>
+</html>

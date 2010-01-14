@@ -1,0 +1,103 @@
+<html>
+  <head>
+    <title>Identity Icon Selection</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Identity icon">
+      <param name="Keyword" value="Configuring the identity icon">
+    </object>
+  </head>
+
+  <body>
+    <h1>Identity Icon Selection</h1>
+
+    <p>
+      Starting with Network Identity Manager 2.0, you can customize
+      the icon displayed next to an identity.  This dialog lets you
+      pick an image of your choice from your computer, or from a web
+      page.
+    <p>
+
+    <div class="imgbox">
+      <img src="images/options-id-icon-file.png"/>
+      <p class="caption">Identity icon selection dialog</p>
+    </div>
+
+    <p>
+      There are currently four ways to specify an image file to be
+      used as the basis of your icon:
+    </p>
+
+    <ul>
+      <li><p><span class="title">Use picture from file</span>: If the
+          image is already on your computer, then you can use
+          the <span class="pre">Browse</span> button to locate the
+          file.  Once selected, the image will be loaded into the area
+          on the left.
+        </p></li>
+
+      <li><p><span class="title">Fetch from URL</span>: Fetches an
+          image from the internet.  Currently,
+          only <span class="pre">http://</span> URLs are accepted and
+          the URL must locate the image directly.  Once the URL is
+          entered, click on the <span class="pre">Go</span> button to
+          retrieve the image into the crop area</p></li>
+
+      <li><p><span class="title">Favicon for domain</span>: Attempts
+          to fetch the <a href="http://en.wikipedia.org/wiki/Favicon"
+          class="external">favicon<img src="images/link.png"/></a> for
+          a domain.  If the identity is associated with a domain, it
+          will be pre-filled for you.
+        </p>
+        <p>
+          If the listed domain doesn't have a favicon, the application
+          will attempt to fetch the favicon for the parent domains of
+          the specified domain.
+        </p></li>
+
+      <li><p><span class="title">Gravatar for email address</span>:
+          Attempts to download the <a href="http://gravatar.com"
+          class="external">Gravatar<img src="images/link.png"/></a>
+          corresponding to the specified email address.  If a likely
+          email address is already associated with the identity, it
+          will be pre-filled for you.
+        </p></li>
+    </ul>
+
+    <p>
+      Once you specify the image file to use, NetIDMgr will load the
+      image into the crop area on the left side of the dialog.  You
+      can drag the borders of the crop rectangle to select the portion
+      of the image you would like to use as your icon.
+    </p>
+
+    <p>
+      When you are satisfied with your new icon, you can click
+      the <span class="pre">Ok</span> button to set the new icon.
+    </p>
+
+    <h4>Supported Image Formats</h4>
+
+    <p>The following image formats are currently supported:
+      <ul>
+        <li><span class="title">BMP</span>: Windows bitmap files</li>
+        <li><span class="title">JPG</span></li>
+        <li><span class="title">PNG</span></li>
+        <li><span class="title">ICO</SPAN>: Windows icon files</li>
+        <li><span class="title">EXE,DLL</span>: Icon and bitmap
+          resources embedded in .EXE and .DLL files can also be used.
+      </ul>
+    </p>
+
+    <h4>Privacy and Security Issues with fetching identity icons from the web</h4>
+
+    <p>
+      All three methods of fetching the identity icon from the web
+      outlined above raise privacy and security concerns.  These are
+      detailed in the <a href="wnd_icons_privacy.htm">Privacy and
+      Security Issues</a> page.
+    </p>
+
+  </body>
+</html>
