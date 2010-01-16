@@ -54,7 +54,7 @@ namespace nim {
         DisplayElement * PrevTabStop(DisplayElement * c) {
             do {
                 c = PrevElement(c);
-            } while (c != NULL && (!c->IsVisible() || !c->IsTabStop()));
+            } while (c != NULL && (!c->IsTabStop() || !c->IsVisible()));
             return c;
         }
 
@@ -78,7 +78,7 @@ namespace nim {
         DisplayElement * NextTabStop(DisplayElement * c) {
             do {
                 c = NextElement(c);
-            } while (c != NULL && (!c->IsVisible() || !c->IsTabStop()));
+            } while (c != NULL && (!c->IsTabStop() || !c->IsVisible()));
             return c;
         }
 
