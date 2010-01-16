@@ -55,7 +55,7 @@ namespace nim
             if (c->Represents(obj)) {
                 if (insert_new) {
                     if (c == insertion_point) {
-                        insertion_point = dynamic_cast<CwOutlineBase*>(TQNEXTSIBLING(insertion_point));
+                        insertion_point = NextOutline(TQNEXTSIBLING(insertion_point));
                     } else {
                         MoveChildBefore(c, insertion_point);
                     }
