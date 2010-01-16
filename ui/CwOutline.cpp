@@ -57,20 +57,16 @@ namespace nim
         layout.Width = extents.Width;
 
         if (expandable) {
-            outline_widget->visible = true;
+            outline_widget->Show();
             layout.X = g_theme->sz_margin.Width * 2 + g_theme->sz_icon_sm.Width;
             layout.Width -= layout.X;
         } else {
             if (outline_widget != NULL)
-                outline_widget->visible = false;
+                outline_widget->Show(false);
             layout.X = g_theme->sz_margin.Width;
             layout.Width -= layout.X;
-            expanded = false;
 
-            for_each_child(c) {
-                if (c->visible)
-                    c->Show(false);
-            }
+            Expand(false);
         }
 
         layout.Y = g_theme->sz_margin.Height;
@@ -84,7 +80,7 @@ namespace nim
         layout.Height = 0;
 
         for_each_child(c) {
-            c->visible = expanded;
+            c->Show(expanded);
             if (!c->visible)
                 continue;
 

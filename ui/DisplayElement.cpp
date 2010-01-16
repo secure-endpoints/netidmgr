@@ -50,7 +50,7 @@ namespace nim {
     {
         TQINSERT(this, previous, e);
         e->recalc_extents = true;
-        e->visible = visible;
+        e->Show(visible);
         e->SetOwner(owner);
         MarkForExtentUpdate();
     }
@@ -59,7 +59,7 @@ namespace nim {
     {
         TQINSERTP(this, next, e);
         e->recalc_extents = true;
-        e->visible = visible;
+        e->Show(visible);
         e->SetOwner(owner);
         MarkForExtentUpdate();
     }
@@ -253,7 +253,7 @@ namespace nim {
 
         for (DisplayElement * c = TQFIRSTCHILD(this); c; c = TQNEXTSIBLING(c))
             if (c->is_outline) {
-                c->visible = expand;
+                c->Show(expand);
             }
 
         MarkForExtentUpdate();

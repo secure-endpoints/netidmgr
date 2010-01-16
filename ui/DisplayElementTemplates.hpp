@@ -45,7 +45,7 @@ namespace nim {
 
         virtual void UpdateLayoutPre(Graphics & g, Rect & layout) {
             if (owner == NULL || col_idx < 0 || (unsigned int) col_idx >= owner->columns.size()) {
-                visible = false;
+                Show(false);
                 return;
             }
 

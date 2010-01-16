@@ -175,11 +175,11 @@ namespace nim {
 
             if (!condition || !e) {
                 if (e)
-                    e->visible = false;
+                    e->Show(false);
                 return *this;
             }
 
-            e->visible = true;
+            e->Show();
 
             switch (opt) {
             case Left:
