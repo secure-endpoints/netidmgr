@@ -61,7 +61,7 @@ namespace nim
                     case KCDB_ATTR_RENEW_TIMELEFT:
                     case KCDB_ATTR_TIMELEFT:
                         e = PNEW CwTimeTextCellElement(credential, cwc->attr_id,
-                                                      FTSE_INTERVAL, i);
+                                                       FTSE_INTERVAL, i);
                         break;
 
                     case KCDB_ATTR_NAME:
