@@ -194,7 +194,7 @@ namespace nim {
         }
 
         if (hw == NULL) {
-            khm_html_help(hwnd, NULL, HH_HELP_CONTEXT,
+            khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT,
                           ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)?
                            IDH_ACTION_NEW_ID: IDH_ACTION_PASSWD_ID));
         }

@@ -339,6 +339,10 @@ khm_cfg_notifications_proc(HWND hwnd,
         return SetDlgMsgResult(hwnd, KHUI_WM_CFG_NOTIFY, 0);
     }
 
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_NOTIFICATIONS);
+        return TRUE;
+
     }
 
     return FALSE;

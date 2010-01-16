@@ -332,7 +332,7 @@ namespace nim {
 
     LRESULT IconSelectDialog::OnHelp(HELPINFO * info)
     {
-        DoDefault();
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_IDICON);
         return 0;
     }
 

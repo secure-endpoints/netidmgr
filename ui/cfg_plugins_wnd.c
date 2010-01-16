@@ -649,6 +649,10 @@ khm_cfg_plugins_proc(HWND hwnd,
 
             return SetDlgMsgResult(hwnd, WM_DESTROY, 0);
         }
+
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_PLUGINS);
+        return TRUE;
     }
     return FALSE;
 }

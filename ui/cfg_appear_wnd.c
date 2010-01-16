@@ -422,6 +422,10 @@ khm_cfg_appearance_proc(HWND hwnd,
         }
         return TRUE;
 
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_APPEARANCE);
+        return TRUE;
+
     case KHUI_WM_CFG_NOTIFY:
         d = (dlg_data *) (LONG_PTR) GetWindowLongPtr(hwnd, DWLP_USER);
         if (d == NULL)

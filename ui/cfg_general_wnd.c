@@ -405,6 +405,10 @@ khm_cfg_general_proc(HWND hwnd,
 
         return SetDlgMsgResult(hwnd, WM_COMMAND, 0);
 
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_GENERAL);
+        return TRUE;
+
     case KHUI_WM_CFG_NOTIFY:
         d = (dlg_data *) (DWORD_PTR) GetWindowLongPtr(hwnd, DWLP_USER);
         if (d == NULL)

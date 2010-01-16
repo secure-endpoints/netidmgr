@@ -838,6 +838,11 @@ khm_cfg_ids_tab_proc(HWND hwnd,
 
         return SetDlgMsgResult(hwnd, WM_COMMAND, 0);
 
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_IDENTITIES);
+        return TRUE;
+
+
     case KHUI_WM_CFG_NOTIFY:
         {
             switch(HIWORD(wParam)) {
@@ -904,6 +909,10 @@ khm_cfg_identities_proc(HWND hwnd,
 
     case WM_NOTIFY:
         return handle_notify(hwnd, wParam, lParam);
+
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_IDENTITIES);
+        return TRUE;
     }
 
     return FALSE;
@@ -1254,6 +1263,10 @@ khm_cfg_id_tab_proc(HWND hwnd,
         }
         return SetDlgMsgResult(hwnd, WM_DESTROY, 0);
 
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_IDENTITY);
+        return TRUE;
+
     case KHUI_WM_CFG_NOTIFY:
         {
             ident_data * d;
@@ -1339,6 +1352,10 @@ khm_cfg_identity_proc(HWND hwnd,
 
     case WM_NOTIFY:
         return handle_notify(hwnd, wParam, lParam);
+
+    case WM_HELP:
+        khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, IDH_CFG_IDENTITIES);
+        return TRUE;
     }
     return FALSE;
 }
