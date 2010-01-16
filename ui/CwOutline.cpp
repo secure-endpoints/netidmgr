@@ -38,7 +38,7 @@ namespace nim
 
         expandable = (owner != NULL &&
                       (unsigned)col_idx + 1 < owner->columns.size() &&
-                      !!(NextOutline(TQFIRSTCHILD(this))));
+                      NextOutline(TQFIRSTCHILD(this)) != NULL);
 
         if (!expandable) {
             for (CwOutline * c = NextOutline(TQFIRSTCHILD(this));
@@ -80,7 +80,7 @@ namespace nim
         layout.Height = 0;
 
         for_each_child(c) {
-            c->Show(expanded);
+            c->Show(expanded && (unsigned) c->col_idx < owner->columns.size());
             if (!c->visible)
                 continue;
 
