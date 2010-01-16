@@ -1,5 +1,12 @@
 #define IDH_WELCOME                     1000
 #define IDH_WIN_MAIN                    1001
+#define IDH_CFG_GENERAL                 1002
+#define IDH_CFG_IDENTITY                1003
+#define IDH_CFG_IDENTITIES              1004
+#define IDH_CFG_PLUGINS                 1005
+#define IDH_CFG_APPEARANCE              1006
+#define IDH_CFG_IDICON                  1007
+#define IDH_CFG_NOTIFICATIONS           1008
 
 #define IDH_MENU_FILE                   1501
 #define IDH_MENU_CRED                   1502

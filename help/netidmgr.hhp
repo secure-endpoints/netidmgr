@@ -18,6 +18,13 @@ MainHelpWnd="NetIDMgr Help","toc.hhc","Index.hhk","html/welcome.htm","html/welco
 IDH_ACTION_NEW_ID=html\act_new_creds.htm
 IDH_ACTION_PASSWD_ID=html\act_chpw.htm
 IDH_WELCOME=html\welcome.htm
+IDH_CFG_GENERAL=html\config_general.htm
+IDH_CFG_IDENTITY=html\config_identity.htm
+IDH_CFG_IDENTITIES=html\config_identities.htm
+IDH_CFG_PLUGINS=html\config_plugins.htm
+IDH_CFG_APPEARANCE=html\config_appearance.htm
+IDH_CFG_IDICON=html\config_idicon.htm
+IDH_CFG_NOTIFICATIONS=html\config_notifications.htm
 
 [MAP]
 #include khhelp.h
