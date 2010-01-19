@@ -162,44 +162,15 @@ namespace nim {
             0
         };
 
-        HWND hw = NULL;
-        HWND hw_ctrl;
-
         khui_nc_subtype subtype = khui_cw_get_subtype(nc);
 
         if (subtype != KHUI_NC_SUBTYPE_NEW_CREDS &&
             subtype != KHUI_NC_SUBTYPE_PASSWORD)
             return TRUE;
 
-        if (hlp->iContextType != HELPINFO_WINDOW)
-            return TRUE;
-
-        if (hlp->hItemHandle != NULL &&
-            hlp->hItemHandle != hwnd) {
-            DWORD id;
-            int i;
-
-            hw_ctrl = (HWND) hlp->hItemHandle;
-
-            id = GetWindowLong(hw_ctrl, GWL_ID);
-            for (i=0; ctxids[i] != 0; i += 2)
-                if (ctxids[i] == id)
-                    break;
-
-            if (ctxids[i] != 0)
-                hw = khm_html_help(hw_ctrl,
-                                   L"::/popups_newcreds.txt",
-                                   HH_TP_HELP_WM_HELP,
-                                   (DWORD_PTR) ctxids);
-        }
-
-        if (hw == NULL) {
-            khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT,
-                          ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)?
-                           IDH_ACTION_NEW_ID: IDH_ACTION_PASSWD_ID));
-        }
-
-        return TRUE;
+        return khm_handle_wm_help(hlp, L"::/popups_newcreds.txt", ctxids,
+                                  ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS)?
+                                   IDH_ACTION_NEW_ID: IDH_ACTION_PASSWD_ID));
     }
 
     void NewCredWizard::OnClose()

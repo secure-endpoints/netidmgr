@@ -439,6 +439,38 @@ HWND khm_html_help(HWND hwnd, wchar_t * suffix,
     return HtmlHelp(hwnd, gpath, command, data);
 }
 
+LRESULT khm_handle_wm_help(HELPINFO * hlp, wchar_t * popups, DWORD * ctxids, DWORD_PTR def_ctx)
+{
+    HWND hw = NULL;
+    HWND hw_ctrl;
+
+    if (hlp->iContextType != HELPINFO_WINDOW)
+        return TRUE;
+
+    if (hlp->hItemHandle != NULL &&
+        popups != NULL && ctxids != NULL) {
+        DWORD id;
+        int i;
+
+        hw_ctrl = (HWND) hlp->hItemHandle;
+
+        id = GetWindowLong(hw_ctrl, GWL_ID);
+        for (i=0; ctxids[i] != 0; i += 2)
+            if (ctxids[i] == id)
+                break;
+
+        if (ctxids[i] != 0)
+            hw = khm_html_help(hw_ctrl, popups, HH_TP_HELP_WM_HELP,
+                               (DWORD_PTR) ctxids);
+    }
+
+    if (hw == NULL && def_ctx != 0) {
+        hw = khm_html_help(khm_hwnd_main, NULL, HH_HELP_CONTEXT, def_ctx);
+    }
+
+    return ((hw != NULL)? TRUE : FALSE);
+}
+
 void khm_load_default_modules(void) {
     kmm_load_default_modules();
 }

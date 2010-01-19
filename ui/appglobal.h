@@ -160,6 +160,7 @@ void khm_parse_commandline();
 void khm_register_window_classes(void);
 
 HWND khm_html_help(HWND hwnd, wchar_t * suffix, UINT command, DWORD_PTR data);
+LRESULT khm_handle_wm_help(HELPINFO * hlp, wchar_t * popups, DWORD * ctxids, DWORD_PTR def_ctx);
 
 WPARAM khm_message_loop_int(khm_boolean * p_exit);
 
