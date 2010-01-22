@@ -30,9 +30,8 @@ EXEFILE=$(BINDIR)\netidmgr.exe
 
 MANIFESTFILE=$(BINDIR)\netidmgr.exe.static.manifest
 
-!if "$(KH_BUILD)" != "RETAIL"
+!if defined(UITESTS) && "$(KH_BUILD)" != "RETAIL"
 # UI test code
-UITESTS=1
 KH_AUXCFLAGS=$(KH_AUXCFLAGS) -DUITESTS
 !endif
 
