@@ -32,8 +32,8 @@ NETIDMGR_VERSION_INC=1
 
 NETIDMGR_VERSION_MAJOR=1
 NETIDMGR_VERSION_MINOR=99
-NETIDMGR_VERSION_PATCH=22
-NETIDMGR_VERSION_AUX=112
+NETIDMGR_VERSION_PATCH=23
+NETIDMGR_VERSION_AUX=122
 
 # Release description
 NETIDMGR_RELEASEDESC=Pre 2.0 Beta 10
@@ -45,7 +45,7 @@ NETIDMGR_RELEASEDESC=Pre 2.0 Beta 10
 #
 # Changes to the API version numbers should be documented in
 # apiversion.txt at the root of the source tree.
-NETIDMGR_VERSION_API=13
+NETIDMGR_VERSION_API=14
 
 # Minimum backwards compatible version.  API versions from
 # NETIDMGR_VERSION_API_MINCOMPAT through NETIDMGR_VERSION_API
@@ -58,7 +58,7 @@ NETIDMGR_VERSIONC=$(NETIDMGR_VERSION_MAJOR),$(NETIDMGR_VERSION_MINOR),$(NETIDMGR
 
 # Source information
 NETIDMGR_SRC_COMPANY_1033=Secure Endpoints Inc.
-NETIDMGR_SRC_COPYRIGHT_1033=Â© 2006-2009 Secure Endpoints Inc.
+NETIDMGR_SRC_COPYRIGHT_1033=© 2006-2009 Secure Endpoints Inc.
 
 # Choose the default build type if one is not set
 !if ("$(KH_BUILD)" != "DEBUG") && ("$(KH_BUILD)" != "RETAIL")
