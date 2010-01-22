@@ -39,9 +39,7 @@
 
 @{ */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+BEGIN_C
 
 /*! \brief Configuration window notification message
 
@@ -159,6 +157,10 @@ typedef struct tag_khui_config_node_reg {
 */
 #define KHUI_CNFLAG_INSTANCE      0x0004
 
+/*! \brief Deprecated
+
+  \deprecated Use KHUI_CNFLAG_INSTANCE instead
+  */
 #define KHUI_CNFLAG_PLURAL        0x0004
 #pragma deprecated("KHUI_CNFLAG_PLURAL")
 
@@ -683,9 +685,7 @@ khui_cfg_set_flags_inst(khui_config_init_data * d,
                         khm_int32 flags,
                         khm_int32 mask);
 
-#ifdef __cplusplus
-}
-#endif
+END_C
 
 /*!@} */
 /*!@} */
