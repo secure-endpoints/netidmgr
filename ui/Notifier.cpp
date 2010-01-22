@@ -456,8 +456,8 @@ namespace nim {
         int menu_id;
         khui_menu_def * mdef;
         khui_action_ref * act = NULL;
-        khm_size i, n;
         khm_int32 def_cmd;
+        khm_int32 app_cmd;
 
         /* before we show the context menu, we need to make sure that
            the default action for the notification icon is present in
@@ -470,34 +470,25 @@ namespace nim {
 
             if (def_cmd == KHUI_ACTION_OPEN_APP)
                 def_cmd = KHUI_ACTION_CLOSE_APP;
+            app_cmd = KHUI_ACTION_CLOSE_APP;
         } else {
             menu_id = KHUI_MENU_ICO_CTX_MIN;
+            app_cmd = KHUI_ACTION_OPEN_APP;
         }
 
         mdef = khui_find_menu(menu_id);
 
         assert(mdef);
 
-        n = khui_menu_get_size(mdef);
-        for (i=0; i < n; i++) {
-            act = khui_menu_get_action(mdef, i);
-            if (!(act->flags & KHUI_ACTIONREF_PACTION) &&
-                (act->action == def_cmd))
+        while ((act = khui_menu_get_action(mdef, 0)) != NULL) {
+            if ((act->flags & KHUI_ACTIONREF_SEP) == KHUI_ACTIONREF_SEP)
                 break;
+            khui_menu_remove_action(mdef, 0);
         }
 
-        if (i < n) {
-            if (!(act->flags & KHUI_ACTIONREF_DEFAULT)) {
-                khui_menu_remove_action(mdef, i);
-                khui_menu_insert_action(mdef, i, def_cmd, KHUI_ACTIONREF_DEFAULT);
-            } else {
-                /* we are all set */
-            }
-        } else {
-            /* the default action was not found on the context menu */
-            assert(FALSE);
-            khui_menu_insert_action(mdef, 0, def_cmd, KHUI_ACTIONREF_DEFAULT);
-        }
+        khui_menu_insert_action(mdef, 0, def_cmd, KHUI_ACTIONREF_DEFAULT);
+        if (def_cmd != app_cmd)
+            khui_menu_insert_action(mdef, 1, app_cmd, 0);
 
         SetForegroundWindow(khm_hwnd_main);
 
