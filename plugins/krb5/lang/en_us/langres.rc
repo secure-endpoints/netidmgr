@@ -387,8 +387,8 @@ BEGIN
     IDS_ETYPE_UNKNOWN       "(Unknown)"
     IDS_ETYPE_LOCAL_DES3_HMAC_SHA1 "LOCAL-DES3-HMAC-SHA1"
     IDS_ETYPE_LOCAL_RC4_MD4 "LOCAL-RC4-MD4"
-    IDS_KRB5_SHORT_DESC     "Kerberos v5 credentials"
-    IDS_KRB5_LONG_DESC      "Kerberos v5 credentials"
+    IDS_KRB5_SHORT_DESC     "Kerberos v5 tickets"
+    IDS_KRB5_LONG_DESC      "Kerberos v5 tickets"
 END
 
 STRINGTABLE 

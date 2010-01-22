@@ -174,8 +174,8 @@ END
 
 STRINGTABLE 
 BEGIN
-    IDS_KRB4_SHORT_DESC     "Kerberos v4"
-    IDS_KRB4_LONG_DESC      "Kerberos v4"
+    IDS_KRB4_SHORT_DESC     "Kerberos v4 tickets"
+    IDS_KRB4_LONG_DESC      "Kerberos v4 tickets"
     IDS_CFG_KRB4_LONG       "Kerberos v4 Configuration"
     IDS_CFG_KRB4_SHORT      "Kerberos v4"
 END
