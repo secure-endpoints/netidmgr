@@ -181,7 +181,7 @@ handle_kmsg_system_init(void)
     creg.h_module = hResModule;
     creg.dlg_template = MAKEINTRESOURCE(IDD_CONFIG_ID);
     creg.dlg_proc = config_id_dlgproc;
-    creg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_PLURAL;
+    creg.flags = KHUI_CNFLAG_SUBPANEL | KHUI_CNFLAG_INSTANCE;
 
     khui_cfg_register(cnode, &creg);
 
