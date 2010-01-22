@@ -1,45 +1,57 @@
 <html>
 <head>
-  <title>Network Identity Manager - Standard Toolbar</title>
+  <title>Standard Toolbar</title>
   <meta name="description" content="Standard Toolbar">
   <meta name="keywords" content="standard toolbar">
   <link rel="stylesheet" type="text/css" href="nidmgr.css">
   <Object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
-<param name="Keyword" value="Changing Passwords">
-<param name="Keyword" value="New Credentials">
-<param name="Keyword" value="Renew Credentials">
-<param name="Keyword" value="Import Credentials">
-<param name="Keyword" value="Destroy Credentials">
-<param name="Keyword" value="Change Password">
-<param name="Keyword" value="Refresh View">
-<param name="Keyword" value="Help">
-<param name="Keyword" value="Toolbar">
+    <param name="Keyword" value="Changing passwords">
+    <param name="Keyword" value="New credentials">
+    <param name="Keyword" value="Renew credentials">
+    <param name="Keyword" value="Import credentials">
+    <param name="Keyword" value="Destroy credentials">
+    <param name="Keyword" value="Change password">
+    <param name="Keyword" value="Refresh view">
+    <param name="Keyword" value="Help">
+    <param name="Keyword" value="Toolbar">
 </OBJECT>
 
 </head>
 <body>
 
-<h1>Network Identity Manager - Standard Toolbar</h1>
+<h1>Standard Toolbar</h1>
 
 <p>The standard toolbar appears below along with descriptions of what
 each button does.
 </p>
 
-<p>
-<img src="images/screen_tb_standard.png" />
-</p>
+<div class="imgbox">
+<img src="images/screen_tb_standard.png" usemap="#tbmap" />
+</div>
+
+<map name="tbmap">
+  <area shape = "rect" coords = "2,3,51,34" href = "#new">
+  <area shape = "rect" coords = "49,1,100,33" href = "#renew">
+  <area shape = "rect" coords = "97,0,139,39" href = "#import">
+  <area shape = "rect" coords = "135,2,188,38" href = "#destroy">
+  <area shape = "rect" coords = "187,0,227,37" href = "#chpw">
+  <area shape = "rect" coords = "224,1,267,38" href = "#refresh">
+  <area shape = "rect" coords = "292,1,341,39" href = "#help">
+</map>
 
 <ol>
 
-  <li><span class="title">New credentials</span>: Equivalent to
+  <li><a name="new"/><span class="title">New credentials</span>:
+  Equivalent to
   selecting <span class="pre"><a href="menu_credential.htm#new">New
-  credentials...</a></span> from the <span class="pre"><a
-  href="menu_credential.htm">Credential</a></span> menu.
+  credentials...</a></span> from
+  the <span class="pre"><a href="menu_credential.htm">Credential</a></span>
+  menu.
   <p>
   See <a href="act_new_creds.htm">New Credentials Action</a> for more
   information.</p></li>
 
-  <li><span class="title">Renew credentials</span>: Equivalent to
+  <li><a name="renew"/><span class="title">Renew credentials</span>: Equivalent to
   selecting <span class="pre"><a
   href="menu_credential.htm#renew">Renew Credentials</a></span> from
   the <span class="pre"><a
@@ -48,31 +60,31 @@ each button does.
   See <a href="act_renew_creds.htm">Renew Credentials Action</a> for
   more information.</li>
 
-  <li><span class="title">Import credentials</span>: Equivalent to
+  <li><a name="import"/><span class="title">Import credentials</span>: Equivalent to
   selecting <span class="pre"><a
   href="menu_credential.htm#import">Import Credentials</a></span> from
   the <span class="pre"><a
   href="menu_credential.htm">Credential</a></span> menu.
   </li>
 
-  <li><span class="title">Destroy credentials</span>: Equivalent to
+  <li><a name="destroy"/><span class="title">Destroy credentials</span>: Equivalent to
   selecting <span class="pre"><a
   href="menu_credential.htm#destroy">Destroy Credentials</a></span>
   from the <span class="pre"><a
   href="menu_credential.htm">Credential</a></span> menu.</li>
 
-  <li><span class="title">Change password</span>: Equivalent to
+  <li><a name="chpw"/><span class="title">Change password</span>: Equivalent to
   selecting <span class="pre"><a
   href="menu_credential.htm#chpw">Change Password ...</a></span> from
   the <span class="pre"><a
   href="menu_credential.htm">Credential</a></span> menu.</li>
 
-  <li><span class="title">Refresh view</span>: Equivalent to selecting
+  <li><a name="refresh"/><span class="title">Refresh view</span>: Equivalent to selecting
   <span class="pre"><a href="menu_credential.htm#refresh">Refresh
   View</a></span> from the <span class="pre"><a
   href="menu_credential.htm">Credential</a></span> menu.</li>
 
-  <li><span class="title">Help</span>: Displays documentation</li>
+  <li><a name="help"/><span class="title">Help</span>: Displays documentation</li>
 
 </ol>
 

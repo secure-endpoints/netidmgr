@@ -1,33 +1,55 @@
 <html>
 
 <head>
-<title>Network Identity Manager Concepts: Identity</title>
-<meta name="description" content="NetIDMgr Concepts: Identity">
-<meta name="keywords" content="identity,concepts">
-<link rel="stylesheet" type="text/css" href="nidmgr.css">
+  <title>Network Identity Manager Concepts: Identity</title>
+  <meta name="description" content="NetIDMgr Concepts: Identity">
+  <meta name="keywords" content="identity,concepts">
+  <link rel="stylesheet" type="text/css" href="nidmgr.css">
+  <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+    <param name="Keyword" value="Identity (concept)">
+    <param name="Keyword" value="Default identity (concept)">
+    <param name="Keyword" value="Setting the default identity">
+  </object>
 </head>
 
 <body>
 
 <h1>Network Identity Manager Concepts: Identity</h1>
-<p>While there are many approaches to defining what an identity is, as far as the 
-Network Identity Manager (NetIDMgr) is concerned, an identity is the unique user 
-identifier that is accepted by a network service. Each credential that is managed 
-by NetIDMgr is assumed to map to a single identity. The collection of credentials 
-that map to a single identity is considered to belong to that identity. </p>
-<p></p>
+
+<p>While there are many approaches to defining what an identity is, as
+  far as the Network Identity Manager (NetIDMgr) is concerned, an
+  identity is the unique user identifier that is accepted by a network
+  service. Each credential that is managed by NetIDMgr is assumed to
+  map to a single identity. The collection of credentials that map to
+  a single identity is considered to belong to that identity. </p>
+
 <a name="default_identity"></a>
 <h3>Default Identity</h3>
-<p>The default identity is the identity that will be used by applications when a 
-specific identity is not requested. The Kerberos v5 plug-in will mark the 
-credential cache that contains the default identity as the default credentials cache 
-for the current logon session.</p>
-<p>Most applications that implement GSS-API or Kerberos v5 authentication assume 
-that there is only one Kerberos v5 credential cache and one identity in use by 
-the user at a time.&nbsp; These applications use the default identity.&nbsp; In 
-general, if the application does not have a configuration option permitting the 
-specification of a Kerberos v5 principal, the default identity will be used.</p>
-<p>&nbsp;</p>
+
+<div class="sidebar">
+  <img src="images/identity_basic.png" alt="Basic view of the credentials display showing default identities" />
+  <p class="caption">Default and non-default identities in the credentials display (basic view)</p>
+</div>
+
+<p>The default identity is the identity that will be used by
+  applications when a specific identity is not requested. The Kerberos
+  v5 plug-in will mark the credential cache that contains the default
+  identity as the default credentials cache for the current logon
+  session.</p>
+
+<p>Most applications that implement GSS-API or Kerberos v5
+  authentication assume that there is only one Kerberos v5 credential
+  cache and one identity in use by the user at a time.&nbsp; These
+  applications use the default identity.&nbsp; In general, if the
+  application does not have a configuration option permitting the
+  specification of a Kerberos v5 principal, the default identity will
+  be used.</p>
+
+<p>The default identity is indicated in the credentials display using
+  a star icon, as illustrated in the screenshot above.</p>
+
+<p><img src="images/task.png"/> You can change the default identity by
+  clicking on the star icon next to the identity.</p>
 
 </body>
 

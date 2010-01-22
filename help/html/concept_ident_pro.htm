@@ -1,32 +1,64 @@
 <html>
-<head>
-  <title>Network Identity Manager Concepts: Identity Provider</title>
-  <meta name="description" content="NetIDMgr Concepts: Identity Provider">
-  <meta name="keywords" content="identity provider, concepts">
-  <link rel="stylesheet" type="text/css" href="nidmgr.css">
-</head>
-<body>
+  <head>
+    <title>Network Identity Manager Concepts: Identity Provider</title>
+    <meta name="description" content="NetIDMgr Concepts: Identity Provider">
+    <meta name="keywords" content="identity provider, concepts">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Identity provider (concept)">
+    </object>
+  </head>
+  <body>
 
-<h1>Network Identity Manager Concepts: Identity Provider</h1>
+    <h1>Network Identity Manager Concepts: Identity Provider</h1>
 
-<p>
-Network Identity Manager relies on plug-ins to provide the majority 
-of its functionality.  One of the requirements is that there be at 
-least one plug-in that is registered as an <strong>identity provider</strong>.  The identity 
-provider:</p>
+    <p>
+      Network Identity Manager relies on plug-ins to provide the
+      majority of its functionality.  One of the requirements is that
+      there be at least one plug-in that is registered as
+      an <strong>identity provider</strong>.  The identity
+      provider:</p>
 
-<ul>
-	<li>defines the identity</li>
-	<li>provides the engine that drives the <i>Obtain New Credentials</i> dialog</li>
-	<li>performs the initial authentication which results in a network credential that 
-	    can be used in conjunction with subsequent credential providers</li>
-</ul>
+    <ul>
+      <li>Defines the identity</li>
+      <li>Provides the engine that drives the <i>Obtain New Credentials</i> dialog</li>
+      <li>Handles identity management tasks such as setting the
+        default identity and validating identities on</li>
+    </ul>
 
-<p>Naturally, the identity provider plug-in that is distributed with MIT Kerberos for Windows
-is Kerberos v5 based and obtains Kerberos v5 ticket granting tickets as the network credential 
-that represents the identity.</p>
-<img src="images/screen_config_ident_provider.png">
-<p></p>
+    <h4>Kerberos v5 Identity Provider</h4>
 
-</body>
+    <p>The Kerberos v5 identity provider uses Kerberos principals as
+      identities. It obtains Kerberos v5 ticket granting tickets as
+      the network credential that represents the identity.</p>
+
+    <p>The default identity is the principal that corresponds to the
+      default Kerberos v5 credentials cache.  Changing the default
+      Kerberos v5 identity in NetIDMgr has the effect of changing the
+      default credentials cache.</p>
+
+    <div class="imgbox">
+      <img src="images/screen_config_ident_provider.png" alt="Plug-in configuration panel showing Kerberos v5 identity provider" />
+      <p class="caption">Plug-in configuration panel showing Kerberos v5 identity provider</p>
+    </div>
+
+    <h4>KeyStore Identity Provider</h4>
+
+    <p>Each KeyStore identity corresponds to a single KeyStore. At the
+      time of this writing, there is only one KeyStore per user.
+      Therefore, on most client installations, there is only one
+      KeyStore identity called "My KeyStore", which, by definition, is
+      the default KeyStore identity.
+    </p>
+
+    <p>When you save passwords in the KeyStore, each identity
+      corresponding to the password will become a child of the
+      KeyStore identity.  Obtaining new credentials for the KeyStore
+      automatically obtains credentials for these child identities.
+    </p>
+
+    <p>See <a href="keystore.htm">here</a> for more information about
+      the KeyStore provider.</p>
+
+  </body>
 </html>

@@ -7,7 +7,7 @@
 
     <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
       <param name="Keyword" value="Bugs">
-      <param name="Keyword" value="Reporting a Problem">
+      <param name="Keyword" value="Reporting a problem">
     </object>
 </head>
 <body>
@@ -17,7 +17,7 @@
 <p>If you encounter a problem in the software, please send a bug
   report via e-mail to
   <a href="mailto:netidmgr@secure-endpoints.com"
-  class="mail">kfw-bugs@MIT.EDU<img src="images/mail.png"/></a>.
+  class="mail">netidmgr@secure-endpoints.com<img src="images/mail.png"/></a>.
   Please include as much information as possible to assist us in
   reproducing the problem.
 </p>
@@ -44,34 +44,54 @@
 
   <ul>
     <li><p>Explanation of the problem.</p></li>
-    <li><p>Version of Network Identity Manager.  This can be determined
-      by selecting <span class="pre">Help</span>
-      -> <span class="pre">About Network Identity Manager</span> from
-      the main menu.</p></li>
+    <li><p>Version of Network Identity Manager.  This can be
+        determined by selecting <span class="pre">Help</span>
+        -> <span class="pre">About Network Identity Manager</span>
+        from the main menu.</p></li>
 
-    <li><p>List of plug-ins that are installed, other than the defaults.
-      By default, Network Identity Manager version 2.0 includes the
-      following
-      plug-ins: <span class="pre">KeyStoreIdentity</span>, <span class="pre">KeyStoreCred</span>, <span class="pre">Krb5Ident</span>, <span class="pre">Krb5Cred</span>
-      and on 32-bit systems <span class="pre">Krb4Cred</span>.  Please note if any other plug-ins are installed on your machine and the listed version for each.</p>
+    <li><p>List of plug-ins that are installed, other than the
+        defaults.  By default, Network Identity Manager version 2.0
+        includes the following
+        plug-ins: <span class="pre">KeyStoreIdentity</span>, <span class="pre">KeyStoreCred</span>, <span class="pre">Krb5Ident</span>, <span class="pre">Krb5Cred</span>
+        and on 32-bit systems <span class="pre">Krb4Cred</span>.
+        Please note if any other plug-ins are installed on your
+        machine and the listed version for each.</p>
 
       <p>The installed plug-ins can be inspected by
-      selecting <span class="pre">Options</span>
-      -> <span class="pre">Plug-ins</span> from the main menu.
+        selecting <span class="pre">Options</span>
+        -> <span class="pre">Plug-ins</span> from the main menu.
       </p>
 
-    <li><p>If the problem occurs during a credentials acquisition or
+    <li>
+
+      <p>If the problem occurs during a credentials acquisition or
         other credentials operation, also attempt to capture a trace
         log by doing the following:</p>
 
+      <div class="sidebar">
+        <img src="images/screen_config_general_debug.png" alt="Log trace events option" />
+        <p class="caption">Log trace events option in
+          the <br/><span class="pre">General Options</span> configuration
+          panel.</p>
+      </div>
+
       <ol>
-        <li>Select <span class="pre">Options -> General</span> from the
-          main menu to open the General options page.</li>
-        <li>Check the <span class="pre">Log trace events t othe trace log...</span> option.</li>
-        <li>Attempt to reproduce the problem.</li>
-        <li>Open the General options page again, and click on
-        the <span class="pre">Show log</span> option.</li>
-        <li>Include the contents of the captured log in the problem report</li>
+        <li><p>Select <span class="pre">Options -> General</span> from the
+            main menu to open the General options page.</p></li>
+
+        <li><p>Check the <span class="pre">Log trace events t othe
+              trace log...</span> option.</p></li>
+
+        <li><p>Attempt to reproduce the problem.</p></li>
+
+        <li><p>Open the General options page again, and click on
+            the <span class="pre">Show log</span> button.</p></li>
+
+        <li><p>Include the contents of the captured log in the problem
+            report.</p></li>
+
+        <li><p>Once you have captured the trace information, you may
+            disable trace logging.</p></li>
       </ol>
     </li>
   </ul>

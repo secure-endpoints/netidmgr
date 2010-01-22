@@ -4,47 +4,68 @@
   <meta name="description" content="">
   <meta name="keywords" content="">
   <link rel="stylesheet" type="text/css" href="nidmgr.css">
+  <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+    <param name="Keyword" value="Commandline options">
+  </object>
 </head>
 <body>
 
 <h1>Network Identity Manager Command Line Options</h1>
-<p>Command line options for Network Identity Manager are:</p>
-<table border="1" width="57%" id="table1">
-	<tr>
-		<td width="140"><font size="1">-a or --autoinit</font></td>
-		<td><font size="1">Automatic Initialization of Credentials</font></td>
-	</tr>
-	<tr>
-		<td width="140"><font size="1">-i or --kinit</font></td>
-		<td><font size="1">Obtain New Credentials and then exit</font></td>
-	</tr>
-	<tr>
-		<td width="140"><font size="1">-d or --destroy</font></td>
-		<td><font size="1">Destroy Credentials belonging to the default identity 
-		and then exit</font></td>
-	</tr>
-	<tr>
-		<td width="140"><font size="1">-r or --renew</font></td>
-		<td><font size="1">Renew all Credentials and then exit</font></td>
-	</tr>
-	<tr>
-		<td width="140"><font size="1">-x or --exit</font></td>
-		<td><font size="1">Signal the running instance of Network Identity 
-		Manager to exit</font></td>
-	</tr>
-	<tr>
-		<td width="140"><font size="1">--show</font></td>
-		<td><font size="1">Open the Network Identity Manager application window of a running instance.</font></td>
-	</tr>
-	<tr>
-		<td width="140"><font size="1">--hide</font></td>
-		<td><font size="1">Hide the Network Identity Manager application window of a running instance.</font></td>
-	</tr>
-	<tr>
-		<td width="140"><font size="1">--minimize</font></td>
-		<td><font size="1">Open the Network Identity Manager application window in minimized mode.</font></td>
-	</tr>
-</table>
+
+<p>Network Identity Manager accepts the following command-line
+  options:</p>
+
+<dl class="options">
+  <dt>-i</dt>
+  <dd>Obtain new credentials.
+    Aliases: <span class="alias">--kinit</span>
+    or <span class="alias">-kinit</span></dd>
+
+  <dt>-a</dt>
+  <dd>Automatically initialize credentials.  If no credentials are
+    found for the default idneitty, this displays the new credentials
+    dialog. Aliases: <span class="alias">--autoinit</span>
+    or <span class="alias">-autoinit</span></dd>
+
+  <dt>-r</dt>
+  <dd>Renew all
+    identities. Aliases: <span class="alias">--renew</span>
+    or <span class="alias">-renew</span>.</dd>
+
+  <dt>-m</dt>
+  <dd>Import credentials from the Windows MSLSA
+    cache. Aliases: <span class="alias">--import</span>
+    or <span class="alias">-import</span>.</dd>
+
+  <dt>-d</dt>
+  <dd>Destroy the default
+    identity. Aliases: <span class="alias">--destroy</span>
+    or <span class="alias">-destroy</span>.</dd>
+
+  <dt>-x</dt>
+  <dd>Exit the running instance of Network Identity
+    Manager. Aliases: <span class="alias">--exit</span>
+        or <span class="alias">-exit</span>.</dd>
+
+  <dt>--minimized</dt>
+  <dd>Start Network Identity Manager in minimized mode.</dd>
+
+  <dt>--hide</dt>
+  <dd>Hide the Network Identity Manager window.</dd>
+
+  <dt>--show</dt>
+  <dd>Unhide the Network Identity Manager window.</dd>
+
+  <dt>-?</dt>
+  <dd>Show command-line options.  Displays a dialog that explains the
+    command-line options available with Network Identity Manager.</dd>
+</dl>
+
+<p>Network Identity Manager limits itself to one running instance.  If
+  you attempt to start it using the command-line, it will pass the
+  command-line options to the running instance.  For more information
+  please see <a href="use_start.htm">Starting Network Identity
+  Manager</a>.</p>
 
 </body>
 </html>

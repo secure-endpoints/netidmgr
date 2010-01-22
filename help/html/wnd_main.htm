@@ -1,114 +1,176 @@
 <html>
+  <head>
+    <title>Credentials Display</title>
+    <meta name="description" content="Main Window">
+    <meta name="keywords" content="main window">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Application window basic view">
+      <param name="Keyword" value="Application window advanced view">
+      <param name="Keyword" value="Identity views">
+    </object>
+  </head>
 
-<head>
-<title>Network Identity Manager - Application Window</title>
-<meta name="description" content="Main Window">
-<meta name="keywords" content="main window">
-<link rel="stylesheet" type="text/css" href="nidmgr.css">
-<object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
-<param name="Keyword" value="Application Window Basic View">
-<param name="Keyword" value="Application Windows Advanced View">
-<param name="Keyword" value="Identity Views">
-</object>
-<style>
-v\:*         { behavior: url(#default#VML) }
-o\:*         { behavior: url(#default#VML) }
-</style>
-<!--[if gte mso 9]><xml><o:shapedefaults v:ext="edit" spidmax="1027"/>
-	
-</xml><![endif]-->
-</head>
+  <body>
 
-<body>
+    <h1>Credentials Display</h1>
 
-<h1>Network Identity Manager - Application Window</h1>
-<p>The application window of Network Identity Manager can be displayed in two modes:
-<b>basic</b> and <b>advanced</b>.</p>
-<p>The basic view provides status information of the currently available identities 
-whereas the advanced view provides more detailed information of all the active credentials.</p>
-<div>
-<img src="images/screen_main_wnd_basic.png" />
-<p class="caption">Figure 1. Network Identity Manager Basic View</p>
-</div>
-<div>
-<img src="images/screen_main_wnd.png" />
-<p class="caption">Figure 2. Network Identity Manager Advanced View</p>
-</div>
-<ol>
-<li>Menu bar</li>
-<li>Tool bar</li>
-<li>Credentials list</li>
-</ol>
-<h3>Identity views</h3>
-<p>The advanced credentials view organizes them grouped by identity name and then 
-by credential type. Each credential is then shown under each group heading sorted 
-by the credential name. The default headings for the credential view provides you 
-with a minimal amount of information to reduce clutter. If you wish you can add 
-columns to the display using the <span class="pre">Choose columns...</span> action 
-on the <span class="pre"><a href="menu_view.htm">View</a></span> menu. </p>
-<p>The header backgrounds and the credential rows change color if the credentials 
-are about to expire or are expired. </p>
-<ul>
-<li><span style="background-color:#fbc74d">Headers</span> mean that credentials 
-at that level will expire unless renewed. Credentials will have a warning icon 
-next to them.<br />
-The threshold for this can be set as the <span class="pre">Warn</span> parameter 
-in the <span class="pre">Notifications</span> configuration panel.</li>
-<li><span style="background-color:#f08575">Headers</span> mean that credentials 
-at that level will expire in a few minutes. Credentials will have a critical 
-icon next to them.<br />
-The threshold for this can be set as the <span class="pre">Warn again</span> 
-parameter in the <span class="pre">Notifications</span> configuration panel.
-</li>
-<li><span style="background-color:#ff9090">Headers</span> mean that the credentials 
-at that level have expired. Credentials will have an expired icon next to them.<br />
-The threshold for this is always zero. </li>
-</ul>
-<p class="MsoNormal">In its default configuration, the NetIdMgr advanced view displays 
-a list of network identity names (aka Kerberos principals, user@REALM).&nbsp; Each 
-entry appears with a
-<img border="0" width="16" height="15" src="images\wdg_collapsed_hi.bmp">
-or <img border="0" width="16" height="15" src="images\wdg_expanded_hi.bmp"> 
-button, a pushpin <img border="0" width="16" height="15" src="images\wdg_stuck_hi.bmp">
-or <img border="0" width="16" height="15" src="images\wdg_stick_hi.bmp">&nbsp; 
-button and an Identity icon <img border="0" width="16" height="15" src="images\id-sm.bmp">
-to its left.&nbsp; </p>
-<p class="MsoNormal">Click on the 
-<img border="0" width="16" height="15" src="images\wdg_collapsed_hi.bmp">
-button of an identity to expand the branch, displaying a <img border="0" width="16" height="15" src="images\wdg_expanded_hi.bmp">
+    <p>The credentials display of Network Identity Manager can be
+      displayed in two modes:
+      <b>basic</b> and <b>advanced</b>.</p>
+    <p>The basic view provides status information of the currently
+      available identities whereas the advanced view provides more
+      detailed information of all the active credentials.</p>
 
-button.&nbsp; Click on the <img border="0" width="16" height="15" src="images\wdg_expanded_hi.bmp"> 
-button to hide the branch.</p>
-<p class="MsoNormal">Click on the pushpin <img border="0" width="16" height="15" src="images\wdg_stuck_hi.bmp">
-or <img border="0" width="16" height="15" src="images\wdg_stick_hi.bmp">&nbsp; 
-button to pin the identity to the display.&nbsp; A pinned identity will be 
-displayed in the identity list regardless of whether or not it has matching 
-credentials.</p>
-<p class="MsoNormal">Click on the Identity icon <img border="0" width="16" height="15" src="images\id-sm.bmp">
-to view the identity's properties dialog.</p>
-<p class="MsoNormal">To the right of each credential is a flag icon representing 
-one of the following states: </p>
-<p class="MsoNormal">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-None&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = credentials are valid</p>
-<p class="MsoNormal">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-<img border="0" width="16" height="15" src="images\flag_renewable.bmp">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-= credentials are valid and renewable</p>
-<p class="MsoNormal" style="text-indent:36.0pt"><img border="0" width="16" height="15" src="images\flag-warning.bmp">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-= credentials are valid and the initial expiration warning has been issued </p>
-<p class="MsoNormal" style="text-indent:36.0pt">
-<img border="0" width="16" height="15" src="images\flag-critical.bmp">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-= credentials are valid and the final expiration warning has been issued</p>
-<p class="MsoNormal" style="text-indent:36.0pt">
-<img border="0" width="16" height="15" src="images\flag_expired.bmp">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-= credentials are invalid or expired</p>
-<p class="MsoNormal">&nbsp;</p>
-<p>&nbsp;</p>
-<p></p>
+    <p>You can switch between the two views
+    using <span class="pre">F7</span> or using
+    the <a href="menu_view.htm"><span class="pre">View
+    menu</span></a>.</p>
 
+    <h3>Advanced View</h3>
+
+    <div class="imgbox">
+      <img src="images/screen_main_wnd.png" usemap="#map_adv" />
+      <p class="caption"><span class="pre">Figure 1</span>. Network
+      Identity Manager Advanced View</p>
+    </div>
+
+    <map name="map_adv">
+      <area shape = "rect" coords = "4,21,161,38" href = "menu_all.htm">
+      <area shape = "rect" coords = "5,39,260,67" href = "tb_standard.htm">
+      <area shape = "rect" coords = "6,66,415,83" href = "#header">
+      <area shape = "rect" coords = "5,85,420,453" href = "#ident-display">
+    </map>
+
+    <p>The advanced credentials view organizes them grouped by
+      identity name, credential type and then by location. Each
+      credential is then shown under each group heading sorted by the
+      credential name. The default headings for the credential view
+      provides you with a minimal amount of information to reduce
+      clutter.</p>
+
+    <a name="header"/>
+    <p>You can add columns to the display using
+      the <span class="pre">Choose columns...</span> action on
+      the <span class="pre"><a href="menu_view.htm">View</a></span>
+      menu or by right-clicking on the header as shown
+      in <span class="pre">Figure 2</span>.</p>
+
+    <div class="imgbox">
+      <img src="images/screen_main_wnd_header_menu.png" alt="" />
+      <p class="caption"><span class="pre">Figure 2</span>: Menu for choosing display columns</p>
+    </div>
+
+    <p>In addition, you can click on the column header to change the
+      sort order for each field or double-click on a column header to
+      toggle grouping.  You may also drag fields to change the column
+      ordering.</p>
+
+    <h4>Expiration states</h4>
+
+    <p>The header backgrounds and the credential rows change color if
+      the credentials are about to expire or are expired. </p>
+
+    <ul>
+      <li><p><span style="background-color:rgb(213,255,5)">Headers</span>
+          mean that credentials at that level will expire unless
+          renewed. Credentials will have a warning icon next to
+          them.<br />  The threshold for this can be set as
+          the <span class="pre">Warn</span> parameter in
+          the <a href="config_notifications.htm"><span class="pre">Notifications</span>
+          configuration panel</a>.</p></li>
+
+      <li><p><span style="background-color:rgb(255,172,5)">Headers</span>
+          mean that credentials at that level will expire in a few
+          minutes. Credentials will have a critical icon next to
+          them.<br />  The threshold for this can be set as
+          the <span class="pre">Warn again</span> parameter in
+          the <a href="config_notifications.htm"><span class="pre">Notifications</span>
+          configuration panel</a>.</p> </li>
+
+      <li><p><span style="background-color:rgb(255,47,5)">Headers</span> mean
+          that the credentials at that level have expired. Credentials
+          will have an expired icon next to them.<br />  The threshold
+          for this is always zero. </p></li>
+    </ul>
+
+    <a name="ident-display"/>
+    <h4>Identity display</h4>
+
+    <div class="imgbox">
+      <img src="images/screen_main_wnd_identity.png" alt="Identity outline" />
+      <p class="caption"><span class="pre">Figure 3:</span> Annotated sample identity outline</p>
+    </div>
+
+    <p>The identity display has the following components:
+
+      <dl class="options">
+        <dt>Expand widget</dt>
+        <dd>Clicking on the expand widget toggles the display of
+          contained credential information.</dd>
+
+        <dt>Identity icon</dt>
+        <dd>This is the icon associated with the identity.  An icon
+          will be assigned by default based on the type of the
+          identity.  You can customize the icon using
+          the <a href="config_idicon.htm"><span class="pre">Choose icon</span></a>
+          button of
+          the <a href="config_identity.htm"><span class="pre">Identity
+          configuration</span> dialog</a>.</dd>
+
+        <dt>Default identity widget</dt>
+        <dd>The star icon indicates whether the identity is
+          a <a href="concept_identity.htm">default identity</a> or
+          not.  If the identity is not the default, clicking on the
+          star will make it the default.</dd>
+
+        <dt>Identity name</dt>
+        <dd>This is the display name for the identity.</dd>
+
+        <dt>Identity type</dt>
+        <dd>The type of the identity as reported by the identity provider.</dd>
+
+        <dt>Lifetime</dt>
+        <dd>The remaining lifetime of the identity credentials.  For
+          Kerberos v5 identities, this is the lifetime of the initial
+          ticket granting ticket.</dd>
+
+        <dt>Pin</dt>
+        <dd>Normally, the only identities that will be displayed on
+          the credentials window are those that have credentials
+          associated with them.  However, if an identity is pinned, it
+          will always be displayed, even if there are no credentials.
+          The push pin icon indicates whether this identity is pinned
+          or not.  Clicking on the icon can toggle the pinned
+          state.</dd>
+
+        <dt>Lifetime meter</dt>
+        <dd>Provides a visual indication of the remaining lifetime in
+          proportion to the total lifetime.  Clicking on the lifetime
+          meter starts a renewal of the identity.</dd>
+      </dl>
+    </p>
+
+    <h3>Basic view</h3>
+
+
+    <div class="imgbox">
+      <img src="images/screen_main_wnd_basic.png" usemap="#map_basic" />
+      <p class="caption"><span class="pre">Figure 4</span>: Network Identity Manager Basic View</p>
+    </div>
+
+    <map name="map_basic">
+      <area shape = "rect" coords = "4,23,158,38" href = "menu_all.htm">
+      <area shape = "rect" coords = "6,39,261,67" href = "tb_standard.htm">
+      <area shape = "rect" coords = "6,68,300,268" href = "#ident-display">
+    </map>
+
+    <p>The basic view gives a brief overview of the active identities.
+      The contents of the identity headers are equivalent to the
+      advanced view with the exception of the credential list line
+      which gives the number and type of credentials available for
+      each identity.
+    </p>
 </body>
 
 </html>
