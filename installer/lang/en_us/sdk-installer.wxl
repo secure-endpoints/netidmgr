@@ -56,8 +56,8 @@
 
   <String Id="OsVersionRequired">This package requires Windows XP or later</String>
 
-  <String Id="FeatureMainTitle">Network Identity Manager</String>
+  <String Id="FeatureMainTitle">Network Identity Manager SDK</String>
 
-  <String Id="FeatureMainDesc">Installs the Network Identity Manager core binaries.</String>
+  <String Id="FeatureMainDesc">Installs the Network Identity Manager SDK header files, libraries and samples.</String>
 
 </WixLocalization>
