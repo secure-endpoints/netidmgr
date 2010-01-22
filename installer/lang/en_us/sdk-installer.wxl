@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<WixLocalization CodePage="1252">
+
+  <!--
+
+      Copyright (c) 2008 Secure Endpoints Inc.
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use,
+      copy, modify, merge, publish, distribute, sublicense, and/or
+      sell copies of the Software, and to permit persons to whom the
+      Software is furnished to do so, subject to the following
+      conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+      OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+      OTHER DEALINGS IN THE SOFTWARE.
+
+    -->
+
+  <String Id="LanguageId">1033</String>
+
+  <String Id="CodePage">1252</String>
+
+  <String Id="ProductManufacturer">Secure-Endpoints Inc.</String>
+
+  <String Id="ProductName">Network Identity Manager SDK</String>
+
+  <String Id="ProductDescription">Network Identity Manager SDK</String>
+
+  <String Id="ARPComments">Network Identity Manager SDK</String>
+
+  <String Id="ARPContact">netidmgr@secure-endpoints.com</String>
+
+  <String Id="ARPURLInfo">http://www.secure-endpoints.com</String>
+
+  <String Id="ARPURLHelp">http://www.secure-endpoints.com</String>
+
+  <String Id="CompanyDirName">Secure Endpoints</String>
+
+  <String Id="CompanyDirShortName">secendpt</String>
+
+  <String Id="ProductDirName">NetIDMgr</String>
+
+  <String Id="ProductDirShortName">NETIDMGR</String>
+
+  <String Id="OsVersionRequired">This package requires Windows XP or later</String>
+
+  <String Id="FeatureMainTitle">Network Identity Manager</String>
+
+  <String Id="FeatureMainDesc">Installs the Network Identity Manager core binaries.</String>
+
+</WixLocalization>

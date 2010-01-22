@@ -31,6 +31,8 @@ LANG=en_us
 
 MSIFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
 
+SDKMSIFILE=$(BINDIR)\netidmgr-sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
+
 ZIPFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
 SDKZIPFILE=$(BINDIR)\netidmgr-sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
@@ -47,7 +49,7 @@ TARGET=$(ZIPFILE)
 !endif
 !else
 !if exist("$(WIXDIR)\candle.exe")
-TARGET=mkdirs $(MSIFILE)
+TARGET=mkdirs $(MSIFILE) $(SDKMSIFILE)
 !else
 TARGET=no-wix
 !endif
@@ -91,6 +93,31 @@ $(OBJ)\installer.wixobj: installer.wxs
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)			\
 		-dKeystoreBinDir=$(KSBIN)
+
+$(SDKMSIFILE): "$(OBJ)\sdk-installer.wixobj"
+	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
+		"$(WIXDIR)\WixUI.wixlib"		\
+		-loc lang\$(LANG)\sdk-installer.wxl	\
+		-loc "$(WIXDIR)\WixUI_en-us.wxl"	\
+		$**
+	$(_CODESIGN)
+
+$(OBJ)\sdk-installer.wixobj: sdk-installer.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $**	\
+		-dProductVersion=$(NETIDMGR_VERSION)	\
+		-dBinDir=$(BINDIR)\			\
+		-dIncDir=$(INCDIR)\			\
+		-dLibDir=$(LIBDIR)\			\
+		-dDocDir=$(DESTDIR)\doc			\
+!ifndef NODEBUG
+		-dDebug=1				\
+!endif
+!ifdef KH_NO_W2K
+		-dNoW2k=1				\
+!endif
+		-dSrcDir=$(SRC)				\
+		-dClVer=$(KH_CLVER)
+
 
 # MSI but not WIX
 

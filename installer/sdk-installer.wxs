@@ -1,0 +1,348 @@
+<?xml version="1.0"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2003/01/wi">
+
+  <!--
+
+      Copyright (c) 2009 Secure Endpoints Inc.
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use,
+      copy, modify, merge, publish, distribute, sublicense, and/or
+      sell copies of the Software, and to permit persons to whom the
+      Software is furnished to do so, subject to the following
+      conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+      OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+      OTHER DEALINGS IN THE SOFTWARE.
+
+    -->
+
+  <!-- Platform constants -->
+
+  <?if $(env.CPU)="i386" Or $(env.CPU)="x86" ?>
+  <?define Platform=Intel ?>
+  <?elseif $(env.CPU)="x64" Or $(env.CPU)="AMD64" ?>
+  <?define Platform=x64 ?>
+  <?else?>
+  <?error Unknown value for CPU environment variable. ?>
+  <?endif?>
+
+  <?define UpgradeCode="A2FF6482-E2AD-4E6B-ACE5-8F0E2E56544E" ?>
+
+  <!-- Platform dependencies -->
+
+  <?if $(var.Platform)="Intel" ?>
+
+  <?define ProgramFilesFolder="ProgramFilesFolder" ?>
+  <?define Win64="no" ?>
+  <?define NidmgrLib_Guid="2F424439-4C82-4695-B91A-BEC66082639E" ?>
+  <?define NidmgrLib_Name="nidmgr32.lib" ?>
+
+  <?elseif $(var.Platform)="x64" ?>
+
+  <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
+  <?define Win64="yes" ?>
+
+  <?else?>
+  <?error Unknown value for Platform variable ?>
+  <?endif?>
+
+  <?define CodePage="1252" ?>
+
+  <?if $(var.Platform)="Intel" ?>
+    <?ifndef NoW2k?>
+      <?define IncludeW2k="yes" ?>
+    <?endif?>
+  <?define IncludeDebugSyms="yes" ?>
+  <?elseif $(var.Platform)="x64" ?>
+  <?define IncludeDebugSyms="yes" ?>
+  <?endif?>
+
+  <Product Id="????????-????-????-????-????????????"
+           Language="$(loc.LanguageId)"
+           Manufacturer="$(loc.ProductManufacturer)"
+           Name="$(loc.ProductName)"
+           Codepage="$(var.CodePage)"
+           UpgradeCode="$(var.UpgradeCode)"
+           Version="$(var.ProductVersion)">
+    <Package Id="????????-????-????-????-????????????"
+             Compressed="yes"
+             Description="$(loc.ProductDescription)"
+             InstallerVersion="200"
+             InstallPrivileges="elevated"
+             Languages="$(loc.LanguageId)"
+             Manufacturer="$(loc.ProductManufacturer)"
+             Platforms="$(var.Platform)"
+             SummaryCodepage="$(loc.CodePage)"
+             />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+
+      <Directory Id="$(var.ProgramFilesFolder)">
+
+        <Directory Id="dirCompany" SourceName="."
+                   Name="MIT">
+
+          <Directory Id="APPDIR" SourceName="."
+                     Name="Kerberos">
+
+            <Directory Id="dirInc"
+                       Name="inc">
+
+              <Directory Id="dirIncNetidmgr"
+                         Name="netidmgr"
+                         FileSource="$(var.IncDir)">
+
+                <Component Id="cmpIncNetidmgr"
+                           Guid="4B416C66-7CC0-4D90-B5E5-42755EB527E1"
+                           DiskId="1">
+                  <File Id="file_inc_dynimport_h" Name="dynimprt.h" LongName="dynimport.h" />
+                  <File Id="file_inc_hashtable_h" Name="hashtbl.h" LongName="hashtable.h" />
+                  <File Id="file_inc_kconfig_h" Name="kconfig.h" />
+                  <File Id="file_inc_kcreddb_h" Name="kcreddb.h" />
+                  <File Id="file_inc_khaction_h" Name="khaction.h" />
+                  <File Id="file_inc_khactiondef_h" Name="khactdef.h" LongName="khactiondef.h" />
+                  <File Id="file_inc_khalerts_h" Name="khalerts.h" />
+                  <File Id="file_inc_khconfigui_h" Name="khcfgui.h" LongName="khconfigui.h" />
+                  <File Id="file_inc_khdefs_h" Name="khdefs.h" />
+                  <File Id="file_inc_kherr_h" Name="kherr.h" />
+                  <File Id="file_inc_kherror_h" Name="kherror.h" />
+                  <File Id="file_inc_khhelp_h" Name="khhelp.h" />
+                  <File Id="file_inc_khhtlink_h" Name="khhtlink.h" />
+                  <File Id="file_inc_khlist_h" Name="khlist.h" />
+                  <File Id="file_inc_khmsgtypes_h" Name="khmsgtyp.h" LongName="khmsgtypes.h" />
+                  <File Id="file_inc_khnewcred_h" Name="khncred.h" LongName="khnewcred.h" />
+                  <File Id="file_inc_khprops_h" Name="khprops.h" />
+                  <File Id="file_inc_khremote_h" Name="khremote.h"  />
+                  <File Id="file_inc_khrescache_h" Name="khrcache.h" LongName="khrescache.h" />
+                  <File Id="file_inc_khtracker_h" Name="khtrckr.h" LongName="khtracker.h" />
+                  <File Id="file_inc_khuidefs_h" Name="khuidefs.h" />
+                  <File Id="file_inc_kmm_h" Name="kmm.h" />
+                  <File Id="file_inc_kmq_h" Name="kmq.h" />
+                  <File Id="file_inc_kplugin_h" Name="kplugin.h" />
+                  <File Id="file_inc_krb5common_h" Name="krb5cmn.h" LongName="krb5common.h" />
+                  <File Id="file_inc_mstring_h" Name="mstring.h" />
+                  <File Id="file_inc_netidmgr_h" Name="netidmgr.h" />
+                  <File Id="file_inc_netidmgr_version_h" Name="nimvers.h" LongName="netidmgr_version.h" KeyPath="yes" />
+                  <File Id="file_inc_perfstat_h" Name="perfstat.h" />
+                  <File Id="file_inc_sync_h" Name="sync.h" />
+                  <File Id="file_inc_task_h" Name="task.h" />
+                  <File Id="file_inc_utils_h" Name="utils.h" />
+                </Component>
+
+              </Directory> <!-- dirIncNetidmgr -->
+
+            </Directory>   <!-- dirInc -->
+
+            <Directory Id="dirDoc"
+                       Name="doc">
+
+              <Component Id="cmpDocNetiddev"
+                         Guid="45F9DA3E-F156-4766-BF69-D91225CB59FB"
+                         DiskId="1">
+                <File Id="file_netiddev_chm" Name="netiddev.chm" Source="$(var.DocDir)\netiddev.chm"
+                      KeyPath="yes" />
+              </Component>
+
+            </Directory>   <!-- dirDoc -->
+
+            <Directory Id="dirLib"
+                       Name="lib">
+
+              <Directory Id="dirLibCpu"
+                         Name="$(env.CPU)">
+
+                <Component Id="cmpNidmgrLib"
+                           Win64="$(var.Win64)"
+                           Guid="$(var.NidmgrLib_Guid)"
+                           DiskId="1">
+                  <File Id="file_nidmgr_lib" Name="$(var.NidmgrLib_Name)" KeyPath="yes" />
+                </Component>
+
+              </Directory> <!-- dirLibCpu -->
+
+            </Directory>   <!-- dirLib -->
+
+            <Directory Id="dirSample"
+                       Name="sample"
+                       FileSource="$(var.SrcDir)\sample\">
+
+              <Directory Id="dirTemplates"
+                         Name="template"
+                         LongName="templates">
+
+                <Directory Id="dirCredprov"
+                           Name="credprov">
+
+                  <Component Id="cmpCredprovSource"
+                             Guid="3930DE2A-D77C-4BA5-8D64-9092687C4832"
+                             DiskId="1">
+                    <File Id="file_credprov_config_id_c" Name="cnfg_id.c" LongName="config_id.c" />
+                    <File Id="file_credprov_config_ids_c" Name="cnfg_ids.c" LongName="config_ids.c" />
+                    <File Id="file_credprov_config_main_c" Name="cnfgmain.c" LongName="config_main.c" />
+                    <File Id="file_credprov_credacq_c" Name="credacq.c" />
+                    <File Id="file_credprov_credprov_h" Name="credprov.h" KeyPath="yes"/>
+                    <File Id="file_credprov_credtype_c" Name="credtype.c" />
+                    <File Id="file_credprov_langres_h" Name="langres.h" />
+                    <File Id="file_credprov_main_c" Name="main.c" />
+                    <File Id="file_credprov_Makefile" Name="Makefile" />
+                    <File Id="file_credprov_plugin_c" Name="plugin.c" />
+                    <File Id="file_credprov_proppage_c" Name="proppage.c" />
+                    <File Id="file_credprov_README" Name="README" />
+                    <File Id="file_credprov_version_rc" Name="version.rc" />
+                  </Component>
+
+                  <Directory Id="dirCredprovImages"
+                             Name="images">
+                    <Component Id="cmpCredprovImages"
+                               Guid="1BE7D30D-C292-444C-A486-E9F2127A18D7"
+                               DiskId="1">
+                      <File Id="file_credprov_plugin_ico" Name="plugin.ico" KeyPath="yes" />
+                    </Component>
+                  </Directory> <!-- dirCredprovImages -->
+
+                  <Directory Id="dirCredprovLang"
+                             Name="lang">
+                    <Directory Id="dirCredprovLangEn"
+                               Name="en_us">
+                      <Component Id="cmpCredprovLangres"
+                                 Guid="DC7CE442-2317-45BF-B76A-35261F3EA247"
+                                 DiskId="1">
+                        <File Id="file_credprov_langres_rc" Name="langres.rc" KeyPath="yes" />
+                      </Component>
+                    </Directory> <!-- dirCredprovLangEn -->
+
+                  </Directory> <!-- dirCredprovLang -->
+
+                </Directory> <!-- dirCredProv -->
+
+                <Directory Id="dirIdprov"
+                           Name="idprov">
+
+                  <Component Id="cmpIdprovSource"
+                             Guid="88FA49F5-45C6-4D98-AF04-CB55991AA1DC"
+                             DiskId="1">
+                    <File Id="file_idprov_config_id_c" Name="cnfgid.c" LongName="config_id.c" />
+                    <File Id="file_idprov_config_ids_c" Name="cnfgids.c" LongName="config_ids.c" />
+                    <File Id="file_idprov_config_main_c" Name="cnfgmain.c" LongName="config_main.c" />
+                    <File Id="file_idprov_credacq_c" Name="credacq.c" />
+                    <File Id="file_idprov_credprov_c" Name="credprov.c" />
+                    <File Id="file_idprov_credtype_c" Name="credtype.c" />
+                    <File Id="file_idprov_idprov_c" Name="idprov.c" />
+                    <File Id="file_idprov_idselect_c" Name="idselect.c" />
+                    <File Id="file_idprov_installer_wxs" Name="installr.wxs" LongName="installer.wxs" />
+                    <File Id="file_idprov_langres_h" Name="langres.h" />
+                    <File Id="file_idprov_license_rtf" Name="license.rtf" />
+                    <File Id="file_idprov_main_c" Name="main.c" />
+                    <File Id="file_idprov_Makefile" Name="Makefile" />
+                    <File Id="file_idprov_module_h" Name="module.h" KeyPath="yes" />
+                    <File Id="file_idprov_proppage_c" Name="proppage.c" />
+                    <File Id="file_idprov_README" Name="README" />
+                    <File Id="file_idprov_version_rc" Name="version.rc" />
+                  </Component>
+
+                  <Directory Id="dirIdprovImages"
+                             Name="images">
+                    <Component Id="cmpIdprovImages"
+                               Guid="712BAC7F-381F-4E1D-9617-AA9865861F0A"
+                               DiskId="1">
+                      <File Id="file_idprov_id_ico" Name="id.ico" />
+                      <File Id="file_idprov_plugin_ico" Name="plugin.ico" KeyPath="yes" />
+                    </Component>
+                  </Directory> <!-- dirIdprovImages -->
+
+                  <Directory Id="dirIdprovLang"
+                             Name="lang">
+                    <Directory Id="dirIdprovLangEn"
+                               Name="en_us">
+                      <Component Id="cmpIdprovLangEn"
+                                 Guid="ED591E94-037C-46AE-8EBB-5FC8D0DA427F"
+                                 DiskId="1">
+                        <File Id="file_idprov_installer_wxl" Name="installr.wxl" LongName="installer.wxl" />
+                        <File Id="file_idprov_langres_rc" Name="langres.rc" KeyPath="yes" />
+                      </Component>
+                    </Directory> <!-- dirIdprovLangEn -->
+
+                  </Directory> <!-- dirIdprovLang -->
+
+                </Directory> <!-- dirIdprov -->
+
+              </Directory> <!-- dirTemplates -->
+
+            </Directory> <!-- dirSample -->
+
+          </Directory>     <!-- APPDIR -->
+
+        </Directory>       <!-- dirCompany -->
+
+      </Directory>         <!-- ProgramFilesFolder -->
+
+    </Directory>           <!-- TARGETDIR -->
+
+    <Feature Id="Feature.Main"
+             AllowAdvertise="no"
+             ConfigurableDirectory="APPDIR"
+             Title="$(loc.FeatureMainTitle)"
+             Description="$(loc.FeatureMainDesc)"
+             Display="expand"
+             InstallDefault="local"
+             TypicalDefault="install"
+             Level="3">
+
+      <ComponentRef Id="cmpIncNetidmgr" />
+      <ComponentRef Id="cmpDocNetiddev" />
+      <ComponentRef Id="cmpNidmgrLib" />
+      <ComponentRef Id="cmpCredprovSource" />
+      <ComponentRef Id="cmpCredprovImages" />
+      <ComponentRef Id="cmpCredprovLangres" />
+      <ComponentRef Id="cmpIdprovSource" />
+      <ComponentRef Id="cmpIdprovImages" />
+      <ComponentRef Id="cmpIdprovLangEn" />
+
+    </Feature>
+
+    <Icon Id="NIMIcon" SourceFile="$(var.SrcDir)\ui\images\id.ico" />
+
+    <!-- We are registering this product in HKLM. We are only
+         installing this for all users. -->
+    <Property Id="ALLUSERS">1</Property>
+    <Property Id="ARPCOMMENTS">$(loc.ARPComments)</Property>
+    <Property Id="ARPCONTACT">$(loc.ARPContact)</Property>
+    <Property Id="ARPURLINFOABOUT">$(loc.ARPURLInfo)</Property>
+    <Property Id="ARPHELPLINK">$(loc.ARPURLHelp)</Property>
+    <Property Id="ARPPRODUCTICON">NIMIcon</Property>
+
+    <Property Id="INSTALLLEVEL">3</Property>
+
+    <Condition Message="$(loc.OsVersionRequired)">VersionNT &gt;=501</Condition>
+
+    <InstallExecuteSequence>
+      <RemoveExistingProducts After="InstallValidate">(Not Installed) And UPGRADENIMSDK</RemoveExistingProducts>
+    </InstallExecuteSequence>
+
+    <Upgrade Id="$(var.UpgradeCode)">
+      <UpgradeVersion IgnoreRemoveFailure="no"
+                      IncludeMinimum="no"
+                      Maximum="$(var.ProductVersion)"
+                      IncludeMaximum="no"
+                      MigrateFeatures="yes"
+                      Property="UPGRADENIMSDK" />
+    </Upgrade>
+
+    <Media Id="1" Cabinet="Disk1" CompressionLevel="high" EmbedCab="yes" />
+
+    <UIRef Id="WixUI_Mondo" />
+
+  </Product>
+</Wix>
