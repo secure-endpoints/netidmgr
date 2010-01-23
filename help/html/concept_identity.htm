@@ -21,7 +21,7 @@
   identity is the unique user identifier that is accepted by a network
   service. Each credential that is managed by NetIDMgr is assumed to
   map to a single identity. The collection of credentials that map to
-  a single identity is considered to belong to that identity. </p>
+  the same identity are determined to belong to that identity. </p>
 
 <a name="default_identity"></a>
 <h3>Default Identity</h3>
@@ -33,7 +33,7 @@
 
 <p>The default identity is the identity that will be used by
   applications when a specific identity is not requested. The Kerberos
-  v5 plug-in will mark the credential cache that contains the default
+  v5 provider plug-in will mark the credential cache that contains the default
   identity as the default credentials cache for the current logon
   session.</p>
 

@@ -15,23 +15,23 @@
 <p>The Network Identity Manager (NetIDMgr) organizes and manages
   credentials based on how they identify the user to network
   services. It is assumed that each
-  <a href="concept_credential.htm">credential </a>will uniquely
-  identify the user to a service as a single
-  <a href="concept_identity.htm">identity</a>.  When using Kerberos v5
-  the identity is the Kerberos principal name.
+  <a href="concept_credential.htm">credential</a> will uniquely
+  identify the user to a service as a single authentication
+  <a href="concept_identity.htm">identity</a>.  When using a Kerberos v5
+  identity the authentication name is the Kerberos principal name.
 </p>
 
 <p>At it's core, NetIDMgr does not possess any knowledge about
   specific credentials that might be available to the user or how to
-  manage them.  It relies on several types of plug-ins to provide the
-  information it needs, and to carry out credentials management tasks.
+  manage them.  It relies on several types of provider plug-ins to obtain
+  the required information and to carry out credential management tasks.
   One primary task is to identify and manage identities.  These
-  services are provided by a plug-in called
-  the <a href="concept_ident_pro.htm">identity provider</a>.
-  Information about individual credentials are provided
+  services are provided by a class of plug-ins called
+  <a href="concept_ident_pro.htm">identity providers</a>.
+  Information about individual credentials are managed
   by <a href="concept_cred_pro.htm">credential providers</a>.  Other
-  plug-ins may extend the functionality of these plug-ins or provide
-  additional functionality for NetIDMgr.
+  plug-in classes may extend the functionality of these plug-ins or
+  extend the functionality of NetIDMgr.
 </p>
 
 <p>The following topics provider further details: </p>
