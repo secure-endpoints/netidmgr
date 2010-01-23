@@ -169,7 +169,8 @@
                            Win64="$(var.Win64)"
                            Guid="$(var.NidmgrLib_Guid)"
                            DiskId="1">
-                  <File Id="file_nidmgr_lib" Name="$(var.NidmgrLib_Name)" KeyPath="yes" />
+                  <File Id="file_nidmgr_lib" Name="$(var.NidmgrLib_Name)" KeyPath="yes"
+                        Source="$(var.LibDir)\$(var.NidmgrLib_Name)" />
                 </Component>
 
               </Directory> <!-- dirLibCpu -->
