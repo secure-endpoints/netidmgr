@@ -76,11 +76,15 @@
   div.note img {
       float: left;
       border: 0pt none;
+      margin-top: 0.5em;
+      margin-left: 0.5em;
   }
 
   div.note p {
       margin-left: 4em;
       margin-right: 1em;
+      margin-top: 0.5em;
+      margin-bottom: 0.5em;
   }
 
   a.external {  }

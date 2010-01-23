@@ -5,6 +5,9 @@
     <link rel="stylesheet" type="text/css" href="nidmgr.css">
     <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
       <param name="Keyword" value="Identity configuration">
+      <param name="Keyword" value="Kerberos v5 configuration (per-identity)">
+      <param name="Keyword" value="Kerberos v4 configuration (per-identity)">
+      <param name="Keyword" value="KeyStore configuration (per-identity)">
     </object>
   </head>
 
@@ -13,7 +16,19 @@
 
     <p>You can access the per-identity configuration panel for a
       specific identity by selecting the identity name from the list
-      of configuration panels in the configuration dialog. </p>
+      of configuration panels in
+      the <a href="use_config.htm">configuration dialog.</a></p>
+
+    <p>Alternatively, you can right-click on an identity in
+      the <a href="wnd_main.htm">credentials display</a> and select
+      the <a href="menu_cred_ctx.htm"><span class="pre">Show identity
+          options</span></a> menu item to bring up the configuration dialog
+      for that identity.</p>
+
+    <p>Many of the credentials acquisition settings that are available
+      in this dialog are also exposed in the advanced view of
+      the <a href="act_new_creds.htm#advanced">New credentials
+      wizard</a>.</p>
 
     <p>These panels are similar to
       the <a href="config_identities.htm"><span class="pre">Identities</span>
@@ -22,20 +37,36 @@
       defaults set in the <span class="pre">Identities</span>
       panel. </p>
 
+    <p>There are several standard panels that form the per-identity
+      configuration dialog:</p>
+
+    <ul>
+      <li><a href="#general">General configuration</a></li>
+      <li><a href="#k5">Kerberos v5 configuration</a></li>
+      <li><a href="#k4">Kerberos v4 configuration</a></li>
+      <li><a href="#ks">KeyStore configuration</a></li>
+    </ul>
+
     <h3>Per identity General Configuration</h3>
 
-    <p><img src="images/options-id-single.png" /> </p>
+    <div class="imgbox">
+      <img src="images/options-id-single.png" />
+    </div>
+
     <p>The General page contains a <b>Remove
         Identity</b> button that can be used to delete this Identity
       from the Network Identity Manager.</p>
+
     <p>The <b>Monitor credential expiration</b> setting determines
       whether or not NetIdMgr should monitor the credential lifetimes
       and issue expiration notifications.&nbsp;&nbsp; This value is
       used as the default for all new identities.</p>
+
     <p>The <b>Automatically renew</b> setting determines if <i>
         renewable</i> credentials are automatically renewed prior to
         expiration.&nbsp; This value is used as the default for all
         new identities.</p>
+
     <p>The <b>Always show in the credentials list (Pinned)</b> setting
       determines whether new identities are always pinned within the
       credentials list.&nbsp; A pinned identity will always be
@@ -77,16 +108,24 @@
 
     <h3>Per identity Kerberos v5 Configuration</h3>
 
-    <p><img src="images/screen_config_ident_krb5.png" /> </p>
+    <div class="imgbox"><img src="images/options-id-single-k5.png" /> </div>
     <p>The Kerberos v5 page displays the name of the
       credential cache currently associated with the Identity.</p>
 
     <h3>Per identity Kerberos v4 Configuration</h3>
 
-    <p><img src="images/screen_config_ident_krb4.png" /></p>
+    <div class="imgbox"><img src="images/options-id-single-k4.png" /></div>
     <p>The Kerberos v4 page is optional and may not appear on all
       systems.&nbsp; Only one identity can obtain Kerberos v4
       credentials at a time.&nbsp; </p>
+
+    <h3>Per identity KeyStore Configuration</h3>
+
+    <div class="imgbox"><img src="images/options-id-single-ks.png" /></div>
+    <p>The KeyStore configuration page will appear if you have any
+    saved passwords for this identity.  If so, the configuration page
+    lists the KeyStores that contain these passwords.
+    </p>
   </body>
 </html>
 

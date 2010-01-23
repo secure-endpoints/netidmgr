@@ -1,0 +1,115 @@
+<html>
+<head>
+  <title>Property Sheets</title>
+  <meta name="keywords" content="view, layout">
+  <link rel="stylesheet" type="text/css" href="nidmgr.css">
+  <Object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+    <param name="Keyword" value="Properties">
+    <param name="Keyword" value="Credential property sheet">
+    <param name="Keyword" value="Identity property sheet">
+    <param name="Keyword" value="Credentials type property sheet">
+  </Object>
+</head>
+<body>
+
+  <h1>Property Sheets</h1>
+
+  <p>The property sheet for an identity or a credential can be invoked
+    using the <a href="menu_cred_ctx.htm">Credentials display context
+    menu</a> or by double-clicking the identity or credential.</p>
+
+  <h3>Properties for an identity</h3>
+
+  <div class="imgbox">
+    <img src="images/property-identity.png" usemap="#idp-map"/>
+    <p class="caption"><span class="pre">Figure 1</span>: Property sheet for an identity</p>
+  </div>
+
+  <map name="idp-map">
+    <area shape = "rect" coords = "20,59,365,89" href = "#id-idname">
+    <area shape = "rect" coords = "59,88,354,133" href = "#id-idopts">
+    <area shape = "rect" coords = "25,140,341,267" href = "#id-idprops">
+    <area shape = "rect" coords = "186,271,358,298" href = "#id-idconfig">
+    <area shape = "rect" coords = "130,315,376,344" href = "#prop-buttons">
+  </map>
+
+  <p>When the property sheet for an identity is invoked, you will be
+    presented with an interface similar to <span class="pre">Figure
+    1</span> above.</p>
+
+  <dl class="options">
+    <dt>Identity name</dt><a name="id-idname"/>
+    <dd>This is the display name for the identity</dd>
+
+    <dt>Identity options</dt><a name="id-idopts"/>
+    <dd>Several options for the selected identity.  You can use the
+      checkboxes to view and also modify the state of some the
+      options.  Any changes you make will not become effective until
+      you select the <span class="pre">Ok</span> button or
+      the <span class="pre">Apply</span> button.</dd>
+
+    <dt>Properties for the identity</dt><a name="id-idprops"/>
+    <dd>Below the identity options is a list of properties for the
+      selected identity.  These are properties reported by the identity
+      and credentials providers.</dd>
+
+    <dt>Identity configuration button</dt><a name="id-idconfig" />
+    <dd>You can click this button to invoke
+      the <a href="config_identity.htm">Identity configuration panel</a>
+      for this identity.</dd>
+
+    <dt>Property page buttons</dt><a name="prop-buttons"/>
+    <dd>These buttons control the property sheet.
+
+      <p>
+      <dl>
+        <dt>Ok</dt>
+        <dd>The <span class="pre">Ok</span> button applies any changes
+        you have made in the property sheet and closes it.</dd>
+
+        <dt>Apply</dt>
+        <dd>Applies the changes you have made without exiting the
+        property sheet.</dd>
+
+        <dt>Cancel</dt>
+        <dd>Closes the property sheet without applying any of the
+        changes.  If you have made any changes to the identity
+        options, they will be lost.</dd>
+      </dl>
+      </p>
+  </dl>
+
+  <h3>Properties for a credential</h3>
+
+  <div class="imgbox">
+    <img src="images/property-credtype.png" />
+    <p class="caption"><span class="pre">Figure 2</span>: Kerberos v5 property sheet for a credential</p>
+  </div>
+
+  <p>When the property sheet is invoked for a credential, typically
+    you will be presented with several property pages as can be seen
+    in <span class="pre">Figure 2</span>.  In addition to the
+    credentials type specific property page (Kerberos v5, in this
+    case), there will be a credential property list
+    (the <span class="pre">Credential</span> tab,
+    and <span class="pre">Figure 3</span> below) and a property page
+    for the identity.</p>
+
+  <div class="imgbox">
+    <img src="images/property-credential.png" />
+    <p class="caption"><span class="pre">Figure 3</span>: Property list for a credential</p>
+  </div>
+
+  <p>The property list page is present for all credentials and lists
+    all the properties that were provided by
+    the <a href="concept_cred_pro.htm">Credentials provider</a> for a
+    credential.
+  </p>
+
+  <p>The <span class="pre">Identity</span> property page for a
+  credential is identical to the identity property page
+  (<span class="pre">Figure 1</span>) and lists the properties for the
+  identity associated with a credential.</p>
+
+</body>
+</html>

@@ -1,35 +1,50 @@
 <html>
 <head>
-  <title>Network Identity Manager - Change Password</title>
-  <meta name="description" content="change password">
-  <meta name="keywords" content="change password dialog">
+  <title>Change Password</title>
   <link rel="stylesheet" type="text/css" href="nidmgr.css">
-  
-  <Object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
-<param name="Keyword" value="Changing Passwords">
-</OBJECT>
+  <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+    <param name="Keyword" value="Changing Passwords">
+  </object>
 </head>
 <body>
 
-<h1>Network Identity Manager - Change Password</h1>
+<h1>Change Password</h1>
 
-<p>The change password dialog can be invoked from the <a
-href="menu_credential.htm">Credentials</a> menu.  This is used to
-change the password for the primary credentials provider (currently
-Kerberos v5).
-</p>
-<p><img border="0" src="images/screen_chng_pwd.png" width="456" height="244"></p>
+<p>The change password dialog can be invoked using:
 
-<p>For the default identity provider (Kerberos v5), there are two input
-boxes to specify the identity for which the password is to be changed.
-The identity uniquely maps to the Kerberos principal of the same name.
-Then the current password must be entered along with the new password
-twice.
+  <ul>
+    <li>the <a href="menu_credential.htm">Credentials</a> menu.</li>
+    <li>the <a href="tb_standard.htm#chpw">Change password button on the toolbar</a>.</li>
+  </ul>
 </p>
 
-<p>Note that currently, when the password for an identity is being
-changed, only the associated Kerberos v5 password is changed.
+<p>The dialog prompts you to change the password for an identity that
+  supports password changing.  Both the Kerberos v5 provider and the
+  KeyStore provider support changing passwords.
 </p>
+
+<div class="imgbox">
+  <img border="0" src="images/new-creds-chpw.png">
+</div>
+
+<p>Once you select the identity for which you are changing the
+  password, you need to enter the current password along with the new
+  password twice.  Finally click the <span class="pre">Finish</span>
+  button to continue with the password change operation.
+</p>
+
+<p>Similar to the <a href="act_new_creds.htm">New credentials
+    operation</a>, you can change the target identity using the
+    identity selector at the top of the dialog.
+</p>
+
+<div class="note">
+  <img src="images/note.png" />
+  <p>The Kerberos v5 provider may prompt you to change the password
+  during a <a href="act_new_creds.htm">New credentials</a> operation
+  if the KDC indicates that your password has expired and needs to be
+  changed.
+</div>
 
 </body>
 </html>

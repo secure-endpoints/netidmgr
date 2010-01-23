@@ -1,0 +1,79 @@
+<html>
+<head>
+  <title>Credential Display Context Menu</title>
+  <meta name="description" content="credential menu">
+  <meta name="keywords" content="credential menu">
+  <link rel="stylesheet" type="text/css" href="nidmgr.css">
+  <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+    <param name="Keyword" value="Credential display context menu">
+  </object>
+</head>
+<body>
+
+<h1>Credential Display Context Menu</h1>
+
+<p>
+  Click an item on the menu to go to the description of the action, or
+  choose from the list below.  You can activate the credential display
+  context menu by right-clicking on an identity or credential in the
+  credentials display.
+</p>
+
+<p>
+  Actions which have an associated hot key show this hot key to the
+  right of the action.  You can use the hot key to trigger the action
+  without invoking the menu.
+</p>
+
+  <map name="mmap">
+    <area shape = "rect" coords = "42,17,262,36" href = "#properties">
+    <area shape = "rect" coords = "39,34,264,54" href = "#idoptions">
+    <area shape = "rect" coords = "39,55,261,82" href = "#setdefault">
+    <area shape = "rect" coords = "39,98,262,120" href = "#newcreds">
+    <area shape = "rect" coords = "37,119,264,140" href = "#renew">
+    <area shape = "rect" coords = "38,138,264,161" href = "#destroy">
+  </map>
+
+  <div class="imgbox">
+    <img src="images/screen_menu_cred_ctx.png" usemap="#mmap"/>
+  </div>
+
+<ul>
+  <li><p><a name="properties"/><span class="title">Properties</span>:
+      Displays the <a href="wnd_properties.htm">property sheet</a> for
+      the selected identity or credential or credentials type.</p>
+  </li>
+
+  <li><p><a name="idoptions"/><span class="title">Show identity
+        options</span>: Invokes
+        the <a href="config_identity.htm">per-identity configuration
+        panel</a> for the selected identity.</p>
+  </li>
+
+  <li><p><a name="setdefault"/><span class="title">Set as
+        default</span>: Sets the selected identity as
+        the <a href="act_set_default.htm">default</a>.</p>
+  </li>
+
+  <li><p><a name="newcreds"/><span class="title">Obtain new
+        credentials ...</span>: Invokes
+        the <a class="act_new_creds.htm">New credentials wizard</a>.
+        If an identity is currently selected, that identity will be
+        pre-selected as the primary identity for the wizard.</p>
+  </li>
+
+  <li><p><a name="renew"/><span class="title">Renew
+        credentials</span>: Attempts to renew the selected credentials
+        or identity.  See the <a href="act_renew_creds.htm">Renew
+        credentials</a> action for more information.</p>
+  </li>
+
+  <li><p><a name="destroy"/><span class="title">Destroy
+        credentials</span>: Attempts to destroy the selected
+      credentials.  See the <a href="act_destroy_creds.htm">Destroy
+        credentials</a> action for more information.</p>
+  </li>
+</ul>
+
+</body>
+</html>

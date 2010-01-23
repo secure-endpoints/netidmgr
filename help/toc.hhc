@@ -26,12 +26,20 @@
 		</OBJECT>
 	<UL>
 		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="What's new in Network Identity Manager">
+			<param name="Local" value="html\whatsnew.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Reporting bugs">
 			<param name="Local" value="html\bugs.htm">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="License agreement">
 			<param name="Local" value="html\copyright.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="KeyStore">
+			<param name="Local" value="html\keystore.htm">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Registry Reference">
@@ -74,6 +82,10 @@
 			<param name="Local" value="html\concept_identity.htm">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Credentials">
+			<param name="Local" value="html\concept_credential.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Identity Provider">
 			<param name="Local" value="html\concept_ident_pro.htm">
 			</OBJECT>
@@ -90,6 +102,10 @@
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Starting">
 			<param name="Local" value="html\use_start.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Command-line options">
+			<param name="Local" value="html\cmdline_netidmgr.htm">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Notification icon">
@@ -169,6 +185,10 @@
 			<param name="Name" value="Standard Toolbar">
 			<param name="Local" value="html\tb_standard.htm">
 			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+		        <param name="Name" value="Credential Display Context Menu">
+			<param name="Local" value="html\menu_cred_ctx.htm">
+			</OBJECT>
 	</UL>
 	<LI> <OBJECT type="text/sitemap">
 		<param name="Name" value="Actions">
@@ -178,9 +198,19 @@
 			<param name="Name" value="New Credentials">
 			<param name="Local" value="html\act_new_creds.htm">
 			</OBJECT>
+                  <ul>
+                    <li><OBJECT type="text/sitemap">
+			<param name="Name" value="Password Persistence">
+			<param name="Local" value="html\act_new_creds_persistence.htm">
+			</OBJECT>
+                  </ul>
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Renew Credentials">
 			<param name="Local" value="html\act_renew_creds.htm">
+			</OBJECT>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Import Credentials">
+			<param name="Local" value="html\act_import_creds.htm">
 			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Destroy Credentials">
@@ -199,6 +229,10 @@
 		<param name="Name" value="Windows and dialogs">
 		</OBJECT>
 	<UL>
+		<LI> <OBJECT type="text/sitemap">
+			<param name="Name" value="Property sheets">
+			<param name="Local" value="html\wnd_properties.htm">
+			</OBJECT>
 		<LI> <OBJECT type="text/sitemap">
 			<param name="Name" value="Main Window">
 			<param name="Local" value="html\wnd_main.htm">

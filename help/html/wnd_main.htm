@@ -27,12 +27,32 @@
     the <a href="menu_view.htm"><span class="pre">View
     menu</span></a>.</p>
 
+    <h3>Basic view</h3>
+
+    <div class="imgbox">
+      <img src="images/screen_main_wnd_basic.png" usemap="#map_basic" />
+      <p class="caption"><span class="pre">Figure 1</span>: Network Identity Manager Basic View</p>
+    </div>
+
+    <map name="map_basic">
+      <area shape = "rect" coords = "4,23,158,38" href = "menu_all.htm">
+      <area shape = "rect" coords = "6,39,261,67" href = "tb_standard.htm">
+      <area shape = "rect" coords = "6,68,300,268" href = "#ident-display">
+    </map>
+
+    <p>The basic view gives a brief overview of the active identities.
+      The contents of the <a href="#ident-display">identity display
+      area</a> is equivalent to the advanced view with the exception
+      of the credential list line which gives the number and type of
+      credentials available for each identity.
+    </p>
+
     <h3>Advanced View</h3>
 
     <div class="imgbox">
       <img src="images/screen_main_wnd.png" usemap="#map_adv" />
       <p class="caption"><span class="pre">Figure 1</span>. Network
-      Identity Manager Advanced View</p>
+        Identity Manager Advanced View</p>
     </div>
 
     <map name="map_adv">
@@ -65,6 +85,13 @@
       sort order for each field or double-click on a column header to
       toggle grouping.  You may also drag fields to change the column
       ordering.</p>
+
+    <p>The <span class="pre"><a href="menu_view.htm">View
+      menu</a> </span> lets you switch between several pre-defined
+      layouts for the advanced credentials view.  For more
+      information, see <a href="use_layout.htm">Managing the
+      credentials view layout</a>.
+    </p>
 
     <h4>Expiration states</h4>
 
@@ -133,7 +160,10 @@
         <dt>Lifetime</dt>
         <dd>The remaining lifetime of the identity credentials.  For
           Kerberos v5 identities, this is the lifetime of the initial
-          ticket granting ticket.</dd>
+          ticket granting ticket. The lifetime is always shown in
+          relative form.  If the identity credentials have already
+          expired, the lifetime will be displayed
+          as <span class="pre">(Expired)</span></dd>
 
         <dt>Pin</dt>
         <dd>Normally, the only identities that will be displayed on
@@ -151,26 +181,68 @@
       </dl>
     </p>
 
-    <h3>Basic view</h3>
+    <h3>Working with credentials</h3>
 
+    <h4>Selection</h4>
 
-    <div class="imgbox">
-      <img src="images/screen_main_wnd_basic.png" usemap="#map_basic" />
-      <p class="caption"><span class="pre">Figure 4</span>: Network Identity Manager Basic View</p>
-    </div>
+    <p>You can select identities and credentials using either the
+      cursor keys on the keyboard or by clicking using the mouse.  The
+      credentials display follows the usual selection actions on
+      Windows:
 
-    <map name="map_basic">
-      <area shape = "rect" coords = "4,23,158,38" href = "menu_all.htm">
-      <area shape = "rect" coords = "6,39,261,67" href = "tb_standard.htm">
-      <area shape = "rect" coords = "6,68,300,268" href = "#ident-display">
-    </map>
+      <ul>
+        <li>Clicking on an outline level or credential selects it.</li>
 
-    <p>The basic view gives a brief overview of the active identities.
-      The contents of the identity headers are equivalent to the
-      advanced view with the exception of the credential list line
-      which gives the number and type of credentials available for
-      each identity.
+        <li><span class="pre">Ctrl + &lt;click&gt;</span> toggles the
+          selection state of the item you click on, without affecting
+          the selection state of the other items.</li>
+
+        <li><span class="pre">Shift + &lt;click&gt;</span> extends a
+          selection from where the cursor was last, to the item you
+          clicked on selecting everything in-between inclusive.</li>
+      </ul>
     </p>
+
+    <p>Alternatively, you can use the keyboard to move around the
+      credentials display and select identities and credentials.
+
+      <ul>
+        <li>The cursor movement keys move the selection cursor while
+          selecting only the item that the cursor is currently on.  If
+          the cursor is on an outline level, all items included in the
+          outline level will be selected.</li>
+
+        <li>The <span class="pre">PgUp, PgDn, Home, End</span> keys
+          take you up one page at a time, down one page at a time, to
+          the first item in the display and the last item
+          repectively.</li>
+
+        <li><span class="pre">Shift + &lt;movement&gt;</span> extends
+          the selection by selecting everything from the cursor position
+          to the newly selected item inclusive.</li>
+      </ul>
+    </p>
+
+    <p>Invoking the <a href="act_destroy_creds.htm">Destroy
+        credentials</a> action while a set of credentials are selected
+      results in an attempt to destroy all of the selected
+      credentials.</p>
+
+    <p>Other actions, such as the <a href="act_new_creds.htm">New
+        credentials</a> action are only affected by the cursor
+        selection.</p>
+
+    <h4>Invoking the context menu</h4>
+
+    <p>For more information
+    see <a href="menu_cred_ctx.htm">Credentials display context
+    menu</a>.</p>
+
+    <h4>Managing the credentials display layout</h4>
+
+    <p>For more information see <a href="use_layout.htm">Managing the
+    credentials display layout</a></p>
+
 </body>
 
 </html>

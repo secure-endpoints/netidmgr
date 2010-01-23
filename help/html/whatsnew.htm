@@ -11,5 +11,77 @@
 
     <h1>What's new in Network Identity Manager</h1>
 
+    <h3>Network Identity Manager 2.0</h3>
+
+    <p>This version of Network Identity Manager presents a significant
+      improvement over the Network Identity Manager 1.x.
+
+    <h4>Multiple identity provider support</h4>
+
+    <p>Network Identity Manager 1.x only had support for a single
+      <a href="concept_ident_pro.htm">identity provider</a>.  This was
+      sufficient for the initial release since it was only expected to
+      handle Kerberos v5 identities.  However, multiple providers were
+      necessary in order to support other identity types such as X.509
+      certificates and obtaining credentials through PKINIT.</p>
+
+    <p>This addition also brought about several changes in the uesr
+      interface, since identity specification is no longer restricted
+      to Kerberos principals.  In addition, the configuration system
+      and the credentials database were also modified to accomodate
+      identities from different providers.</p>
+
+    <p>In addition to the Kerberos v5 identity provider, this version
+      includes a KeyStore identity provider and developer resources
+      for building additional identity providers.</p>
+
+    <h4>New credentials wizard</h4>
+
+    <p>The new credentials dialog from version 1 has been completely
+      replaced by the new credentials wizard.  This new interface
+      separates the processes of specifying identities, configuring
+      identities and obtaining new credentials for identities.</p>
+
+    <p>When attempting to specify a new identity, the new credentials
+      wizard automatically switches to the new identity configuration
+      wizard which guides the user through the available options and
+      credentials providers.  This process only needs to be completed
+      once for each identity and is optional.</p>
+
+    <p>The new credentials wizard is
+      documented <a href="act_new_creds.htm">here</a>
+
+    <h4>Credentials display</h4>
+
+    <p>The credentials display was also
+      replaced.  <a href="wnd_main.htm">The new interface</a> supports
+      more widgets and provides live feedback of ongoing credentials
+      operations.
+    </p>
+
+    <h4>KeyStore</h4>
+
+    <p>The KeyStore is a password storage plug-in for Network Identity
+      Manager that was designed to address the needs of users who need
+      to obtain credentials for multiple identities using different
+      passwords.
+    </p>
+
+    <p>More information about the KeyStore plug-in can be
+      found <a href="keystore.htm">here</a>.</p>
+
+    <h4>Developer resources</h4>
+
+    <p>The software development kit for developing plug-ins for
+      Network Identity Manager was updated to include a template for
+      an identity provider plug-in in.  The credentials provider
+      plug-in was updated to be compatible with the new API.</p>
+
+    <p>Even though the API for Network Identity Manager has changed
+      significantly from version 1.x to version 2, the ABI remains
+      backward compatible for compliant credentials providers.
+      Backwards compatibility was tested using OpenAFS and KCA
+      plug-ins that were written to work with version 1.x API.</p>
+
   </body>
 </html>
