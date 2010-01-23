@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title>Configuration - Identities - Kerberos v4</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Kerberos v4 settings (all identities)">
+    </object>
+  </head>
+  <body>
+    <h1>Global Kerberos v4 Identity Settings</h1>
+
+    <p><img src="images/options-id-global-k4.png" /> </p>
+
+    <p>When the <b>Obtain Kerberos v4 credentials</b> button is
+      checked, NetIdMgr will attempt to retrieve Kerberos v4
+      credentials when ticket initialization, renewal, or importation
+      is performed. &nbsp;Kerberos realms are increasingly configured
+      to support only Kerberos v5 (e.g., Windows Active Directory
+      Domains.)&nbsp; If the realms you use do not support Kerberos v4
+      it is suggested that this button be unchecked.</p>
+    <p>Be aware that only the default identity can obtain Kerberos v4
+      credentials.&nbsp;&nbsp; This limitation is due to the inability
+      of Kerberos v4 applications on Microsoft Windows to specify a
+      credentials cache. </p>
+
+  </body>
+</html>

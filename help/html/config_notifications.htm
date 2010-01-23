@@ -12,13 +12,23 @@
     <h1>Notification Configuration</h1>
 
     <p><img src="images/options-notifications.png" /> </p>
-    <p>The <b>Renew automatically at</b> check box determines whether
+    <p>The <span class="pre">Renew automatically at</span> check box determines whether
       or not renewable tickets will be renewed by NetIdMgr when they
       reach the specified time remaining.&nbsp;&nbsp; </p>
-    <p>The <b>Initial warning at</b> check box determines whether or
+    <p>By default the <span class="pre">Renew at half life intervals
+        when possible</span> option is enabled.  When enabled, Network
+        Identity Manager will trigger a renewal attempt for an
+        identity when its remaining lifetime reaches a half of its
+        original lifetime.  If the renewal is unsuccessful, another
+        attempt will be made to renew the identity after another one
+        half of the remaining lifetime has elapsed.  This process
+        continues until the identity is successfully renews or the
+        remaining lifetime is too short for a renewal attempt.
+    </p>
+    <p>The <span class="pre">Initial warning at</span> check box determines whether or
       not a warning will be issued when the specified time remaining
       is reached.</p>
-    <p>The <b>Final warning at</b> check box determines whether or not
+    <p>The <span class="pre">Final warning at</span> check box determines whether or not
       a warning will be issued when the specified time remaining is
       reached.</p>
     <p>Notifications are performed in two ways.&nbsp; First, icons are

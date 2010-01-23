@@ -1,0 +1,71 @@
+<html>
+  <head>
+    <title>Configuration - Identities - General</title>
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="General options (all identities)">
+    </object>
+  </head>
+
+  <body>
+    <h1>Global Identity Settings</h1>
+
+    <p><img src="images/options-id-global.png" /> </p>
+
+    <p>There are three general settings that can be used to set global
+      defaults.</p>
+
+    <p>The <b>Monitor credential expiration</b> setting determines
+      whether or not NetIdMgr should monitor the credential lifetimes
+      and issue expiration notifications.&nbsp;&nbsp; This value is
+      used as the default for all new identities.</p>
+
+    <p>The <b>Automatically renew</b> setting determines if <i>
+        renewable</i> credentials are automatically renewed prior to
+        expiration.&nbsp; This value is used as the default for all
+        new identities.</p>
+
+    <p>The <b>Always show in the credentials list (Pinned)</b> setting
+      determines whether new identities are always pinned within the
+      credentials list.&nbsp; A pinned identity will always be
+      displayed regardless of whether or not there are credentials
+      associated with it.</p>
+
+    <h3>Adding an identity</h3>
+
+    <p>You can add an identity to the list of identities maintained by
+      Network Identity Manager by clicking the <span class="pre">Add
+      identity ...</span> button.  You will then be prompted to
+      specify a new identity:
+    </p>
+
+    <div class="imgbox">
+      <img src="images/add-identity-prompt.png" />
+      <p class="caption">Adding a new identity</p>
+    </div>
+
+    <p>When the dialog completes, it creates the configuration
+      information for the new identity.  You may then configure the
+      new identity by selecting it and using
+      the <a href="config_identity.htm">identity configuration
+        panel</a>.</p>
+
+    <div class="note">
+      <img src="images/note.png" alt="Note:"/>
+      <p>
+        Adding or removing an identity in the configuration panel only
+        has the effect of adding or removing the identity to or from
+        the list of identities for which configuration information is
+        maintained.</p>
+
+      <p>
+        If an identity being removed has a saved password in a key
+        store (see <a href="act_new_creds_persistence.htm">Password
+        Persistence</a>), then the MyKeystore plug-in will remove the
+        stored password as well.
+      </p>
+    </div>
+
+
+  </body>
+</html>

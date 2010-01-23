@@ -103,6 +103,20 @@
 		  <param name="Name" value="Global defaults for all identities">
 		  <param name="Local" value="html\config_identities.htm">
 		</object>
+                <ul>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="Global identity settings">
+		      <param name="Local" value="html\config_identities_general.htm">
+		    </object>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="Global Kerberos v5 identity settings">
+		      <param name="Local" value="html\config_identities_k5.htm">
+		    </object>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="Global Kerberos v4 identity settings">
+		      <param name="Local" value="html\config_identities_k4.htm">
+		    </object>
+                </ul>
 	      <li> <object type="text/sitemap">
 		  <param name="Name" value="Per identity settings">
 		  <param name="Local" value="html\config_identity.htm">
@@ -112,6 +126,12 @@
 		      <param name="Name" value="General configuration">
 		      <param name="Local" value="html\config_identity_general.htm">
 		    </object>
+                    <ul>
+	              <li> <object type="text/sitemap">
+		          <param name="Name" value="Changing the identity icon">
+		          <param name="Local" value="html\config_idicon.htm">
+		        </object>
+                    </ul>
 	          <li> <object type="text/sitemap">
 		      <param name="Name" value="Kerberos v5 configuration">
 		      <param name="Local" value="html\config_identity_k5.htm">
@@ -125,10 +145,6 @@
 		      <param name="Local" value="html\config_identity_ks.htm">
 		    </object>
 		</ul>
-	      <li> <object type="text/sitemap">
-		  <param name="Name" value="Changing the identity icon">
-		  <param name="Local" value="html\config_idicon.htm">
-		</object>
 	      <li> <object type="text/sitemap">
 		  <param name="Name" value="Notifications">
 		  <param name="Local" value="html\config_notifications.htm">

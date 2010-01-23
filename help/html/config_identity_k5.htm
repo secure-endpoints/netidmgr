@@ -1,0 +1,79 @@
+<html>
+  <head>
+    <title>Configuration - Identity - Kerberos v5</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Identity configuration">
+      <param name="Keyword" value="Kerberos v5 configuration (per-identity)">
+    </object>
+  </head>
+
+  <body>
+    <h1>Per identity Kerberos v5 configuration</h1>
+
+    <div class="imgbox"><img src="images/options-id-single-k5.png" /> </div>
+
+    <p>Kerberos v5 options include the ability to select the ticket
+      lifetime as well as renew and forwarding.  The Kerberos v5 ticket
+      granting ticket represents the selected identity.  As such,
+      obtaining a Kerberos v5 ticket is mandatory.</p>
+
+    <p>The <span class="pre">Credential lifetime</span> option can
+      control how long the initial ticket will be valid for.</p>
+
+    <p>When <span class="pre">Forwardable tickets</span> are received
+      from the Kerberos Server, these tickets can be forwarded to a
+      remote host when you connect via telnet, ssh, ftp, rlogin, or
+      similar applications.  When tickets are forwarded, there is no
+      need to obtain Kerberos tickets again to access Kerberized
+      services on the remote host.  Forwardable tickets are often
+      required when authenticating to a remote host using ssh or ftp
+      when the remote host requires the ability to authenticate to a
+      remote file system such as AFS.
+    </p>
+
+    <p>When <span class="pre">Renewable tickets</span> are received
+      from the Kerberos Server, the ticket lifetimes may be renewed
+      without prompting the user for her password.  This allows Kerberos
+      tickets to be issued with short lifetimes allowing compromised
+      accounts to be disabled on short notice without requiring the user
+      to enter a password every few hours.  When combined with Automatic
+      Ticket Renewal, NetIdMgr can maintain valid tickets for a week, a
+      month, or longer by automatically renewing tickets prior to their
+      expiration.  The ability to renew tickets without a password is
+      limited by the ticket's renewable lifetime as issued by the
+      Kerberos Server.
+    </p>
+
+    <p>When <span class="pre">Addressless</span> is selected, the
+      tickets do not contain IP address information.  This enables the
+      tickets to be used from behind Network Address Translators which
+      are frequently found in Cable and DSL Modems.
+    </p>
+
+    <p>The <span class="pre">Credential cache</span> setting controls
+      the location of the Kerberos v5 credentials cache where the
+      obtained credentials will be placed.  By default, the Kerberos
+      v5 provider places credentials in
+      an <span class="pre">API:</span> (in-memory) cache.  However,
+      you can specify any type of cache supported by the Kerberos for
+      Windows.  The <span class="pre">Browse for FILE: cache</span>
+      button allows you to browse for an existing file or specify the
+      name for a new file which will be used as a FILE: cache.  If the
+      file does not exist, it will be created the next time you obtain
+      new credentials for this identity.  The cache is also
+      automatically added to the list of FILE: caches that are
+      monitored by Network Identity Manager.</p>
+
+    <div class="note">
+      <img src="images/note.png" alt="Note:" />
+      <p>The Kerberos v5 provider does not check whether an existing
+        FILE: cache is valid when setting the credentials cache for an
+        identity.</p>
+    </div>
+  </body>
+</html>
+
+
+

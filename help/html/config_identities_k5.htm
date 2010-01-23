@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <title>Configuration - Identities - Kerberos v5</title>
+    <meta name="keywords" content="configuration">
+    <link rel="stylesheet" type="text/css" href="nidmgr.css">
+    <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+      <param name="Keyword" value="Kerberos v5 settings (all identities)">
+    </object>
+  </head>
+
+  <body>
+
+    <h1>Global Kerberos v5 Identity Settings</h1>
+
+    <p><img src="images/options-id-global-k5.png" /> </p>
+
+    <p>The global Kerberos v5 settings define default credential
+      lifetimes and minimum and maximum values for use in constructing
+      the slider controls used to set the lifetimes.&nbsp; </p>
+    <p>There are two expiration times associated with Kerberos
+      tickets.&nbsp; The first specifies the length of the time period
+      during which the tickets are valid for use.&nbsp; The second
+      specifies the length of the renewable lifetime.&nbsp; Valid
+      Kerberos tickets may have their valid use lifetime repeatedly
+      extended up until the renewable lifetime expires.&nbsp; The
+      settings on this page are used to configure default lifetime
+      values for NetIdMgr to use when requesting Kerberos tickets from
+      the Kerberos server (key distribution center).&nbsp; The
+      Kerberos server may issue tickets with shorter lifetimes than
+      were requested.</p>
+    <p>The <b>Renewable</b>, <b>Forwardable</b>, and <b>
+        Addressless</b> options determine whether or not new
+        identities default to obtaining Kerberos v5 tickets with these
+        options.</p>
+    <p>When <b>Forwardable </b>tickets are received from the Kerberos
+      Server, these tickets can be forwarded to a remote host when you
+      connect via telnet, ssh, ftp, rlogin, or similar
+      applications.&nbsp; When tickets are forwarded, there is no need
+      to obtain Kerberos tickets again to access Kerberized services
+      on the remote host.&nbsp;&nbsp; <b>Forwardable</b> tickets are
+      often required when authenticating to a remote host using ssh or
+      ftp when the remote host requires the ability to authenticate to
+      a remote file system such as AFS.</p>
+    <p>When <b>Renewable</b> tickets are received from the Kerberos
+      Server, the ticket lifetimes may be renewed without prompting
+      the user for her password.&nbsp; This allows Kerberos tickets to
+      be issued with short lifetimes allowing compromised accounts to
+      be disabled on short notice without requiring the user to enter
+      a password every few hours.&nbsp; When combined with <b>
+      Automatic Ticket Renewal</b>, NetIdMgr can maintain valid
+      tickets for a week, a month, or longer by automatically renewing
+      tickets prior to their expiration.&nbsp; The ability to renew
+      tickets without a password is limited by the ticket’s
+      renewable lifetime as issued by the Kerberos Server.</p>
+    <p>When <b>Addressless</b> is selected, the tickets do not contain
+      IP address information.&nbsp; This enables the tickets to be
+      used from behind Network Address Translators which are
+      frequently found in Cable and DSL Modems.</p>
+    <p>The minimum and maximum ranges are used by the ticket
+      initialization dialog box when constructing the Lifetime and
+      Renewable Lifetime sliders.&nbsp; These sliders can be used to
+      modify the requested ticket lifetimes when Kerberos tickets are
+      initialized.</p>
+
+  </body>
+</html>
