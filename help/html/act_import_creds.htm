@@ -1,36 +1,53 @@
 <html>
 <head>
-  <title>Network Identity Manager - Import Credentials</title>
+  <title>Import Credentials</title>
   <meta name="description" content="Import Credentials">
   <meta name="keywords" content="Import Credentials">
   <link rel="stylesheet" type="text/css" href="nidmgr.css">
 
 <Object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
-<param name="Keyword" value="Importing Credentials">
+<param name="Keyword" value="Importing credentials">
 <param name="Keyword" value="Ctrl + I">
 <param name="Keyword" value="MSLSA">
 </OBJECT></head>
 <body>
 
-<h1>Network Identity Manager - Import Credentials</h1>
+<h1>Import Credentials</h1>
 
-<p>Allows you to import credentials from the Microsoft Windows LSA credentials
-cache.  Currently, the only credentials provider that supports
-importing is Kerberos v5.
+<p>Use this command to import the Windows Logon Session Identity
+  credentials into a MIT Kerberos credential cache.  Importing tickets
+  will not result in the destruction of existing tickets.  If the
+  imported identity is the default identity, the MIT credential cache
+  will be used in preference to the Windows logon cache for
+  applications written to the MIT Kerberos or GSS programming
+  interfaces.
 </p>
 
-<p>This action can be invoked via the <a
-href="menu_credential.htm">Credentials</a> menu or by pressing <span
-class="pre">Ctrl + I</span>.  In addition, the Kerberos v5
-configuration pane accessible via the <a
-href="menu_options.htm">Options</a> menu contain settings that
-control when the importing of credentials are performed at startup.
+<p>This action can be invoked by:
+
+  <ul>
+    <li>Selecting <span class="pre">Credential -> Import</span> from the <a
+href="menu_credential.htm">Credentials</a> menu.</li>
+
+    <li>Pressing <span
+class="pre">Ctrl + I</span>.</li>
+
+    <li>Selecting the <span class="pre">Import</span> option (<img src="images/import.bmp" />) from the <a href="tb_standard.htm">toolbar</a>.</li>
+</ul>
+
+</p>
+
+<p>
+  In addition, the Kerberos v5 configuration pane accessible via
+  the <a href="menu_options.htm">Options</a> menu contain settings
+  that control when the importing of credentials are performed at
+  startup.
 </p>
 
 <div class="note">
-  <img src="images/note.png" />
-  <p> <b>Note:</b> On Windows Vista, Windows 7, and Windows Server 2008
-    the operating system does not permit the importation of the Kerberos
+  <img src="images/note.png" alt="Note:"/>
+  <p>On Windows Vista, Windows 7, and Windows Server 2008 the
+    operating system does not permit the importation of the Kerberos
     Ticket Granting Ticket if the active user account is a member of
     the <i>Administrators</i> or <i>Domain Administrators</i> groups
     and User Account Control (UAC) mode is active.

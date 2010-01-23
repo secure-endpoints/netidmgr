@@ -14,7 +14,7 @@
 
   <ul>
     <li>the <a href="menu_credential.htm">Credentials</a> menu.</li>
-    <li>the <a href="tb_standard.htm#chpw">Change password button on the toolbar</a>.</li>
+    <li>the <a href="tb_standard.htm#chpw">Change password button (<img src="images/chpw.bmp" />) on the toolbar</a>.</li>
   </ul>
 </p>
 
@@ -38,13 +38,43 @@
     identity selector at the top of the dialog.
 </p>
 
+<p>Guidelines for choosing a good password can be
+  found <a href="how_to_choose_a_password.htm">here</a>.</p>
+
+<p>When you type into the password fields of the dialog box characters
+  are replaced with bullets. The program accepts only printable
+  characters for new passwords, i.e., characters between ASCII codes
+  0x20 and 0x7E.
+</p>
+
+<p>When you have entered the new password twice consistently, the
+  program attempts to change the password via a dialogue with the
+  Kerberos administrative server. Some Kerberos sites, including MIT's
+  Athena environment, check the password's strength before allowing
+  the change to take place and notifies you if it determines that the
+  password is weak.
+</p>
+
 <div class="note">
-  <img src="images/note.png" />
+  <img src="images/note.png" alt="Note:" />
   <p>The Kerberos v5 provider may prompt you to change the password
-  during a <a href="act_new_creds.htm">New credentials</a> operation
-  if the KDC indicates that your password has expired and needs to be
-  changed.
+    during a <a href="act_new_creds.htm">New credentials</a> operation
+    if the KDC indicates that your password has expired and needs to
+    be changed.
 </div>
 
+<div class="note">
+  <img src="images/note.png" alt="Note:" />
+  <p>Changing the password of a Kerberos v5 principal might fail if
+    Network Address Translation is in use.  Machines with IP addresses
+    192.168.x.x, 172.x.x.x or 10.x.x.x are often used in conjunction
+    with Network Address Translation.</p>
+</div>
+
+<div class="note">
+  <img src="images/note.png" alt="Note:" />
+  <p>This command will not change your local machine password unless
+    you login to your computer using a Windows Domain account or
+    otherwise authenticate using an MIT Kerberos identity</p>
 </body>
 </html>

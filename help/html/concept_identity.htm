@@ -31,22 +31,21 @@
   <p class="caption">Default and non-default identities in the credentials display (basic view)</p>
 </div>
 
-<p>The default identity is the identity that will be used by
-  applications when a specific identity is not requested. The Kerberos
-  v5 provider plug-in will mark the credential cache that contains the default
-  identity as the default credentials cache for the current logon
-  session.</p>
+<p>The Network Identity Manager manages multiple identities.  Most
+  applications do not know how to request a specific identity or how
+  to search for the appropriate credentials cache.  Instead these
+  applications assume that the identity to be used is stored within
+  the default credentials cache.  NetIdMgr allows one identity to be
+  specified as the default identity.</p>
 
-<p>Most applications that implement GSS-API or Kerberos v5
-  authentication assume that there is only one Kerberos v5 credential
-  cache and one identity in use by the user at a time.&nbsp; These
-  applications use the default identity.&nbsp; In general, if the
-  application does not have a configuration option permitting the
-  specification of a Kerberos v5 principal, the default identity will
-  be used.</p>
+<p>The Kerberos v5 provider plug-in will mark the credential cache
+  that contains the default identity as the default credentials cache
+  for the current logon session.</p>
 
 <p>The default identity is indicated in the credentials display using
-  a star icon, as illustrated in the screenshot above.</p>
+  a filled star icon (<img src="images/star-1-hi.png" />).  A
+  non-default identity has an empty start icon
+  (<img src="images/star-0-hi.png" />). </p>
 
 <p><img src="images/task.png"/> You can change the default identity by
   clicking on the star icon next to the identity.</p>

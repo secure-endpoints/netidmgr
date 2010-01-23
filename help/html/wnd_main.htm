@@ -15,17 +15,22 @@
 
     <h1>Credentials Display</h1>
 
-    <p>The credentials display of Network Identity Manager can be
-      displayed in two modes:
-      <b>basic</b> and <b>advanced</b>.</p>
+    <p>The Network Identity Manager credentials display, when open,
+      displays the current status of your network identities and
+      provides you the tools necessary to obtain new credentials,
+      renew existing credentials, destroy credentials, change your
+      password, configure the behavior of your network identities, and
+      access the on-line help.  There are two primary views of network
+      identity status: <b>basic</b> and <b>advanced</b>.
+
     <p>The basic view provides status information of the currently
       available identities whereas the advanced view provides more
       detailed information of all the active credentials.</p>
 
     <p>You can switch between the two views
-    using <span class="pre">F7</span> or using
-    the <a href="menu_view.htm"><span class="pre">View
-    menu</span></a>.</p>
+      using <span class="pre">F7</span> or using
+      the <a href="menu_view.htm"><span class="pre">View
+      menu</span></a>.</p>
 
     <h3>Basic view</h3>
 
@@ -101,24 +106,35 @@
     <ul>
       <li><p><span style="background-color:rgb(213,255,5)">Headers</span>
           mean that credentials at that level will expire unless
-          renewed. Credentials will have a warning icon next to
-          them.<br />  The threshold for this can be set as
+          renewed.  The threshold for this can be set as
           the <span class="pre">Warn</span> parameter in
           the <a href="config_notifications.htm"><span class="pre">Notifications</span>
-          configuration panel</a>.</p></li>
+          configuration panel</a>.  The default threshold for this
+          indicator is 10 minutes.</p>
+
+        <div class="note">
+          <img src="images/note.png" alt="Note:" />
+          <p>Attempts to renew renewable credentials are performed at
+            half-life intervals and 15 minutes before expiration
+            automatically, by default.  The actual time at which a renewal is
+            performed can be changed in
+            the <a href="config_notifications.htm">Notifications</a>
+            configuration panel.  Automatic renewals can also be disabled.
+          </p>
+        </div>
+
+      </li>
 
       <li><p><span style="background-color:rgb(255,172,5)">Headers</span>
-          mean that credentials at that level will expire in a few
-          minutes. Credentials will have a critical icon next to
-          them.<br />  The threshold for this can be set as
-          the <span class="pre">Warn again</span> parameter in
+          mean that credentials at that level will expire shortly. The
+          default threshold for this warning is 5 minutes before
+          credential expiration.  This can be changed using the 
+          <span class="pre">Warn again</span> parameter in
           the <a href="config_notifications.htm"><span class="pre">Notifications</span>
           configuration panel</a>.</p> </li>
 
       <li><p><span style="background-color:rgb(255,47,5)">Headers</span> mean
-          that the credentials at that level have expired. Credentials
-          will have an expired icon next to them.<br />  The threshold
-          for this is always zero. </p></li>
+          that the credentials at that level have expired.</p></li>
     </ul>
 
     <a name="ident-display"/>
@@ -146,10 +162,13 @@
           configuration</span> dialog</a>.</dd>
 
         <dt>Default identity widget</dt>
-        <dd>The star icon indicates whether the identity is
-          a <a href="concept_identity.htm">default identity</a> or
-          not.  If the identity is not the default, clicking on the
-          star will make it the default.</dd>
+        <dd>The <a href="concept_identity.htm">default identity</a> is
+          indicated in the credentials display using a filled star
+          icon (<img src="images/star-1-hi.png" />).  A non-default
+          identity has an empty start icon
+          (<img src="images/star-0-hi.png" />).  If the identity is
+          not the default, clicking on the star will make it the
+          default.</dd>
 
         <dt>Identity name</dt>
         <dd>This is the display name for the identity.</dd>
@@ -171,8 +190,9 @@
           associated with them.  However, if an identity is pinned, it
           will always be displayed, even if there are no credentials.
           The push pin icon indicates whether this identity is pinned
-          or not.  Clicking on the icon can toggle the pinned
-          state.</dd>
+          (<img src="images/wdg_stuck_hi.bmp" />) or not pinned
+          (<img src="images/wdg_stick_hi.bmp" />).  Clicking on the
+          icon can toggle the pinned state.</dd>
 
         <dt>Lifetime meter</dt>
         <dd>Provides a visual indication of the remaining lifetime in
@@ -181,6 +201,7 @@
       </dl>
     </p>
 
+    <a name="use" />
     <h3>Working with credentials</h3>
 
     <h4>Selection</h4>

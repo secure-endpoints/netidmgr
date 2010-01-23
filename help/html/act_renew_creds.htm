@@ -1,40 +1,61 @@
 <html>
 <head>
-  <title>Network Identity Manager - Renew Credentials</title>
+  <title>Renew Credentials</title>
   <meta name="description" content="Renew Credentials">
   <meta name="keywords" content="renew, credentials">
   <link rel="stylesheet" type="text/css" href="nidmgr.css">
   
   <Object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
-<param name="Keyword" value="Renewing Credentials">
+<param name="Keyword" value="Renewing credentials">
 <param name="Keyword" value="Ctrl + R">
-<param name="Keyword" value="Monitor Credential Expiration">
+<param name="Keyword" value="Monitor credential expiration">
 <param name="Keyword" value="krb524 translator">
-<param name="Keyword" value="">
-<param name="Keyword" value="">
 </OBJECT>
 </head>
 <body>
 
-<h1>Network Identity Manager - Renew Credentials</h1>
+<h1>Renew Credentials</h1>
 
-<p>The renew credentials action can be invoked via the <a
-href="">Credential</a> menu or by pressing <span class="pre">Ctrl +
-R</span>.  Additionally, if the <span class="pre">Monitor credential
-expiration</span> option is enabled for all identities or for a
-specific identity, then those credentials will be automatically
-renewed whenever possible before they expire.</p>
+<p>The renew credentials action can be invoked by:
+
+  <ul>
+    <li>Selecting <span class="pre">Credential -> Renew</span> menu from the <a href="menu_credential.htm">Credential</a> menu.</li>
+
+    <li>Pressing <span class="pre">Ctrl + R</span></li>
+
+    <li>Selecting the <span class="pre">Renew</span> command (<img src="images/tk-refresh.bmp" />) from the <a href="tb_standard.htm">toolbar</a>.</li>
+
+  </ul>
+</p>
+
+  <p>Additionally, if
+  the <span class="pre">Monitor credential expiration</span> option is
+  enabled for all identities or for a specific identity, then those
+  credentials will be automatically renewed whenever possible before
+  they expire.</p>
 
 <p>An identity must be selected before invoking the renew credentials
-action.</p>
+  action.</p>
 
 <p>Not all credentials can be renewed.  The actual logic of renewing
-the credentials is up to each credentials provider.  In general, NetIDMgr will invoke each credentials provider to renew their
-respective credentials. For Kerberos v5, if the initial ticket is
-renewable and not expired, then it will obtain a renewed initial
-ticket.  For Kerberos v4, once a renewed Kerberos v5 initial ticket is
-obtained, it will try to use a Krb524 translator to obtain a new
-Kerberos v4 initial ticket.</p>
+  the credentials is up to each credentials provider.  In general,
+  NetIDMgr will invoke each credentials provider to renew their
+  respective credentials. For Kerberos v5, if the initial ticket is
+  renewable and not expired, then it will obtain a renewed initial
+  ticket.  For Kerberos v4, once a renewed Kerberos v5 initial ticket
+  is obtained, it will try to use a Krb524 translator to obtain a new
+  Kerberos v4 initial ticket.</p>
+
+<div class="note">
+  <img src="images/note.png" alt="Note:" />
+  <p>Attempts to renew renewable credentials are performed at
+    half-life intervals and 15 minutes before expiration
+    automatically, by default.  The actual time at which a renewal is
+    performed can be changed in
+    the <a href="config_notifications.htm">Notifications</a>
+    configuration panel.  Automatic renewals can also be disabled.
+  </p>
+</div>
 
 </body>
 </html>

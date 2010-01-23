@@ -60,8 +60,8 @@
       in preference to the MSLSA credential cache.</p>
 
     <div class="note">
-      <img src="images/note.png"/>
-      <p> <b>Note:</b> On Windows Vista, Windows 7, and Windows Server
+      <img src="images/note.png" alt="Note:"/>
+      <p>On Windows Vista, Windows 7, and Windows Server
         2008 the operating system does not permit the importation of
         the Kerberos Ticket Granting Ticket if the active user account
         is a member of the <i>Administrators</i> or <i>Domain
@@ -72,9 +72,21 @@
 
     <h3>Kerberos v5 Credential Cache Configuration</h3>
     <p><img src="images/options-k5-cc.png" /> </p>
-    <p>The Kerberos Realm Configuration dialog can be used to manage
-      the contents of the [Realms] and [Domain_Realm] sections of the
-      Kerberos v5 configuration file.</p>
+    <p>The <span class="pre">Kerberos v5 Credentials Caches</span>
+      page determines the contents of which credential caches types
+      are displayed within the Network Identity Manager.  The Include
+      all <span class="pre">API:</span> credential caches check box
+      determines whether or not CCAPI caches are included.  CCAPI
+      caches are the most frequently used with MIT Kerberos for
+      Windows.  The Include Windows LSA cache
+      (<span class="pre">MSLSA:</span>) check box determines whether
+      or not the Windows Logon Session Identity is displayed within
+      NetIdMgr.</p>
+
+    <p>The Network Identity Manager can also display the contents of
+      <span class="pre">FILE:</span> credential caches.
+      Each <span class="pre">FILE:</span> credential cache must be
+      manually added to the list</p>
 
   </body>
 </html>

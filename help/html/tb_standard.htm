@@ -7,11 +7,11 @@
   <Object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
     <param name="Keyword" value="Changing passwords">
     <param name="Keyword" value="New credentials">
-    <param name="Keyword" value="Renew credentials">
-    <param name="Keyword" value="Import credentials">
-    <param name="Keyword" value="Destroy credentials">
-    <param name="Keyword" value="Change password">
-    <param name="Keyword" value="Refresh view">
+    <param name="Keyword" value="Renewing credentials">
+    <param name="Keyword" value="Importing credentials">
+    <param name="Keyword" value="Destroying credentials">
+    <param name="Keyword" value="Changing passwords">
+    <param name="Keyword" value="Refreshing the credentials view">
     <param name="Keyword" value="Help">
     <param name="Keyword" value="Toolbar">
 </OBJECT>
@@ -82,7 +82,18 @@ each button does.
   <li><a name="refresh"/><span class="title">Refresh view</span>: Equivalent to selecting
   <span class="pre"><a href="menu_credential.htm#refresh">Refresh
   View</a></span> from the <span class="pre"><a
-  href="menu_credential.htm">Credential</a></span> menu.</li>
+  href="menu_credential.htm">Credential</a></span> menu.
+
+  <p>
+    Although most end users will likely find this feature irrelevant,
+    application developers and support staff may occasionally find it
+    to be useful.  For example, you may want an immediate status check
+    of available credentials if you have just used
+    command-line <span class="pre">kinit</span>
+    or <span class="pre">kdestroy</span> and want to check that they
+    have functioned successfully.  </p>
+
+  </li>
 
   <li><a name="help"/><span class="title">Help</span>: Displays documentation</li>
 

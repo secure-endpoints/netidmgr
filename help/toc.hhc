@@ -1,246 +1,271 @@
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
-<HTML>
-<HEAD>
-<meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
-<!-- Sitemap 1.0 -->
-</HEAD><BODY>
-<OBJECT type="text/site properties">
-	<param name="Category" value="Concepts">
-	<param name="CategoryDesc" value="Authentication, authorization and related concepts.">
-	<param name="Category" value="Usage">
-	<param name="CategoryDesc" value="Usage instructions for Network Identity Manager">
-	<param name="Window Styles" value="0x800025">
-</OBJECT>
-<UL>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Welcome to Network Identity Manager">
-		<param name="Local" value="html\welcome.htm">
-		</OBJECT>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="How do I ...">
-		<param name="Local" value="html\howdoi.htm">
-		</OBJECT>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="About NetIDMgr">
-		<param name="Local" value="html\about_netidmgr.htm">
-		</OBJECT>
-	<UL>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="What's new in Network Identity Manager">
-			<param name="Local" value="html\whatsnew.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Reporting bugs">
-			<param name="Local" value="html\bugs.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="License agreement">
-			<param name="Local" value="html\copyright.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="KeyStore">
-			<param name="Local" value="html\keystore.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Registry Reference">
-			<param name="Local" value="html\registry.htm">
-			</OBJECT>
-		<UL>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Configuration Database Registry Reference">
-				<param name="Local" value="html\kcdbconfig.html">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Module Manager Registry Reference">
-				<param name="Local" value="html\kmmconfig.html">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Message Queue Registry Reference">
-				<param name="Local" value="html\kmqconfig.html">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Kerberos v4 plug-in Registry Reference">
-				<param name="Local" value="html\krb4config.html">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Kerberos v5 plug-in Registry Reference">
-				<param name="Local" value="html\krb5config.html">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Network Identity Manager Application Registry Reference">
-				<param name="Local" value="html\uiconfig.html">
-				</OBJECT>
-		</UL>
-	</UL>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Concepts">
-		<param name="Local" value="html\concepts.htm">
-		</OBJECT>
-	<UL>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Identities">
-			<param name="Local" value="html\concept_identity.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Credentials">
-			<param name="Local" value="html\concept_credential.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Identity Provider">
-			<param name="Local" value="html\concept_ident_pro.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Credentials Provider">
-			<param name="Local" value="html\concept_cred_pro.htm">
-			</OBJECT>
-	</UL>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Using NetIDMgr">
-		<param name="Local" value="html\using.htm">
-		</OBJECT>
-	<UL>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Starting">
-			<param name="Local" value="html\use_start.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Command-line options">
-			<param name="Local" value="html\cmdline_netidmgr.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Notification icon">
-			<param name="Local" value="html\use_icon.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Managing the credentials view layout">
-			<param name="Local" value="html\use_layout.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Configuration of identities and NetIDMgr">
-			<param name="Local" value="html\use_config.htm">
-			</OBJECT>
-		<UL>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="General options">
-				<param name="Local" value="html\config_general.htm">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Appearance">
-				<param name="Local" value="html\config_appearance.htm">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Global defaults for all identities">
-				<param name="Local" value="html\config_identities.htm">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Per identity settings">
-				<param name="Local" value="html\config_identity.htm">
-				</OBJECT>
-			<UL>
-				<LI> <OBJECT type="text/sitemap">
-					<param name="Name" value="Changing the identity icon">
-					<param name="Local" value="html\config_idicon.htm">
-					</OBJECT>
-			</UL>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Notifications">
-				<param name="Local" value="html\config_notifications.htm">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Plug-ins">
-				<param name="Local" value="html\config_plugins.htm">
-				</OBJECT>
-			<LI> <OBJECT type="text/sitemap">
-				<param name="Name" value="Settings for Kerberos v5">
-				<param name="Local" value="html\config_k5.htm">
-				</OBJECT>
-		</UL>
-	</UL>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Menus and Toolbars">
-		<param name="Local" value="html\menu_all.htm">
-		</OBJECT>
-	<UL>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="File Menu">
-			<param name="Local" value="html\menu_file.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Credential menu">
-			<param name="Local" value="html\menu_credential.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="View Menu">
-			<param name="Local" value="html\menu_view.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Options Menu">
-			<param name="Local" value="html\menu_options.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Help Menu">
-			<param name="Local" value="html\menu_help.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Standard Toolbar">
-			<param name="Local" value="html\tb_standard.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-		        <param name="Name" value="Credential Display Context Menu">
-			<param name="Local" value="html\menu_cred_ctx.htm">
-			</OBJECT>
-	</UL>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Actions">
-		</OBJECT>
-	<UL>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="New Credentials">
-			<param name="Local" value="html\act_new_creds.htm">
-			</OBJECT>
-                  <ul>
-                    <li><OBJECT type="text/sitemap">
-			<param name="Name" value="Password Persistence">
-			<param name="Local" value="html\act_new_creds_persistence.htm">
-			</OBJECT>
-                  </ul>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Renew Credentials">
-			<param name="Local" value="html\act_renew_creds.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Import Credentials">
-			<param name="Local" value="html\act_import_creds.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Destroy Credentials">
-			<param name="Local" value="html\act_destroy_creds.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Set As Default">
-			<param name="Local" value="html\act_set_default.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Change Password">
-			<param name="Local" value="html\act_chpw.htm">
-			</OBJECT>
-	</UL>
-	<LI> <OBJECT type="text/sitemap">
-		<param name="Name" value="Windows and dialogs">
-		</OBJECT>
-	<UL>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Property sheets">
-			<param name="Local" value="html\wnd_properties.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Main Window">
-			<param name="Local" value="html\wnd_main.htm">
-			</OBJECT>
-		<LI> <OBJECT type="text/sitemap">
-			<param name="Name" value="Privacy Issues with Icon Selection">
-			<param name="Local" value="html\wnd_icons_privacy.htm">
-			</OBJECT>
-	</UL>
-</UL>
-</BODY></HTML>
+<html>
+  <head>
+    <meta name="GENERATOR" content="Microsoft&reg; HTML Help Workshop 4.1">
+    <!-- sitemap 1.0 -->
+  </head>
+  <body>
+    <object type="text/site properties">
+      <param name="Category" value="Concepts">
+      <param name="CategoryDesc" value="Authentication, authorization and related concepts.">
+      <param name="Category" value="Usage">
+      <param name="CategoryDesc" value="Usage instructions for Network Identity Manager">
+      <param name="Window Styles" value="0x800025">
+    </object>
+    <ul>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="Welcome to Network Identity Manager">
+	  <param name="Local" value="html\welcome.htm">
+	</object>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="How do I ...">
+	  <param name="Local" value="html\howdoi.htm">
+	</object>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="About NetIDMgr">
+	  <param name="Local" value="html\about_netidmgr.htm">
+	</object>
+	<ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="What's new in Network Identity Manager">
+	      <param name="Local" value="html\whatsnew.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Reporting bugs">
+	      <param name="Local" value="html\bugs.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="License agreement">
+	      <param name="Local" value="html\copyright.htm">
+	    </object>
+	</ul>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="Concepts">
+	  <param name="Local" value="html\concepts.htm">
+	</object>
+	<ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Identities">
+	      <param name="Local" value="html\concept_identity.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Credentials">
+	      <param name="Local" value="html\concept_credential.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Identity Provider">
+	      <param name="Local" value="html\concept_ident_pro.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Credentials Provider">
+	      <param name="Local" value="html\concept_cred_pro.htm">
+	    </OBJECT>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="KeyStore">
+	      <param name="Local" value="html\keystore.htm">
+	    </object>
+	</ul>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="Using NetIDMgr">
+	  <param name="Local" value="html\using.htm">
+	</object>
+	<ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Starting">
+	      <param name="Local" value="html\use_start.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Command-line options">
+	      <param name="Local" value="html\cmdline_netidmgr.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Notification icon">
+	      <param name="Local" value="html\use_icon.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Managing the credentials view layout">
+	      <param name="Local" value="html\use_layout.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Configuration of identities and NetIDMgr">
+	      <param name="Local" value="html\use_config.htm">
+	    </object>
+	    <ul>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="General options">
+		  <param name="Local" value="html\config_general.htm">
+		</object>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="Appearance">
+		  <param name="Local" value="html\config_appearance.htm">
+		</object>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="Global defaults for all identities">
+		  <param name="Local" value="html\config_identities.htm">
+		</object>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="Per identity settings">
+		  <param name="Local" value="html\config_identity.htm">
+		</object>
+		<ul>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="General configuration">
+		      <param name="Local" value="html\config_identity_general.htm">
+		    </object>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="Kerberos v5 configuration">
+		      <param name="Local" value="html\config_identity_k5.htm">
+		    </object>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="Kerberos v4 configuration">
+		      <param name="Local" value="html\config_identity_k4.htm">
+		    </object>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="KeyStore configuration">
+		      <param name="Local" value="html\config_identity_ks.htm">
+		    </object>
+		</ul>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="Changing the identity icon">
+		  <param name="Local" value="html\config_idicon.htm">
+		</object>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="Notifications">
+		  <param name="Local" value="html\config_notifications.htm">
+		</object>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="Plug-ins">
+		  <param name="Local" value="html\config_plugins.htm">
+		</object>
+	      <li> <object type="text/sitemap">
+		  <param name="Name" value="Settings for Kerberos v5">
+		  <param name="Local" value="html\config_k5.htm">
+		</object>
+	    </ul>
+	</ul>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="Menus and Toolbars">
+	  <param name="Local" value="html\menu_all.htm">
+	</object>
+	<ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="File Menu">
+	      <param name="Local" value="html\menu_file.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Credential menu">
+	      <param name="Local" value="html\menu_credential.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="View Menu">
+	      <param name="Local" value="html\menu_view.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Options Menu">
+	      <param name="Local" value="html\menu_options.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Help Menu">
+	      <param name="Local" value="html\menu_help.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Standard Toolbar">
+	      <param name="Local" value="html\tb_standard.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Credential Display Context Menu">
+	      <param name="Local" value="html\menu_cred_ctx.htm">
+	    </object>
+	</ul>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="Actions">
+	</object>
+	<ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="New Credentials">
+	      <param name="Local" value="html\act_new_creds.htm">
+	    </object>
+            <ul>
+              <li><object type="text/sitemap">
+		  <param name="Name" value="Password Persistence">
+		  <param name="Local" value="html\act_new_creds_persistence.htm">
+		</object>
+            </ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Renew Credentials">
+	      <param name="Local" value="html\act_renew_creds.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Import Credentials">
+	      <param name="Local" value="html\act_import_creds.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Destroy Credentials">
+	      <param name="Local" value="html\act_destroy_creds.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Set As Default">
+	      <param name="Local" value="html\act_set_default.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Change Password">
+	      <param name="Local" value="html\act_chpw.htm">
+	    </object>
+            <ul>
+	      <li> <object type="text/sitemap">
+	          <param name="Name" value="How to choose a password">
+	          <param name="Local" value="html\how_to_choose_a_password.htm">
+	        </object>
+            </ul>
+	</ul>
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="Windows and dialogs">
+	</object>
+	<ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Property sheets">
+	      <param name="Local" value="html\wnd_properties.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Main Window">
+	      <param name="Local" value="html\wnd_main.htm">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Privacy Issues with Icon Selection">
+	      <param name="Local" value="html\wnd_icons_privacy.htm">
+	    </object>
+	</ul>
+
+      <li> <object type="text/sitemap">
+	  <param name="Name" value="Registry Reference">
+	  <param name="Local" value="html\registry.htm">
+	</object>
+	<ul>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Configuration Database Registry Reference">
+	      <param name="Local" value="html\kcdbconfig.html">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Module Manager Registry Reference">
+	      <param name="Local" value="html\kmmconfig.html">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Message Queue Registry Reference">
+	      <param name="Local" value="html\kmqconfig.html">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Kerberos v4 plug-in Registry Reference">
+	      <param name="Local" value="html\krb4config.html">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Kerberos v5 plug-in Registry Reference">
+	      <param name="Local" value="html\krb5config.html">
+	    </object>
+	  <li> <object type="text/sitemap">
+	      <param name="Name" value="Network Identity Manager Application Registry Reference">
+	      <param name="Local" value="html\uiconfig.html">
+	    </object>
+	</ul>
+    </ul>
+  </body>
+</html>
