@@ -53,6 +53,8 @@
 
   <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
   <?define Win64="yes" ?>
+  <?define NidmgrLib_Guid="5A8AB602-5090-47CC-BAD6-3BC32CC4F03A" ?>
+  <?define NidmgrLib_Name="nidmgr64.lib" ?>
 
   <?else?>
   <?error Unknown value for Platform variable ?>
