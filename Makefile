@@ -282,3 +282,5 @@ test::
 etags::
 	$(RM) $(TAGFILE)
 	$(MAKECMD) /nologo ETAGRUN=1
+
+release: all doc installer archive
