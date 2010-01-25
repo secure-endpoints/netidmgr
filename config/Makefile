@@ -114,16 +114,16 @@ mkversion: $(VERSIONINT) $(VERSIONEXT)
 
 !if "$(KH_RELEASE)" == "OFFICIAL"
 NETIDMGR_VERSION_STR_1033=$(NETIDMGR_VERSION)
-NETIDMGR_COMMENT_STR_1033=Official build.  Please send bug reports to kfw-bugs@MIT.EDU
+NETIDMGR_COMMENT_STR_1033=Official build.  Please send bug reports to netidmgr@secure-endpoints.com
 !elseif "$(KH_RELEASE)" == "PRERELEASE"
 NETIDMGR_VERSION_STR_1033=$(NETIDMGR_VERSION) Prelease $(NETIDMGR_RELEASEDESC)
-NETIDMGR_COMMENT_STR_1033=Prerelease build.  Please send bug reports to kfw-bugs@MIT.EDU
+NETIDMGR_COMMENT_STR_1033=Prerelease build.  Please send bug reports to netidmgr@secure-endpoints.com
 !elseif "$(KH_RELEASE)" == "PRIVATE"
 NETIDMGR_VERSION_STR_1033=$(NETIDMGR_VERSION).PRIVATE
-NETIDMGR_PRIVATE_STR_1033=Private build.  Please send bug reports to kfw-bugs@MIT.EDU
+NETIDMGR_PRIVATE_STR_1033=Private build.  Please send bug reports to netidmgr@secure-endpoints.com
 !elseif "$(KH_RELEASE)" == "SPECIAL"
 NETIDMGR_VERSION_STR_1033=$(NETIDMGR_VERSION).SPECIAL
-NETIDMGR_SPECIAL_STR_1033=Special build.  Please send bug reports to kfw-bugs@MIT.EDU
+NETIDMGR_SPECIAL_STR_1033=Special build.  Please send bug reports to netidmgr@secure-endpoints.com
 !endif
 
 !if "$(KH_BUILD)" == "DEBUG"
