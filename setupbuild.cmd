@@ -1,3 +1,5 @@
+rem Setup build environment for NetIDMgr
+
 set PATH=%PATH%;c:\work\svn\bin
 
 set PISMERE=c:\work\pismere
