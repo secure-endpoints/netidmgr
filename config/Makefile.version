@@ -33,7 +33,7 @@ NETIDMGR_VERSION_INC=1
 NETIDMGR_VERSION_MAJOR=1
 NETIDMGR_VERSION_MINOR=99
 NETIDMGR_VERSION_PATCH=24
-NETIDMGR_VERSION_AUX=125
+NETIDMGR_VERSION_AUX=128
 
 # Release description
 NETIDMGR_RELEASEDESC=Pre 2.0 Beta
@@ -79,7 +79,13 @@ KH_BUILD=DEBUG
 
 # The default release type is PRIVATE if no other type is specified
 !if ("$(KH_RELEASE)" != "OFFICIAL") && ("$(KH_RELEASE)" != "PRERELEASE") && ("$(KH_RELEASE)" != "PRIVATE") && ("$(KH_RELEASE)" != "SPECIAL")
+! message KH_RELEASE is set to an invalid value.
 KH_RELEASE=PRIVATE
+!endif
+
+# The target APPVER for x86 is 5.01.  For x64 it's 5.02
+!if ("$(CPU)"!="i386" || "$(APPVER)"!="5.01") && ("$(CPU)"!="AMD64" || "$(APPVER)"!="5.02") && "$(KH_RELEASE)" != "SPECIAL"
+! error Unexpected APPVER value $(APPVER)
 !endif
 
 !endif
