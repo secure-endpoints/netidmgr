@@ -141,12 +141,6 @@ $(MANIFESTFILE): netidmgr.$(CPU).manifest
 !endif
 	$(CP) $** $@
 
-!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
-SCLIB=bufferoverflowu.lib
-!else
-SCLIB=
-!endif
-
 $(EXEFILE): $(OBJFILES) $(RESFILES) $(LIBFILES)
 	$(EXEGUILINK) $(SDKLIBFILES) $(SCLIB)
 	$(_VC_MANIFEST_EMBED_EXE_HOST) $(MANIFESTFILE)

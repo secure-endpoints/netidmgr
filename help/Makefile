@@ -67,6 +67,6 @@ $(CHMFILE): netidmgr.hhp
 	$(CP) netidmgr.chm $(CHMFILE)
 
 clean::
-	if exist $(INCDIR) $(RM) $(INCFILES)
-	$(RM) $(CHMFILE)
-	$(RM) $(SCHEMAHELPFILES)
+	-if exist $(INCDIR) $(RM) $(INCFILES)
+	-$(RM) $(CHMFILE)
+	-$(RM) $(SCHEMAHELPFILES)

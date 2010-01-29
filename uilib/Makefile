@@ -70,5 +70,5 @@ $(OBJ)\resource.h: ..\ui\resource.h
 all: mkdirs $(INCFILES) $(UIDLLOBJFILES)
 
 clean::
-	if exist "$(INCDIR)" $(RM) $(INCFILES)
+	-if exist "$(INCDIR)" $(RM) $(INCFILES)
 

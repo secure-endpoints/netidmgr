@@ -117,12 +117,6 @@ SDKLIBFILES= \
 	shlwapi.lib			\
 	version.lib
 
-!if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
-SCLIB=bufferoverflowu.lib
-!else
-SCLIB=
-!endif
-
 $(DLLFILE): $(OBJFILES) $(RESFILES)
 	$(DLLGUILINK) $(LIBFILES) $(SDKLIBFILES) $(SCLIB)
 	$(_VC_MANIFEST_EMBED_DLL)

@@ -237,7 +237,7 @@ lndeflibflag=/NODEFAULTLIB:MSVCRT
 lndeflibflag=/NODEFAULTLIB:MSVCRTD
 !endif
 
-khcflags=$(cdebug) $(cflags) $(incflags) $(khdefines) $(khcwarn) $(cprof) $(copt)
+khcflags=$(cdebug) $(cflags:-W4=-W3) $(incflags) $(khdefines) $(khcwarn) $(cprof) $(copt)
 khlguiflags=$(ldebug) $(guilflags) $(lndeflibflag) $(lprof)
 khlconflags=$(ldebug) $(conlflags) $(lndeflibflag) $(lprof)
 khldllguiflags=$(ldebug) $(dlllflags) $(lndeflibflag) $(lprof)
@@ -295,6 +295,13 @@ MC2RC=$(MC) $(MCFLAGS) -h $(OBJ)\ -m 1024 -r $(OBJ)\ -x $(OBJ)\ $**
 
 {$(OBJ)}.rc{$(OBJ)}.res:
 	$(RC2RES)
+
+# Bufferoverflowu crap
+!if  (("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )) && "$(KH_CLVER)"!="vc8" && "$(KH_CLVER)"!="vc9"
+SCLIB=bufferoverflowu.lib
+!else
+SCLIB=
+!endif
 
 clean::
 	if exist "$(OBJ)" $(RM) "$(OBJ)"

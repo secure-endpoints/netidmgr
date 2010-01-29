@@ -56,12 +56,10 @@ SDKLIBFILES=	\
 	comctl32.lib
 
 !if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
-SCLIB=bufferoverflowu.lib
 LIBFILES= \
 	$(LIBDIR)\nidmgr64.lib		\
 	$(KFWLIBDIR)\loadfuncs.lib
 !else
-SCLIB=
 LIBFILES= \
 	$(LIBDIR)\nidmgr32.lib		\
 	$(KFWLIBDIR)\loadfuncs.lib
