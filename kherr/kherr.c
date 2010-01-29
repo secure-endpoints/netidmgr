@@ -65,8 +65,6 @@ kherr_debug_printf(wchar_t * fmt, ...)
 static void
 remove_ctx_handler_by_index(khm_size i)
 {
-    khm_int32 rv = KHM_ERROR_SUCCESS;
-
 #ifdef DEBUG
     assert(i < n_ctx_handlers);
 #endif

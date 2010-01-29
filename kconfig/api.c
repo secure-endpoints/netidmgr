@@ -448,7 +448,6 @@ static khm_int32
 khcint_initialize_providers_for_space(kconf_conf_space * space, kconf_conf_space * parent,
                                       khm_int32 flags)
 {
-    khm_int32 rv = KHM_ERROR_SUCCESS;
     khm_int32 create_user = ((flags & KCONF_FLAG_USER)? (flags & KHM_FLAG_CREATE) : 0);
     khm_int32 create_mach = ((flags & KCONF_FLAG_MACHINE) && !create_user ? (flags & KHM_FLAG_CREATE) : 0);
     khm_int32 create_schm = ((flags & KCONF_FLAG_SCHEMA) && !create_user && !create_mach? (flags & KHM_FLAG_CREATE) : 0);
@@ -1015,8 +1014,6 @@ khcint_write_value(khm_handle pconf,
     kconf_conf_space * c = NULL;
     khm_handle conf = NULL;
     wchar_t * value = NULL;
-    HKEY pk = NULL;
-    LONG hr = 0;
     khm_int32 rv = KHM_ERROR_SUCCESS;
 
     if (!khc_is_config_running())
@@ -1371,7 +1368,6 @@ khcint_remove_space(kconf_conf_space * c, khm_int32 flags)
     kconf_conf_space * cc;
     kconf_conf_space * cn;
     kconf_conf_space * p;
-    khm_boolean free_c = FALSE;
     khm_int32 rv;
 
     p = TPARENT(c);

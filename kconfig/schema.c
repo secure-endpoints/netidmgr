@@ -108,7 +108,6 @@ const kconf_schema *
 unload_schema(khm_handle parent, const kconf_schema * schema)
 {
     enum { INITIAL, VALUES, SPACES } state = INITIAL;
-    int end_found = 0;
     khm_handle h = NULL;
 
     while(schema) {
@@ -177,7 +176,6 @@ load_schema(schema_node * node, const kconf_schema * schema, int * end)
     int i;
     enum {INITIAL, VALUES, SUBSPACES} state = INITIAL;
     int end_found = 0;
-    kconf_conf_space * thisconf = NULL;
     khm_handle h = NULL;
 
     assert(is_schema_node(node));
