@@ -1,0 +1,584 @@
+
+  KeyStore Provider Design
+  ----------------------------------------------------------------------
+
+  1. Introduction
+  ----------------------------------------------------------------------
+
+  A KeyStore provider is a combination of a KeyStore identity provider
+  and a credentials provider for Network Identity Manager that allow
+  secure storage and management of private keys.
+
+  Users who have to manage multiple identities will typically have to
+  manage multiple units of privileged data that is used for
+  initializing these identities.  The KeyStore eases the burden of
+  handling multiple identities by providing a mechanism for
+  initializing multiple identities using a single password.
+
+
+  2. Keystore
+  ----------------------------------------------------------------------
+
+  For the purpose of the KeyStore, a private key is simply any block
+  of data that a credentials provider may use to obtain the initial
+  credentials for an identity.  The KeyStore treats the private key as
+  an opaque data blob.
+
+  A KeyStore will support scenarios where multiple keys or keys of
+  different types may need to be associated with a single identity.
+  As such, a KeyStore is a dictionary that provides the following
+  mapping:
+
+    (Identity, KeyID) => (PrivateKey)
+
+  The KeyID will not have any meaning to the KeyStore other than to
+  distinguish the key among other keys associated with the specific
+  identity.  Therefore, the only property that KeyID is expected to
+  have is to be unique among the keys for a given identity.
+
+  The KeyStore will utilize a master key that will be used to encrypt
+  each PrivateKey block.  As such, the PrivateKey objects are only
+  accessible when the master key is known.
+
+
+  2.1 KeyStore Operation
+  ----------------------
+
+  A KeyStore is defined as a tuple (M, D), where M is the master key
+  and D is a dictionary that provides the mapping between Identities,
+  KeyIDs and the PrivateKeys.  However, the master key is not always
+  known.  Therefore, the KeyStore has two primary states depending on
+  whether the master key has been supplied or not: 'Locked' or
+  'Unlocked.'  In the 'Locked' state, the master key is not known and
+  the private keys are not accessible.
+
+                             +----------+
+     (Create/Unserialize)    |  Start   |
+           +-----------------+          |
+           |                 +----------+
+           |
+      +----o------+           (Unlock)            +------------+
+      |           +------------------------------->            |
+      |  Locked   |                               |  Unlocked  |
+      |(M is null)|           (Lock)              | (M != NULL)|
+      |           <-------------------------------+            |
+      +----+------+                               +------------+
+           |
+           |                 +----------+
+           |  (Close)        |   End    |
+           +----------------->          |
+                             +----------+
+
+         Figure 1 : State transition diagram for the KeyStore
+
+  A KeyStore can be created by either initializing an empty KeyStore
+  (M <- (empty) and D <- (empty)), or by unserializing the KeyStore
+  from persistent storage.  Note that the persistent storage of the
+  KeyStore does not include the master key.  Hence a newly created
+  KeyStore will always have an empty master key.  Therefore, the
+  KeyStore is considered to be in a 'Locked' state upon creation.
+
+  The operations supported by a KeyStore are as follows:
+
+      Notation:
+        Operation-name ( arguments ) : output [state]->[new state]
+
+  Create() : KeyStore [Start]->[Locked]
+
+    Creates an empty KeyStore.  M <- (empty), D <- (empty)
+
+  Unserialize(<bit-stream>) : KeyStore [Start]->[Locked]
+
+    Create a KeyStore using the serialized information in <bit
+    stream>.  The created KeyStore will have an empty master key.
+
+  Serialize(KeyStore) : <bit-stream> [Locked]
+
+    Serialize the contents of D and any meta data into a persistent
+    stream.
+
+  Close(KeyStore) : (null) [Locked]->[End]
+
+    Close and destroy the KeyStore.
+
+  Unlock(KeyStore, Key) : (null) [Locked]->[Unlocked]
+
+    Sets M <- Key.  Note that since only the private keys are
+    encrypted, the validity of the specified key will not be known
+    until an attempt is made to access a private key.  Therefore this
+    operation only serves to set the master key.
+
+  Lock(KeyStore) : (null) [Unlocked]->[Locked]
+
+    Discards the master key. M <- (empty)
+
+  ChangeMasterKey(KeyStore, Key): (null) [Unlocked]
+
+    Changes the master key.  All the encrypted blocks will be
+    decrypted using the old master key and then encrypted using the
+    new master key.
+
+  AddKey(KeyStore, Identity, KeyID, Key) : (null) [Unlocked]
+
+    Adds the mapping (Identity, KeyID)=>(Key) to the dictionary D.
+    However, the key Key will not be added as-is.  Instead, the
+    contents of the Key will be encrypted along with additional
+    metadata and only the encrypted contents are added to the
+    dictionary.  In effect, the actual mapping will be:
+
+      (Identity, KeyID) => Encrypt(Key)
+
+  DeleteKey(KeyStore, Identity, KeyID) : (null) [Unlocked, Locked]
+
+    Removes the specified key from the KeyStore.  Deleting a key does
+    not require the master key to be present.
+
+  GetKey(KeyStore, Identity, KeyID) : Key [Unlocked]
+
+    Retrieves the specified key from the KeyStore.  Since the private
+    key, if it is present, is encrypted, the master key will be used
+    to decrypt the block and obtain the original private key.
+
+  EnumerateKeys(KeyStore) : (Set of (Identity, KeyID)) [Unlocked, Locked]
+
+    Enumerate the keys in the KeyStore.  Since the keys of D are
+    available regardless of whether we have a master key or not, this
+    operation is supported in both states of KeyStore.
+
+
+  2.2 KeyStore Identity
+  ---------------------
+
+  Each KeyStore Identity corresponds to a known serialized KeyStore.
+  The default form for a serialized KeyStore would be in the form of a
+  .KeyStore file in the user's Application Data directory.
+
+  A KeyStore identity has the following properties that are kept in
+  the registration information for the identity:
+
+  - The location of the serialized KeyStore.
+
+  - Locking Policy (discussed below).
+
+  All other properties, such as display name, time of issue (time of
+  creation of the KeyStore), expiration (expiration of the KeyStore)
+  are derived from the serialized Keystore.
+
+  2.3 KeyStore Credential
+  -----------------------
+
+  Each open and unlocked KeyStore will be represented by a KeyStore
+  credential.  The KeyStore credential will have the same display name
+  as the corresponding KeyStore and will map to the corresponding
+  KeyStore identity.  Destroying the key results in the KeyStore being
+  locked and closed.  Open but locked KeyStores are not represented in
+  the NIM credentials display.
+
+  Since unlocking a KeyStore requires the master key which can only be
+  obtained by prompting the user, KeyStores are only unlocked during a
+  new credentials operation where the primary identity is a KeyStore
+  identity.
+
+  Once unlocked, the KeyStore will only be locked according to the the
+  Locking Policy.  The proposed options for the Locking Policy are as
+  follows:
+
+  - At the conclusion of the new credentials operation involving a
+    KeyStore identity as the primary identity.  The KeyStore will be
+    unlocked when the user enters the master password, and will be
+    locked when the provider receives a KMSG_CRED_END message
+    signalling the end of the operation.
+
+  - When a specified amount of time has elapsed *after* the
+    corresponding new credentials operation has terminated.
+
+  - When the current Network Identity Manager session terminates.
+
+  If the KeyStore will be left unlocked after the new credentials
+  operation concludes, a KeyStore credential must be reported to the
+  application to represent the unlocked KeyStore.
+
+  The credential will have the following derived properties:
+
+  - Expiration
+
+    The expiration of the credential will be determined based on the
+    duration that the KeyStore will be left unlocked.  If the duration
+    is undefined or uncertain, the credential will have no expiration
+    time.
+
+  KeyStore credentials are not renewable, although they can be used to
+  renew identities that were derived from them as discussed below.
+
+  2.4 Creating a KeyStore Identity
+  --------------------------------
+
+  Users create KeyStore Identities during the new credentials
+  operation using the 'New Identity...' option.  If the new identity
+  is based on a new KeyStore, then the user must specify the following
+  information:
+
+  - A pathname for the serialized KeyStore.
+
+  - A name that the user will use to later identify the KeyStore.
+    This will become the DisplayName of the KeyStore.
+
+  - The master password.
+
+  If the identity is based on an already existing KeyStore, then only
+  the pathname is required.
+
+  If the user specifies the master password, the KeyStore will be
+  created in an unlocked state.  The privileged interaction dialog
+  will not ask for a password if the KeyStore is already unlocked.
+
+  2.4.1 Managing Private Keys
+  ---------------------------
+
+  Private keys are managed using the KeyStore credentials type panel
+  in the new credentials wizard or in the identity configuration
+  panel.
+
+  When the user makes a request to add a private key, the KeyStore
+  credentials provider will invoke the process for acquiring a private
+  key in the UI.  This process is detailed in section 3.1.  Adding
+  keys requires that the KeyStore be unlocked.
+
+  Deleting and viewing basic information about private keys can be
+  performed on locked KeyStores.  However, viewing the key would
+  require unlocking the KeyStore.
+
+  If the KeyStore is locked, and the user attempts to performa an
+  operation that requires the KeyStore to be unlocked, then the
+  credentials provider will prompt for the master password or notify
+  the user that she should enter the master password in the privileged
+  interaction panel to proceed.
+
+  *** This dialog should also allow the user to view the password or
+      private key.  The provider needs to add a hint to the user about
+      whether it is possible to show the private key to the user.
+
+  2.5 Obtaining New Credentials Using a KeyStore
+  ----------------------------------------------
+
+  The KeyStore should be unlocked prior to handling <KMSG_CRED,
+  KMSG_CRED_PROCESS>.
+
+  - The credentials provider receives <KMSG_CRED, KMSG_CRED_PROCESS>.
+
+  - For each identity that has a key in the KeyStore:
+
+    - Initialize the identity as described in section 3.2.
+
+    - If the identity signals that it needs to interact with the user,
+      then start a second level new credentials wizard that shows the
+      privileged interaction panel for the derived identity.
+
+  TODO: Going here!!
+
+  *** How do we know which key to send to the credentials provider?
+
+  *** How does the KeyStore become involved when a derived identity is
+      being.
+
+  *** If a key is about to expire, we might want to proactively prompt
+      the user for a new key.
+
+
+
+  3. Related New Behavior in Network Identity Manager
+  ----------------------------------------------------------------------
+
+  3.1 Acquiring Private Keys
+  --------------------------
+
+  The process of acquiring a private key for an identity will be
+  similar to the new credentials operation.  The steps involved are as
+  follows:
+
+  - Create a khui_new_creds structure for managing the private key
+    acquisition operation.  The primary identity of the structure is
+    set to the identity for which a private key is required and the
+    auxiliary data for the structure is set to handle the privileged
+    key acquisition [NIM01].  If no primary identity is specified,
+    then the wizard will start with the identity speicfication dialog.
+
+  - A <KMSG_CRED, KMSG_CRED_ACQUIRE_PRIVKEY> message is broadcast.
+
+    If there is a known primary identity, the only credentials type
+    that is expected to respond to the message is the primary
+    credentials type for the identity.  If no credentials types
+    respond, then private keys cannot be acquired.
+
+    If the credentials provider can provide the private key for the
+    primary identity without further user interaction, then it will
+    attach the private key and associated metadata to the
+    khui_new_creds structure and the operation concludes.
+
+  - The application creates the new credentials wizard in privileged
+    token acquisition mode and notifies the UI callback [NIM02] for the
+    credentials providers.
+
+  - If there is no primary identity, the wizard starts with the
+    Identity Specification page.  Once an identity is known, the
+    wizard will issue a WMNC_IDENTITY_CHANGE notification to the
+    credentials provders.
+
+  - In response to a WMNC_IDENTITY_CHANGE message, the credentials
+    provider sets a privileged interaction panel or provides a set of
+    custom prompts that the application integrates into the new
+    credentials wizard.
+
+  - The new credentials wizard proceeds until the user confirms the
+    dialog, at which point WMNC_DIALOG_PREPROCESS and <KMSG_CRED,
+    KMSG_CRED_PROCESS> is sent to the UI callback and the credentials
+    provider respectively.  The credentials provider is responsible
+    for serializing the private key and attaching it to the new
+    credentials structure.
+
+  - At the conclusion of the private key acquisition operation, the
+    private key is extracted from the new credentials structure by the
+    caller.
+
+  *** What do we do when the user changes the password for a
+      potentially derived identity?
+
+      We can have the KeyStore provider participate in the change
+      password operation and ask for the private key.  However, it
+      won't be able to add the key to the key store unless the
+      keystore was already unlocked.
+
+      The change password wizard will need to have some additional
+      hooks to permit private key extraction.
+
+  3.2 Initializing Identities Using a Private Key
+  -----------------------------------------------
+
+  This process will be quite similar to an identity renewal.  For
+  backwards compatibility, the same broadcast message is used for
+  initializing an identity using a private key as for an identity
+  renewal.  The semantics are identical for all but the primary
+  credentials provider.  In the identity renewal case, existing
+  credentials are used by the primary credentials provider to obtain
+  renewed credentials.  For initializing an identity using private
+  keys, new credentials will be obtained using the private key
+  instead.
+
+  It is possible that the primary credentials provider for the
+  identity does not support the use of private keys.  Or, the provider
+  is unable to use the specific key that the KeyStore has in store.
+
+  TODO: Going here!!
+
+  *** This doesn't necessarily work in situations where initializing
+      the identity results in unexpected user interaction.  Maybe this
+      should be based on the NEW_CREDS message instead.  That way we
+      have a UI framework to work with if need be.
+
+      In fact, considering the semantics, I think it would be better
+      to use the NEW_CREDS message rather than the RENEW_CREDS
+      message, since this is actually a new creds operation.  Provider
+      may assume that credentials have already been obtained once for
+      this identity if a RENEW message is sent.
+
+  The steps involved are:
+
+  - A new credentials structure is constructed for the identity
+    initialization operation.  The private key is attached to the
+    structure as per [NIM01].
+
+  - <KMSG_CRED, KMSG_CRED_RENEW_CREDS> message is broadcast.  All
+    providers that support credentials for the identity will respond
+    and also specify their dependencies.
+
+  - The primary credentials provider will use the private key to
+    obtain initial credentials.
+
+  - The other providers which depend on the primary credentials
+    provider will then obtain their respective credentials using these
+    initial credentials.
+
+
+  4. Data Structures
+  ----------------------------------------------------------------------
+
+  The data structures that will be used by the KeyStore are described
+  below.  This list does not include data structures that will be used
+  to transfer private keys to other providers.
+
+  Each field is followed by the data type in brackets.
+
+  KeyStore
+
+    A single storage for private keys.  A KeyStore will be represented
+    in NIM as a KeyStore (credential) that will be associated with a
+    KeyStore Identity of the same name.
+
+    - DisplayName {String}
+
+      The display name is a user friendly localized name that is
+      presented to the user.  This value would be provided by the user
+      when the key store is created.  UTF-16 encoded.
+
+    - CreatedOn {Timestamp}
+
+      The creation time for the KeyStore.
+
+    - LastModifiedOn {Timestamp}
+
+      The time that the KeyStore was modified.
+
+    - EncryptionType {EncryptionType}
+
+      The default encryption type used for encrypting/decrypting the
+      key blocks/key derivation and hashing.
+
+    - Keys {Sequence of PrivateKey}
+
+      The keys.
+
+  PrivateKey
+
+    - Identity {{String} {String}}
+
+      The identity associated with this private key.
+
+      - ProviderName {String}
+
+      - IdentityName {String}
+
+      The provider name and the identity name combination specifies
+      the identity.
+
+      - DisplayName {String}
+
+      Last known display name.  For display purposes. UTF-16 encoded.
+
+    - KeyId {Integer}
+
+      Used to identify the key in cases where there are multiple keys
+      associated with a single identity.  The only property expected
+      of the identifier is that it be unique among the keys for a
+      single identity.  The default value of 0 is used to indicate
+      that there is no specific identifier for this key.
+
+    - KeyDescription {String} (optional)
+
+      If there are multiple keys for the user to choose from, the key
+      description should help the user identify the key that she wants
+      to use.
+
+    - ExpiresOn {Timestamp} (optional)
+
+      An optional expiration time.  After a key is expired, it is
+      assumed that the key is no longer useful.  The keystore identity
+      provider may then prompt the user again for a new privileged
+      key.
+
+    - Key { EncryptedData }
+
+      The actual privileged data.  This is kept in an encrypted data
+      block.  The encrypted data block is constructed as follows (the
+      bar symbol denotes concatenation):
+
+      PlainText :=
+                Hash(<private key>) |
+                LengthOf(<private key>) |
+                ProviderName |
+                IdentityName |
+                KeyId |
+                <private key>
+
+      Key := Encrypt(KeyStore.EncryptionType,
+                     KeyStore.<master key>,
+                     PlainText)
+
+      Where <private key> is the actual private key that is being
+      stored, and the <master key> is the master key for the KeyStore.
+      Encryption is performed using the default encryption type
+      specified in KeyStore.
+
+  EncryptedData
+
+    - EncryptionType {EncryptionType}
+
+      Type of encryption used for this block.
+
+    - MAC {Data}
+
+      MAC of the plaintext keyed using a hash of the encryption key.
+      This is required if the encryption type supports a MAC.  Unused
+      otherwise.
+
+    - Ciphertext {Data}
+
+      Raw ciphertext.
+
+  Base Data Types
+  ---------------
+
+  EncryptionType
+
+    An encryption type, for the purpose of defining the data
+    structures above, is simply an integer that designates a set of
+    cryptographic functions:
+
+    - DeriveKey(Data d, EncryptionKey *pk)
+    - Encrypt(EncryptionKey k, Data d, Data * pCiphertext, Data * pMAC)
+    - Decrypt(EncryptionKey k, Data c, Data * pPlaintext , Data * pMAC)
+    - Hash(EncryptionKey k, Data d, Data * pHash)
+
+  EncryptionKey
+
+    A generated key that can be used for encryption and decryption.
+
+    - EncryptionType {EncryptionType}
+
+      Type of key.
+
+    - KeyData {Data}
+
+      The key data.
+
+  Timestamp
+
+    A FILETIME UTC timestamp encoded as a 64-bit integer.
+
+  String
+
+    A UTF-16 NULL terminated string.
+
+  Data
+
+    A generic data buffer.
+
+    - Count {Integer}
+
+      Count of bytes.
+
+    - Bytes {Sequence of bytes}
+
+------------------------------------------------------------------------
+
+Endnotes:
+
+[NIM01] NIM 2.0 will support several additional credentials type
+    operations other than those supported by NIM1.x such as acquiring
+    private keys and deriving identities using private keys.  These
+    messages require additional operation specific data.  As such, the
+    existing new credentials data structures will be augmented to
+    provided additional data.
+
+    In NIM 1.x, the auxiliary field of the UI context structure was
+    used to communicate additional context data.  Therefore, for
+    backwards compatibility and convenience, we can continue to use
+    this field.
+
+    *** Need to define this API.
+
+[NIM02] Credentials providers don't always have to provide a dialog
+    template for credentials options.  If no template is provided,
+    then the credentials providers will receive WMNC_NOTIFY messages
+    through its "dialog" procedure.  The hWnd parameter will be set to
+    the hWnd of the new credentials dialog.
+

@@ -1,0 +1,440 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "..\..\langres.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "..\\..\\langres.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDI_PLUGIN              ICON                    "..\\..\\images\\plugin.ico"
+IDI_IDENTITY            ICON                    "..\\..\\images\\id.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_PP_CRED DIALOGEX 0, 0, 236, 158
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Keystore"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    LTEXT           "Name",IDC_STATIC,7,10,19,8
+    EDITTEXT        IDC_NAME,48,7,181,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Description",IDC_STATIC,7,28,36,8
+    EDITTEXT        IDC_DESCRIPTION,48,25,181,14,ES_AUTOHSCROLL
+    LTEXT           "Private keys :",IDC_STATIC,7,46,45,8
+    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,58,222,93
+END
+
+IDD_PP_IDENT DIALOGEX 0, 0, 235, 156
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "Keystore Identity"
+FONT 8, "MS Shell Dlg", 0, 0, 0x0
+BEGIN
+    LTEXT           "TODO: layout property page",IDC_STATIC,60,73,106,8
+END
+
+IDD_NEW_CREDS DIALOGEX 0, 0, 352, 166
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "KeyStore Options",IDC_STATIC,"Static",SS_LEFTNOWORDWRAP | SS_SUNKEN | WS_GROUP,7,7,338,11
+    LTEXT           "&Identities",IDC_STATIC,7,23,31,8
+    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,33,338,108
+    PUSHBUTTON      "&Add new identity ...",IDC_ADDNEW,7,145,79,14
+    PUSHBUTTON      "&Configure",IDC_CONFIGURE,225,145,58,14,WS_DISABLED
+    PUSHBUTTON      "&Remove ...",IDC_REMOVE,290,145,55,14,WS_DISABLED
+    CONTROL         "&Show passwords",IDC_SHOWPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,148,149,73,10
+END
+
+IDD_CONFIG DIALOGEX 0, 0, 255, 182
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+END
+
+IDD_CONFIG_ID DIALOGEX 0, 0, 349, 200
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_CLIPCHILDREN | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+END
+
+IDD_CONFIG_IDS DIALOGEX 0, 0, 350, 200
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+END
+
+IDD_IDSPEC DIALOGEX 0, 0, 357, 95
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Name",IDC_STATIC,13,3,19,8
+    EDITTEXT        IDC_NAME,52,0,305,14,ES_AUTOHSCROLL
+    LTEXT           "Description",IDC_STATIC,13,22,36,8
+    EDITTEXT        IDC_DESCRIPTION,52,19,305,14,ES_AUTOHSCROLL
+    GROUPBOX        "Location",IDC_STATIC,8,36,349,52
+    CONTROL         "Registry",IDC_REGISTRY,"Button",BS_AUTORADIOBUTTON,13,50,43,10
+    CONTROL         "File",IDC_FILE,"Button",BS_AUTORADIOBUTTON,13,68,27,10
+    EDITTEXT        IDC_PATH,62,66,232,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Browse",IDC_BROWSE,300,66,50,14
+END
+
+IDD_NC_PRIV DIALOGEX 0, 0, 350, 84
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Password",IDC_LBL_PW,7,10,32,8
+    EDITTEXT        IDC_PASSWORD,71,7,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "New password",IDC_LBL_NEWPW1,7,28,48,8
+    EDITTEXT        IDC_NEWPW1,71,25,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Confirm password",IDC_LBL_NEWPW2,7,46,58,8
+    EDITTEXT        IDC_NEWPW2,71,43,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Change password",IDC_CHPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,67,73,10
+END
+
+IDD_PASSWORD DIALOGEX 0, 0, 352, 166
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_CLIPCHILDREN
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    CONTROL         "KeyStore Options for Changing Password",-1,"Static",SS_LEFTNOWORDWRAP | SS_SUNKEN | WS_GROUP,7,7,338,11
+END
+
+IDD_NC_PRIV_PASSWORD DIALOGEX 0, 0, 350, 84
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Password",IDC_LBL_PW,40,28,32,8
+    EDITTEXT        IDC_PASSWORD,93,25,250,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Password for ...",IDC_LBL_KSNAME,40,7,303,12,SS_CENTERIMAGE | SS_SUNKEN
+    ICON            "",IDC_IDICON,7,7,20,20
+    LTEXT           "The identity for which you are changing the password has a private key stored in this KeyStore.  Enter the password for this KeyStore here to update the stored private key.",IDC_INFO,40,49,303,28
+END
+
+IDD_NC_PRIV_STORE DIALOGEX 0, 0, 350, 84
+STYLE DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Password",IDC_LBL_PW,7,10,32,8
+    EDITTEXT        IDC_PASSWORD,71,7,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "New password",IDC_LBL_NEWPW1,7,28,48,8
+    EDITTEXT        IDC_NEWPW1,71,25,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "Confirm password",IDC_LBL_NEWPW2,7,46,58,8
+    EDITTEXT        IDC_NEWPW2,71,43,272,14,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "Change password",IDC_CHPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,67,73,10
+END
+
+IDD_CONFIG_ID_KS DIALOGEX 0, 0, 349, 173
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Name",IDC_STATIC,7,10,19,8
+    EDITTEXT        IDC_NAME,61,7,281,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "Location",IDC_STATIC,7,27,28,8
+    EDITTEXT        IDC_LOCATION,61,24,281,14,ES_AUTOHSCROLL | ES_READONLY
+    LTEXT           "&Identities contained in this keystore:",IDC_STATIC,7,42,118,8
+    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,52,335,93
+    PUSHBUTTON      "&Add new identity ...",IDC_ADDNEW,7,152,79,14
+    PUSHBUTTON      "&Remove ...",IDC_REMOVE,287,152,55,14,WS_DISABLED
+    PUSHBUTTON      "Configure ...",IDC_CONFIGURE,217,152,66,14,WS_DISABLED
+    CONTROL         "&Show passwords",IDC_SHOWPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,139,156,73,10
+END
+
+IDD_CONFIG_ID_O DIALOGEX 0, 0, 349, 200
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "&Keystores that contain keys to this identity:",IDC_STATIC,7,7,141,8
+    CONTROL         "",IDC_KSLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,23,335,107
+END
+
+IDD_KEYPROMPT DIALOGEX 0, 0, 316, 110
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Enter password for Keystore"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    ICON            "",IDC_IDICON,7,7,20,20
+    LTEXT           "Keystore",IDC_NAME,42,7,267,11
+    LTEXT           "Password",IDC_STATIC,42,25,32,8
+    EDITTEXT        IDC_PASSWORD,99,23,210,14,ES_PASSWORD | ES_AUTOHSCROLL
+    LTEXT           "The keystore requires a password.",IDC_REASON,42,45,267,21,0,WS_EX_STATICEDGE
+    DEFPUSHBUTTON   "OK",IDOK,205,89,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,259,89,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_PP_CRED, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 229
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 151
+    END
+
+    IDD_PP_IDENT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 228
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 149
+    END
+
+    IDD_NEW_CREDS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 345
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 159
+    END
+
+    IDD_CONFIG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 248
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 175
+    END
+
+    IDD_CONFIG_ID, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 342
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 193
+    END
+
+    IDD_CONFIG_IDS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 343
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 193
+    END
+
+    IDD_IDSPEC, DIALOG
+    BEGIN
+        VERTGUIDE, 13
+        BOTTOMMARGIN, 88
+    END
+
+    IDD_NC_PRIV, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 343
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 77
+    END
+
+    IDD_PASSWORD, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 345
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 159
+    END
+
+    IDD_NC_PRIV_PASSWORD, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 343
+        VERTGUIDE, 40
+        VERTGUIDE, 93
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 77
+    END
+
+    IDD_NC_PRIV_STORE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 343
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 77
+    END
+
+    IDD_CONFIG_ID_KS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 342
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 166
+    END
+
+    IDD_CONFIG_ID_O, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 342
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 193
+    END
+
+    IDD_KEYPROMPT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 309
+        VERTGUIDE, 42
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 103
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Bitmap
+//
+
+IDB_NC_STATE            BITMAP                  "..\\..\\images\\nc_item_state.bmp"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_CREDPROV_DESC       "KeyStore Credentials Plug-in"
+    IDS_CT_SHORT_DESC       "KeyStore"
+    IDS_CT_LONG_DESC        "KeyStore"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_CUE_NAME            "(Enter a name for the keystore)"
+    IDS_CUE_DESC            "(Enter a description)"
+    IDS_GEN_NONE            "(none)"
+    IDS_CFG_SHORT_DESC      "KeyStore"
+    IDS_CFG_LONG_DESC       "KeyStore Options"
+    IDS_CFG_IDS_SHORT_DESC  "KeyStore"
+    IDS_CFG_IDS_LONG_DESC   "KeyStore Options for all identities"
+    IDS_CFG_ID_SHORT_DESC   "KeyStore"
+    IDS_CFG_ID_LONG_DESC    "KeyStore Options for this identity"
+    IDS_IDPROV_DESC         "KeyStore Identity Provider Plug-in"
+    IDS_ID_DISPLAYNAME      "KeyStore"
+    IDS_ID_DESCRIPTION      "KeyStore Identity Collection"
+    IDS_ID_INSTANCE         "KeyStore"
+    IDS_ID_TOOLTIP          "KeyStore Identity Collection"
+    IDS_NCPRIV_CAPTION      "Password for %s"
+    IDS_NCLC_ID             "Identity name"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_NCLC_TYPE           "Type"
+    IDS_TNOPASS             "No password entered"
+    IDS_NOPASS              "Please enter the password for this keystore."
+    IDS_TBADPASS            "Incorrect password"
+    IDS_BADPASS             "The password you entered does not match the password that was set for this keystore."
+    IDS_TMISMPASS           "Password mismatch"
+    IDS_MISMPASS            "Both the new password and the confirmation must match.  You entered two different passwords."
+    IDS_TUNSPASS            "Couldn't set new password"
+    IDS_UNSPASS             "The new password could not be set."
+    IDS_IDK_CT_SHORT_DESC   "Private key"
+    IDS_IDK_CT_LONG_DESC    "Private key"
+    IDS_NC_PWDTITLE         "Password for %s"
+    IDS_S_NEW_CREDS         "Obtaining new credentials for %1!s!"
+    IDS_NC_BROW_TITLE       "Select Keystore Location"
+    IDS_NC_BROW_FILTER      "KeyStores%*.keystore%All files%*.*%%"
+    IDS_INVALIDID           "[Invalid KeyStore]"
+END
+
+STRINGTABLE 
+BEGIN
+    IDS_INVALIDREASON       "The KeyStore for this identity could not be opened."
+    IDS_DEF_KSNAME          "My Keystore"
+    IDS_DEF_KSDESCF         "Default user keystore for %s"
+    IDS_CFG_KSLIST_C0       "KeyStores"
+    IDS_CFG_KSLIST_C1       "Location"
+    IDS_PWR_ADD             "Keystore password must be supplied before new passwords can be added to the keystore."
+    IDS_PWR_DEL             "Keystore password must be supplied before stored passwords can be removed."
+    IDS_CONF_DEL_TITLE      "Confirm deletion"
+    IDS_CONF_DEL_FMT1       "Are you sure you want to delete the selected password?"
+    IDS_CONF_DEL_FMT        "Are you sure you want to delete %d passwords?"
+    IDS_PWR_SHOWP           "Keystore password must be supplied before passwords can be viewed."
+    IDS_COL_PASSWORD        "Password"
+    IDS_PW_NONE             "(No password found or unable to decode password)"
+    IDS_PW_LOCKED           "(Keystore must be unlocked before passwords can be shown)"
+    IDS_S_RENEW_CREDS       "Initializing identities contained in %1!s!"
+    IDS_PWR_ACQ             "Keystore password must be supplied before derived identities can be initialized."
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
