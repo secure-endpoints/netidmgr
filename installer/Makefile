@@ -55,15 +55,18 @@ TARGET=no-wix
 !endif
 !endif
 
+# Suppress validation
+LIGHTVAL=-sval
+
 all: $(TARGET)
 
 # MSI
 
 $(MSIFILE): "$(OBJ)\installer.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
-		"$(WIXDIR)\WixUI.wixlib"		\
+		-ext WixUIExtension -cultures:en-us	\
 		-loc lang\$(LANG)\installer.wxl 	\
-		-loc "$(WIXDIR)\WixUI_en-us.wxl" 	\
+		$(LIGHTVAL)				\
 		$**
 	$(_CODESIGN)
 
@@ -96,9 +99,9 @@ $(OBJ)\installer.wixobj: installer.wxs
 
 $(SDKMSIFILE): "$(OBJ)\sdk-installer.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
-		"$(WIXDIR)\WixUI.wixlib"		\
+		-ext WixUIExtension -cultures:en-us	\
 		-loc lang\$(LANG)\sdk-installer.wxl	\
-		-loc "$(WIXDIR)\WixUI_en-us.wxl"	\
+		$(LIGHTVAL)				\
 		$**
 	$(_CODESIGN)
 
