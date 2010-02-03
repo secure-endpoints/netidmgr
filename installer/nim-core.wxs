@@ -1,6 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
+  <!--
+
+      Copyright (c) 2009 Secure Endpoints Inc.
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use,
+      copy, modify, merge, publish, distribute, sublicense, and/or
+      sell copies of the Software, and to permit persons to whom the
+      Software is furnished to do so, subject to the following
+      conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+      OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+      OTHER DEALINGS IN THE SOFTWARE.
+
+    -->
+
   <?if $(env.CPU)="i386" Or $(env.CPU)="x86" ?>
   <?define Platform=x86 ?>
   <?elseif $(env.CPU)="x64" Or $(env.CPU)="AMD64" ?>
@@ -21,7 +48,6 @@
 
   <?if $(var.Platform)="x86" ?>
 
-  <?define ProgramFilesFolder="ProgramFilesFolder" ?>
   <?define Win64="no" ?>
 
   <?define nim_dll_guid="EEBA3A0D-CE3D-42F1-8854-D7F63F597202" ?>
@@ -33,11 +59,9 @@
   <?define netidmgr_pdb_guid="CAFAF255-D68E-4796-9DEC-2175AFADE234" ?>
   <?define netidmgr_exe_w2k_guid="0F85D4F3-7897-4FE3-8501-AD0C383CCB4F" ?>
   <?define netidmgr_w2k_pdb_guid="F88A600D-937F-4676-917F-BA85AE9FC9B0" ?>
-  <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
 
   <?elseif $(var.Platform)="x64" ?>
 
-  <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
   <?define Win64="yes" ?>
 
   <?define nim_dll_guid="8538212A-9BD5-4d62-BF29-36D853385F0A" ?>
@@ -46,7 +70,6 @@
   <?define nim_dll_pdb_guid="4FBFD25C-03E0-4FF4-AA5F-4672951355A6" ?>
   <?define netidmgr_exe_guid="487545C9-F145-4fb9-8610-5652A6C3FE48" ?>
   <?define netidmgr_pdb_guid="A49E9D37-06DB-44F2-90EF-33D6635ED881" ?>
-  <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0" ?>
 
   <?else ?>
   <?error Unknown value for Platform variable ?>
@@ -154,6 +177,7 @@
       <ComponentRef Id="netidmgr_chm" />
     </ComponentGroup>
 
+    <?ifdef IncludeDebugSyms ?>
     <ComponentGroup Id="NetIdMgrCoreDebug">
       <ComponentRef Id="netidmgr_pdb" />
       <ComponentRef Id="nim_dll_pdb" />
@@ -162,6 +186,7 @@
       <ComponentRef Id="netidmgr_w2k_pdb" />
       <?endif ?>
     </ComponentGroup>
+    <?endif?>
 
   </Fragment>
 </Wix>
