@@ -59,6 +59,7 @@
   <?define netidmgr_pdb_guid="CAFAF255-D68E-4796-9DEC-2175AFADE234" ?>
   <?define netidmgr_exe_w2k_guid="0F85D4F3-7897-4FE3-8501-AD0C383CCB4F" ?>
   <?define netidmgr_w2k_pdb_guid="F88A600D-937F-4676-917F-BA85AE9FC9B0" ?>
+  <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
 
   <?elseif $(var.Platform)="x64" ?>
 
@@ -70,6 +71,7 @@
   <?define nim_dll_pdb_guid="4FBFD25C-03E0-4FF4-AA5F-4672951355A6" ?>
   <?define netidmgr_exe_guid="487545C9-F145-4fb9-8610-5652A6C3FE48" ?>
   <?define netidmgr_pdb_guid="A49E9D37-06DB-44F2-90EF-33D6635ED881" ?>
+  <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0" ?>
 
   <?else ?>
   <?error Unknown value for Platform variable ?>
@@ -167,6 +169,16 @@
 
     </DirectoryRef>
 
+    <DirectoryRef Id="StartupFolder">
+        <!-- NETIDMGR Startup Shortcut -->
+
+        <Component Win64="$(var.Win64)" Id="csc_NetIDMgrStartup" Guid="$(var.netidmgr_startup_guid)" DiskId="1">
+          <RegistryValue Id="reg_sc_nidmgr_marker" Root="HKLM" Key="SOFTWARE\Secure Endpoints\NetIDMgr\$(var.ProductVersion)" Name="NetIDMgrAutoStart" Type="integer" Value="1" KeyPath="yes" />
+          <Shortcut Id="sc_netidmgr_exe_startup" Advertise="no" Directory="StartupFolder" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" />
+        </Component>
+    </DirectoryRef>
+
+
     <ComponentGroup Id="NetIdMgrCore">
       <ComponentRef Id="netidmgr_exe" />
       <ComponentRef Id="nim_dll" />
@@ -187,6 +199,20 @@
       <?endif ?>
     </ComponentGroup>
     <?endif?>
+
+      <Feature Id="Feature.Core" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
+        <ComponentGroupRef Id="NetIdMgrCore" />
+
+        <Feature Id="Feature.StartupShortcut" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
+          <ComponentRef Id="csc_NetIDMgrStartup" />
+        </Feature>
+
+        <?ifdef IncludeDebugSyms ?>
+        <Feature Id="Feature.Core.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
+          <ComponentGroupRef Id="NetIdMgrCoreDebug" />
+        </Feature>
+        <?endif?>
+      </Feature>
 
   </Fragment>
 </Wix>

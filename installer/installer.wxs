@@ -45,14 +45,10 @@
   <?define ProgramFilesFolder="ProgramFilesFolder" ?>
   <?define Win64="no" ?>
 
-  <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
-
   <?elseif $(var.Platform)="x64" ?>
 
   <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
   <?define Win64="yes" ?>
-
-  <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0" ?>
 
   <?else ?>
   <?error Unknown value for Platform variable ?>
@@ -176,57 +172,24 @@
       </Directory>
 
       <Directory Id="StartupFolder">
-
-        <!-- NETIDMGR Startup Shortcut -->
-
-        <Component Win64="$(var.Win64)" Id="csc_NetIDMgrStartup" Guid="$(var.netidmgr_startup_guid)" DiskId="1">
-          <RegistryValue Id="reg_sc_nidmgr_marker" Root="HKLM" Key="SOFTWARE\Secure Endpoints\NetIDMgr\$(var.ProductVersion)" Name="NetIDMgrAutoStart" Type="integer" Value="1" KeyPath="yes" />
-          <Shortcut Id="sc_netidmgr_exe_startup" Advertise="no" Directory="StartupFolder" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" />
-        </Component>
       </Directory>
     </Directory>
 
     <Feature Id="Feature.Main" AllowAdvertise="no" ConfigurableDirectory="APPDIR" Title="!(loc.FeatureMainTitle)" Description="!(loc.FeatureMainDesc)" Display="expand" InstallDefault="local" TypicalDefault="install" Level="3">
 
-      <Feature Id="Feature.Core" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
-
-        <ComponentGroupRef Id="NetIdMgrCore" />
-
-        <Feature Id="Feature.StartupShortcut" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
-          <ComponentRef Id="csc_NetIDMgrStartup" />
-        </Feature>
-      </Feature>
+      <FeatureRef Id="Feature.Core" />
 
       <?ifdef IncludeKrb4 ?>
-      <Feature Id="Feature.Krb4" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureKrb4Title)" Description="!(loc.FeatureKrb4Desc)" Level="3">
-        <ComponentGroupRef Id="Krb4Cred" />
-      </Feature>
+      <FeatureRef Id="Feature.Krb4" />
       <?endif ?>
 
-      <Feature Id="Feature.Krb5" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureKrb5Title)" Description="!(loc.FeatureKrb5Desc)" Level="3">
-        <ComponentGroupRef Id="Krb5Cred" />
-      </Feature>
+      <FeatureRef Id="Feature.Krb5" />
 
       <?ifdef IncludeKeystore?>
-      <Feature Id="Feature.KeyStore" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureKeystoreTitle)" Description="!(loc.FeatureKeystoreDesc)" Level="3">
-        <ComponentGroupRef Id="KeyStore" />
-      </Feature>
+      <FeatureRef Id="Feature.KeyStore" />
       <?endif ?>
 
       <MergeRef Id="VCRT" />
-
-      <?ifdef IncludeDebugSyms ?>
-      <Feature Id="Feature.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
-        <ComponentGroupRef Id="NetIdMgrCoreDebug" />
-        <ComponentGroupRef Id="Krb5CredDebug" />
-        <?ifdef IncludeKrb4 ?>
-        <ComponentGroupRef Id="Krb4CredDebug" />
-        <?endif ?>
-        <?ifdef IncludeKeystore ?>
-        <ComponentGroupRef Id="KeyStoreDebug" />
-        <?endif ?>
-      </Feature>
-      <?endif ?>
 
     </Feature>
 

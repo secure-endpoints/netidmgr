@@ -113,5 +113,15 @@
     </ComponentGroup>
     <?endif ?>
 
+    <Feature Id="Feature.Krb5" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureKrb5Title)" Description="!(loc.FeatureKrb5Desc)" Level="3">
+      <ComponentGroupRef Id="Krb5Cred" />
+
+      <?ifdef IncludeDebugSyms ?>
+      <Feature Id="Feature.Krb5.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
+        <ComponentGroupRef Id="Krb5CredDebug" />
+      </Feature>
+      <?endif ?>
+    </Feature>
+
   </Fragment>
 </Wix>
