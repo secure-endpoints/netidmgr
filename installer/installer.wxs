@@ -38,14 +38,6 @@
   <?error Unknown value for CPU environment variable. ?>
   <?endif ?>
 
-  <?define UpgradeCode="342E07BD-8B38-4F2F-BED8-F26E027B25CE" ?>
-
-  <?if $(var.ClVer)=vc9 ?>
-  <?define InstallerVersion=300 ?>
-  <?else ?>
-  <?define InstallerVersion=200 ?>
-  <?endif ?>
-
   <!-- Platform dependencies -->
 
   <?if $(var.Platform)="x86" ?>
@@ -98,16 +90,25 @@
   <?error Unknown value for Platform variable ?>
   <?endif ?>
 
+  <?define UpgradeCode="342E07BD-8B38-4F2F-BED8-F26E027B25CE" ?>
+
+  <?if $(var.ClVer)=vc9 ?>
+  <?define InstallerVersion=300 ?>
+  <?else ?>
+  <?define InstallerVersion=200 ?>
+  <?endif ?>
+
   <?define CodePage="1252" ?>
+
+  <?define IncludeDebugSyms="yes" ?>
 
   <?if $(var.Platform)="x86" ?>
   <?ifndef NoW2k?>
   <?define IncludeW2k="yes" ?>
   <?endif ?>
-  <?define IncludeDebugSyms="yes" ?>
   <?define IncludeKrb4="yes" ?>
   <?elseif $(var.Platform)="x64" ?>
-  <?define IncludeDebugSyms="yes" ?>
+  <!-- nothing -->
   <?endif ?>
 
   <?ifdef KeystoreBinDir?>
@@ -132,37 +133,6 @@
         <Directory Id="dirCompany" SourceName="." ShortName="MIT" Name="MIT">
           <Directory Id="dirAppClass" SourceName="." ShortName="Kerberos" Name="Kerberos">
             <Directory Id="APPDIR" ShortName="bin" Name="bin" FileSource="$(var.BinDir)">
-
-              <!-- NIDMGR32.DLL / NIDMGR64.DLL -->
-
-              <Component Win64="$(var.Win64)" Id="nim_dll" Guid="$(var.nim_dll_guid)" DiskId="1" Transitive="yes">
-                <File Id="fil_nidmgr32_dll" Name="$(var.nim_dll_name)" KeyPath="yes" />
-                <Condition>VersionNT &gt; 500</Condition>
-              </Component>
-
-              <?ifdef IncludeDebugSyms?>
-              <Component Id="nim_dll_pdb" Guid="$(var.nim_dll_pdb_guid)" DiskId="1" Transitive="yes">
-                <File Id="fil_nidmgr32_pdb" Name="$(var.nim_dll_pdb_name)" KeyPath="yes" />
-                <Condition>VersionNT &gt; 500</Condition>
-              </Component>
-              <?endif ?>
-
-              <!-- NIDMGR32.DLL for Windows 2000 -->
-
-              <?ifdef IncludeW2k ?>
-              <Component Win64="$(var.Win64)" Id="nim_dll_w2k" Guid="$(var.nim_dll_w2k_guid)" DiskId="1" Transitive="yes">
-                <File Id="fil_nidmgr32_dll_w2k" Name="$(var.nim_dll_name)" KeyPath="yes" Source="$(var.BinDir)W2K\nidmgr32.dll" />
-                <Condition>VersionNT &lt;= 500</Condition>
-              </Component>
-
-              <?ifdef IncludeDebugSyms ?>
-              <Component Id="nim_dll_pdb_w2k" Guid="D11697E3-8B52-48A6-8DD8-C24157BD38F0" DiskId="1" Transitive="yes">
-                <File Id="fil_nidmgr32_pdb_w2k" Name="$(var.nim_dll_pdb_name)" KeyPath="yes" Source="$(var.BinDir)W2K\nidmgr32.pdb" />
-                <Condition>VersionNT &lt;= 500</Condition>
-              </Component>
-              <?endif ?>
-
-              <?endif ?>
 
               <!-- KRB5CRED.DLL -->
 
@@ -223,68 +193,6 @@
               <?endif ?>
 
               <?endif ?>
-
-              <!-- NETIDMGR.EXE -->
-
-              <Component Win64="$(var.Win64)" Id="netidmgr_exe" Guid="$(var.netidmgr_exe_guid)" DiskId="1" Transitive="yes">
-                <File Id="fil_netidmgr_exe" Name="netidmgr.exe" KeyPath="yes" />
-
-                <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Action="createAndRemoveOnUninstall" />
-                <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Name="Flags" Type="integer" Value="1032" />
-
-                <Shortcut Id="sc_netidmgr_exe" Advertise="no" Directory="dirShortcut" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" WorkingDirectory="APPDIR" />
-                <RemoveFolder Id="rm_sc_nim" Directory="dirShortcut" On="uninstall" />
-                <Condition>VersionNT &gt; 500</Condition>
-              </Component>
-
-              <?ifdef IncludeDebugSyms ?>
-              <Component Id="netidmgr_pdb" Guid="$(var.netidmgr_pdb_guid)" DiskId="1">
-                <File Id="fil_netidmgr_pdb" Name="netidmgr.pdb" KeyPath="yes" />
-              </Component>
-              <?endif ?>
-
-              <!-- NETIDMGR.CHM -->
-
-              <Component Id="netidmgr_chm" Guid="068C6FC6-6475-4CCC-B80D-F748C6F5C77D" DiskId="1">
-                <File Id="fil_netidmgr_chm" Name="netidmgr.chm" KeyPath="yes" />
-
-                <Shortcut Id="sc_netidmgr_chm" Advertise="no" Directory="dirShortcut" ShortName="netidchm.lnk" Name="Network Identity Manager Documentation.lnk" Target="[APPDIR]netidmgr.chm" WorkingDirectory="APPDIR" />
-                <RemoveFolder Id="rm_sc_nim_chm" Directory="dirShortcut" On="uninstall" />
-              </Component>
-
-              <!-- NETIDMGR.EXE for Windows 2000 -->
-
-              <?ifdef IncludeW2k ?>
-              <Component Win64="$(var.Win64)" Id="netidmgr_exe_w2k" Guid="$(var.netidmgr_exe_w2k_guid)" DiskId="1" Transitive="yes">
-
-                <File Id="fil_netidmgr_exe_w2k" Name="netidmgr.exe" KeyPath="yes" Source="$(var.BinDir)W2K\netidmgr.exe" />
-
-                <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Action="createAndRemoveOnUninstall" />
-
-                <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Name="Flags" Type="integer" Value="1032" />
-
-                <Shortcut Id="sc_netidmgr_exe_w2k" Advertise="no" Directory="dirShortcut" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" WorkingDirectory="APPDIR" />
-
-                <RemoveFolder Id="rm_sc_nim_w2k" Directory="dirShortcut" On="uninstall" />
-                <Condition>VersionNT &lt;= 500</Condition>
-              </Component>
-
-              <?ifdef IncludeDebugSyms ?>
-              <Component Id="netidmgr_w2k_pdb" Guid="$(var.netidmgr_w2k_pdb_guid)" DiskId="1">
-                <File Id="fil_netidmgr_w2k_pdb" Name="netidmgr.pdb" KeyPath="yes" Source="$(var.BinDir)W2K\netidmgr.pdb" />
-              </Component>
-              <?endif ?>
-
-              <?endif ?>
-
-              <!-- NETIDMGR Startup Shortcut -->
-
-              <Component Win64="$(var.Win64)" Id="csc_NetIDMgrStartup" Guid="$(var.netidmgr_startup_guid)" DiskId="1">
-
-                <RegistryValue Id="reg_sc_nidmgr_marker" Root="HKLM" Key="SOFTWARE\Secure Endpoints\NetIDMgr\$(var.ProductVersion)" Name="NetIDMgrAutoStart" Type="integer" Value="1" KeyPath="yes" />
-
-                <Shortcut Id="sc_netidmgr_exe_startup" Advertise="no" Directory="StartupFolder" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" />
-              </Component>
 
               <?ifdef IncludeKeystore?>
 
@@ -379,23 +287,27 @@
           </Directory>
         </Directory>
       </Directory>
+
       <Directory Id="ProgramMenuFolder">
         <Directory Id="dirShortcut" ShortName="NetIDMgr" Name="Network Identity Manager" />
       </Directory>
-      <Directory Id="StartupFolder" />
+
+      <Directory Id="StartupFolder">
+
+        <!-- NETIDMGR Startup Shortcut -->
+
+        <Component Win64="$(var.Win64)" Id="csc_NetIDMgrStartup" Guid="$(var.netidmgr_startup_guid)" DiskId="1">
+          <RegistryValue Id="reg_sc_nidmgr_marker" Root="HKLM" Key="SOFTWARE\Secure Endpoints\NetIDMgr\$(var.ProductVersion)" Name="NetIDMgrAutoStart" Type="integer" Value="1" KeyPath="yes" />
+          <Shortcut Id="sc_netidmgr_exe_startup" Advertise="no" Directory="StartupFolder" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" />
+        </Component>
+      </Directory>
     </Directory>
 
     <Feature Id="Feature.Main" AllowAdvertise="no" ConfigurableDirectory="APPDIR" Title="!(loc.FeatureMainTitle)" Description="!(loc.FeatureMainDesc)" Display="expand" InstallDefault="local" TypicalDefault="install" Level="3">
 
       <Feature Id="Feature.Core" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
 
-        <ComponentRef Id="netidmgr_exe" />
-        <ComponentRef Id="nim_dll" />
-        <?ifdef IncludeW2k ?>
-        <ComponentRef Id="netidmgr_exe_w2k" />
-        <ComponentRef Id="nim_dll_w2k" />
-        <?endif ?>
-        <ComponentRef Id="netidmgr_chm" />
+        <ComponentGroupRef Id="NetIdMgrCore" />
 
         <Feature Id="Feature.StartupShortcut" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
           <ComponentRef Id="csc_NetIDMgrStartup" />
@@ -425,13 +337,8 @@
 
       <?ifdef IncludeDebugSyms ?>
       <Feature Id="Feature.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
-        <ComponentRef Id="netidmgr_pdb" />
-        <ComponentRef Id="nim_dll_pdb" />
+        <ComponentGroupRef Id="NetIdMgrCoreDebug" />
         <ComponentRef Id="krb5cred_dll_pdb" />
-        <?ifdef IncludeW2k ?>
-        <ComponentRef Id="nim_dll_pdb_w2k" />
-        <ComponentRef Id="netidmgr_w2k_pdb" />
-        <?endif ?>
         <?ifdef IncludeKrb4 ?>
         <ComponentRef Id="krb4cred_dll_pdb" />
         <?endif ?>

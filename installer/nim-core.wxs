@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <?if $(env.CPU)="i386" Or $(env.CPU)="x86" ?>
+  <?define Platform=x86 ?>
+  <?elseif $(env.CPU)="x64" Or $(env.CPU)="AMD64" ?>
+  <?define Platform=x64 ?>
+  <?else ?>
+  <?error Unknown value for CPU environment variable. ?>
+  <?endif ?>
+
+  <?define IncludeDebugSyms="yes" ?>
+
+  <?if $(var.Platform)="x86" ?>
+  <?ifndef NoW2k?>
+  <?define IncludeW2k="yes" ?>
+  <?endif ?>
+  <?endif ?>
+
+  <!-- Platform dependencies -->
+
+  <?if $(var.Platform)="x86" ?>
+
+  <?define ProgramFilesFolder="ProgramFilesFolder" ?>
+  <?define Win64="no" ?>
+
+  <?define nim_dll_guid="EEBA3A0D-CE3D-42F1-8854-D7F63F597202" ?>
+  <?define nim_dll_name="nidmgr32.dll" ?>
+  <?define nim_dll_pdb_name="nidmgr32.pdb" ?>
+  <?define nim_dll_pdb_guid="B346E489-0AC7-4877-8538-CD02FCE70B01" ?>
+  <?define nim_dll_w2k_guid="33F42D7C-03CE-465F-9E0A-5F486FE64B04" ?>
+  <?define netidmgr_exe_guid="AEB06D67-B4F3-45B1-AC1E-5C1AFF747756" ?>
+  <?define netidmgr_pdb_guid="CAFAF255-D68E-4796-9DEC-2175AFADE234" ?>
+  <?define netidmgr_exe_w2k_guid="0F85D4F3-7897-4FE3-8501-AD0C383CCB4F" ?>
+  <?define netidmgr_w2k_pdb_guid="F88A600D-937F-4676-917F-BA85AE9FC9B0" ?>
+  <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
+
+  <?elseif $(var.Platform)="x64" ?>
+
+  <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
+  <?define Win64="yes" ?>
+
+  <?define nim_dll_guid="8538212A-9BD5-4d62-BF29-36D853385F0A" ?>
+  <?define nim_dll_name="nidmgr64.dll" ?>
+  <?define nim_dll_pdb_name="nidmgr64.pdb" ?>
+  <?define nim_dll_pdb_guid="4FBFD25C-03E0-4FF4-AA5F-4672951355A6" ?>
+  <?define netidmgr_exe_guid="487545C9-F145-4fb9-8610-5652A6C3FE48" ?>
+  <?define netidmgr_pdb_guid="A49E9D37-06DB-44F2-90EF-33D6635ED881" ?>
+  <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0" ?>
+
+  <?else ?>
+  <?error Unknown value for Platform variable ?>
+  <?endif ?>
+
+  <Fragment>
+    <DirectoryRef Id="APPDIR" FileSource="$(var.BinDir)" DiskId="1">
+
+      <!-- NIDMGR32.DLL / NIDMGR64.DLL -->
+
+      <Component Win64="$(var.Win64)" Id="nim_dll" Guid="$(var.nim_dll_guid)" Transitive="yes">
+        <File Id="fil_nidmgr32_dll" Name="$(var.nim_dll_name)" KeyPath="yes" />
+        <Condition>VersionNT &gt; 500</Condition>
+      </Component>
+
+      <?ifdef IncludeDebugSyms?>
+      <Component Id="nim_dll_pdb" Guid="$(var.nim_dll_pdb_guid)" Transitive="yes">
+        <File Id="fil_nidmgr32_pdb" Name="$(var.nim_dll_pdb_name)" KeyPath="yes" />
+        <Condition>VersionNT &gt; 500</Condition>
+      </Component>
+      <?endif ?>
+
+      <!-- NIDMGR32.DLL for Windows 2000 -->
+
+      <?ifdef IncludeW2k ?>
+      <Component Win64="$(var.Win64)" Id="nim_dll_w2k" Guid="$(var.nim_dll_w2k_guid)" Transitive="yes">
+        <File Id="fil_nidmgr32_dll_w2k" Name="$(var.nim_dll_name)" KeyPath="yes" Source="$(var.BinDir)W2K\nidmgr32.dll" />
+        <Condition>VersionNT &lt;= 500</Condition>
+      </Component>
+
+      <?ifdef IncludeDebugSyms ?>
+      <Component Id="nim_dll_pdb_w2k" Guid="D11697E3-8B52-48A6-8DD8-C24157BD38F0" Transitive="yes">
+        <File Id="fil_nidmgr32_pdb_w2k" Name="$(var.nim_dll_pdb_name)" KeyPath="yes" Source="$(var.BinDir)W2K\nidmgr32.pdb" />
+        <Condition>VersionNT &lt;= 500</Condition>
+      </Component>
+      <?endif ?>
+
+      <?endif ?>
+
+      <!-- NETIDMGR.EXE -->
+
+      <Component Win64="$(var.Win64)" Id="netidmgr_exe" Guid="$(var.netidmgr_exe_guid)" Transitive="yes">
+        <File Id="fil_netidmgr_exe" Name="netidmgr.exe" KeyPath="yes" />
+
+        <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Action="createAndRemoveOnUninstall" />
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Name="Flags" Type="integer" Value="1032" />
+
+        <Shortcut Id="sc_netidmgr_exe" Advertise="no" Directory="dirShortcut" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" WorkingDirectory="APPDIR" />
+        <RemoveFolder Id="rm_sc_nim" Directory="dirShortcut" On="uninstall" />
+        <Condition>VersionNT &gt; 500</Condition>
+      </Component>
+
+      <?ifdef IncludeDebugSyms ?>
+      <Component Id="netidmgr_pdb" Guid="$(var.netidmgr_pdb_guid)" DiskId="1">
+        <File Id="fil_netidmgr_pdb" Name="netidmgr.pdb" KeyPath="yes" />
+      </Component>
+      <?endif ?>
+
+      <!-- NETIDMGR.CHM -->
+
+      <Component Id="netidmgr_chm" Guid="068C6FC6-6475-4CCC-B80D-F748C6F5C77D" DiskId="1">
+        <File Id="fil_netidmgr_chm" Name="netidmgr.chm" KeyPath="yes" />
+
+        <Shortcut Id="sc_netidmgr_chm" Advertise="no"
+                  Directory="dirShortcut" ShortName="netidchm.lnk"
+                  Name="Network Identity Manager Documentation.lnk"
+                  Target="[APPDIR]netidmgr.chm" WorkingDirectory="APPDIR" />
+        <RemoveFolder Id="rm_sc_nim_chm" Directory="dirShortcut" On="uninstall" />
+      </Component>
+
+      <!-- NETIDMGR.EXE for Windows 2000 -->
+
+      <?ifdef IncludeW2k ?>
+      <Component Win64="$(var.Win64)" Id="netidmgr_exe_w2k" Guid="$(var.netidmgr_exe_w2k_guid)" Transitive="yes">
+
+        <File Id="fil_netidmgr_exe_w2k" Name="netidmgr.exe" KeyPath="yes" Source="$(var.BinDir)W2K\netidmgr.exe" />
+
+        <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Action="createAndRemoveOnUninstall" />
+
+        <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Name="Flags" Type="integer" Value="1032" />
+
+        <Shortcut Id="sc_netidmgr_exe_w2k" Advertise="no" Directory="dirShortcut" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" WorkingDirectory="APPDIR" />
+
+        <RemoveFolder Id="rm_sc_nim_w2k" Directory="dirShortcut" On="uninstall" />
+        <Condition>VersionNT &lt;= 500</Condition>
+      </Component>
+
+      <?ifdef IncludeDebugSyms ?>
+      <Component Id="netidmgr_w2k_pdb" Guid="$(var.netidmgr_w2k_pdb_guid)">
+        <File Id="fil_netidmgr_w2k_pdb" Name="netidmgr.pdb" KeyPath="yes" Source="$(var.BinDir)W2K\netidmgr.pdb" />
+      </Component>
+      <?endif ?>
+
+      <?endif ?>
+
+    </DirectoryRef>
+
+    <ComponentGroup Id="NetIdMgrCore">
+      <ComponentRef Id="netidmgr_exe" />
+      <ComponentRef Id="nim_dll" />
+      <?ifdef IncludeW2k ?>
+      <ComponentRef Id="netidmgr_exe_w2k" />
+      <ComponentRef Id="nim_dll_w2k" />
+      <?endif ?>
+      <ComponentRef Id="netidmgr_chm" />
+    </ComponentGroup>
+
+    <ComponentGroup Id="NetIdMgrCoreDebug">
+      <ComponentRef Id="netidmgr_pdb" />
+      <ComponentRef Id="nim_dll_pdb" />
+      <?ifdef IncludeW2k ?>
+      <ComponentRef Id="nim_dll_pdb_w2k" />
+      <ComponentRef Id="netidmgr_w2k_pdb" />
+      <?endif ?>
+    </ComponentGroup>
+
+  </Fragment>
+</Wix>

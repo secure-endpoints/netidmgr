@@ -62,7 +62,7 @@ all: $(TARGET)
 
 # MSI
 
-$(MSIFILE): "$(OBJ)\installer.wixobj"
+$(MSIFILE): "$(OBJ)\installer.wixobj" "$(OBJ)\nim-core.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
 		-ext WixUIExtension -cultures:en-us	\
 		-loc lang\$(LANG)\installer.wxl 	\
@@ -96,6 +96,20 @@ $(OBJ)\installer.wixobj: installer.wxs
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)			\
 		-dKeystoreBinDir=$(KSBIN)
+
+$(OBJ)\nim-core.wixobj: nim-core.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
+		-dProductVersion=$(NETIDMGR_VERSION)	\
+		-dBinDir=$(BINDIR)\			\
+		-dLibDir=$(LIBDIR)\			\
+!ifndef NODEBUG
+		-dDebug=1				\
+!endif
+!ifdef KH_NO_W2K
+		-dNoW2k=1				\
+!endif
+		-dSrcDir=$(SRC)				\
+		-dClVer=$(KH_CLVER)
 
 $(SDKMSIFILE): "$(OBJ)\sdk-installer.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
