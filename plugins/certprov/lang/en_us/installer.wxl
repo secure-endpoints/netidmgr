@@ -1,5 +1,5 @@
-<?xml version="1.0"?>
-<WixLocalization CodePage="1252">
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Codepage="1252" Culture="en-us" xmlns="http://schemas.microsoft.com/wix/2006/localization">
 
 
   <!--
@@ -40,24 +40,18 @@
   <String Id="CodePage">1252</String>
 
 
-  <!-- TODO: Your company name -->
-  <String Id="ProductManufacturer">My Company</String>
+  <String Id="ProductManufacturer">Secure Endpoints Inc.</String>
 
 
-  <!-- TODO: Name of the product -->
-  <String Id="ProductName">My Credentials Module for Network Identity Manager</String>
+  <String Id="ProductName">Generic X.509 Provider for Network Identity Manager</String>
 
 
-  <!-- TODO: Description of the product -->
-  <String Id="ProductDescription">Sample module that includes a credentials provider and an identity provider for Network Identity Manager</String>
+  <String Id="ProductDescription">Basic provider for managing X.509 certificates using Network Identity Manager.</String>
 
 
-  <!-- TODO: Title of the main feature -->
-  <String Id="FeatureMainTitle">My Module</String>
+  <String Id="FeatureMainTitle">X.509 Provider</String>
 
-
-  <!-- TODO: Description of the main feature -->
-  <String Id="FeatureMainDesc">Installs My Module which provides credential and identity support for My Credentials to Network Identity Manager.  MIT Kerberos for Windows must be installed for this module to function properly.</String>
+  <String Id="FeatureMainDesc">Installs the Generic X.509 Provider for Network Identity Manager.</String>
 
 
 
@@ -65,42 +59,26 @@
        be created when the module is installed. -->
 
 
-  <!-- TODO: Additional comments about the product -->
-  <String Id="ARPComments">Provides credential and identity support for My Credentials to Network Identity Manager.</String>
+  <String Id="ARPComments">Basic provider for managing X.509 certificates using Network Identity Manager.</String>
 
 
-  <!-- TODO: Contact information regarding the product -->
-  <String Id="ARPContact">contactperson@example.com</String>
+  <String Id="ARPContact">netidmgr@secure-endpoints.com</String>
 
 
-  <!-- TODO: URL for obtaining more information about the product -->
-  <String Id="ARPURLInfo">http://example.com/mymodule</String>
+  <String Id="ARPURLInfo">http://www.secure-endpoints.com</String>
+
+  <String Id="ARPURLHelp">http://www.secure-endpoints.com</String>
 
 
-  <!-- TODO: URL for obtaining support for the product -->
-  <String Id="ARPURLHelp">http://example.com/mymodule/support</String>
+  <String Id="CompanyDirName">Secure Endpoints</String>
+
+  <String Id="CompanyDirShortName">secendpt</String>
 
 
-  <!-- TODO: Directory name for the company.  Usually applications are
-       installed into %PROGRAMFILES%\[CompanyDir]\[ProductDir].  This
-       string provides the [CompanyDir] name. -->
-  <String Id="CompanyDirName">Sample Company</String>
+  <String Id="ModuleDirName">CertProv</String>
 
 
-  <!-- TODO: Short 8.3 version of above.  Windows Installer requires
-       that short filenames also be specified. -->
-  <String Id="CompanyDirShortName">Sample</String>
-
-
-  <!-- TODO: Directory name for the product.  Usually applications are
-       installed into %PROGRAMFILES%\[CompanyDir]\[ProductDir].  This
-       string provides the [ProductDir] name.  -->
-  <String Id="ModuleDirName">MyPlugin</String>
-
-
-  <!-- TODO: Short version of above. -->
-  <String Id="ModuleDirShortName">MyPlugin</String>
-
+  <String Id="ModuleDirShortName">certprov</String>
 
 
   <!-- These are generic error strings and can be left as-is. -->

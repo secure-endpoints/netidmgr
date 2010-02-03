@@ -337,7 +337,7 @@ clean-local:
 
 MSI=$(DEST)\$(DLLBASENAME).msi
 
-install: all "$(MSI)"
+installer: all "$(MSI)"
 
 $(MSI): "$(OBJ)\installer.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
@@ -362,7 +362,7 @@ clean::
 
 !else
 
-install:
+installer:
 	$(ECHO) Please set the WIXDIR environment variable as documented in Makefile.
 	candle.exe -?
 

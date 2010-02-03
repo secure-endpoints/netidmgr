@@ -21,6 +21,20 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# ############################################################
+# External parameters
+#
+# COMBINED=1 : Combined installer mode.  Turns off MIT KfW
+# compatibility mode.
+# 
+# KCAPLUGINLIB=\path\to\kcacred-*.wixlib : When set, combines the KCA
+# plug-in installation into the master installer.  Implies COMBINED.
+# 
+# MIT Compatibility Mode:
+# 
+# In this mode, the directory struture follows that of MIT KfW.  The
+# netidmgr.exe will be installed over the netidmgr.exe that comes with
+# MIT KfW.
 
 MODULE=installer
 !include <../config/Makefile.w32>
@@ -38,6 +52,13 @@ ZIPFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 SDKZIPFILE=$(BINDIR)\netidmgr-sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
 KEYSTORE=$(SRC)\plugins\keystore
+
+# External libraries
+# KCAPLUGINLIB=\path\to\kcacred-*.wixlib
+
+!ifdef KCAPLUGINLIB
+COMBINED=1
+!endif
 
 !if "$(ARCHIVE)" != ""
 !if "$(ZIP)" == ""
@@ -74,7 +95,13 @@ MSIOBJS=						\
 MSIOBJS=$(MSIOBJS) "$(OBJ)\krb4cred.wixobj"
 !endif
 
-$(MSIFILE): $(MSIOBJS)
+MSILIBS=
+
+!ifdef KCAPLUGINLIB
+MSILIBS=$(MSILIBS) $(KCAPLUGINLIB)
+!endif
+
+$(MSIFILE): $(MSIOBJS) $(MSILIBS)
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
 		-ext WixUIExtension -cultures:en-us	\
 		-loc lang\$(LANG)\installer.wxl 	\
@@ -103,7 +130,13 @@ $(OBJ)\installer.wixobj: installer.wxs
 !endif
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)			\
-		-dKeystoreBinDir=$(KSBIN)
+!ifdef KCAPLUGINLIB
+		-dIncludeKCACred=yes			\
+!endif
+!ifndef COMBINED
+		-dMITCompatibilityMode=yes		\
+!endif
+		-dIncludeKeystore=yes
 
 $(OBJ)\nim-core.wixobj: nim-core.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\

@@ -241,6 +241,13 @@ certprov-install-local:
 	$(CD) ..\..
 	$(ECHO) Done
 
+certprov-installer:
+	$(ECHO) Installers of plugins\certprov
+	$(CD) plugins\certprov
+	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov installer
+	$(CD) ..\..
+	$(ECHO) Done
+
 install-local:: certprov-install-local
 
 !endif

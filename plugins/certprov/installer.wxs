@@ -1,5 +1,5 @@
-<?xml version="1.0"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2003/01/wi">
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
   <!--
 
@@ -49,141 +49,66 @@
       Makefile instead of installing the module using the MSI
       installer.
 
-
-               *********** I M P O R T A N T ***********
-
-             Generate New UUIDs Before You Use This Template
-
-      The following sections make use of UUIDs as required by Windows
-      Installer.  The values provided by the template are useful for
-      evaluation purposes only. If you intend to develop an installer
-      that will be deployed outside of your development environment,
-      please generate and use new UUIDs.
-
-      Consult the Microsoft Platform SDK documentation for details on
-      the use of UUIDs in Windows Installer.  UUIDs can be generated
-      using the uuidgen.exe tool in the Microsoft Platform SDK.
-
-               *****************************************
-
     -->
 
   <!-- Platform constants -->
 
   <?if $(env.CPU)="i386" Or $(env.CPU)="x86" ?>
-    <?define Platform=Intel ?>
+  <?define Platform=x86 ?>
   <?elseif $(env.CPU)="x64" Or $(env.CPU)="AMD64" ?>
-    <?define Platform=x64 ?>
-  <?else?>
-    <?error Unknown value for CPU environment variable. ?>
-  <?endif?>
+  <?define Platform=x64 ?>
+  <?else ?>
+  <?error Unknown value for CPU environment variable. ?>
+  <?endif ?>
 
-  <!-- TODO: Create new UUID  -->
-  <?define UpgradeCode="F673AA04-C41D-4AEF-A5C8-8ED2051EFEF4" ?>
+  <?define UpgradeCode="15B78B3A-CC35-446E-8D3E-5CC88B55A961" ?>
 
   <!-- Platform dependencies -->
 
-  <?if $(var.Platform)="Intel" ?>
+  <?if $(var.Platform)="x86" ?>
 
-    <?define ProgramFilesFolder="ProgramFilesFolder" ?>
-    <?define Win64="no" ?>
+  <?define ProgramFilesFolder="ProgramFilesFolder" ?>
+  <?define Win64="no" ?>
 
-    <!-- TODO: Create new UUIDs -->
-    <?define DllGuid="C78D5DDC-46F5-4FBA-B8BC-8E1E279C522E" ?>
-    <?define EN_US_DLLGuid="3477B27A-9E29-48FE-9DC3-368C63B588DE" ?>
+  <?define DllGuid="666AE374-ECBE-4450-83E4-9CC998CF51EC" ?>
+  <?define EN_US_DLLGuid="2A69E9CD-5353-4772-9BCD-FBECC0862EC9" ?>
 
   <?elseif $(var.Platform)="x64" ?>
 
-    <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
-    <?define Win64="yes" ?>
+  <?define ProgramFilesFolder="ProgramFiles64Folder" ?>
+  <?define Win64="yes" ?>
 
-    <!-- TODO: Create new UUIDs -->
-    <?define DllGuid="BDBB5F99-F997-4CA9-BF01-3C5FF0870C9A" ?>
-    <?define EN_US_DLLGuid="9F2A1368-A8FC-4AAF-A8F4-9AD880480CC0" ?>
+  <?define DllGuid="C3203666-BC89-46C9-828A-3626EC0FCC80" ?>
+  <?define EN_US_DLLGuid="6002FDEE-36AF-43DF-A105-A8A485971099" ?>
 
-  <?else?>
-    <?error Unknown value for Platform variable ?>
-  <?endif?>
+  <?else ?>
+  <?error Unknown value for Platform variable ?>
+  <?endif ?>
 
   <?define CodePage="1252" ?>
 
 
 
-  <Product Id="????????-????-????-????-????????????"
-           Language="$(loc.LanguageId)"
-           Manufacturer="$(loc.ProductManufacturer)"
-           Name="$(loc.ProductName)"
-           Codepage="$(var.CodePage)"
-           UpgradeCode="$(var.UpgradeCode)"
-           Version="$(var.ProductVersion)">
-    <Package Id="????????-????-????-????-????????????"
-             Compressed="yes"
-             Description="$(loc.ProductDescription)"
-             InstallerVersion="200"
-             InstallPrivileges="elevated"
-             Languages="$(loc.LanguageId)"
-             Manufacturer="$(loc.ProductManufacturer)"
-             Platforms="$(var.Platform)"
-             SummaryCodepage="$(loc.CodePage)"
-             />
+  <Product Id="*" Language="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" Name="!(loc.ProductName)" Codepage="$(var.CodePage)" UpgradeCode="$(var.UpgradeCode)" Version="$(var.ProductVersion)">
+    <Package Compressed="yes" Description="!(loc.ProductDescription)" InstallerVersion="200" InstallPrivileges="elevated" Languages="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" Platform="$(var.Platform)" SummaryCodepage="!(loc.CodePage)" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="$(var.ProgramFilesFolder)">
-        <Directory Id="dirCompany" SourceName="."
-                   Name="$(loc.CompanyDirShortName)"
-                   LongName="$(loc.CompanyDirName)">
-          <Directory Id="MODULEDIR"
-                     Name="$(loc.ModuleDirShortName)"
-                     LongName="$(loc.ModuleDirName)"
-                     FileSource="$(var.DestDir)">
+        <Directory Id="dirCompany" SourceName="." ShortName="!(loc.CompanyDirShortName)" Name="!(loc.CompanyDirName)">
+          <Directory Id="MODULEDIR" ShortName="!(loc.ModuleDirShortName)" Name="!(loc.ModuleDirName)" FileSource="$(var.DestDir)">
 
-            <Component Win64="$(var.Win64)" Id="Cmp.$(var.DllBaseName).DLL"
-                       Guid="$(var.DllGuid)" DiskId="1">
-              <File Id="File.$(var.DllBaseName).DLL"
-                    LongName="$(var.DllBaseName).dll"
-                    Name="mymodule.dll"
-                    KeyPath="yes" />
+            <Component Win64="$(var.Win64)" Id="Cmp.$(var.DllBaseName).DLL" Guid="$(var.DllGuid)" DiskId="1">
+              <File Id="File.$(var.DllBaseName).DLL" ShortName="mymodule.dll" Name="$(var.DllBaseName).dll" KeyPath="yes" />
 
-              <Registry Id="Reg.ModKey.Key"
-                        Root="HKLM"
-                        Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)"
-                        Action="createKeyAndRemoveKeyOnUninstall" />
-              <Registry Id="Reg.ModKey.ImagePath"
-                        Root="HKLM"
-                        Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)"
-                        Action="write"
-                        Name="ImagePath"
-                        Type="string"
-                        Value="[#File.$(var.DllBaseName).DLL]" />
-              <Registry Id="Reg.ModKey.Description"
-                        Root="HKLM"
-                        Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)"
-                        Action="write"
-                        Name="Description"
-                        Type="string"
-                        Value="$(loc.ProductDescription)" />
-              <Registry Id="Reg.ModKey.PluginList"
-                        Root="HKLM"
-                        Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)"
-                        Action="write"
-                        Name="PluginList"
-                        Type="string"
-                        Value="$(var.PluginList)" />
-              <Registry Id="Reg.ModKey.Vendor"
-                        Root="HKLM"
-                        Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)"
-                        Action="write"
-                        Name="Vendor"
-                        Type="string"
-                        Value="$(loc.ProductManufacturer)" />
+              <RegistryKey Id="Reg.ModKey.Key" Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)" Action="createAndRemoveOnUninstall" />
+              <RegistryValue Id="Reg.ModKey.ImagePath" Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)" Action="write" Name="ImagePath" Type="string" Value="[#File.$(var.DllBaseName).DLL]" />
+              <RegistryValue Id="Reg.ModKey.Description" Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)" Action="write" Name="Description" Type="string" Value="!(loc.ProductDescription)" />
+              <RegistryValue Id="Reg.ModKey.PluginList" Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)" Action="write" Name="PluginList" Type="string" Value="$(var.PluginList)" />
+              <RegistryValue Id="Reg.ModKey.Vendor" Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\$(var.ModuleName)" Action="write" Name="Vendor" Type="string" Value="!(loc.ProductManufacturer)" />
             </Component>
 
-            <Component Win64="$(var.Win64)" Id="Cmp.$(var.DllBaseName)_en_us.DLL"
-                       Guid="$(var.EN_US_DLLGuid)" DiskId="1">
-              <File Id="File.$(var.DllBaseName)_en_us.DLL"
-                    LongName="$(var.DllBaseName)_en_us.dll"
-                    Name="mymdENUS.dll"
-                    KeyPath="yes" />
+            <Component Win64="$(var.Win64)" Id="Cmp.$(var.DllBaseName)_en_us.DLL" Guid="$(var.EN_US_DLLGuid)" DiskId="1">
+              <File Id="File.$(var.DllBaseName)_en_us.DLL" ShortName="mymdENUS.dll" Name="$(var.DllBaseName)_en_us.dll" KeyPath="yes" />
             </Component>
 
             <!-- TODO: Add other component declarations here. -->
@@ -193,15 +118,7 @@
       </Directory>
     </Directory>
 
-    <Feature Id="Feature.Main"
-             AllowAdvertise="no"
-             ConfigurableDirectory="MODULEDIR"
-             Title="$(loc.FeatureMainTitle)"
-             Description="$(loc.FeatureMainDesc)"
-             Display="expand"
-             InstallDefault="local"
-             TypicalDefault="install"
-             Level="3">
+    <Feature Id="Feature.Main" AllowAdvertise="no" ConfigurableDirectory="MODULEDIR" Title="!(loc.FeatureMainTitle)" Description="!(loc.FeatureMainDesc)" Display="expand" InstallDefault="local" TypicalDefault="install" Level="3">
 
       <ComponentRef Id="Cmp.$(var.DllBaseName).DLL" />
       <ComponentRef Id="Cmp.$(var.DllBaseName)_en_us.DLL" />
@@ -212,10 +129,10 @@
          installing this for all users. -->
     <Property Id="ALLUSERS">1</Property>
 
-    <Property Id="ARPCOMMENTS">$(loc.ARPComments)</Property>
-    <Property Id="ARPCONTACT">$(loc.ARPContact)</Property>
-    <Property Id="ARPURLINFOABOUT">$(loc.ARPURLInfo)</Property>
-    <Property Id="ARPHELPLINK">$(loc.ARPURLHelp)</Property>
+    <Property Id="ARPCOMMENTS">!(loc.ARPComments)</Property>
+    <Property Id="ARPCONTACT">!(loc.ARPContact)</Property>
+    <Property Id="ARPURLINFOABOUT">!(loc.ARPURLInfo)</Property>
+    <Property Id="ARPHELPLINK">!(loc.ARPURLHelp)</Property>
 
     <Property Id="INSTALLLEVEL">3</Property>
 
@@ -224,25 +141,25 @@
          from installing packages in an order that's convenient for
          them. -->
 
-    <Condition Message="$(loc.AdminRequired)">Privileged</Condition>
-    <Condition Message="$(loc.OsVersionRequired)">VersionNT &gt;=501</Condition>
+    <Condition Message="!(loc.AdminRequired)">Privileged</Condition>
+    <Condition Message="!(loc.OsVersionRequired)">VersionNT &gt;=501</Condition>
     <?if $(var.Platform) = "x64" ?>
-    <Condition Message="$(loc.Platform64Required)">VersionNT64</Condition>
-    <?endif?>
+    <Condition Message="!(loc.Platform64Required)">VersionNT64</Condition>
+    <?endif ?>
 
     <InstallExecuteSequence>
       <RemoveExistingProducts After="InstallValidate">(Not Installed) And UPGRADEMODULE</RemoveExistingProducts>
     </InstallExecuteSequence>
 
     <Upgrade Id="$(var.UpgradeCode)">
-      <UpgradeVersion IgnoreRemoveFailure="no" IncludeMinimum="no"
-                      Maximum="$(var.ProductVersion)" IncludeMaximum="no"
-                      MigrateFeatures="yes" Property="UPGRADEMODULE" />
+      <UpgradeVersion IgnoreRemoveFailure="no" IncludeMinimum="no" Maximum="$(var.ProductVersion)" IncludeMaximum="no" MigrateFeatures="yes" Property="UPGRADEMODULE" />
     </Upgrade>
 
     <Media Id="1" Cabinet="Disk1" CompressionLevel="high" EmbedCab="yes" />
 
     <UIRef Id="WixUI_Mondo" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
 
   </Product>
 </Wix>

@@ -39,19 +39,14 @@
 
 # Declare a few things about our plug-in.
 
-# TODO: Change the credentials provider name
 CREDPROVNAME=GenericX509Provider
 
-# TODO: Change the identity provider name
 IDPROVNAME=GenericX509IDProvider
 
-# TODO: Change the module name
 MODULENAME=GenericX509ProviderModule
 
-# TODO: Change the credtype name
 CREDTYPENAME=GenericX509Certificate
 
-# TODO: Change this as appropriate
 DLLBASENAME=genericx509
 
 
@@ -68,6 +63,7 @@ VERPATCH=0
 # Leave these as-is
 VERLIST=$(VERMAJOR).$(VERMINOR).$(VERAUX).$(VERPATCH)
 VERLISTC=$(VERMAJOR),$(VERMINOR),$(VERAUX),$(VERPATCH)
+VERLISTU=$(VERMAJOR)_$(VERMINOR)_$(VERAUX)_$(VERPATCH)
 PLUGINLIST=$(CREDPROVNAME),$(IDPROVNAME)
 
 
@@ -340,15 +336,14 @@ clean-local:
 
 !if exist("$(WIXDIR)\candle.exe")
 
-MSI=$(DEST)\$(DLLBASENAME).msi
+MSI=$(DEST)\$(DLLBASENAME)-$(CPU)-$(BUILDTYPE)-$(VERLISTU).msi
 
-install: all "$(MSI)"
+installer: all "$(MSI)"
 
 $(MSI): "$(OBJ)\installer.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
-		"$(WIXDIR)\WixUI.wixlib"		\
+		-ext WixUIExtension -cultures:en-us	\
 		-loc lang\en_us\installer.wxl 		\
-		-loc "$(WIXDIR)\WixUI_en-us.wxl"	\
 		$**
 
 clean::
@@ -367,7 +362,7 @@ clean::
 
 !else
 
-install:
+installer:
 	$(ECHO) Please set the WIXDIR environment variable as documented in Makefile.
 	candle.exe -?
 
