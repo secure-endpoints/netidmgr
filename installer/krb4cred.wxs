@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <!--
+
+      Copyright (c) 2009 Secure Endpoints Inc.
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use,
+      copy, modify, merge, publish, distribute, sublicense, and/or
+      sell copies of the Software, and to permit persons to whom the
+      Software is furnished to do so, subject to the following
+      conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+      OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+      OTHER DEALINGS IN THE SOFTWARE.
+
+    -->
+
+  <?if $(env.CPU)="i386" Or $(env.CPU)="x86" ?>
+  <?define Platform=x86 ?>
+  <?elseif $(env.CPU)="x64" Or $(env.CPU)="AMD64" ?>
+  <?define Platform=x64 ?>
+  <?else ?>
+  <?error Unknown value for CPU environment variable. ?>
+  <?endif ?>
+
+  <?define IncludeDebugSyms="yes" ?>
+
+  <?if $(var.Platform)="x86" ?>
+  <?ifndef NoW2k?>
+  <?define IncludeW2k="yes" ?>
+  <?endif ?>
+  <?define IncludeKrb4="yes" ?>
+  <?endif ?>
+
+  <!-- Platform dependencies -->
+
+  <?if $(var.Platform)="x86" ?>
+
+  <?define Win64="no" ?>
+
+  <?define krb4cred_dll_guid="E3B86954-9D5D-4929-A5E6-B22ED03E6D6C" ?>
+  <?define krb4cred_dll_pdb_guid="745CD28A-A94E-422C-BE70-1BF869071661" ?>
+  <?define krb4cred_en_us_dll_guid="3FF40A29-E2C3-40F3-B81C-2948494BE4B0" ?>
+
+  <?elseif $(var.Platform)="x64" ?>
+
+  <?error Kerberos 4 components are not supported in a 64 bit installer ?>
+
+  <?else ?>
+  <?error Unknown value for Platform variable ?>
+  <?endif ?>
+
+  <Fragment>
+    <DirectoryRef Id="APPDIR" FileSource="$(var.BinDir)" DiskId="1">
+
+      <!-- KRB4CRED.DLL -->
+
+      <?ifdef IncludeKrb4?>
+      <Component Win64="$(var.Win64)" Id="krb4cred_dll" Guid="$(var.krb4cred_dll_guid)" DiskId="1">
+        <File Id="fil_krb4cred_dll" Name="krb4cred.dll" KeyPath="yes" />
+
+        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Action="createAndRemoveOnUninstall" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Name="ImagePath" Type="string" Value="[#fil_krb4cred_dll]" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Name="PluginList" Type="string" Value="Krb4Cred" />
+        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Action="createAndRemoveOnUninstall" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Module" Type="string" Value="MITKrb4" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Description" Type="string" Value="Kerberos v4 Credentials Provider" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Dependencies" Type="string" Value="Krb5Cred" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Type" Type="integer" Value="1" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Flags" Type="integer" Value="0" />
+      </Component>
+
+      <Component Win64="$(var.Win64)" Id="krb4cred_en_us_dll" Guid="$(var.krb4cred_en_us_dll_guid)" DiskId="1">
+        <File Id="fil_krb4cred_en_us_dll" ShortName="krb4cenu.dll" Name="krb4cred_en_us.dll" KeyPath="yes" />
+      </Component>
+
+      <?ifdef IncludeDebugSyms ?>
+      <Component Id="krb4cred_dll_pdb" Guid="$(var.krb4cred_dll_pdb_guid)" DiskId="1">
+        <File Id="fil_krb4cred_dll_pdb" Name="krb4cred.pdb" KeyPath="yes" />
+      </Component>
+      <?endif ?>
+
+      <?endif ?>
+
+    </DirectoryRef>
+
+    <ComponentGroup Id="Krb4Cred">
+      <ComponentRef Id="krb4cred_dll" />
+      <ComponentRef Id="krb4cred_en_us_dll" />
+    </ComponentGroup>
+
+    <?ifdef IncludeDebugSyms ?>
+    <ComponentGroup Id="Krb4CredDebug">
+      <ComponentRef Id="krb4cred_dll_pdb" />
+    </ComponentGroup>
+    <?endif ?>
+
+  </Fragment>
+</Wix>

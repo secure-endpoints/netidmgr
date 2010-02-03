@@ -45,9 +45,6 @@
   <?define ProgramFilesFolder="ProgramFilesFolder" ?>
   <?define Win64="no" ?>
 
-  <?define krb4cred_dll_guid="E3B86954-9D5D-4929-A5E6-B22ED03E6D6C" ?>
-  <?define krb4cred_dll_pdb_guid="745CD28A-A94E-422C-BE70-1BF869071661" ?>
-  <?define krb4cred_en_us_dll_guid="3FF40A29-E2C3-40F3-B81C-2948494BE4B0" ?>
   <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
   <?define debug_guid="C8468854-8261-4781-8119-A612636841E3" ?>
   <?define keystore_dll_guid="99ADD93D-DA26-4220-8BD4-E90350A1F4EC" ?>
@@ -112,35 +109,6 @@
         <Directory Id="dirCompany" SourceName="." ShortName="MIT" Name="MIT">
           <Directory Id="dirAppClass" SourceName="." ShortName="Kerberos" Name="Kerberos">
             <Directory Id="APPDIR" ShortName="bin" Name="bin" FileSource="$(var.BinDir)">
-
-              <!-- KRB4CRED.DLL -->
-
-              <?ifdef IncludeKrb4?>
-              <Component Win64="$(var.Win64)" Id="krb4cred_dll" Guid="$(var.krb4cred_dll_guid)" DiskId="1">
-                <File Id="fil_krb4cred_dll" Name="krb4cred.dll" KeyPath="yes" />
-
-                <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Action="createAndRemoveOnUninstall" />
-                <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Name="ImagePath" Type="string" Value="[#fil_krb4cred_dll]" />
-                <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Name="PluginList" Type="string" Value="Krb4Cred" />
-                <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Action="createAndRemoveOnUninstall" />
-                <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Module" Type="string" Value="MITKrb4" />
-                <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Description" Type="string" Value="Kerberos v4 Credentials Provider" />
-                <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Dependencies" Type="string" Value="Krb5Cred" />
-                <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Type" Type="integer" Value="1" />
-                <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Flags" Type="integer" Value="0" />
-              </Component>
-
-              <Component Win64="$(var.Win64)" Id="krb4cred_en_us_dll" Guid="$(var.krb4cred_en_us_dll_guid)" DiskId="1">
-                <File Id="fil_krb4cred_en_us_dll" ShortName="krb4cenu.dll" Name="krb4cred_en_us.dll" KeyPath="yes" />
-              </Component>
-
-              <?ifdef IncludeDebugSyms ?>
-              <Component Id="krb4cred_dll_pdb" Guid="$(var.krb4cred_dll_pdb_guid)" DiskId="1">
-                <File Id="fil_krb4cred_dll_pdb" Name="krb4cred.pdb" KeyPath="yes" />
-              </Component>
-              <?endif ?>
-
-              <?endif ?>
 
               <?ifdef IncludeKeystore?>
 
@@ -264,8 +232,7 @@
 
       <?ifdef IncludeKrb4 ?>
       <Feature Id="Feature.Krb4" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureKrb4Title)" Description="!(loc.FeatureKrb4Desc)" Level="3">
-        <ComponentRef Id="krb4cred_dll" />
-        <ComponentRef Id="krb4cred_en_us_dll" />
+        <ComponentGroupRef Id="Krb4Cred" />
       </Feature>
       <?endif ?>
 
@@ -287,7 +254,7 @@
         <ComponentGroupRef Id="NetIdMgrCoreDebug" />
         <ComponentGroupRef Id="Krb5CredDebug" />
         <?ifdef IncludeKrb4 ?>
-        <ComponentRef Id="krb4cred_dll_pdb" />
+        <ComponentGroupRef Id="Krb4CredDebug" />
         <?endif ?>
         <?ifdef IncludeKeystore ?>
         <ComponentRef Id="Cmp.keystore.PDB" />

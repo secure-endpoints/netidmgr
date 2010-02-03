@@ -62,7 +62,16 @@ all: $(TARGET)
 
 # MSI
 
-$(MSIFILE): "$(OBJ)\installer.wixobj" "$(OBJ)\nim-core.wixobj" "$(OBJ)\krb5cred.wixobj"
+MSIOBJS=						\
+	"$(OBJ)\installer.wixobj" 			\
+	"$(OBJ)\nim-core.wixobj" 			\
+	"$(OBJ)\krb5cred.wixobj"
+
+!if "$(CPU)" == "i386" || "$(CPU)" == "x86"
+MSIOBJS=$(MSIOBJS) "$(OBJ)\krb4cred.wixobj"
+!endif
+
+$(MSIFILE): $(MSIOBJS)
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
 		-ext WixUIExtension -cultures:en-us	\
 		-loc lang\$(LANG)\installer.wxl 	\
@@ -112,6 +121,20 @@ $(OBJ)\nim-core.wixobj: nim-core.wxs
 		-dClVer=$(KH_CLVER)
 
 $(OBJ)\krb5cred.wixobj: krb5cred.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
+		-dProductVersion=$(NETIDMGR_VERSION)	\
+		-dBinDir=$(BINDIR)\			\
+		-dLibDir=$(LIBDIR)\			\
+!ifndef NODEBUG
+		-dDebug=1				\
+!endif
+!ifdef KH_NO_W2K
+		-dNoW2k=1				\
+!endif
+		-dSrcDir=$(SRC)				\
+		-dClVer=$(KH_CLVER)
+
+$(OBJ)\krb4cred.wixobj: krb4cred.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
 		-dProductVersion=$(NETIDMGR_VERSION)	\
 		-dBinDir=$(BINDIR)\			\
