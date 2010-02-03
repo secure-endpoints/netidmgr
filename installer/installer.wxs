@@ -46,7 +46,6 @@
   <?define Win64="no" ?>
 
   <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
-  <?define debug_guid="C8468854-8261-4781-8119-A612636841E3" ?>
   <?define keystore_dll_guid="99ADD93D-DA26-4220-8BD4-E90350A1F4EC" ?>
   <?define keystore_en_us_dll_guid="8AC01EFD-45C8-4D35-BD81-CC9390DCB72E" ?>
   <?define keystore_pdb_guid="90335557-6406-48F8-9E62-DB65F80B693C" ?>
@@ -57,7 +56,6 @@
   <?define Win64="yes" ?>
 
   <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0" ?>
-  <?define debug_guid="F3432C85-89D9-4bd6-BD82-4ED49A118338" ?>
   <?define keystore_dll_guid="B315857C-CA82-43D6-AE03-C8CFE178469C" ?>
   <?define keystore_en_us_dll_guid="DD7A9BDC-1E53-4782-88F0-29CD67D355E3" ?>
   <?define keystore_pdb_guid="CAEC1004-5563-4A55-8E3F-AF0B2E3BA9AB" ?>
