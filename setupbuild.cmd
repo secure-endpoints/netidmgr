@@ -60,6 +60,7 @@ rem  - KH_HHCFULLPATH should be the full path to hhc.exe
 rem  - WIXDIR should be the directory containing WiX 2.x
 rem  - ZIP should be the full path to 7-Zip command line executable
 rem  - PISMERE Should be the pismere directory
+rem  - CODESIGN Can be set to the command used to sign binaries
 
 if exist setupbuild.local.cmd call setupbuild.local.cmd
 

@@ -143,7 +143,7 @@ cwarn = -wd4204
 
 cdefines = $(cdefines) -DUNICODE -D_UNICODE
 
-C2OBJ=$(CC) $(cdebug) $(cflags) $(incflags) $(cdefines) $(cwarn) $(KH_AUXCFLAGS) /Fo"$@" /c $**
+C2OBJ=$(CC) $(cdebug) $(cflags:-W4=-W3) $(incflags) $(cdefines) $(cwarn) $(KH_AUXCFLAGS) /Fo"$@" /c $**
 
 DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:"$@" /IMPLIB:"$(DEST)\$(@B).lib" $**
 
