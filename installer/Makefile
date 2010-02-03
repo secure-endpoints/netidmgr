@@ -37,6 +37,8 @@ ZIPFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
 SDKZIPFILE=$(BINDIR)\netidmgr-sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
+KEYSTORE=$(SRC)\plugins\keystore
+
 !if "$(ARCHIVE)" != ""
 !if "$(ZIP)" == ""
 TARGET=no-zip
@@ -65,7 +67,8 @@ all: $(TARGET)
 MSIOBJS=						\
 	"$(OBJ)\installer.wixobj" 			\
 	"$(OBJ)\nim-core.wixobj" 			\
-	"$(OBJ)\krb5cred.wixobj"
+	"$(OBJ)\krb5cred.wixobj"			\
+	"$(OBJ)\keystore.wixobj"
 
 !if "$(CPU)" == "i386" || "$(CPU)" == "x86"
 MSIOBJS=$(MSIOBJS) "$(OBJ)\krb4cred.wixobj"
@@ -78,10 +81,6 @@ $(MSIFILE): $(MSIOBJS)
 		$(LIGHTVAL)				\
 		$**
 	$(_CODESIGN)
-
-!ifndef KEYSTORE
-KEYSTORE=$(SRC)\plugins\keystore
-!endif
 
 !ifdef NODEBUG
 KSDBG=release
@@ -147,6 +146,21 @@ $(OBJ)\krb4cred.wixobj: krb4cred.wxs
 !endif
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)
+
+$(OBJ)\keystore.wixobj: keystore.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
+		-dProductVersion=$(NETIDMGR_VERSION)	\
+		-dBinDir=$(BINDIR)\			\
+		-dLibDir=$(LIBDIR)\			\
+!ifndef NODEBUG
+		-dDebug=1				\
+!endif
+!ifdef KH_NO_W2K
+		-dNoW2k=1				\
+!endif
+		-dSrcDir=$(SRC)				\
+		-dClVer=$(KH_CLVER)			\
+		-dKeystoreBinDir=$(KSBIN)
 
 $(SDKMSIFILE): "$(OBJ)\sdk-installer.wixobj"
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\

@@ -46,9 +46,6 @@
   <?define Win64="no" ?>
 
   <?define netidmgr_startup_guid="669227E3-0ADC-4173-90C3-631FCFC8EBC3" ?>
-  <?define keystore_dll_guid="99ADD93D-DA26-4220-8BD4-E90350A1F4EC" ?>
-  <?define keystore_en_us_dll_guid="8AC01EFD-45C8-4D35-BD81-CC9390DCB72E" ?>
-  <?define keystore_pdb_guid="90335557-6406-48F8-9E62-DB65F80B693C" ?>
 
   <?elseif $(var.Platform)="x64" ?>
 
@@ -56,9 +53,6 @@
   <?define Win64="yes" ?>
 
   <?define netidmgr_startup_guid="7081976D-E9D5-424a-9564-917E0529E4D0" ?>
-  <?define keystore_dll_guid="B315857C-CA82-43D6-AE03-C8CFE178469C" ?>
-  <?define keystore_en_us_dll_guid="DD7A9BDC-1E53-4782-88F0-29CD67D355E3" ?>
-  <?define keystore_pdb_guid="CAEC1004-5563-4A55-8E3F-AF0B2E3BA9AB" ?>
 
   <?else ?>
   <?error Unknown value for Platform variable ?>
@@ -107,31 +101,6 @@
         <Directory Id="dirCompany" SourceName="." ShortName="MIT" Name="MIT">
           <Directory Id="dirAppClass" SourceName="." ShortName="Kerberos" Name="Kerberos">
             <Directory Id="APPDIR" ShortName="bin" Name="bin" FileSource="$(var.BinDir)">
-
-              <?ifdef IncludeKeystore?>
-
-              <!-- KeyStore -->
-              <Component Win64="$(var.Win64)" Id="Cmp.keystore.DLL" Guid="$(var.keystore_dll_guid)" DiskId="1">
-                <File Id="File.keystore.DLL" Name="keystore.dll" KeyPath="yes" Source="$(var.KeystoreBinDir)\" />
-
-                <RegistryKey Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\KeyStore" Action="createAndRemoveOnUninstall" />
-                <RegistryValue Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\KeyStore" Action="write" Name="ImagePath" Type="string" Value="[#File.keystore.DLL]" />
-                <RegistryValue Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\KeyStore" Action="write" Name="Description" Type="string" Value="!(loc.ProductDescription)" />
-                <RegistryValue Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\KeyStore" Action="write" Name="PluginList" Type="string" Value="KeyStoreCred,KeyStoreIdentity" />
-                <RegistryValue Root="HKLM" Key="SOFTWARE\MIT\NetIDMgr\PluginManager\Modules\KeyStore" Action="write" Name="Vendor" Type="string" Value="!(loc.ProductManufacturer)" />
-              </Component>
-
-              <?ifdef IncludeDebugSyms?>
-              <Component Id="Cmp.keystore.PDB" Guid="$(var.keystore_pdb_guid)" DiskId="1">
-                <File Id="File.keystore.PDB" Name="keystore.pdb" KeyPath="yes" Source="$(var.KeystoreBinDir)\" />
-              </Component>
-              <?endif ?>
-
-              <Component Win64="$(var.Win64)" Id="Cmp.keystore_en_us.DLL" Guid="$(var.keystore_en_us_dll_guid)" DiskId="1">
-                <File Id="File.keystore_en_us.DLL" ShortName="kstrENUS.dll" Name="keystore_en_us.dll" KeyPath="yes" Source="$(var.KeystoreBinDir)\" />
-              </Component>
-
-              <?endif ?>
 
               <!-- Runtime -->
 
@@ -240,8 +209,7 @@
 
       <?ifdef IncludeKeystore?>
       <Feature Id="Feature.KeyStore" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureKeystoreTitle)" Description="!(loc.FeatureKeystoreDesc)" Level="3">
-        <ComponentRef Id="Cmp.keystore.DLL" />
-        <ComponentRef Id="Cmp.keystore_en_us.DLL" />
+        <ComponentGroupRef Id="KeyStore" />
       </Feature>
       <?endif ?>
 
@@ -255,7 +223,7 @@
         <ComponentGroupRef Id="Krb4CredDebug" />
         <?endif ?>
         <?ifdef IncludeKeystore ?>
-        <ComponentRef Id="Cmp.keystore.PDB" />
+        <ComponentGroupRef Id="KeyStoreDebug" />
         <?endif ?>
       </Feature>
       <?endif ?>
@@ -302,6 +270,15 @@
     <Media Id="1" Cabinet="Disk1" CompressionLevel="high" EmbedCab="yes" />
 
     <UIRef Id="WixUI_Mondo" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
+
+    <WixVariable Id="WixUIBannerBmp" Value="Bitmaps\bannrbmp.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="Bitmaps\dlgbmp.bmp" />
+    <WixVariable Id="WixUIExclamationIco" Value="Bitmaps\exclamic.ico" />
+    <WixVariable Id="WixUIInfoIco" Value="Bitmaps\info.ico" />
+    <WixVariable Id="WixUINewIco" Value="Bitmaps\new.ico" />
+    <WixVariable Id="WixUIUpIco" Value="Bitmaps\up.ico" />
 
   </Product>
 </Wix>
