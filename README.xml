@@ -1,0 +1,451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<?rfc notedraftinprogress="no"?>
+<?rfc private="README"?>
+<?rfc toc="yes"?>
+<?rfc authorship="no"?>
+<rfc>
+  <front>
+    <title abbrev='Building NetIDMgr'>Building and Running Network Identity Manager</title>
+    <author initials='A.H.' surname='Herath' fullname='Asanka Herath'>
+      <organization>Secure Endpoints Inc.</organization>
+      <address>
+        <email>asanka@secure-endpoints.com</email>
+      </address>
+    </author>
+    <date month='January' year='2010'/>
+    <abstract>
+      <t>This document outlines the requirements and the process of
+        building Network Identity Manager binaries, archives and
+        installers from source.</t>
+    </abstract>
+  </front>
+
+  <middle>
+
+    <section anchor='quick' title='Quick Start'>
+      <t>
+        This is only for people who want to build Network Identity
+        Manager in a hurry and does not attempt to actually explain
+        what's going on.
+      </t>
+
+      <t>
+        <list style='numbers'>
+          <t>
+            Install or make sure the pre-requisites are present on the
+            build machine as listed in <xref target='prereqs' />.
+          </t>
+
+          <t>
+            Create a 'setupbuild.local.cmd' file so that the build
+            system knows how to find the pre-requisistes. See
+            <xref target='localconf' /> for a sample
+            'setupbuild.local.cmd' file.  You can copy the sample and
+            modify each line to suit your build environment.
+          </t>
+
+          <t>
+            Run : <spanx style='verb'>setupbuild.cmd /Debug /x64
+              /xp</spanx> to setup the environment.  The arguments to
+            'setupbuild.cmd' are passed directly to 'SetEnv.Cmd' of
+            the Platform SDK.  So you can specify any option that
+            SetEnv.Cmd understands.
+          </t>
+
+          <t>
+            Run: <spanx style='verb'>nmake release</spanx> to build
+            Network Identity Manager binaries and installers.
+          </t>
+        </list>
+      </t>
+    </section>
+
+    <section anchor='prereqs' title='Pre-requisites'>
+
+      <t>
+        The following are the pre-requisites for building Network
+        Identity Manager on Windows:
+      </t>
+
+      <t>
+        <list style='hanging'>
+          <t hangText='Visual C++ Compiler:'>
+            Network Identity Manager has been tested with Microsoft
+            &reg; Visual C/C++ compiler version 13.x, 14.x or 15.x.
+            These correspond to Microsoft &reg; Visual Studio versions
+            2003, 2005 and 2008, although some of these compilers are
+            also shipped with Visual Studio express editions and newer
+            versions of Windows Platform SDKs.
+          </t>
+
+          <t hangText='Windows Platform SDK:'>
+            Tested with Microsoft &reg; Platform SDK version 6.1.
+            Later SDKs should also work though they are not required.
+          </t>
+
+          <t hangText='Perl:'>
+            A recent version of Perl.  Tested with ActiveState &reg;
+            ActivePerl &reg;.
+          </t>
+
+          <t hangText='Doxygen:'>
+            A recent version of Doxygen.  This is required for
+            building developer documentation and is optional if you
+            don't plan on building installers, archives or developer
+            documentation.
+          </t>
+
+          <t hangText='WiX:'>
+            The <eref target='http://wix.sourceforge.net/'>Windows
+            Installer XML toolkit (WiX)</eref> Version 3.x is used to
+            build the installers.  Not needed if you don't need to
+            build installers.
+          </t>
+
+          <t hangText='7-Zip:'>
+            Used to build the binary and SDK archives.  Not needed if
+            you don't need to build archives.
+          </t>
+
+          <t hangText='Kerberos for Windows:'>
+            The <eref target='http://web.mit.edu/kerberos/'>MIT
+              Kerberos for Windows</eref> SDK is required for building
+            the Kerberos v5 and Kerberos v4 plug-ins.
+          </t>
+        </list>
+      </t>
+
+    </section>
+
+    <section anchor='dirs' title='Tour of the source tree'>
+
+      <t>
+        <list style='hanging'>
+          <t hangText='config:'>
+            Common Makefiles, version Makefile and other build scripts
+            and configuration files.
+          </t>
+
+          <t hangText='doc:'>
+            Additional developer documentation.
+          </t>
+
+          <t hangText='help:'>
+            Sources for generating the compiled HTML help files for
+            Network Identity Manager.
+          </t>
+
+          <t hangText='include:'>
+            Common C header files.
+          </t>
+
+          <t hangText='installer:'>
+            Source for building installers and archives.
+          </t>
+
+          <t hangText='kconfig:'>
+            Configuration library.  Network Identity Manager plug-ins
+            can use the kconfig library for easy access to layered and
+            scoped configuration.
+          </t>
+
+          <t hangText='kcreddb:'>
+            Credentials database.
+          </t>
+
+          <t hangText='kherr:'>
+            Error and event reporting library.
+          </t>
+
+          <t hangText='kmm:'>
+            Module manager.
+          </t>
+
+          <t hangText='kmq:'>
+            Message queue.
+          </t>
+
+          <t hangText='uilib:'>
+            Libraries used by plug-ins for interacting with the main
+            application.
+          </t>
+
+          <t hangText='util:'>
+            Various utilities.
+          </t>
+
+          <t hangText='nidmgrdll:'>
+            DLL main and other glue and test code for the main
+            application library.
+          </t>
+
+          <t hangText='plugins:'>
+            <list style='hanging'>
+              <t hangText='common:'>
+                Common code shared across plug-ins.
+              </t>
+
+              <t hangText='krb5:'>
+                Kerberos v5 identity provider and credentials
+                provider.
+              </t>
+
+              <t hangText='krb4:'>
+                Kerberos v4 credentials provider.
+              </t>
+
+              <t hangText='keystore:'>
+                KeyStore identity provider and credentials provider.
+              </t>
+
+              <t hangText='certprov:'>
+                Generic X.509 certificate identity and credentials
+                provider.
+              </t>
+
+            </list>
+          </t>
+
+          <t hangText='sample:'>
+            These directories contain sample code that can be easily
+            adapted to build extensions for Network Identity Manager.
+            Please refer to README files in each directory for
+            instructions on using the samples.
+
+            <list style='hanging'>
+              <t hangText='templates/credprov'>
+                Credentials provider sample source code.
+              </t>
+
+              <t hangText='templates/idprov'>
+                Identity provider sample source code.
+              </t>
+            </list>
+          </t>
+
+          <t hangText='ui:'>
+            Source code for the main Network Identity Manager
+            application.
+          </t>
+
+          <t hangText='obj:'>
+            Output directory.  All the temporary files and final
+            output from the build go into subdirectories here.
+          </t>
+
+        </list>
+      </t>      
+
+    </section>
+
+    <section anchor='setup' title='Setting up the build environment'>
+
+      <t>
+        The build is invoked using 'nmake' and the build environment
+        is specified using environment variables.  To ease the process
+        of setting up the environment, use the provided
+        'setupbuild.cmd' script from the cmd.exe prompt.
+      </t>
+
+      <t>
+        The 'setupbuild.cmd' script attempts to locate the Platform
+        SDK that is installed (currently only looks for version 6.1 of
+        the SDK) and attempts to run the SetEnv.Cmd script that is
+        included in the Platform SDK.  All the arguments to
+        'setupbuild.cmd' are passed to 'SetEnv.Cmd'.  So you can
+        specifcy target CPU and buid type (/Release or /Debug) and
+        target OS (/XP etc.) on the 'setupbuild.cmd' command-line.
+      </t>
+
+      <t>
+        Then it will attempt to determine the version of the compiler
+        in use and report an error if the current compiler is not
+        supported.
+      </t>
+
+      <t>
+        Finally, and perhaps most importantly, for people who are
+        trying to build this on their machines, the build script
+        attempts to include a batch file with the name
+        'setupbuild.local.cmd' which is expected to set the remaining
+        variables that are specific to the site.  The contents of that
+        file is explained in <xref target='localconf' />.
+      </t>
+
+      <t>
+        There are several types of builds that can be performed.  The
+        build environment by default produces a private build.  If you
+        would like to perform additional types of builds, you can set
+        the <spanx style='verb'>KH_RELEASE</spanx> environment
+        variable to one of the values described in
+        <xref target='buildtypes' />.  Note that KH_RELEASE value only
+        affects version information included in binaries and do not
+        typically affect the generated code.  The only exception to
+        this is that binaries from private debug builds may generate
+        memory usage reports and other statistics upon termination.
+      </t>
+
+    </section>
+
+    <section anchor='building' title='Running the build'>
+
+      <t>
+        Invoke <spanx style='verb'>nmake all</spanx> or any other
+        target to start a build.  Some of the available targets are
+        described in <xref target='targets' />.
+      </t>
+
+      <section anchor='targets' title='Build output'>
+        <t>
+          There are several targets that are available for building,
+          which are described in the sections below.
+        </t>
+
+        <t>
+          <list style='hanging'>
+            <t hangText='nmake all:'>
+              The primary output of the build are the Network Identity
+              Manager applications binaries, plug-in binaries and
+              compiled HTML documentation files.  In addition the
+              bulid also generates debug symbol files with the .pdb
+              extension.
+            </t>
+
+            <t hangText='nmake doc:'>
+              Builds the developer documentation using Doxygen.  Since
+              this step is time consuming, it is usually excluded from
+              the binary build and is run separately.
+            </t>
+
+            <t hangText='nmake installer:'>
+              Builds the Windows Installer based installer using WiX.
+              The binary build and the developer documentation build
+              must be completed prior to running the installer build.
+            </t>
+
+            <t hangText='nmake archive:'>
+              Builds the archives for binaries and SDK.  The binary
+              build must be completed before attempting an archive
+              build.
+            </t>
+
+            <t hangText='nmake release:'>
+              All of the above.  Builds the binaries, developer
+              documentation, installers and archives.
+            </t>
+
+            <t hangText='nmake test'>
+              Run tests.
+            </t>
+
+            <t hangText='nmake clean'>
+              Used to clean-up (mostly) the output tree.
+            </t>
+          </list>
+        </t>
+      </section>
+
+    </section>
+
+    <appendix anchor='localconf' title='setupbuild.local.cmd'>
+
+      <t>
+        The 'setupbuild.local.cmd' file is expected to define a number
+        of environment variables.  Each of these are explained below.
+        The sample file in <xref target='sample_config' /> illustrates
+        how it might be done.
+
+        <list style='hanging'>
+          <t hangText='KH_KFWPATH:'>
+            Path to MIT Kerberos for Windows installation directory
+            including the Kerberos for Windows SDK.  The C header
+            files and libraries will be expected to exist under this
+            directory. E.g.: <spanx style='verb'>%KH_KFWPATH%\inc</spanx>
+            should be the include file directory.
+          </t>
+
+          <t hangText='KH_DOXYFULLPATH:'>
+            Full path to the <spanx style='verb'>doxygen.exe</spanx>
+            executable.
+          </t>
+
+          <t hangText='KH_HHCFULLPATH:'>
+            Full path to the HTML Help Workshop compiler
+            (<spanx style='verb'>hhc.exe</spanx>) binary.
+          </t>
+
+          <t hangText='WIXDIR:'>
+            Path to the Windows Installer XML toolkit.  If this is
+            omitted, WiX is expected to be found on the executable
+            search path (PATH).
+          </t>
+
+          <t hangText='ZIP:'>
+            Path to the 7-Zip command line utility.  If this is
+            omitted, 7-Zip is expected to be found on the executable
+            search path (PATH).
+          </t>
+        </list>
+      </t>
+
+      <figure anchor='sample_config'>
+        <preamble>An example 'setupbuild.local.cmd' file:</preamble>
+        <artwork><![CDATA[
+set KH_DOXYFULLPATH=c:\Program Files\doxygen\doxygen.exe
+set KH_HHCFULLPATH="C:\Program Files\HTML Help Workshop\hhc.exe"
+set KH_KFWPATH=c:\Program Files\MIT\Kerberos
+set WIXDIR=c:\Program Files\wix3
+set ZIP="C:\Program Files\7-Zip\7z.exe"
+]]>
+        </artwork>
+      </figure>
+    </appendix>
+
+    <appendix anchor='buildtypes' title='Types of builds'>
+
+      <t>
+        Build types only affect meta-data included in the version
+        information of the binaries with a few exceptions.  The text
+        strings that are displayed on the 'About' dialog are depedant
+        on the build type and binaries from private debug builds can
+        generate memory usage reports and other statistics.
+      </t>
+
+      <t>
+        You can set the bulid type by setting KH_RELEASE to one of the
+        values described below and running a full build.  Changing the
+        value does not cause nmake to rebuild the sources.  So you
+        will need to run 'nmake clean' followed by 'nmake all' or
+        'nmake release' to build the new binaires.
+      </t>
+
+      <t>
+        <list style='hanging'>
+          <t hangText='OFFICIAL:'>
+            Only used for building official releases.
+          </t>
+
+          <t hangText='PRERELEASE:'>
+            Pre-release binaries.  Usually public Betas.  Private
+            Betas are built as 'PRIVATE' builds.
+          </t>
+
+          <t hangText='PRIVATE:'>
+            Private builds.  These are builds that are not generally
+            released to the public and may not be very stable.  These
+            are produced during development and is the default build
+            type if no other build type is sepcified.
+          </t>
+
+          <t hangText='SPECIAL:'>
+            Sepcial build.  This may be a special public build that
+            contains some new feature, but is not considered stable
+            enough to be a public build.
+          </t>
+        </list>
+      </t>
+    </appendix>
+
+  </middle>
+</rfc>
