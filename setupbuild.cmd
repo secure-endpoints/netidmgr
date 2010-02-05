@@ -42,7 +42,7 @@ set KH_BUILD=DEBUG
 )
 set KH_NO_W2K=1
 
-set KH_RELEASE=PRERELEASE
+set KH_RELEASE=PRIVATE
 
 set KH_AUXCFLAGS=/wd4512 /wd4267 /wd4389 /wd4245 /wd4311 /wd4127 /wd4115 /wd4100
 
@@ -59,6 +59,7 @@ rem  - KH_DOXYFULLPATH should be the full path to doxygen.exe
 rem  - KH_HHCFULLPATH should be the full path to hhc.exe
 rem  - WIXDIR should be the directory containing WiX 2.x
 rem  - ZIP should be the full path to 7-Zip command line executable
+rem  - KH_KFWPATH should be the path to the MIT Kerberos for Windows installation
 rem  - PISMERE Should be the pismere directory
 rem  - CODESIGN Can be set to the command used to sign binaries
 
