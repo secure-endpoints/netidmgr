@@ -546,7 +546,49 @@
     posts message for the individual credentials providers to either
     obtain new credentials or renew old ones.
  */
-#define KMSG_CRED_ADDR_CHANGE        140
+#define KMSG_CRED_ADDR_CHANGE       140
+
+/*! \brief A context menu is about to be displayed
+
+    This message is sent prior to a context menu being displayed.
+    Sent to all subscribers of ::KMSG_CRED.
+
+    Message parameters:
+    - \b vparam : pointer to a ::khui_context_menu_notification
+      structure.
+
+    The handler is expected to call khui_context_menu_begin_handler()
+    and khui_context_menu_end_handler() when handling this message.
+    The context menu and the activation context can be queried using
+    khui_context_menu_get_menu() and khui_context_menu_get_ctx()
+    respectively.
+
+    For example:
+
+    \code
+
+    void HandleCtxMenu(khui_context_menu_notification * notification)
+    {
+      khui_action_context * ctx;
+
+      khui_context_menu_begin_handler(notification);
+
+      ctx = khui_context_menu_get_ctx(notification);
+
+      if (IsCtxForMyCredtype(ctx)) {
+          khui_menu_def * menu;
+
+          menu = khui_context_menu_get_menu(notification);
+
+          AddOurContextMenuItem(menu);
+      }
+
+      khui_context_menu_end_handler(notification);
+    }
+
+    \endcode
+ */
+#define KMSG_CRED_CTX_MENU          141
 
 /*! \brief Check if a KMSG_CRED subtype is a credentials acquisition message
 

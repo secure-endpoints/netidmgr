@@ -985,6 +985,59 @@ KHMEXP void KHMAPI khui_check_radio_action(khui_menu_def * d, khm_int32 action);
  */
 KHMEXP void KHMAPI khui_check_action(khm_int32 cmd, khm_boolean check);
 
+/*! \brief A context menu notification */
+typedef struct khui_context_menu_notification khui_context_menu_notification;
+
+/*! \brief Begin handling a context menu notification
+
+    Begins a block of code that handles a ::KMSG_CRED_CTX_MENU
+    notification.  This function must be called before calling any
+    other context menu notification functions.
+
+    Each call of khui_context_menu_begin_handler() must be
+    complemented with a call to khui_context_menu_end_handler()
+    otherwise the application might go into a deadlock.
+
+    khui_context_menu_begin_handler() can be called multiple times as
+    long as each call is complemented with a call to
+    khui_context_menu_end_handler().  The handler is considered to be
+    active as long as there is at least one pending call to
+    khui_context_menu_begin_handler().
+
+    \see ::KMSG_CRED_CTX_MENU
+ */
+KHMEXP void KHMAPI
+khui_context_menu_begin_handler(khui_context_menu_notification * notification);
+
+/*! \brief End handling a context menu notification
+
+    Signalls the end of a ::KMSG_CRED_CTX_MENU handler.
+
+    \see ::KMSG_CRED_CTX_MENU
+ */
+KHMEXP void KHMAPI
+khui_context_menu_end_handler(khui_context_menu_notification * notification);
+
+/*! \brief Get the menu definition associated with the notification
+
+    khui_context_menu_begin_handler() must be called before calling
+    this function.
+
+    \see ::KMSG_CRED_CTX_MENU
+ */
+KHMEXP khui_menu_def * KHMAPI
+khui_context_menu_get_menu(khui_context_menu_notification * notification);
+
+/*! \brief Get the action context associated with the notification
+
+    khui_context_menu_begin_handler() must be called before calling
+    this function.
+
+    \see ::KMSG_CRED_CTX_MENU
+ */
+KHMEXP khui_action_context * KHMAPI
+khui_context_menu_get_ctx(khui_context_menu_notification * notification);
+
 #ifdef NIMPRIVATE
 /*!\cond INTERNAL */
 

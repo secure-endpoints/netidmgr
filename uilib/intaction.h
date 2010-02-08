@@ -27,6 +27,8 @@
 #ifndef __NETIDMGR_ACTION_H_INTERNAL
 #define __NETIDMGR_ACTION_H_INTERNAL
 
+BEGIN_C
+
 /* Internal declarations for exports and data structured used in
    nidmgr32.dll and netidmgr.exe */
 
@@ -103,9 +105,29 @@ typedef struct tag_khui_action {
                                   KHUI_ACTIONSTATE_* */
 } khui_action;
 
-
 #define KHUI_ACTIONTYPE_IDENTITY 0x00010000
 
+/*! \brief Context menu notification data
+
+    \see ::KMSG_CRED_CTX_MENU
+ */
+struct khui_context_menu_notification {
+    CRITICAL_SECTION    cs;     /*!< Critical section */
+    khui_action_context *ctx;   /*!< UI context for context menu */
+    khui_menu_def       *menu;  /*!< Menu definition */
+};
+
+/*! \brief Initialize a khui_context_menu_notification */
+KHMEXP void KHMAPI
+khui_context_menu_notification_init(khui_context_menu_notification * notification,
+                                    khui_menu_def * menu,
+                                    khui_action_context * ctx);
+
+/*! \brief Free a khui_context_menu_notification */
+KHMEXP void KHMAPI
+khui_context_menu_notification_free(khui_context_menu_notification * notification);
+
+END_C
 
 /*@}*/
 

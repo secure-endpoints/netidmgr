@@ -1678,3 +1678,44 @@ khui_context_cursor_filter(khm_handle cred,
         return 0;
 }
 
+KHMEXP void KHMAPI
+khui_context_menu_notification_init(khui_context_menu_notification * notification,
+                                    khui_menu_def * menu,
+                                    khui_action_context * ctx)
+{
+    memset(notification, 0, sizeof(*notification));
+    InitializeCriticalSection(&notification->cs);
+    notification->menu = menu;
+    notification->ctx = ctx;
+}
+
+KHMEXP void KHMAPI
+khui_context_menu_notification_free(khui_context_menu_notification * notification)
+{
+    DeleteCriticalSection(&notification->cs);
+    memset(notification, 0, sizeof(*notification));
+}
+
+KHMEXP void KHMAPI
+khui_context_menu_begin_handler(khui_context_menu_notification * notification)
+{
+    EnterCriticalSection(&notification->cs);
+}
+
+KHMEXP void KHMAPI
+khui_context_menu_end_handler(khui_context_menu_notification * notification)
+{
+    LeaveCriticalSection(&notification->cs);
+}
+
+KHMEXP khui_menu_def * KHMAPI
+khui_context_menu_get_menu(khui_context_menu_notification * notification)
+{
+    return notification->menu;
+}
+
+KHMEXP khui_action_context * KHMAPI
+khui_context_menu_get_ctx(khui_context_menu_notification * notification)
+{
+    return notification->ctx;
+}
