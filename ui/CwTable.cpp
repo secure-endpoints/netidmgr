@@ -1035,7 +1035,25 @@ void CwTable::OnContextMenu(const Point& p)
             pm = MapToScreen(Point(scroll.X, scroll.Y));
     }
 
-    khm_menu_show_panel(KHUI_MENU_IDENT_CTX, pm.X, pm.Y);
+    {
+        khui_context_menu_notification notification;
+        khui_menu_def * menu;
+        khui_action_context ctx;
+
+        menu = khui_menu_dup(khui_find_menu(KHUI_MENU_IDENT_CTX));
+
+        khui_context_get(&ctx);
+
+        khui_context_menu_notification_init(&notification, menu, &ctx);
+
+        kmq_send_message(KMSG_CRED, KMSG_CRED_CTX_MENU, 0, (void *) &notification);
+
+        khm_menu_show_panel_def(menu, pm.X, pm.Y);
+
+        khui_menu_delete(menu);
+
+        khui_context_menu_notification_free(&notification);
+    }
 }
 
 }
