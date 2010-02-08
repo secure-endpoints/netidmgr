@@ -45,7 +45,7 @@ NETIDMGR_RELEASEDESC=Pre 2.0 Beta
 #
 # Changes to the API version numbers should be documented in
 # apiversion.txt at the root of the source tree.
-NETIDMGR_VERSION_API=14
+NETIDMGR_VERSION_API=15
 
 # Minimum backwards compatible version.  API versions from
 # NETIDMGR_VERSION_API_MINCOMPAT through NETIDMGR_VERSION_API
