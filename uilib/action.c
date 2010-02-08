@@ -527,7 +527,10 @@ khui_menu_dup(khui_menu_def * src)
 
     EnterCriticalSection(&cs_actions);
 
-    d = khui_menu_create(src->cmd);
+    /* When creating the menu, we never associate the duplicated menu
+       with the original command since only one menu can be associated
+       with a command. */
+    d = khui_menu_create(0);
 
     if (!(src->state & KHUI_MENUSTATE_ALLOCD))
         n = khui_action_list_length(src->items);

@@ -33,9 +33,7 @@
 /*! \defgroup khui_actions Actions
   @{*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+BEGIN_C
 
 struct tag_khui_action;
 typedef struct tag_khui_action khui_action;
@@ -357,7 +355,7 @@ khui_menu_create(khm_int32 action);
     is responsible for calling khui_menu_delete() when the data is no
     longer needed.
 
-    Note that even if the original menu was associated with an action,
+    \note Even if the original menu was associated with an action,
     the duplicate will not be.  Modifying the duplicate will not
     modify the original menu.  Only one menu can be associated with an
     action.
@@ -1005,9 +1003,7 @@ KHMEXP void KHMAPI khui_exit_actions(void);
 /*! \endcond */
 #endif
 
-#ifdef __cplusplus
-}
-#endif
+END_C
 
 #ifdef __cplusplus
 
