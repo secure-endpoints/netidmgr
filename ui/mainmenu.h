@@ -28,10 +28,7 @@
 #ifndef __KHIMAIRA_MAINMENU_H
 #define __KHIMAIRA_MAINMENU_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+BEGIN_C
 
 extern HWND khui_main_menu_toolbar;
 
@@ -48,6 +45,7 @@ LRESULT khm_menu_handle_select(WPARAM wParam, LPARAM lParam);
 LRESULT khm_menu_notify_main(LPNMHDR notice);
 LRESULT khm_menu_activate(int menu_id);
 void khm_menu_show_panel(int id, LONG x, LONG y);
+    void khm_menu_show_panel_def(khui_menu_def * def, LONG x, LONG y);
 void khm_menu_track_current(void);
 LRESULT khm_menu_measure_item(WPARAM wParam, LPARAM lparam);
 LRESULT khm_menu_draw_item(WPARAM wParam, LPARAM lparam);
@@ -70,8 +68,7 @@ void khui_exit_menu(void);
 #define MENU_SIZE_ICON_X 16
 #define MENU_SIZE_ICON_Y 16
 
-#ifdef __cplusplus
-}
-#endif
+END_C
+
 
 #endif

@@ -331,7 +331,7 @@ static HMENU mm_create_menu_from_def(khui_menu_def * def, BOOL main) {
 void mm_begin_hot_track(void);
 void mm_end_hot_track(void);
 
-static void mm_show_panel_def(khui_menu_def * def, LONG x, LONG y)
+void khm_menu_show_panel_def(khui_menu_def * def, LONG x, LONG y)
 {
     HMENU hm;
 
@@ -364,7 +364,7 @@ void khm_menu_show_panel(int id, LONG x, LONG y) {
     if(!def)
         return;
 
-    mm_show_panel_def(def, x, y);
+    khm_menu_show_panel_def(def, x, y);
 }
 
 LRESULT khm_menu_activate(int menu_id) {
