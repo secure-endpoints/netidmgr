@@ -30,95 +30,95 @@
 
 namespace nim {
 
-    // Notifier
-    class Notifier : public ControlWindow {
+// Notifier
+class Notifier : public ControlWindow {
 
-	AlertWindowList m_alert_windows;
+    AlertWindowList m_alert_windows;
 
-	AlertList m_alert_list;
+    AlertList m_alert_list;
 
-	Alert m_balloon_alert;
+    Alert m_balloon_alert;
 
-    public:
-	NotificationIcon *m_icon;
+public:
+    NotificationIcon *m_icon;
 
-	Notifier();
+    Notifier();
 
-	~Notifier();
+    ~Notifier();
 
-    public:			// Alert show methods
+public:			// Alert show methods
 
-	bool IsAlertDisplayed() const;
+    bool IsAlertDisplayed() const;
 
-	khm_int32 ShowAlertNormal(Alert& a);
+    khm_int32 ShowAlertNormal(Alert& a);
 
-	khm_int32 ShowAlertMini(Alert& a);
+    khm_int32 ShowAlertMini(Alert& a);
 
-	khm_int32 ShowAlert(Alert& a, bool ok_to_enqueue = true);
+    khm_int32 ShowAlert(Alert& a, bool ok_to_enqueue = true);
 
-	void EnqueueAlert(Alert& a);
+    void EnqueueAlert(Alert& a);
 
-	void ShowQueuedAlerts();
+    void ShowQueuedAlerts();
 
-	void UpdateAlertState();
+    void UpdateAlertState();
 
-	void BeginMonitoringAlert(Alert& alert);
+    void BeginMonitoringAlert(Alert& alert);
 
-    public:			// Utility
+public:			// Utility
 
-	khm_int32 GetDefaultNotifierAction();
+    khm_int32 GetDefaultNotifierAction();
 
-	void NotificationIconActivate();
+    void NotificationIconActivate();
 
-    private:			// KMSG_ALERT handlers
+private:			// KMSG_ALERT handlers
 
-	khm_int32 OnMsgAlertShow(khui_alert * _a);
+    khm_int32 OnMsgAlertShow(khui_alert * _a);
 
-	khm_int32 OnMsgAlertQueue(khui_alert * _a);
+    khm_int32 OnMsgAlertQueue(khui_alert * _a);
 
-	khm_int32 OnMsgAlertCheckQueue();
+    khm_int32 OnMsgAlertCheckQueue();
 
-	khm_int32 OnMsgAlertShowQueued();
+    khm_int32 OnMsgAlertShowQueued();
 
-	khm_int32 OnMsgAlertShowModal(khui_alert * _a);
+    khm_int32 OnMsgAlertShowModal(khui_alert * _a);
 
-	khm_int32 OnMsgAlertMonitorProgress(khui_alert * _a);
+    khm_int32 OnMsgAlertMonitorProgress(khui_alert * _a);
 
-    private: 			// KMSG_CRED handlers
-	khm_int32 OnMsgCredRootDelta();
+private: 			// KMSG_CRED handlers
+    khm_int32 OnMsgCredRootDelta();
 
-    private:			// Notification icon messages
-	void OnNotifyContextMenu();
+private:			// Notification icon messages
+    void OnNotifyContextMenu();
 
-	void OnNotifySelect();
+    void OnNotifySelect();
 
-	void OnNotifyBalloonUserClick();
+    void OnNotifyBalloonUserClick();
 
-	void OnNotifyBalloonHide();
+    void OnNotifyBalloonHide();
 
-    private: 			// Timer messages
-	void OnTriggerTimer();
+private: 			// Timer messages
+    void OnTriggerTimer();
 
-	void OnRefreshTimer();
+    void OnRefreshTimer();
 
-    private:			// Dispatchers
-	khm_int32 OnMsgAlert(khm_int32 msg_subtype, khm_ui_4 uparam, void * vparam);
+private:			// Dispatchers
+    khm_int32 OnMsgAlert(khm_int32 msg_subtype, khm_ui_4 uparam, void * vparam);
 
-	khm_int32 OnMsgCred(khm_int32 msg_subtype, khm_ui_4 uparam, void * vparam);
+    khm_int32 OnMsgCred(khm_int32 msg_subtype, khm_ui_4 uparam, void * vparam);
 
-	virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype,
-				       khm_ui_4 uparam, void * vparam);
+    virtual khm_int32 OnWmDispatch(khm_int32 msg_type, khm_int32 msg_subtype,
+                                   khm_ui_4 uparam, void * vparam);
 
-	virtual void OnWmTimer(UINT_PTR id);
+    virtual void OnWmTimer(UINT_PTR id);
 
-	virtual BOOL OnCreate(LPVOID createParams);
+    virtual BOOL OnCreate(LPVOID createParams);
 
-        virtual BOOL HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT * lr);
-    };
+    virtual BOOL HandleMessage(UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT * lr);
+};
 
-    extern Notifier * g_notifier;
+extern Notifier * g_notifier;
 
-    extern "C" void khm_init_notifier();
+extern "C" void khm_init_notifier();
 
-    extern "C" void khm_exit_notifier();
+extern "C" void khm_exit_notifier();
 }

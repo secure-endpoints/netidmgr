@@ -31,41 +31,41 @@
 
 namespace nim
 {
-    static CwTable * main_table = NULL;
+static CwTable * main_table = NULL;
 
-    extern "C" void 
-    khm_register_credwnd_class(void) {
-        ControlWindow::RegisterWindowClass();
-    }
+extern "C" void 
+khm_register_credwnd_class(void) {
+    ControlWindow::RegisterWindowClass();
+}
 
-    extern "C" void 
-    khm_unregister_credwnd_class(void) {
-        ControlWindow::UnregisterWindowClass();
-    }
+extern "C" void 
+khm_unregister_credwnd_class(void) {
+    ControlWindow::UnregisterWindowClass();
+}
 
-    extern "C" HWND 
-    khm_create_credwnd(HWND parent) {
-        RECT r;
-        HWND hwnd;
+extern "C" HWND 
+khm_create_credwnd(HWND parent) {
+    RECT r;
+    HWND hwnd;
 
-        CwTable::CwCreateParams cparams;
+    CwTable::CwCreateParams cparams;
 
-        cparams.is_primary_view = true;
+    cparams.is_primary_view = true;
 
-        assert(main_table == NULL);
+    assert(main_table == NULL);
 
-        main_table = PNEW CwTable;
+    main_table = PNEW CwTable;
 
-        ZeroMemory(CwTable::attrib_to_action, sizeof(CwTable::attrib_to_action));
+    ZeroMemory(CwTable::attrib_to_action, sizeof(CwTable::attrib_to_action));
 
-        GetClientRect(parent, &r);
+    GetClientRect(parent, &r);
 
-        hwnd = main_table->Create(parent, RectFromRECT(&r), 0, &cparams);
+    hwnd = main_table->Create(parent, RectFromRECT(&r), 0, &cparams);
 
-        main_table->ShowWindow();
+    main_table->ShowWindow();
 
-        main_table->Release();
+    main_table->Release();
 
-        return hwnd;
-    }
+    return hwnd;
+}
 }

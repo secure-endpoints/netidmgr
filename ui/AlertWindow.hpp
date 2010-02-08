@@ -28,43 +28,43 @@
 
 namespace nim {
 
-    class AlertWindow;
+class AlertWindow;
 
-    typedef std::list<AlertWindow *> AlertWindowList;
+typedef std::list<AlertWindow *> AlertWindowList;
 
-    class AlertWindow :
+class AlertWindow :
 	virtual public DialogWindow {
 
-	AlertWindowList * m_owner;
-	AlertContainer * m_alerts;
+    AlertWindowList * m_owner;
+    AlertContainer * m_alerts;
 
-    public:
-	AlertWindow();
+public:
+    AlertWindow();
 
-	~AlertWindow();
+    ~AlertWindow();
 
-	bool Add(Alert & a) {
-	    return m_alerts->Add(a);
-	}
+    bool Add(Alert & a) {
+        return m_alerts->Add(a);
+    }
 
-	bool IsEmpty() {
-	    return m_alerts->IsEmpty();
-	}
+    bool IsEmpty() {
+        return m_alerts->IsEmpty();
+    }
 
-	bool BeginMonitoringAlert(Alert & a) {
-	    return m_alerts->BeginMonitoringAlert(a);
-	}
+    bool BeginMonitoringAlert(Alert & a) {
+        return m_alerts->BeginMonitoringAlert(a);
+    }
 
-	void SetOwnerList(AlertWindowList * _owner);
+    void SetOwnerList(AlertWindowList * _owner);
 
-    public: 			// event handlers
-        virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam);
+public: 			// event handlers
+    virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam);
 
-        virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
+    virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
 
-        virtual void OnDestroy(void);
+    virtual void OnDestroy(void);
 
-        virtual LRESULT OnHelp(HELPINFO * info);
-    };
+    virtual LRESULT OnHelp(HELPINFO * info);
+};
 }
 

@@ -31,146 +31,146 @@ using namespace Gdiplus;
 
 namespace nim {
 
-    class DisplayContainer;
+class DisplayContainer;
 
-    class DisplayElement {
-    public:
-        Point origin;
-        Size  extents;
-        DisplayContainer * owner;
+class DisplayElement {
+public:
+    Point origin;
+    Size  extents;
+    DisplayContainer * owner;
 
-        bool expandable      : 1;
-        bool is_outline      : 1;
+    bool expandable      : 1;
+    bool is_outline      : 1;
 
-        bool visible         : 1;
-        bool expanded        : 1;
+    bool visible         : 1;
+    bool expanded        : 1;
 
-        bool focus           : 1;
-        bool selected        : 1;
-        bool highlight       : 1;
+    bool focus           : 1;
+    bool selected        : 1;
+    bool highlight       : 1;
 
-        bool recalc_extents  : 1;
+    bool recalc_extents  : 1;
 
-        TQDCL(DisplayElement);
+    TQDCL(DisplayElement);
 
-    public:
-        DisplayElement() {
-            TQINIT(this); 
-            owner          = NULL;
+public:
+    DisplayElement() {
+        TQINIT(this); 
+        owner          = NULL;
 
-            expandable     = false; 
-            is_outline     = false;
+        expandable     = false; 
+        is_outline     = false;
 
-            visible        = true; 
-            expanded       = false; 
+        visible        = true; 
+        expanded       = false; 
 
-            focus          = false;
-            selected       = false;
-            highlight      = false;
+        focus          = false;
+        selected       = false;
+        highlight      = false;
 
-            recalc_extents = true; 
-        }
+        recalc_extents = true; 
+    }
 
-        virtual ~DisplayElement() {
-            DeleteAllChildren();
+    virtual ~DisplayElement() {
+        DeleteAllChildren();
 
-            assert(TQPARENT(this) == NULL);
-            assert(TQNEXTSIBLING(this) == NULL);
-            assert(TQPREVSIBLING(this) == NULL);
-        }
+        assert(TQPARENT(this) == NULL);
+        assert(TQNEXTSIBLING(this) == NULL);
+        assert(TQPREVSIBLING(this) == NULL);
+    }
 
-        void   InsertChildAfter(DisplayElement * e, DisplayElement * previous = NULL);
+    void   InsertChildAfter(DisplayElement * e, DisplayElement * previous = NULL);
 
-        void   InsertChildBefore(DisplayElement * e, DisplayElement * after = NULL);
+    void   InsertChildBefore(DisplayElement * e, DisplayElement * after = NULL);
 
-        void   DeleteChild(DisplayElement * e);
+    void   DeleteChild(DisplayElement * e);
 
-        void   DeleteAllChildren();
+    void   DeleteAllChildren();
 
-        virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e);
+    virtual void NotifyDeleteChild(DisplayElement * _parent, DisplayElement * e);
 
-        virtual void NotifyDeleteAllChildren(DisplayElement * _parent);
+    virtual void NotifyDeleteAllChildren(DisplayElement * _parent);
 
-        void   MoveChildAfter(DisplayElement * e, DisplayElement * previous);
+    void   MoveChildAfter(DisplayElement * e, DisplayElement * previous);
 
-        void   MoveChildBefore(DisplayElement * e, DisplayElement * next);
+    void   MoveChildBefore(DisplayElement * e, DisplayElement * next);
 
-        void   SetOwner(DisplayContainer * _owner);
+    void   SetOwner(DisplayContainer * _owner);
 
-        void   MarkForExtentUpdate(void);
+    void   MarkForExtentUpdate(void);
 
-        void   MarkChildrenForExtentUpdate(void);
+    void   MarkChildrenForExtentUpdate(void);
 
-        Point  MapToParent(const Point & p);
+    Point  MapToParent(const Point & p);
 
-        virtual Point MapToScreen(const Point & p);
+    virtual Point MapToScreen(const Point & p);
 
-        Point  MapToDescendant(const DisplayElement * e, const Point & p);
+    Point  MapToDescendant(const DisplayElement * e, const Point & p);
 
-        Point  MapFromDescendant(const DisplayElement * c, const Point & p);
+    Point  MapFromDescendant(const DisplayElement * c, const Point & p);
 
-        DisplayElement * ChildFromPoint(const Point & p);
+    DisplayElement * ChildFromPoint(const Point & p);
 
-        DisplayElement * DescendantFromPoint(const Point & p);
+    DisplayElement * DescendantFromPoint(const Point & p);
 
-        void UpdateLayout(Graphics & g, const Rect & layout);
+    void UpdateLayout(Graphics & g, const Rect & layout);
 
-        void NotifyLayoutInternal();
+    void NotifyLayoutInternal();
 
-        void Invalidate(const Rect & r);
+    void Invalidate(const Rect & r);
 
-        void Invalidate() {
-            Invalidate(Rect(Point(0,0), extents));
-        }
+    void Invalidate() {
+        Invalidate(Rect(Point(0,0), extents));
+    }
 
-        virtual void UpdateLayoutPre(Graphics & g, Rect & layout);
+    virtual void UpdateLayoutPre(Graphics & g, Rect & layout);
 
-        virtual void UpdateLayoutPost(Graphics & g, const Rect & layout);
+    virtual void UpdateLayoutPost(Graphics & g, const Rect & layout);
 
-        virtual void NotifyLayout() { };
+    virtual void NotifyLayout() { };
 
-        virtual void Expand(bool _expand = true);
+    virtual void Expand(bool _expand = true);
 
-        virtual void Show(bool _show = true);
+    virtual void Show(bool _show = true);
 
-        virtual void Select(bool _select = true);
+    virtual void Select(bool _select = true);
 
-        virtual void Focus(bool _focus = true);
+    virtual void Focus(bool _focus = true);
 
-        virtual void Activate();
+    virtual void Activate();
 
-        bool IsVisible();
+    bool IsVisible();
 
-        void OnPaint(Graphics& g, const Rect& bounds, const Rect& clip);
+    void OnPaint(Graphics& g, const Rect& bounds, const Rect& clip);
 
-        virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) { }
+    virtual void PaintSelf(Graphics &g, const Rect& bounds, const Rect& clip) { }
 
-        virtual void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
-            if (TQPARENT(this))
-                TQPARENT(this)->OnClick(MapToParent(p), keyflags, doubleClick);
-        }
+    virtual void OnClick(const Point& p, UINT keyflags, bool doubleClick) {
+        if (TQPARENT(this))
+            TQPARENT(this)->OnClick(MapToParent(p), keyflags, doubleClick);
+    }
 
-        virtual void OnChildClick(DisplayElement * c, const Point& p, UINT keyflags, bool doubleClick) { }
+    virtual void OnChildClick(DisplayElement * c, const Point& p, UINT keyflags, bool doubleClick) { }
 
-        virtual void OnContextMenu(const Point& p) { }
+    virtual void OnContextMenu(const Point& p) { }
 
-        virtual void OnMouse(const Point& p, UINT keyflags) {
-            highlight = true;
-        }
+    virtual void OnMouse(const Point& p, UINT keyflags) {
+        highlight = true;
+    }
 
-        virtual void OnMouseOut(void) {
-            highlight = false;
-        }
+    virtual void OnMouseOut(void) {
+        highlight = false;
+    }
 
-        virtual bool OnShowToolTip(std::wstring& caption, Rect& align_rect) { return false; }
+    virtual bool OnShowToolTip(std::wstring& caption, Rect& align_rect) { return false; }
 
-        virtual bool IsTabStop() { return false; }
+    virtual bool IsTabStop() { return false; }
 
-        virtual HFONT GetHFONT() { return NULL; }
+    virtual HFONT GetHFONT() { return NULL; }
 
-        virtual Font *GetFont(Graphics& g) { return NULL; }
+    virtual Font *GetFont(Graphics& g) { return NULL; }
 
-        virtual Color GetForegroundColor() { return Color((ARGB) Color::Black); }
-    };
+    virtual Color GetForegroundColor() { return Color((ARGB) Color::Black); }
+};
 
 }

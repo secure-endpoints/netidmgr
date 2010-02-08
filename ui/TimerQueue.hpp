@@ -26,41 +26,41 @@
 
 namespace nim {
 
-    class NOINITVTABLE TimerQueueClient {
-        friend class DisplayContainer;
+class NOINITVTABLE TimerQueueClient {
+    friend class DisplayContainer;
 
-    private:
-        UINT_PTR m_timer_id;
+ private:
+    UINT_PTR m_timer_id;
 
-        typedef void (*CancelTimerCallback)(TimerQueueClient *, void *);
+    typedef void (*CancelTimerCallback)(TimerQueueClient *, void *);
 
-        CancelTimerCallback m_timer_ccb;
-        void * m_timer_ccb_data;
+    CancelTimerCallback m_timer_ccb;
+    void * m_timer_ccb_data;
 
-    public:
-        TimerQueueClient() {
-            m_timer_id = 0;
-            m_timer_ccb = NULL;
-            m_timer_ccb_data = NULL;
+ public:
+    TimerQueueClient() {
+        m_timer_id = 0;
+        m_timer_ccb = NULL;
+        m_timer_ccb_data = NULL;
+    }
+
+    virtual ~TimerQueueClient() {
+        CancelTimer();
+    }
+
+    virtual void OnTimer() {
+        // This can't be a pure virtual function.  The timer queue
+        // may run in a separate thread, in which case the timer
+        // may fire after a derived class destructor has run, but
+        // before the destructor for this class has run.  In this
+        // case, the derived class vtable would no longer exist
+        // and the callback has to be received by this function.
+    }
+
+    void CancelTimer() {
+        if (m_timer_ccb) {
+            (*m_timer_ccb)(this, m_timer_ccb_data);
         }
-
-        virtual ~TimerQueueClient() {
-            CancelTimer();
-        }
-
-        virtual void OnTimer() {
-            // This can't be a pure virtual function.  The timer queue
-            // may run in a separate thread, in which case the timer
-            // may fire after a derived class destructor has run, but
-            // before the destructor for this class has run.  In this
-            // case, the derived class vtable would no longer exist
-            // and the callback has to be received by this function.
-        }
-
-        void CancelTimer() {
-            if (m_timer_ccb) {
-                (*m_timer_ccb)(this, m_timer_ccb_data);
-            }
-        }
-    };
+    }
+};
 }

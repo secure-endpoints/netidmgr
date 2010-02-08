@@ -35,1007 +35,1007 @@
 namespace nim
 {
 
-    static const INT FOCUS_RECT_OPACITY         = 64;
+static const INT FOCUS_RECT_OPACITY         = 64;
 
-    static const INT SELECTION_OPACITY          = 64;
+static const INT SELECTION_OPACITY          = 64;
 
-    static const INT SELECTION_OPACITY_END      = 0;
+static const INT SELECTION_OPACITY_END      = 0;
 
-    static const INT OUTLINE_OPACITY            = 64;
+static const INT OUTLINE_OPACITY            = 64;
 
-    static const INT OUTLINE_OPACITY_END        = 0;
+static const INT OUTLINE_OPACITY_END        = 0;
 
-    static const INT OUTLINE_BORDER_OPACITY     = 96;
+static const INT OUTLINE_BORDER_OPACITY     = 96;
 
-    KhmDraw::KhmDraw()
-    {
-        isThemeLoaded = FALSE;
-    }
+KhmDraw::KhmDraw()
+{
+    isThemeLoaded = FALSE;
+}
 
-    KhmDraw::~KhmDraw()
-    {
-        UnloadTheme();
-    }
+KhmDraw::~KhmDraw()
+{
+    UnloadTheme();
+}
 
-    void KhmDraw::LoadTheme(const wchar_t * themename)
-    {
-        if (themename)
-            khm_load_theme(themename);
+void KhmDraw::LoadTheme(const wchar_t * themename)
+{
+    if (themename)
+        khm_load_theme(themename);
 
-        hf_normal        = khm_get_element_font(KHM_FONT_NORMAL);
-        hf_header        = khm_get_element_font(KHM_FONT_HEADER);
-        hf_select        = khm_get_element_font(KHM_FONT_SELECT);
-        hf_select_header = khm_get_element_font(KHM_FONT_HEADERSEL);
+    hf_normal        = khm_get_element_font(KHM_FONT_NORMAL);
+    hf_header        = khm_get_element_font(KHM_FONT_HEADER);
+    hf_select        = khm_get_element_font(KHM_FONT_SELECT);
+    hf_select_header = khm_get_element_font(KHM_FONT_HEADERSEL);
 
-        c_selection    .SetFromCOLORREF(khm_get_element_color(KHM_CLR_SELECTION));
-        c_background   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_BACKGROUND));
-	c_alert	       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_ALERTBKG));
-	c_suggestion   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_SUGGESTBKG));
-        c_normal       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER));
-        c_warning      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_WARN));
-        c_critical     .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_CRIT));
-        c_expired      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_EXP));
-        c_empty = c_background;
-        c_text         .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT));
-        c_text_selected.SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_SEL));
-        c_text_error   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_ERR));
-        c_tint = Color(100, 0, 0, 0);
+    c_selection    .SetFromCOLORREF(khm_get_element_color(KHM_CLR_SELECTION));
+    c_background   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_BACKGROUND));
+    c_alert	       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_ALERTBKG));
+    c_suggestion   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_SUGGESTBKG));
+    c_normal       .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER));
+    c_warning      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_WARN));
+    c_critical     .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_CRIT));
+    c_expired      .SetFromCOLORREF(khm_get_element_color(KHM_CLR_HEADER_EXP));
+    c_empty = c_background;
+    c_text         .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT));
+    c_text_selected.SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_SEL));
+    c_text_error   .SetFromCOLORREF(khm_get_element_color(KHM_CLR_TEXT_ERR));
+    c_tint = Color(100, 0, 0, 0);
 
-        b_watermark =   Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_LOGO_SHADE));
-        b_credwnd =     LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST), L"PNG");
-        b_meter_state = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_STATE), L"PNG");
-        b_meter_life  = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_LIFE),  L"PNG");
-        b_meter_renew = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_RENEW), L"PNG");
-        b_progress    = dynamic_cast<Bitmap*>
-            (LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_PROGRESS),   L"PNG"));
+    b_watermark =   Bitmap::FromResource(khm_hInstance, MAKEINTRESOURCE(IDB_LOGO_SHADE));
+    b_credwnd =     LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_CREDWND_IMAGELIST), L"PNG");
+    b_meter_state = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_STATE), L"PNG");
+    b_meter_life  = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_LIFE),  L"PNG");
+    b_meter_renew = LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_BATT_RENEW), L"PNG");
+    b_progress    = dynamic_cast<Bitmap*>
+        (LoadImageResourceAsStream(MAKEINTRESOURCE(IDB_PROGRESS),   L"PNG"));
 
-        sz_icon.Width     = GetSystemMetrics(SM_CXICON);
-        sz_icon.Height    = GetSystemMetrics(SM_CYICON);
-        sz_icon_sm.Width  = GetSystemMetrics(SM_CXSMICON);
-        sz_icon_sm.Height = GetSystemMetrics(SM_CYSMICON);
-        sz_margin.Width   = sz_icon_sm.Width / 4;
-        sz_margin.Height  = sz_icon_sm.Height / 4;
+    sz_icon.Width     = GetSystemMetrics(SM_CXICON);
+    sz_icon.Height    = GetSystemMetrics(SM_CYICON);
+    sz_icon_sm.Width  = GetSystemMetrics(SM_CXSMICON);
+    sz_icon_sm.Height = GetSystemMetrics(SM_CYSMICON);
+    sz_margin.Width   = sz_icon_sm.Width / 4;
+    sz_margin.Height  = sz_icon_sm.Height / 4;
 
-        sz_meter.Width = 32;
-        sz_meter.Height = 16;
+    sz_meter.Width = 32;
+    sz_meter.Height = 16;
 
-        line_thickness = 1;
+    line_thickness = 1;
 
 #define CXCY_FROM_SIZE(p,s)                     \
-        p ## _cx.X = s.Width;                   \
-        p ## _cx.Y = 0;                         \
-        p ## _cy.X = 0;                         \
-        p ## _cy.Y = s.Height
+    p ## _cx.X = s.Width;                       \
+    p ## _cx.Y = 0;                             \
+    p ## _cy.X = 0;                             \
+    p ## _cy.Y = s.Height
 
-        CXCY_FROM_SIZE(pt_margin, sz_margin);
-        CXCY_FROM_SIZE(pt_icon, sz_icon);
-        CXCY_FROM_SIZE(pt_icon_sm, sz_icon_sm);
+    CXCY_FROM_SIZE(pt_margin, sz_margin);
+    CXCY_FROM_SIZE(pt_icon, sz_icon);
+    CXCY_FROM_SIZE(pt_icon_sm, sz_icon_sm);
 
 #undef  CXCY_FROM_SIZE
 
-        isThemeLoaded = TRUE;
-    }
+    isThemeLoaded = TRUE;
+}
 
-    void KhmDraw::UnloadTheme(void)
-    {
+void KhmDraw::UnloadTheme(void)
+{
 #define DEL_BITMAP(b) if (b) { delete b; b = NULL; }
 
-        DEL_BITMAP(b_credwnd);
-        DEL_BITMAP(b_watermark);
-        DEL_BITMAP(b_meter_state);
-        DEL_BITMAP(b_meter_life);
-        DEL_BITMAP(b_meter_renew);
-        DEL_BITMAP(b_progress);
+    DEL_BITMAP(b_credwnd);
+    DEL_BITMAP(b_watermark);
+    DEL_BITMAP(b_meter_state);
+    DEL_BITMAP(b_meter_life);
+    DEL_BITMAP(b_meter_renew);
+    DEL_BITMAP(b_progress);
 
 #undef  DEL_BITMAP
 
 #define DEL_FONT(f) if (f) { DeleteObject(f); f = NULL; }
 
-        DEL_FONT(hf_normal);
-        DEL_FONT(hf_header);
-        DEL_FONT(hf_select);
-        DEL_FONT(hf_select_header);
+    DEL_FONT(hf_normal);
+    DEL_FONT(hf_header);
+    DEL_FONT(hf_select);
+    DEL_FONT(hf_select_header);
 
 #undef DEL_FONT
 
-        isThemeLoaded = FALSE;
+    isThemeLoaded = FALSE;
+}
+
+void KhmDraw::DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx, const Size& sz)
+{
+    if (idx < 0 || idx * img->GetHeight() > img->GetWidth())
+        return;
+
+    g.DrawImage(img, p.X, p.Y,
+                sz.Width * idx, 0,
+                sz.Width, sz.Height,
+                UnitPixel);
+}
+
+void
+KhmDraw::DrawCredWindowImage(Graphics & g, CredWndImages img, const Point& p)
+{
+    int idx = static_cast<int>(img);
+
+    DrawImageByIndex(g, b_credwnd, p, idx - 1, sz_icon_sm);
+}
+
+void
+KhmDraw::DrawCredWindowBackground(Graphics & g, const Rect & extents, const Rect & clip)
+{
+    SolidBrush br(c_background);
+    Rect watermark(0, 0, b_watermark->GetWidth(), b_watermark->GetHeight());
+
+    // watermark is at the bottom right corner
+    watermark.Offset(extents.GetRight() - watermark.Width,
+                     extents.GetBottom() - watermark.Height);
+
+    if (clip.IntersectsWith(watermark)) {
+        Region bkg(clip);
+
+        bkg.Exclude(watermark);
+        g.FillRegion(&br, &bkg);
+
+        Rect rmark(watermark);
+        rmark.Intersect(clip);
+        g.DrawImage(b_watermark, rmark.X, rmark.Y,
+                    rmark.X - watermark.X, rmark.Y - watermark.Y,
+                    rmark.Width, rmark.Height, UnitPixel);
+    } else {
+        g.FillRectangle(&br, clip);
+    }
+}
+
+void
+KhmDraw::DrawFocusRect(Graphics& g, const Rect& extents)
+{
+    Rect fr = extents;
+
+    // Fix off by one problem.  Windows GDI calls including Window
+    // management functions rectangles differently from GDI+.  In
+    // GDI+ a rectangle drawn at (0,0) that's 100x100 pixels in
+    // dimension will have it's right edge at the 100th column,
+    // while WINGDI and WINUSER will expect the rightmost edge to
+    // be at the 99th column.
+
+    fr.Width -= 1;
+    fr.Height -= 1;
+
+    fr.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
+
+    Pen p(c_text * FOCUS_RECT_OPACITY);
+    p.SetDashStyle(DashStyleDot);
+
+    g.DrawRectangle(&p, fr);
+}
+
+void
+KhmDraw::DrawDragWidgets(Graphics& g, const RectF& rect, int corner)
+{
+    Pen p(Color::White, 3);
+
+    g.DrawLine(&p,
+               rect.X, rect.Y + ((corner <= 2)? 0: rect.Height),
+               rect.X + rect.Width, rect.Y + ((corner <= 2)? 0: rect.Height));
+    g.DrawLine(&p,
+               rect.X + ((corner & 1)? 0: rect.Width), rect.Y,
+               rect.X + ((corner & 1)? 0: rect.Width), rect.Y + rect.Height);
+}
+
+void
+KhmDraw::DrawImageNeutralBackground(Graphics& g, const Rect& extents)
+{
+    HatchBrush brush(HatchStyleLargeCheckerBoard, Color(220, 220, 220), Color(150, 150, 150));
+    g.FillRectangle(&brush, extents);
+}
+
+void 
+KhmDraw::DrawCredWindowOutline(Graphics& g, const Rect& extents, DrawState state)
+{
+    Color c1;
+    Rect r = extents;
+
+    if (state & DrawStateSelected)
+        c1 = c_selection;
+    else if (state & DrawStateExpired)
+        c1 = c_expired;
+    else if (state & DrawStateCritial)
+        c1 = c_critical;
+    else if (state & DrawStateWarning)
+        c1 = c_warning;
+    else
+        c1 = c_normal;
+
+    r.Width -= 1;
+    r.Height -= 1;
+
+    {
+        Pen p_frame(c1 * OUTLINE_BORDER_OPACITY, 1.0);
+        g.DrawRectangle(&p_frame, r);
     }
 
-    void KhmDraw::DrawImageByIndex(Graphics & g, Image * img, const Point& p, INT idx, const Size& sz)
+    r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
+
     {
-        if (idx < 0 || idx * img->GetHeight() > img->GetWidth())
-            return;
-
-        g.DrawImage(img, p.X, p.Y,
-                    sz.Width * idx, 0,
-                    sz.Width, sz.Height,
-                    UnitPixel);
-    }
-
-    void
-    KhmDraw::DrawCredWindowImage(Graphics & g, CredWndImages img, const Point& p)
-    {
-        int idx = static_cast<int>(img);
-
-        DrawImageByIndex(g, b_credwnd, p, idx - 1, sz_icon_sm);
-    }
-
-    void
-    KhmDraw::DrawCredWindowBackground(Graphics & g, const Rect & extents, const Rect & clip)
-    {
-        SolidBrush br(c_background);
-        Rect watermark(0, 0, b_watermark->GetWidth(), b_watermark->GetHeight());
-
-        // watermark is at the bottom right corner
-        watermark.Offset(extents.GetRight() - watermark.Width,
-                         extents.GetBottom() - watermark.Height);
-
-        if (clip.IntersectsWith(watermark)) {
-            Region bkg(clip);
-
-            bkg.Exclude(watermark);
-            g.FillRegion(&br, &bkg);
-
-            Rect rmark(watermark);
-            rmark.Intersect(clip);
-            g.DrawImage(b_watermark, rmark.X, rmark.Y,
-                        rmark.X - watermark.X, rmark.Y - watermark.Y,
-                        rmark.Width, rmark.Height, UnitPixel);
-        } else {
-            g.FillRectangle(&br, clip);
-        }
-    }
-
-    void
-    KhmDraw::DrawFocusRect(Graphics& g, const Rect& extents)
-    {
-        Rect fr = extents;
-
-        // Fix off by one problem.  Windows GDI calls including Window
-        // management functions rectangles differently from GDI+.  In
-        // GDI+ a rectangle drawn at (0,0) that's 100x100 pixels in
-        // dimension will have it's right edge at the 100th column,
-        // while WINGDI and WINUSER will expect the rightmost edge to
-        // be at the 99th column.
-
-        fr.Width -= 1;
-        fr.Height -= 1;
-
-        fr.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
-
-        Pen p(c_text * FOCUS_RECT_OPACITY);
-        p.SetDashStyle(DashStyleDot);
-
-        g.DrawRectangle(&p, fr);
-    }
-
-    void
-    KhmDraw::DrawDragWidgets(Graphics& g, const RectF& rect, int corner)
-    {
-        Pen p(Color::White, 3);
-
-        g.DrawLine(&p,
-                   rect.X, rect.Y + ((corner <= 2)? 0: rect.Height),
-                   rect.X + rect.Width, rect.Y + ((corner <= 2)? 0: rect.Height));
-        g.DrawLine(&p,
-                   rect.X + ((corner & 1)? 0: rect.Width), rect.Y,
-                   rect.X + ((corner & 1)? 0: rect.Width), rect.Y + rect.Height);
-    }
-
-    void
-    KhmDraw::DrawImageNeutralBackground(Graphics& g, const Rect& extents)
-    {
-        HatchBrush brush(HatchStyleLargeCheckerBoard, Color(220, 220, 220), Color(150, 150, 150));
-        g.FillRectangle(&brush, extents);
-    }
-
-    void 
-    KhmDraw::DrawCredWindowOutline(Graphics& g, const Rect& extents, DrawState state)
-    {
-        Color c1;
-        Rect r = extents;
-
-        if (state & DrawStateSelected)
-            c1 = c_selection;
-        else if (state & DrawStateExpired)
-            c1 = c_expired;
-        else if (state & DrawStateCritial)
-            c1 = c_critical;
-        else if (state & DrawStateWarning)
-            c1 = c_warning;
-        else
-            c1 = c_normal;
-
-        r.Width -= 1;
-        r.Height -= 1;
-
-        {
-            Pen p_frame(c1 * OUTLINE_BORDER_OPACITY, 1.0);
-            g.DrawRectangle(&p_frame, r);
-        }
-
-        r.Inflate(-sz_margin.Width / 2, -sz_margin.Height / 2);
-
-        {
-            LinearGradientBrush br(extents,
-                                   c1 * OUTLINE_OPACITY,
-                                   c1 * OUTLINE_OPACITY_END, 0, FALSE);
-            g.FillRectangle(&br, r);
-        }
-
-        if (state & DrawStateFocusRect)
-            DrawFocusRect(g, extents);
-    }
-
-    void
-    KhmDraw::DrawProgressBar(Graphics& g, const Rect& extents, int progress)
-    {
-        INT partition;
-        const INT width = extents.Width - 1;
-        const INT cel_cx = sz_icon_sm.Width;
-        const INT cel_cy = sz_icon_sm.Height;
-        const INT X = extents.X;
-        const INT Y = extents.Y;
-
-        static const INT
-            BEGIN_FILLED = 0,
-            MID_FILLED = 1,
-            END_FILLED = 2,
-            BEGIN_EMPTY = 3,
-            MID_EMPTY = 4,
-            END_EMPTY = 5;
-
-        if (progress < 0)
-            progress = 0;
-        if (progress > 256)
-            progress = 256;
-
-        partition = width * progress / 256;
-
-        if (partition > 0) {
-            g.DrawImage(b_progress, X, Y,
-                        BEGIN_FILLED * cel_cx, 0,
-                        __min(cel_cx, partition),
-                        cel_cy, UnitPixel);
-        }
-
-        if (partition > cel_cx) {
-            for (INT x = cel_cx;
-                 x < partition && x < width - cel_cx;
-                 x += cel_cx) {
-                g.DrawImage(b_progress,
-                            X + x, Y,
-                            MID_FILLED * cel_cx, 0,
-                            __min(cel_cx, partition - x),
-                            cel_cy,
-                            UnitPixel);
-            }
-        }
-
-        if (partition > width - cel_cx) {
-            g.DrawImage(b_progress,
-                        X + width - cel_cx, Y,
-                        END_FILLED * cel_cx, 0,
-                        partition - (width - cel_cx),
-                        cel_cy, UnitPixel);
-        }
-
-        if (partition < cel_cx) {
-            g.DrawImage(b_progress,
-                        X + partition, Y,
-                        BEGIN_EMPTY * cel_cx + partition, 0,
-                        cel_cx - partition, cel_cy, UnitPixel);
-            partition = cel_cx;
-        }
-
-        if (partition < width - cel_cx) {
-            for (INT x = width - cel_cx * 2;
-                 x > partition - cel_cx;
-                 x -= cel_cx) {
-                g.DrawImage(b_progress,
-                            __max(partition, x) + X, Y,
-                            MID_EMPTY * cel_cx +
-                            __max(0, partition - x), 0,
-                            __min(x + cel_cx - partition, cel_cx),
-                            cel_cy,
-                            UnitPixel);
-            }
-            partition = width - cel_cx;
-        }
-
-        if (partition < width) {
-            g.DrawImage(b_progress,
-                        X + partition, Y,
-                        END_EMPTY * cel_cx + partition
-                        - (width - cel_cx), 0,
-                        width - partition, cel_cy, UnitPixel);
-        }
-    }
-
-    void 
-    KhmDraw::DrawCredWindowOutlineWidget(Graphics& g, const Rect& extents, DrawState state)
-    {
-        CredWndImages image;
-
-        image = ((state & DrawStateChecked)?
-            ((state & DrawStateHotTrack)? ImgCollapseHi : ImgCollapse) :
-            ((state & DrawStateHotTrack)? ImgExpandHi : ImgExpand));
-
-        DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
-    }
-    
-    void
-    KhmDraw::DrawStarWidget(Graphics& g, const Rect& extents, DrawState state)
-    {
-        CredWndImages image;
-
-        image = ((state & DrawStateChecked)?
-                 ((state & DrawStateHotTrack)? ImgStarHi : ImgStar) :
-                 ((state & DrawStateHotTrack)? ImgStarEmptyHi : ImgStarEmpty));
-
-        DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
-    }
-
-    void
-    KhmDraw::DrawStickyWidget(Graphics& g, const Rect& extents, DrawState state)
-    {
-        CredWndImages image;
-
-        image = ((state & DrawStateChecked)?
-                 ((state & DrawStateHotTrack)? ImgStuckHi : ImgStuck) :
-                 ((state & DrawStateHotTrack)? ImgStickHi : ImgStick));
-
-        DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
-    }
-
-    void 
-    KhmDraw::DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state)
-    {
-        Color c1;
-        Color c2;
-        Rect r = extents;
-
-        r.Width -= 1;
-        r.Height -= 1;
-
-        if (state & DrawStateSelected) {
-            c1 = c_selection * SELECTION_OPACITY;
-            c2 = c_background + c_selection * SELECTION_OPACITY_END;
-        } else {
-            c1 = c_background;
-            c2 = c_background;
-        }
-
-        LinearGradientBrush br(r, c1, c2, 0, FALSE);
-
+        LinearGradientBrush br(extents,
+                               c1 * OUTLINE_OPACITY,
+                               c1 * OUTLINE_OPACITY_END, 0, FALSE);
         g.FillRectangle(&br, r);
-
-        if (state & DrawStateFocusRect)
-            DrawFocusRect(g, extents);
     }
 
-    void
-    KhmDraw::DrawAlertBackground(Graphics& g, const Rect& extents, DrawState state)
-    {
-	Color c1;
-	Color c2;
-	Rect r = extents;
+    if (state & DrawStateFocusRect)
+        DrawFocusRect(g, extents);
+}
 
-	if (state & DrawStateSelected) {
-	    c1 = c_alert + c_selection * SELECTION_OPACITY;
-	    c2 = c_background + c_selection * SELECTION_OPACITY_END;
-	} else {
-	    c1 = c_alert;
-	    c2 = c_background;
-	}
+void
+KhmDraw::DrawProgressBar(Graphics& g, const Rect& extents, int progress)
+{
+    INT partition;
+    const INT width = extents.Width - 1;
+    const INT cel_cx = sz_icon_sm.Width;
+    const INT cel_cy = sz_icon_sm.Height;
+    const INT X = extents.X;
+    const INT Y = extents.Y;
 
-	LinearGradientBrush br(r, c1, c2, 90, FALSE);
+    static const INT
+        BEGIN_FILLED = 0,
+        MID_FILLED = 1,
+        END_FILLED = 2,
+        BEGIN_EMPTY = 3,
+        MID_EMPTY = 4,
+        END_EMPTY = 5;
 
-	g.FillRectangle(&br, r);
-	if (state & DrawStateFocusRect)
-	    DrawFocusRect(g, extents);
+    if (progress < 0)
+        progress = 0;
+    if (progress > 256)
+        progress = 256;
+
+    partition = width * progress / 256;
+
+    if (partition > 0) {
+        g.DrawImage(b_progress, X, Y,
+                    BEGIN_FILLED * cel_cx, 0,
+                    __min(cel_cx, partition),
+                    cel_cy, UnitPixel);
     }
 
-    void
-    KhmDraw::DrawAlertSuggestBackground(Graphics& g, const Rect& extents, DrawState state)
-    {
-	Rect r = extents;
-
-	r.Width -= 1;
-	r.Height -= 1;
-
-	SolidBrush br(c_suggestion);
-
-	g.FillRectangle(&br, r);
-    }
-
-    inline void NextFrameAndRefresh(int _Delay, unsigned int Next_Threshold,
-                                       int _Frames,
-                                       int& frame, DWORD& refresh)
-    {
-        DWORD ticks = GetTickCount();
-        int   fidx = (ticks / _Delay);
-        DWORD nextin = _Delay - (ticks % _Delay);
-
-        if (nextin < Next_Threshold) {
-            nextin += _Delay;
-            fidx++;
+    if (partition > cel_cx) {
+        for (INT x = cel_cx;
+             x < partition && x < width - cel_cx;
+             x += cel_cx) {
+            g.DrawImage(b_progress,
+                        X + x, Y,
+                        MID_FILLED * cel_cx, 0,
+                        __min(cel_cx, partition - x),
+                        cel_cy,
+                        UnitPixel);
         }
-
-        fidx %= _Frames;
-
-        frame += fidx;
-        refresh = _Delay;
     }
 
-    void
-    KhmDraw::DrawCredMeterState(Graphics& g, const Rect& extents, DrawState state, DWORD *ms_to_next)
-    {
-        static const int ANIMATION_DELAY  = 500;
-        static const int NEXT_THRESHOLD   = 100;
-        static const int ANIMATION_FRAMES = 2;
+    if (partition > width - cel_cx) {
+        g.DrawImage(b_progress,
+                    X + width - cel_cx, Y,
+                    END_FILLED * cel_cx, 0,
+                    partition - (width - cel_cx),
+                    cel_cy, UnitPixel);
+    }
 
-        static const int FRAME_DISABLED   = 0;
-        static const int FRAME_CRIT_BEGIN = 3;
-        static const int FRAME_WARN_BEGIN = 1;
-        static const int FRAME_POSTDATED  = 5;
+    if (partition < cel_cx) {
+        g.DrawImage(b_progress,
+                    X + partition, Y,
+                    BEGIN_EMPTY * cel_cx + partition, 0,
+                    cel_cx - partition, cel_cy, UnitPixel);
+        partition = cel_cx;
+    }
 
-        int frame;
-
-        if (state & DrawStateWarning) {
-            frame = FRAME_WARN_BEGIN;
-            NextFrameAndRefresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
-				frame, *ms_to_next);
-        } else if (state & DrawStateCritial) {
-            frame = FRAME_CRIT_BEGIN;
-            NextFrameAndRefresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
-				frame, *ms_to_next);
-        } else if (state & DrawStatePostDated) { 
-            frame = FRAME_POSTDATED;
-            *ms_to_next = 0;
-        } else {
-            frame = FRAME_DISABLED;
-            *ms_to_next = 0;
+    if (partition < width - cel_cx) {
+        for (INT x = width - cel_cx * 2;
+             x > partition - cel_cx;
+             x -= cel_cx) {
+            g.DrawImage(b_progress,
+                        __max(partition, x) + X, Y,
+                        MID_EMPTY * cel_cx +
+                        __max(0, partition - x), 0,
+                        __min(x + cel_cx - partition, cel_cx),
+                        cel_cy,
+                        UnitPixel);
         }
-
-        DrawImageByIndex(g, b_meter_state, Point(extents.X, extents.Y), frame, sz_meter);
+        partition = width - cel_cx;
     }
 
-    void
-    KhmDraw::DrawCredMeterLife(Graphics& g, const Rect& extents, unsigned int index)
-    {
-        index /= 32;
+    if (partition < width) {
+        g.DrawImage(b_progress,
+                    X + partition, Y,
+                    END_EMPTY * cel_cx + partition
+                    - (width - cel_cx), 0,
+                    width - partition, cel_cy, UnitPixel);
+    }
+}
 
-        if (index < 0)
-            index = 0;
+void 
+KhmDraw::DrawCredWindowOutlineWidget(Graphics& g, const Rect& extents, DrawState state)
+{
+    CredWndImages image;
 
-        if (index > 7)
-            index = 7;
+    image = ((state & DrawStateChecked)?
+             ((state & DrawStateHotTrack)? ImgCollapseHi : ImgCollapse) :
+             ((state & DrawStateHotTrack)? ImgExpandHi : ImgExpand));
 
-        DrawImageByIndex(g, b_meter_life, Point(extents.X, extents.Y), index, sz_meter);
+    DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
+}
+    
+void
+KhmDraw::DrawStarWidget(Graphics& g, const Rect& extents, DrawState state)
+{
+    CredWndImages image;
+
+    image = ((state & DrawStateChecked)?
+             ((state & DrawStateHotTrack)? ImgStarHi : ImgStar) :
+             ((state & DrawStateHotTrack)? ImgStarEmptyHi : ImgStarEmpty));
+
+    DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
+}
+
+void
+KhmDraw::DrawStickyWidget(Graphics& g, const Rect& extents, DrawState state)
+{
+    CredWndImages image;
+
+    image = ((state & DrawStateChecked)?
+             ((state & DrawStateHotTrack)? ImgStuckHi : ImgStuck) :
+             ((state & DrawStateHotTrack)? ImgStickHi : ImgStick));
+
+    DrawCredWindowImage(g, image, Point(extents.X, extents.Y));
+}
+
+void 
+KhmDraw::DrawCredWindowNormalBackground(Graphics& g, const Rect& extents, DrawState state)
+{
+    Color c1;
+    Color c2;
+    Rect r = extents;
+
+    r.Width -= 1;
+    r.Height -= 1;
+
+    if (state & DrawStateSelected) {
+        c1 = c_selection * SELECTION_OPACITY;
+        c2 = c_background + c_selection * SELECTION_OPACITY_END;
+    } else {
+        c1 = c_background;
+        c2 = c_background;
     }
 
-    void
-    KhmDraw::DrawCredMeterBusy(Graphics& g, const Rect& extents, DWORD *ms_to_next)
-    {
-        static const int ANIMATION_DELAY = 200;
-        static const int NEXT_THRESHOLD  = 100;
-        static const int ANIMATION_FRAMES = 8;
+    LinearGradientBrush br(r, c1, c2, 0, FALSE);
 
-        int frame = 0;
+    g.FillRectangle(&br, r);
 
+    if (state & DrawStateFocusRect)
+        DrawFocusRect(g, extents);
+}
+
+void
+KhmDraw::DrawAlertBackground(Graphics& g, const Rect& extents, DrawState state)
+{
+    Color c1;
+    Color c2;
+    Rect r = extents;
+
+    if (state & DrawStateSelected) {
+        c1 = c_alert + c_selection * SELECTION_OPACITY;
+        c2 = c_background + c_selection * SELECTION_OPACITY_END;
+    } else {
+        c1 = c_alert;
+        c2 = c_background;
+    }
+
+    LinearGradientBrush br(r, c1, c2, 90, FALSE);
+
+    g.FillRectangle(&br, r);
+    if (state & DrawStateFocusRect)
+        DrawFocusRect(g, extents);
+}
+
+void
+KhmDraw::DrawAlertSuggestBackground(Graphics& g, const Rect& extents, DrawState state)
+{
+    Rect r = extents;
+
+    r.Width -= 1;
+    r.Height -= 1;
+
+    SolidBrush br(c_suggestion);
+
+    g.FillRectangle(&br, r);
+}
+
+inline void NextFrameAndRefresh(int _Delay, unsigned int Next_Threshold,
+                                int _Frames,
+                                int& frame, DWORD& refresh)
+{
+    DWORD ticks = GetTickCount();
+    int   fidx = (ticks / _Delay);
+    DWORD nextin = _Delay - (ticks % _Delay);
+
+    if (nextin < Next_Threshold) {
+        nextin += _Delay;
+        fidx++;
+    }
+
+    fidx %= _Frames;
+
+    frame += fidx;
+    refresh = _Delay;
+}
+
+void
+KhmDraw::DrawCredMeterState(Graphics& g, const Rect& extents, DrawState state, DWORD *ms_to_next)
+{
+    static const int ANIMATION_DELAY  = 500;
+    static const int NEXT_THRESHOLD   = 100;
+    static const int ANIMATION_FRAMES = 2;
+
+    static const int FRAME_DISABLED   = 0;
+    static const int FRAME_CRIT_BEGIN = 3;
+    static const int FRAME_WARN_BEGIN = 1;
+    static const int FRAME_POSTDATED  = 5;
+
+    int frame;
+
+    if (state & DrawStateWarning) {
+        frame = FRAME_WARN_BEGIN;
         NextFrameAndRefresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
-			    frame, *ms_to_next);
-
-        DrawImageByIndex(g, b_meter_renew, Point(extents.X, extents.Y), frame, sz_meter);
+                            frame, *ms_to_next);
+    } else if (state & DrawStateCritial) {
+        frame = FRAME_CRIT_BEGIN;
+        NextFrameAndRefresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+                            frame, *ms_to_next);
+    } else if (state & DrawStatePostDated) { 
+        frame = FRAME_POSTDATED;
+        *ms_to_next = 0;
+    } else {
+        frame = FRAME_DISABLED;
+        *ms_to_next = 0;
     }
 
-    void KhmDraw::DrawDropDownButton(HWND hwnd, HDC hdc,
-                                     DrawState state, RECT * client)
+    DrawImageByIndex(g, b_meter_state, Point(extents.X, extents.Y), frame, sz_meter);
+}
+
+void
+KhmDraw::DrawCredMeterLife(Graphics& g, const Rect& extents, unsigned int index)
+{
+    index /= 32;
+
+    if (index < 0)
+        index = 0;
+
+    if (index > 7)
+        index = 7;
+
+    DrawImageByIndex(g, b_meter_life, Point(extents.X, extents.Y), index, sz_meter);
+}
+
+void
+KhmDraw::DrawCredMeterBusy(Graphics& g, const Rect& extents, DWORD *ms_to_next)
+{
+    static const int ANIMATION_DELAY = 200;
+    static const int NEXT_THRESHOLD  = 100;
+    static const int ANIMATION_FRAMES = 8;
+
+    int frame = 0;
+
+    NextFrameAndRefresh(ANIMATION_DELAY, NEXT_THRESHOLD, ANIMATION_FRAMES,
+                        frame, *ms_to_next);
+
+    DrawImageByIndex(g, b_meter_renew, Point(extents.X, extents.Y), frame, sz_meter);
+}
+
+void KhmDraw::DrawDropDownButton(HWND hwnd, HDC hdc,
+                                 DrawState state, RECT * client)
+{
+    RECT r;
+
+    GetClientRect(hwnd, &r);
+    SetRect(&r, sz_margin.Width, sz_margin.Height,
+            (r.right - r.left) - sz_margin.Width,
+            (r.bottom - r.top) - sz_margin.Height);
+
+    if (state & DrawStateSelected)
+        OffsetRect(&r, sz_margin.Width / 2, sz_margin.Height / 2);
+
     {
-        RECT r;
-
-        GetClientRect(hwnd, &r);
-        SetRect(&r, sz_margin.Width, sz_margin.Height,
-                (r.right - r.left) - sz_margin.Width,
-                (r.bottom - r.top) - sz_margin.Height);
-
-        if (state & DrawStateSelected)
-            OffsetRect(&r, sz_margin.Width / 2, sz_margin.Height / 2);
-
-        {
-            RECT   sr;
+        RECT   sr;
 #if _WIN32_WINNT >= 0x0501
-            HTHEME ht = OpenThemeData(hwnd, L"TOOLBAR");
+        HTHEME ht = OpenThemeData(hwnd, L"TOOLBAR");
 
-            if (ht) {
-                SIZE sz = { 32, 0 };
+        if (ht) {
+            SIZE sz = { 32, 0 };
 
-                CopyRect(&sr, &r);
-                GetThemePartSize(ht, hdc, TP_SPLITBUTTONDROPDOWN, TS_NORMAL,
-                                 &sr, TS_MIN, &sz);
-                sr.left = sr.right - (sz.cx + sz_margin.Width * 3);
+            CopyRect(&sr, &r);
+            GetThemePartSize(ht, hdc, TP_SPLITBUTTONDROPDOWN, TS_NORMAL,
+                             &sr, TS_MIN, &sz);
+            sr.left = sr.right - (sz.cx + sz_margin.Width * 3);
 
-                if (state & DrawStateHotTrack)
-                    DrawThemeBackground(ht, hdc,
-                                        TP_SEPARATOR,
-                                        TS_NORMAL, &sr, NULL);
+            if (state & DrawStateHotTrack)
                 DrawThemeBackground(ht, hdc,
-                                    TP_SPLITBUTTONDROPDOWN,
+                                    TP_SEPARATOR,
                                     TS_NORMAL, &sr, NULL);
-                CloseThemeData(ht);
+            DrawThemeBackground(ht, hdc,
+                                TP_SPLITBUTTONDROPDOWN,
+                                TS_NORMAL, &sr, NULL);
+            CloseThemeData(ht);
 
-                r.right = sr.left - sz_margin.Width;
-            } else {
+            r.right = sr.left - sz_margin.Width;
+        } else {
 #endif
-                int mx = sz_icon_sm.Width / 2;
-                POINT p[3] = {{ -1, 0 }, { 1, 0 }, { 0, 1 }};
-                int i;
+            int mx = sz_icon_sm.Width / 2;
+            POINT p[3] = {{ -1, 0 }, { 1, 0 }, { 0, 1 }};
+            int i;
 
-                CopyRect(&sr, &r);
-                sr.left = sr.right - (sz_margin.Width * 3 + mx);
-                for (i=0; i < ARRAYLENGTH(p); i++) {
-                    p[i].x = (sr.left + sr.right + p[i].x * mx) / 2;
-                    p[i].y = (sr.top + sr.bottom + p[i].y * mx) / 2;
-                }
-                DrawEdge(hdc, &sr, EDGE_ETCHED, BF_LEFT);
-                Polygon(hdc, p, ARRAYLENGTH(p));
-
-                r.right = sr.left - sz_margin.Width;
-#if _WIN32_WINNT >= 0x0501
+            CopyRect(&sr, &r);
+            sr.left = sr.right - (sz_margin.Width * 3 + mx);
+            for (i=0; i < ARRAYLENGTH(p); i++) {
+                p[i].x = (sr.left + sr.right + p[i].x * mx) / 2;
+                p[i].y = (sr.top + sr.bottom + p[i].y * mx) / 2;
             }
-#endif
-        }
+            DrawEdge(hdc, &sr, EDGE_ETCHED, BF_LEFT);
+            Polygon(hdc, p, ARRAYLENGTH(p));
 
-        if (client)
-            CopyRect(client, &r);
+            r.right = sr.left - sz_margin.Width;
+#if _WIN32_WINNT >= 0x0501
+        }
+#endif
     }
 
-    void KhmDraw::DrawIdentityItem(HDC hdc, const RECT& extents,
-                                   DrawState state,
-                                   HICON icon,
-                                   const std::wstring& title,
-                                   const std::wstring& subtitle,
-                                   const std::wstring& aux)
-    {
-        RECT r, tr;
-        SIZE s;
-        COLORREF cr_title, cr_subtitle, cr_aux;
-        HFONT hf_old = NULL;
-        bool is_button = !!(state & DrawStateButton);
+    if (client)
+        CopyRect(client, &r);
+}
 
-        r = extents;
+void KhmDraw::DrawIdentityItem(HDC hdc, const RECT& extents,
+                               DrawState state,
+                               HICON icon,
+                               const std::wstring& title,
+                               const std::wstring& subtitle,
+                               const std::wstring& aux)
+{
+    RECT r, tr;
+    SIZE s;
+    COLORREF cr_title, cr_subtitle, cr_aux;
+    HFONT hf_old = NULL;
+    bool is_button = !!(state & DrawStateButton);
 
-        if ((state & (DrawStateHotTrack | DrawStateSelected)) &&
-            !(state & DrawStateDisabled) && !is_button) {
+    r = extents;
 
-            cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_HIGHLIGHTTEXT);
+    if ((state & (DrawStateHotTrack | DrawStateSelected)) &&
+        !(state & DrawStateDisabled) && !is_button) {
 
-            if (!(state & DrawStateNoBackground)) {
-                HBRUSH hbr;
+        cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_HIGHLIGHTTEXT);
 
-                hbr = GetSysColorBrush(COLOR_HIGHLIGHT);
-                FillRect(hdc, &r, hbr);
-            }
-        } else {
-            if (!(state & DrawStateNoBackground)) {
-                HBRUSH hbr;
+        if (!(state & DrawStateNoBackground)) {
+            HBRUSH hbr;
 
-                hbr = GetSysColorBrush((is_button)? COLOR_BTNFACE : COLOR_MENU);
-                FillRect(hdc, &r, hbr);
-            }
+            hbr = GetSysColorBrush(COLOR_HIGHLIGHT);
+            FillRect(hdc, &r, hbr);
+        }
+    } else {
+        if (!(state & DrawStateNoBackground)) {
+            HBRUSH hbr;
 
-            if (state & DrawStateDisabled) {
-                cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_GRAYTEXT);
-            } else {
-                if (state & DrawStateWarning) {
-                    cr_title = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
-                    cr_subtitle = c_text_error.ToCOLORREF();
-                } else {
-                    cr_title = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
-                    cr_subtitle = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
-                }
-                cr_aux = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
-            }
+            hbr = GetSysColorBrush((is_button)? COLOR_BTNFACE : COLOR_MENU);
+            FillRect(hdc, &r, hbr);
         }
 
-        /* Identity icon */
-        if (icon)
-            DrawIconEx(hdc, r.left, r.top, icon, 0, 0, 0,
-                       NULL, DI_DEFAULTSIZE | DI_NORMAL);
+        if (state & DrawStateDisabled) {
+            cr_title = cr_subtitle = cr_aux = GetSysColor(COLOR_GRAYTEXT);
+        } else {
+            if (state & DrawStateWarning) {
+                cr_title = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
+                cr_subtitle = c_text_error.ToCOLORREF();
+            } else {
+                cr_title = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
+                cr_subtitle = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
+            }
+            cr_aux = GetSysColor((is_button)? COLOR_BTNTEXT: COLOR_MENUTEXT);
+        }
+    }
 
-        r.left += GetSystemMetrics(SM_CXICON) + sz_margin.Width;
+    /* Identity icon */
+    if (icon)
+        DrawIconEx(hdc, r.left, r.top, icon, 0, 0, 0,
+                   NULL, DI_DEFAULTSIZE | DI_NORMAL);
 
-        SetBkMode(hdc, TRANSPARENT);
+    r.left += GetSystemMetrics(SM_CXICON) + sz_margin.Width;
+
+    SetBkMode(hdc, TRANSPARENT);
+
+    CopyRect(&tr, &r);
+    tr.bottom = (r.bottom + r.top) / 2;
+
+    /* Auxilliary String */
+    if (!(state & DrawStateSkipAux) && aux.length() > 0) {
+        if (hf_old == NULL)
+            hf_old = SelectFont(hdc, hf_normal);
+        else
+            SelectFont(hdc, hf_normal);
+
+        SetTextColor(hdc, cr_aux);
+        DrawText(hdc, aux.c_str(), (int) aux.length(),
+                 &tr, DT_SINGLELINE | DT_RIGHT | DT_VCENTER);
+
+        GetTextExtentPoint32(hdc, aux.c_str(), (int) aux.length(), &s);
+
+        tr.right -= s.cx + sz_margin.Width;
+    }
+
+    /* Title String */
+    if (title.length() > 0) {
+        if (hf_old == NULL)
+            hf_old = SelectFont(hdc, hf_header);
+        else
+            SelectFont(hdc, hf_header);
+
+        SetTextColor(hdc, cr_title);
+        DrawText(hdc, title.c_str(), (int) title.length(),
+                 &tr, DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS);
+    }
+
+    /* Subtitle String */
+    if (subtitle.length() > 0) {
+        if (hf_old == NULL)
+            hf_old = SelectFont(hdc, hf_normal);
+        else
+            SelectFont(hdc, hf_normal);
 
         CopyRect(&tr, &r);
-        tr.bottom = (r.bottom + r.top) / 2;
+        tr.top += (r.bottom - r.top) / 2;
 
-        /* Auxilliary String */
-        if (!(state & DrawStateSkipAux) && aux.length() > 0) {
-            if (hf_old == NULL)
-                hf_old = SelectFont(hdc, hf_normal);
-            else
-                SelectFont(hdc, hf_normal);
+        SetTextColor(hdc, cr_subtitle);
+        DrawText(hdc, subtitle.c_str(), (int) subtitle.length(),
+                 &tr, DT_SINGLELINE | DT_LEFT | DT_WORD_ELLIPSIS);
+    }
 
-            SetTextColor(hdc, cr_aux);
-            DrawText(hdc, aux.c_str(), (int) aux.length(),
-                     &tr, DT_SINGLELINE | DT_RIGHT | DT_VCENTER);
+    if (hf_old != NULL) {
+        SelectFont(hdc, hf_old);
+    }
+}
 
-            GetTextExtentPoint32(hdc, aux.c_str(), (int) aux.length(), &s);
 
-            tr.right -= s.cx + sz_margin.Width;
-        }
+std::wstring LoadStringResource(UINT res_id, HINSTANCE inst)
+{
+    wchar_t str[2048] = L"";
+    if (LoadString(inst, res_id, str, ARRAYLENGTH(str)) == 0)
+        str[0] = L'\0';
+    return std::wstring(str);
+}
 
-        /* Title String */
-        if (title.length() > 0) {
-            if (hf_old == NULL)
-                hf_old = SelectFont(hdc, hf_header);
-            else
-                SelectFont(hdc, hf_header);
+HICON LoadIconResource(UINT res_id, bool small_icon,
+                       bool shared, HINSTANCE inst)
+{
+    HICON ricon = NULL;
+    khm_size cb = sizeof(ricon);
 
-            SetTextColor(hdc, cr_title);
-            DrawText(hdc, title.c_str(), (int) title.length(),
-                     &tr, DT_SINGLELINE | DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS);
-        }
+    if (!shared ||
+        KHM_FAILED(khui_cache_get_resource(inst, res_id, KHM_RESTYPE_ICON,
+                                           &ricon, &cb))) {
 
-        /* Subtitle String */
-        if (subtitle.length() > 0) {
-            if (hf_old == NULL)
-                hf_old = SelectFont(hdc, hf_normal);
-            else
-                SelectFont(hdc, hf_normal);
-
-            CopyRect(&tr, &r);
-            tr.top += (r.bottom - r.top) / 2;
-
-            SetTextColor(hdc, cr_subtitle);
-            DrawText(hdc, subtitle.c_str(), (int) subtitle.length(),
-                     &tr, DT_SINGLELINE | DT_LEFT | DT_WORD_ELLIPSIS);
-        }
-
-        if (hf_old != NULL) {
-            SelectFont(hdc, hf_old);
+        ricon = (HICON) LoadImage(inst, MAKEINTRESOURCE(res_id), IMAGE_ICON,
+                                  GetSystemMetrics((small_icon)? SM_CXSMICON : SM_CXICON),
+                                  GetSystemMetrics((small_icon)? SM_CYSMICON : SM_CYICON),
+                                  LR_DEFAULTCOLOR | ((shared)? LR_SHARED : 0));
+        if (shared && ricon != NULL) {
+            khui_cache_add_resource(inst, res_id, KHM_RESTYPE_ICON, &ricon, sizeof(ricon));
         }
     }
 
+    return ricon;
+}
 
-    std::wstring LoadStringResource(UINT res_id, HINSTANCE inst)
-    {
-        wchar_t str[2048] = L"";
-        if (LoadString(inst, res_id, str, ARRAYLENGTH(str)) == 0)
-            str[0] = L'\0';
-        return std::wstring(str);
-    }
+HBITMAP LoadImageResource(UINT res_id, bool shared,
+                          HINSTANCE inst)
+{
+    return (HBITMAP) LoadImage(inst, MAKEINTRESOURCE(res_id), IMAGE_BITMAP,
+                               0, 0,
+                               LR_DEFAULTCOLOR | LR_DEFAULTSIZE | ((shared)? LR_SHARED : 0));
+}
 
-    HICON LoadIconResource(UINT res_id, bool small_icon,
-                           bool shared, HINSTANCE inst)
-    {
-        HICON ricon = NULL;
-        khm_size cb = sizeof(ricon);
+Bitmap *GetBitmapFromHICON(HICON icon)
+{
+    ICONINFO ii;
 
-        if (!shared ||
-            KHM_FAILED(khui_cache_get_resource(inst, res_id, KHM_RESTYPE_ICON,
-                                               &ricon, &cb))) {
+    GetIconInfo(icon, &ii);
 
-            ricon = (HICON) LoadImage(inst, MAKEINTRESOURCE(res_id), IMAGE_ICON,
-                                      GetSystemMetrics((small_icon)? SM_CXSMICON : SM_CXICON),
-                                      GetSystemMetrics((small_icon)? SM_CYSMICON : SM_CYICON),
-                                      LR_DEFAULTCOLOR | ((shared)? LR_SHARED : 0));
-            if (shared && ricon != NULL) {
-                khui_cache_add_resource(inst, res_id, KHM_RESTYPE_ICON, &ricon, sizeof(ricon));
-            }
-        }
+    Bitmap bmp(ii.hbmColor, NULL);
 
-        return ricon;
-    }
+    DeleteObject(ii.hbmColor);
+    DeleteObject(ii.hbmMask);
 
-    HBITMAP LoadImageResource(UINT res_id, bool shared,
-                              HINSTANCE inst)
-    {
-        return (HBITMAP) LoadImage(inst, MAKEINTRESOURCE(res_id), IMAGE_BITMAP,
-                                   0, 0,
-                                   LR_DEFAULTCOLOR | LR_DEFAULTSIZE | ((shared)? LR_SHARED : 0));
-    }
+    PixelFormat pf = bmp.GetPixelFormat();
+    INT width, height;
 
-    Bitmap *GetBitmapFromHICON(HICON icon)
-    {
-        ICONINFO ii;
+    width = bmp.GetWidth();
+    height = bmp.GetHeight();
 
-        GetIconInfo(icon, &ii);
+    if (pf != PixelFormat32bppARGB &&
+        pf != PixelFormat32bppPARGB &&
+        pf != PixelFormat32bppRGB)
+        return bmp.Clone(0, 0, width, height, pf);
 
-        Bitmap bmp(ii.hbmColor, NULL);
+    BitmapData bmData, bmDataT;
+    Rect r(0, 0, width, height);
 
-        DeleteObject(ii.hbmColor);
-        DeleteObject(ii.hbmMask);
+    bmp.LockBits(&r, ImageLockModeRead, pf, &bmData);
 
-        PixelFormat pf = bmp.GetPixelFormat();
-        INT width, height;
+    Bitmap *ret = new Bitmap(width, height, PixelFormat32bppARGB);
 
-        width = bmp.GetWidth();
-        height = bmp.GetHeight();
+    bmDataT = bmData;
 
-        if (pf != PixelFormat32bppARGB &&
-            pf != PixelFormat32bppPARGB &&
-            pf != PixelFormat32bppRGB)
-            return bmp.Clone(0, 0, width, height, pf);
+    ret->LockBits(&r, ImageLockModeWrite|ImageLockModeUserInputBuf,
+                  PixelFormat32bppARGB, &bmDataT);
+    ret->UnlockBits(&bmDataT);
 
-        BitmapData bmData, bmDataT;
-        Rect r(0, 0, width, height);
+    bmp.UnlockBits(&bmData);
 
-        bmp.LockBits(&r, ImageLockModeRead, pf, &bmData);
+    return ret;
+}
 
-        Bitmap *ret = new Bitmap(width, height, PixelFormat32bppARGB);
+Image* LoadImageResourceAsStream(LPCTSTR name, LPCTSTR type, HINSTANCE inst)
+{
+    Image * rimage = NULL;
+    HRSRC   hres = 0;
+    HGLOBAL hgres = NULL;
+    HGLOBAL hgmem = NULL;
+    IStream * istr = NULL;
+    DWORD cb;
 
-        bmDataT = bmData;
+    hres = FindResource(inst, name, type);
+    if (hres == NULL)
+        goto done;
 
-        ret->LockBits(&r, ImageLockModeWrite|ImageLockModeUserInputBuf,
-                      PixelFormat32bppARGB, &bmDataT);
-        ret->UnlockBits(&bmDataT);
+    cb = SizeofResource(inst, hres);
+    if (cb == 0)
+        goto done;
 
-        bmp.UnlockBits(&bmData);
+    hgres = LoadResource(inst, hres);
+    if (hgres == NULL)
+        goto done;
 
-        return ret;
-    }
+    void *  pv_img;
+    pv_img = LockResource(hgres);
+    if (pv_img == NULL)
+        goto done;
 
-    Image* LoadImageResourceAsStream(LPCTSTR name, LPCTSTR type, HINSTANCE inst)
-    {
-        Image * rimage = NULL;
-        HRSRC   hres = 0;
-        HGLOBAL hgres = NULL;
-        HGLOBAL hgmem = NULL;
-        IStream * istr = NULL;
-        DWORD cb;
+    hgmem = GlobalAlloc(GMEM_MOVEABLE, cb);
+    if (hgmem == NULL)
+        goto done;
 
-        hres = FindResource(inst, name, type);
-        if (hres == NULL)
-            goto done;
+    void * pv_mem = GlobalLock(hgmem);
+    if (pv_mem == NULL)
+        goto done;
 
-        cb = SizeofResource(inst, hres);
-        if (cb == 0)
-            goto done;
+    memcpy(pv_mem, pv_img, cb);
 
-        hgres = LoadResource(inst, hres);
-        if (hgres == NULL)
-            goto done;
+    GlobalUnlock(hgmem);
 
-        void *  pv_img;
-        pv_img = LockResource(hgres);
-        if (pv_img == NULL)
-            goto done;
+    if (S_OK != CreateStreamOnHGlobal(hgmem, TRUE, &istr))
+        goto done;
 
-        hgmem = GlobalAlloc(GMEM_MOVEABLE, cb);
-        if (hgmem == NULL)
-            goto done;
+    rimage = Bitmap::FromStream(istr);
 
-        void * pv_mem = GlobalLock(hgmem);
-        if (pv_mem == NULL)
-            goto done;
+ done:
+    if (istr != NULL)
+        istr->Release();
 
-        memcpy(pv_mem, pv_img, cb);
+    if (rimage == NULL && hgmem != NULL)
+        GlobalFree(hgmem);
 
-        GlobalUnlock(hgmem);
+    return rimage;
+}
 
-        if (S_OK != CreateStreamOnHGlobal(hgmem, TRUE, &istr))
-            goto done;
+// From the Platform SDK
+bool GetEncoderClsid(const wchar_t* format, CLSID* pClsid)
+{
+    UINT  num = 0;
+    UINT  size = 0;
 
-        rimage = Bitmap::FromStream(istr);
+    ImageCodecInfo* pImageCodecInfo = NULL;
 
-    done:
-        if (istr != NULL)
-            istr->Release();
-
-        if (rimage == NULL && hgmem != NULL)
-            GlobalFree(hgmem);
-
-        return rimage;
-    }
-
-    // From the Platform SDK
-    bool GetEncoderClsid(const wchar_t* format, CLSID* pClsid)
-    {
-        UINT  num = 0;
-        UINT  size = 0;
-
-        ImageCodecInfo* pImageCodecInfo = NULL;
-
-        GetImageEncodersSize(&num, &size);
-        if(size == 0)
-            return false;
-
-        pImageCodecInfo = (ImageCodecInfo*)PMALLOC(size);
-        if(pImageCodecInfo == NULL)
-            return false;
-
-        GetImageEncoders(num, size, pImageCodecInfo);
-
-        for(UINT j = 0; j < num; ++j) {
-            if( wcscmp(pImageCodecInfo[j].MimeType, format) == 0 ) {
-                *pClsid = pImageCodecInfo[j].Clsid;
-                free(pImageCodecInfo);
-                return true;
-            }
-        }
-
-        PFREE(pImageCodecInfo);
+    GetImageEncodersSize(&num, &size);
+    if(size == 0)
         return false;
-    }
 
-    KhmDraw * g_theme = NULL;
-    ULONG_PTR gdiplus_token;
+    pImageCodecInfo = (ImageCodecInfo*)PMALLOC(size);
+    if(pImageCodecInfo == NULL)
+        return false;
 
-    extern "C" void khm_init_drawfuncs(void)
-    {
-        if (g_theme == NULL) {
-            GdiplusStartupInput gdip_inp;
+    GetImageEncoders(num, size, pImageCodecInfo);
 
-            GdiplusStartup(&gdiplus_token, &gdip_inp, NULL);
-
-            g_theme = PNEW KhmDraw;
-
-            g_theme->LoadTheme();
+    for(UINT j = 0; j < num; ++j) {
+        if( wcscmp(pImageCodecInfo[j].MimeType, format) == 0 ) {
+            *pClsid = pImageCodecInfo[j].Clsid;
+            free(pImageCodecInfo);
+            return true;
         }
     }
 
-    extern "C" void khm_exit_drawfuncs(void)
-    {
-        if (g_theme != NULL) {
-            delete g_theme;
-            g_theme = NULL;
+    PFREE(pImageCodecInfo);
+    return false;
+}
 
-            GdiplusShutdown(gdiplus_token);
-        }
+KhmDraw * g_theme = NULL;
+ULONG_PTR gdiplus_token;
+
+extern "C" void khm_init_drawfuncs(void)
+{
+    if (g_theme == NULL) {
+        GdiplusStartupInput gdip_inp;
+
+        GdiplusStartup(&gdiplus_token, &gdip_inp, NULL);
+
+        g_theme = PNEW KhmDraw;
+
+        g_theme->LoadTheme();
     }
+}
 
-    extern "C" void khm_reinit_drawfuncs(void)
-    {
-        if (g_theme != NULL) {
-            g_theme->UnloadTheme();
-            g_theme->LoadTheme();
-        }
+extern "C" void khm_exit_drawfuncs(void)
+{
+    if (g_theme != NULL) {
+        delete g_theme;
+        g_theme = NULL;
+
+        GdiplusShutdown(gdiplus_token);
     }
+}
 
-    DrawState GetIdentityDrawState(Identity& identity)
-    {
-        DrawState ds = DrawStateNone;
+extern "C" void khm_reinit_drawfuncs(void)
+{
+    if (g_theme != NULL) {
+        g_theme->UnloadTheme();
+        g_theme->LoadTheme();
+    }
+}
 
-        do {
-            if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0) {
+DrawState GetIdentityDrawState(Identity& identity)
+{
+    DrawState ds = DrawStateNone;
 
-                ds = DrawStateDisabled;
+    do {
+        if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0) {
 
-            } else if (identity.Exists(KCDB_ATTR_EXPIRE)) {
-                khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
-                khm_int64 now;
+            ds = DrawStateDisabled;
 
-                FILETIME ft;
+        } else if (identity.Exists(KCDB_ATTR_EXPIRE)) {
+            khm_int64 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
+            khm_int64 now;
 
-                GetSystemTimeAsFileTime(&ft);
-                now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
+            FILETIME ft;
 
-                if (now > expire) {
-                    ds = DrawStateExpired;
-                    break;
-                }
+            GetSystemTimeAsFileTime(&ft);
+            now = FtToInt(&ft) + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL);
 
-                khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
-
-                if (thr_crit != 0 && now > expire - thr_crit) {
-                    ds = DrawStateCritial;
-                    break;
-                }
-
-                khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
-
-                if (thr_warn != 0 && now > expire - thr_warn) {
-                    ds = DrawStateWarning;
-                    break;
-                }
+            if (now > expire) {
+                ds = DrawStateExpired;
+                break;
             }
-        } while (false);
 
-        return ds;
+            khm_int64 thr_crit = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_CRIT);
+
+            if (thr_crit != 0 && now > expire - thr_crit) {
+                ds = DrawStateCritial;
+                break;
+            }
+
+            khm_int64 thr_warn = identity.GetAttribFileTimeAsInt(KCDB_ATTR_THR_WARN);
+
+            if (thr_warn != 0 && now > expire - thr_warn) {
+                ds = DrawStateWarning;
+                break;
+            }
+        }
+    } while (false);
+
+    return ds;
+}
+
+extern "C"
+void
+khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act)
+{
+    Graphics g(hwnd);
+
+    HDC hdc = g.GetHDC();
+    Font font(hdc, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
+    g.ReleaseHDC(hdc);
+
+    StringFormat sf(StringFormatFlagsNoWrap);
+
+    sf.SetAlignment(StringAlignmentNear);
+    sf.SetLineAlignment(StringAlignmentCenter);
+    sf.SetTrimming(StringTrimmingEllipsisCharacter);
+
+    RectF rf;
+    g.MeasureString(act->caption, -1, &font, PointF(0.0, 0.0), &sf, &rf);
+        
+    lpm->itemWidth = (UINT)(rf.Width + g_theme->sz_margin.Width * 2 + g_theme->sz_icon_sm.Width);
+    lpm->itemHeight =(UINT)(rf.Height + g_theme->sz_margin.Height * 2);
+}
+
+extern "C"
+void
+khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
+{
+    Identity identity(act->data, false);
+
+    wchar_t * cap = act->caption;
+
+    DrawState draw_state = GetIdentityDrawState(identity);
+
+    Color color_bgl;
+    Color color_bgr;
+
+    Color color_fg = g_theme->c_text;
+
+    {
+        Color c_key;
+
+        if (lpd->itemState & (ODS_HOTLIGHT | ODS_SELECTED)) {
+            color_fg  = g_theme->c_text_selected;
+            c_key = g_theme->c_selection;
+        } else if (draw_state & DrawStateExpired) {
+            c_key = g_theme->c_expired;
+        } else if (draw_state & DrawStateWarning) {
+            c_key = g_theme->c_warning;
+        } else if (draw_state & DrawStateCritial) {
+            c_key = g_theme->c_critical;
+        } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0) {
+            c_key = g_theme->c_normal;
+        } else {
+            c_key = g_theme->c_empty;
+        }
+
+        color_bgl = g_theme->c_background + c_key * OUTLINE_OPACITY;
+        color_bgr = g_theme->c_background + c_key * OUTLINE_OPACITY_END;
     }
 
-    extern "C"
-    void
-    khm_measure_identity_menu_item(HWND hwnd, LPMEASUREITEMSTRUCT lpm, khui_action * act)
+    Graphics g(lpd->hDC);
+    Rect     r_item = RectFromRECT(&lpd->rcItem);
+
     {
-        Graphics g(hwnd);
+        LinearGradientBrush lgr(r_item, color_bgl, color_bgr, LinearGradientModeHorizontal);
+        g.FillRectangle(&lgr, r_item);
+    }
 
-        HDC hdc = g.GetHDC();
-        Font font(hdc, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
-        g.ReleaseHDC(hdc);
-
+    {
+        Font font(lpd->hDC, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
         StringFormat sf(StringFormatFlagsNoWrap);
+        SolidBrush br(color_fg);
 
         sf.SetAlignment(StringAlignmentNear);
         sf.SetLineAlignment(StringAlignmentCenter);
         sf.SetTrimming(StringTrimmingEllipsisCharacter);
 
-        RectF rf;
-        g.MeasureString(act->caption, -1, &font, PointF(0.0, 0.0), &sf, &rf);
-        
-        lpm->itemWidth = (UINT)(rf.Width + g_theme->sz_margin.Width * 2 + g_theme->sz_icon_sm.Width);
-        lpm->itemHeight =(UINT)(rf.Height + g_theme->sz_margin.Height * 2);
+        int margin = g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width * 2;
+
+        RectF rf((REAL)(r_item.X + margin),
+                 (REAL) r_item.Y,
+                 (REAL) r_item.Width - margin,
+                 (REAL) r_item.Height);
+
+        g.DrawString(cap, -1, &font, rf, &sf, &br);
     }
 
-    extern "C"
-    void
-    khm_draw_identity_menu_item(HWND hwnd, LPDRAWITEMSTRUCT lpd, khui_action * act)
-    {
-        Identity identity(act->data, false);
-
-        wchar_t * cap = act->caption;
-
-        DrawState draw_state = GetIdentityDrawState(identity);
-
-        Color color_bgl;
-        Color color_bgr;
-
-        Color color_fg = g_theme->c_text;
-
-        {
-            Color c_key;
-
-            if (lpd->itemState & (ODS_HOTLIGHT | ODS_SELECTED)) {
-                color_fg  = g_theme->c_text_selected;
-                c_key = g_theme->c_selection;
-            } else if (draw_state & DrawStateExpired) {
-                c_key = g_theme->c_expired;
-            } else if (draw_state & DrawStateWarning) {
-                c_key = g_theme->c_warning;
-            } else if (draw_state & DrawStateCritial) {
-                c_key = g_theme->c_critical;
-            } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) > 0) {
-                c_key = g_theme->c_normal;
-            } else {
-                c_key = g_theme->c_empty;
-            }
-
-            color_bgl = g_theme->c_background + c_key * OUTLINE_OPACITY;
-            color_bgr = g_theme->c_background + c_key * OUTLINE_OPACITY_END;
-        }
-
-        Graphics g(lpd->hDC);
-        Rect     r_item = RectFromRECT(&lpd->rcItem);
-
-        {
-            LinearGradientBrush lgr(r_item, color_bgl, color_bgr, LinearGradientModeHorizontal);
-            g.FillRectangle(&lgr, r_item);
-        }
-
-        {
-            Font font(lpd->hDC, (HFONT) GetStockObject(DEFAULT_GUI_FONT));
-            StringFormat sf(StringFormatFlagsNoWrap);
-            SolidBrush br(color_fg);
-
-            sf.SetAlignment(StringAlignmentNear);
-            sf.SetLineAlignment(StringAlignmentCenter);
-            sf.SetTrimming(StringTrimmingEllipsisCharacter);
-
-            int margin = g_theme->sz_icon_sm.Width + g_theme->sz_margin.Width * 2;
-
-            RectF rf((REAL)(r_item.X + margin),
-                     (REAL) r_item.Y,
-                     (REAL) r_item.Width - margin,
-                     (REAL) r_item.Height);
-
-            g.DrawString(cap, -1, &font, rf, &sf, &br);
-        }
-
-        if (identity.GetFlags() & KCDB_IDENT_FLAG_DEFAULT) {
-            g_theme->DrawStarWidget(g, Rect(r_item.X + g_theme->sz_margin.Width,
-                                            r_item.Y + (r_item.Height - g_theme->sz_icon_sm.Height) / 2,
-                                            g_theme->sz_icon_sm.Width,
-                                            g_theme->sz_icon_sm.Height),
-                                    (DrawState)
-                                    (((lpd->itemState & ODS_HOTLIGHT) ?
-                                      DrawStateHotTrack : DrawStateNone) |
-                                     ((lpd->itemState & ODS_SELECTED) ?
-                                      DrawStateSelected : DrawStateNone) |
-                                     DrawStateChecked)
-                                    );
-        }
+    if (identity.GetFlags() & KCDB_IDENT_FLAG_DEFAULT) {
+        g_theme->DrawStarWidget(g, Rect(r_item.X + g_theme->sz_margin.Width,
+                                        r_item.Y + (r_item.Height - g_theme->sz_icon_sm.Height) / 2,
+                                        g_theme->sz_icon_sm.Width,
+                                        g_theme->sz_icon_sm.Height),
+                                (DrawState)
+                                (((lpd->itemState & ODS_HOTLIGHT) ?
+                                  DrawStateHotTrack : DrawStateNone) |
+                                 ((lpd->itemState & ODS_SELECTED) ?
+                                  DrawStateSelected : DrawStateNone) |
+                                 DrawStateChecked)
+                                );
     }
+}
 }

@@ -564,6 +564,10 @@
     - ::KMSG_CRED_DIALOG_NEW_OPTIONS
     - ::KMSG_CRED_PROCESS
     - ::KMSG_CRED_END
+    - ::KMSG_CRED_IMPORT
+    - ::KMSG_CRED_ACQPRIV_ID
+    - ::KMSG_CRED_PREPROCESS_ID
+    - ::KMSG_CRED_IDSPEC
 
     All dialog message numbers are allocated in a contigous block.
 

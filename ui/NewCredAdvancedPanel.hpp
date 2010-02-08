@@ -24,29 +24,29 @@
 
 namespace nim {
 
-    class NewCredAdvancedPanel : public DialogWindow {
-        khui_new_creds * nc;
+class NewCredAdvancedPanel : public DialogWindow {
+    khui_new_creds * nc;
 
-    private:
-        HWND GetTabControl() {
-            return GetItem(IDC_NC_TAB);
-        }
+private:
+    HWND GetTabControl() {
+        return GetItem(IDC_NC_TAB);
+    }
 
-    public:
-        NewCredAdvancedPanel(khui_new_creds * _nc):
-            nc(_nc),
-            DialogWindow(MAKEINTRESOURCE(IDD_NC_PRIVINT_ADVANCED), khm_hInstance)
-        {}
+public:
+    NewCredAdvancedPanel(khui_new_creds * _nc):
+        nc(_nc),
+        DialogWindow(MAKEINTRESOURCE(IDD_NC_PRIVINT_ADVANCED), khm_hInstance)
+    {}
 
-        void InitializeTabs();
+    void InitializeTabs();
 
-        int  GetCurrentTabId();
+    int  GetCurrentTabId();
 
-        void GetTabPlacement(RECT& r);
+    void GetTabPlacement(RECT& r);
 
-        void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
+    void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
 
-        LRESULT OnNotify(int id, NMHDR * pnmh);
-    };
+    LRESULT OnNotify(int id, NMHDR * pnmh);
+};
 
 }

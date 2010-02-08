@@ -32,49 +32,49 @@
 
 namespace nim {
 
-    class NewCredPanels {
-    public:
-        khui_new_creds          *nc;
+class NewCredPanels {
+public:
+    khui_new_creds          *nc;
 
-        NewCredAdvancedPanel    m_advanced;
+    NewCredAdvancedPanel    m_advanced;
 
-        NewCredBasicPanel       m_basic;
+    NewCredBasicPanel       m_basic;
 
-        NewCredNoPromptPanel    m_noprompts;
+    NewCredNoPromptPanel    m_noprompts;
 
-        NewCredPersistPanel     m_persist;
+    NewCredPersistPanel     m_persist;
 
-        NewCredIdentityConfigWizard m_cfgwiz;
+    NewCredIdentityConfigWizard m_cfgwiz;
 
-        HWND                    hwnd_current;
-                                /*!< Handle to currently selected
-                                  panel window */
+    HWND                    hwnd_current;
+    /*!< Handle to currently selected
+      panel window */
 
-        int                     idx_current;
-                                /*!< Index of currently selected panel
-                                  in nc or NC_PRIVINT_PANEL if it's
-                                  the privileged interaction panel. */
+    int                     idx_current;
+    /*!< Index of currently selected panel
+      in nc or NC_PRIVINT_PANEL if it's
+      the privileged interaction panel. */
 
-        // The privileged interaction panel
+    // The privileged interaction panel
 #define NC_PRIVINT_PANEL    -1
 
-        NewCredPanels(khui_new_creds *_nc) :
-            nc(_nc),
-            m_advanced(_nc),
-            m_basic(_nc),
-            m_noprompts(_nc),
-            m_persist(_nc),
-            m_cfgwiz(_nc),
-            hwnd_current(NULL),
-            idx_current(NC_PRIVINT_PANEL)
-        {}
+    NewCredPanels(khui_new_creds *_nc) :
+        nc(_nc),
+        m_advanced(_nc),
+        m_basic(_nc),
+        m_noprompts(_nc),
+        m_persist(_nc),
+        m_cfgwiz(_nc),
+        hwnd_current(NULL),
+        idx_current(NC_PRIVINT_PANEL)
+    {}
 
-        void Create(HWND parent);
+    void Create(HWND parent);
 
-        HWND UpdateLayout();
+    HWND UpdateLayout();
 
-        bool IsSavePasswordAllowed();
+    bool IsSavePasswordAllowed();
 
-        khui_new_creds_privint_panel * GetPrivintPanel(HWND);
-    };
+    khui_new_creds_privint_panel * GetPrivintPanel(HWND);
+};
 }

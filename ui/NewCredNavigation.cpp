@@ -30,168 +30,168 @@ namespace nim {
 
 #define CFG_CLOSE_AFTER_PROCESS_END L"CredWindow\\Windows\\NewCred\\CloseAfterProcessEnd"
 
-    HWND NewCredNavigation::UpdateLayout()
-    {
-        HDWP dwp;
+HWND NewCredNavigation::UpdateLayout()
+{
+    HDWP dwp;
 
-        dwp = BeginDeferWindowPos(8);
+    dwp = BeginDeferWindowPos(8);
 
-        dwp = DeferWindowPos(dwp, GetItem(IDC_BACK), NULL, 0, 0, 0, 0,
-                             ((IsControlEnabled(Prev)) ?
-                              SWP_SHOWONLY : SWP_HIDEONLY));
+    dwp = DeferWindowPos(dwp, GetItem(IDC_BACK), NULL, 0, 0, 0, 0,
+                         ((IsControlEnabled(Prev)) ?
+                          SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetItem(IDC_NEXT), NULL, 0, 0, 0, 0,
-                             ((IsControlEnabled(Next)) ?
-                              SWP_SHOWONLY : SWP_HIDEONLY));
+    dwp = DeferWindowPos(dwp, GetItem(IDC_NEXT), NULL, 0, 0, 0, 0,
+                         ((IsControlEnabled(Next)) ?
+                          SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetItem(IDC_FINISH), NULL, 0, 0, 0, 0,
-                             ((IsControlEnabled(Finish)) ?
-                              SWP_SHOWONLY : SWP_HIDEONLY));
+    dwp = DeferWindowPos(dwp, GetItem(IDC_FINISH), NULL, 0, 0, 0, 0,
+                         ((IsControlEnabled(Finish)) ?
+                          SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetItem(IDC_RETRY), NULL, 0, 0, 0, 0,
-                             ((IsControlEnabled(Retry)) ?
-                              SWP_SHOWONLY : SWP_HIDEONLY));
+    dwp = DeferWindowPos(dwp, GetItem(IDC_RETRY), NULL, 0, 0, 0, 0,
+                         ((IsControlEnabled(Retry)) ?
+                          SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetItem(IDC_NC_ABORT), NULL, 0, 0, 0, 0,
-                             ((IsControlEnabled(Abort)) ?
-                              SWP_SHOWONLY : SWP_HIDEONLY));
+    dwp = DeferWindowPos(dwp, GetItem(IDC_NC_ABORT), NULL, 0, 0, 0, 0,
+                         ((IsControlEnabled(Abort)) ?
+                          SWP_SHOWONLY : SWP_HIDEONLY));
 
-        dwp = DeferWindowPos(dwp, GetItem(IDCANCEL), NULL, 0, 0, 0, 0,
-                             (!(IsControlEnabled(Abort)) &&
-                              !(IsControlEnabled(Close))) ?
-                             SWP_SHOWONLY : SWP_HIDEONLY);
+    dwp = DeferWindowPos(dwp, GetItem(IDCANCEL), NULL, 0, 0, 0, 0,
+                         (!(IsControlEnabled(Abort)) &&
+                          !(IsControlEnabled(Close))) ?
+                         SWP_SHOWONLY : SWP_HIDEONLY);
 
-        dwp = DeferWindowPos(dwp, GetItem(IDC_NC_CLOSE), NULL, 0, 0, 0, 0,
-                             (IsControlEnabled(Close)) ?
-                             SWP_SHOWONLY : SWP_HIDEONLY);
+    dwp = DeferWindowPos(dwp, GetItem(IDC_NC_CLOSE), NULL, 0, 0, 0, 0,
+                         (IsControlEnabled(Close)) ?
+                         SWP_SHOWONLY : SWP_HIDEONLY);
 
-        dwp = DeferWindowPos(dwp, GetItem(IDC_CLOSEIF), NULL, 0, 0, 0, 0,
-                             ((IsControlEnabled(ShowCloseIf)) ?
-                              SWP_SHOWONLY : SWP_HIDEONLY));
+    dwp = DeferWindowPos(dwp, GetItem(IDC_CLOSEIF), NULL, 0, 0, 0, 0,
+                         ((IsControlEnabled(ShowCloseIf)) ?
+                          SWP_SHOWONLY : SWP_HIDEONLY));
 
-        if (IsControlEnabled(ShowCloseIf)) {
-            khm_int32 t = 1;
+    if (IsControlEnabled(ShowCloseIf)) {
+        khm_int32 t = 1;
 
-            khc_read_int32(NULL, CFG_CLOSE_AFTER_PROCESS_END, &t);
+        khc_read_int32(NULL, CFG_CLOSE_AFTER_PROCESS_END, &t);
 
-            CheckDlgButton(hwnd, IDC_CLOSEIF, ((t)? BST_CHECKED: BST_UNCHECKED));
-            if (t)
-                m_state &= ~NoClose;
-            else
-                m_state |= NoClose;
-        }
-
-        EndDeferWindowPos(dwp);
-
-        return GetItem((IsControlEnabled(Next))? IDC_NEXT :
-                       (IsControlEnabled(Finish))? IDC_FINISH :
-                       (IsControlEnabled(Close))? IDC_NC_CLOSE :
-                       (IsControlEnabled(Abort))? IDC_NC_ABORT :
-                       IDCANCEL);
+        CheckDlgButton(hwnd, IDC_CLOSEIF, ((t)? BST_CHECKED: BST_UNCHECKED));
+        if (t)
+            m_state &= ~NoClose;
+        else
+            m_state |= NoClose;
     }
 
-    void NewCredNavigation::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
-    {
-        AutoRef<NewCredWizard> w (NewCredWizard::FromNC(nc));
+    EndDeferWindowPos(dwp);
 
-        if (codeNotify == BN_CLICKED) {
-            switch (id) {
-            case IDC_BACK:
-                w->Navigate( NC_PAGET_PREV );
-                return;
+    return GetItem((IsControlEnabled(Next))? IDC_NEXT :
+                   (IsControlEnabled(Finish))? IDC_FINISH :
+                   (IsControlEnabled(Close))? IDC_NC_CLOSE :
+                   (IsControlEnabled(Abort))? IDC_NC_ABORT :
+                   IDCANCEL);
+}
 
-            case IDC_NEXT:
-                w->Navigate( NC_PAGET_NEXT );
-                return;
+void NewCredNavigation::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
+{
+    AutoRef<NewCredWizard> w (NewCredWizard::FromNC(nc));
 
-            case IDC_RETRY:
-            case IDC_FINISH:
-                w->Navigate( NC_PAGET_FINISH);
-                return;
+    if (codeNotify == BN_CLICKED) {
+        switch (id) {
+        case IDC_BACK:
+            w->Navigate( NC_PAGET_PREV );
+            return;
 
-            case IDCANCEL:
-            case IDC_NC_CLOSE:
-            case IDC_NC_ABORT:
-                // These messages can result in the New Credentials
-                // Wizard window being destroyed.  Since we don't have
-                // a great reference counting mechanism, we can't
-                // initiate an EndDialog() from here.
-                ::PostMessage(w->hwnd, WM_COMMAND, MAKEWPARAM(IDCANCEL, BN_CLICKED),
-                              (LPARAM) hwndCtl);
-                return;
+        case IDC_NEXT:
+            w->Navigate( NC_PAGET_NEXT );
+            return;
 
-            case IDC_CLOSEIF:
-                {
-                    khm_boolean should_close;
+        case IDC_RETRY:
+        case IDC_FINISH:
+            w->Navigate( NC_PAGET_FINISH);
+            return;
 
-                    should_close = (IsDlgButtonChecked(hwnd, IDC_CLOSEIF) == BST_CHECKED);
+        case IDCANCEL:
+        case IDC_NC_CLOSE:
+        case IDC_NC_ABORT:
+            // These messages can result in the New Credentials
+            // Wizard window being destroyed.  Since we don't have
+            // a great reference counting mechanism, we can't
+            // initiate an EndDialog() from here.
+            ::PostMessage(w->hwnd, WM_COMMAND, MAKEWPARAM(IDCANCEL, BN_CLICKED),
+                          (LPARAM) hwndCtl);
+            return;
 
-                    if (should_close)
-                        DisableState(NoClose);
-                    else
-                        EnableState(NoClose);
-                    khc_write_int32(NULL, CFG_CLOSE_AFTER_PROCESS_END, should_close);
-                }
-                return;
+        case IDC_CLOSEIF:
+            {
+                khm_boolean should_close;
+
+                should_close = (IsDlgButtonChecked(hwnd, IDC_CLOSEIF) == BST_CHECKED);
+
+                if (should_close)
+                    DisableState(NoClose);
+                else
+                    EnableState(NoClose);
+                khc_write_int32(NULL, CFG_CLOSE_AFTER_PROCESS_END, should_close);
             }
+            return;
         }
     }
+}
 
-    void NewCredNavigation::CheckControls()
-    {
-        khui_new_creds_privint_panel * p;
-        AutoRef<NewCredWizard> cw (NewCredWizard::FromNC(nc));
+void NewCredNavigation::CheckControls()
+{
+    khui_new_creds_privint_panel * p;
+    AutoRef<NewCredWizard> cw (NewCredWizard::FromNC(nc));
 
-        DisableControl(Next | Prev | Finish);
+    DisableControl(Next | Prev | Finish);
 
-        khui_cw_lock_nc(nc);
+    khui_cw_lock_nc(nc);
 
-        p = khui_cw_get_current_privint_panel(nc);
+    p = khui_cw_get_current_privint_panel(nc);
 
-        switch (cw->page) {
-        case NC_PAGE_CREDOPT_WIZ:
+    switch (cw->page) {
+    case NC_PAGE_CREDOPT_WIZ:
 
-            if (cw->m_privint.idx_current == NC_PRIVINT_PANEL) {
+        if (cw->m_privint.idx_current == NC_PRIVINT_PANEL) {
 
-                if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
-                    EnableControl(Next);
-
-                if (p && QPREV(p) ||
-                    (nc->n_types > 0 && !(nc->types[0].nct->flags & KHUI_NCT_FLAG_DISABLED)))
-                    EnableControl(Prev);
-
-            } else {
-
-                int idx = cw->m_privint.idx_current;
-
-                if ((idx + 1 < (int) nc->n_types &&
-                     !(nc->types[idx + 1].nct->flags & KHUI_NCT_FLAG_DISABLED)) ||
-                    p != NULL ||
-                    KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
-                    EnableControl(Next);
-
-                if (idx > 0)
-                    EnableControl(Prev);
-
-            }
-            break;
-
-        case NC_PAGE_PROGRESS:
-            if (p)
-                EnableControl(Prev);
-            break;
-
-        default:
             if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
                 EnableControl(Next);
 
-            if (p && QPREV(p))
+            if (p && QPREV(p) ||
+                (nc->n_types > 0 && !(nc->types[0].nct->flags & KHUI_NCT_FLAG_DISABLED)))
                 EnableControl(Prev);
+
+        } else {
+
+            int idx = cw->m_privint.idx_current;
+
+            if ((idx + 1 < (int) nc->n_types &&
+                 !(nc->types[idx + 1].nct->flags & KHUI_NCT_FLAG_DISABLED)) ||
+                p != NULL ||
+                KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
+                EnableControl(Next);
+
+            if (idx > 0)
+                EnableControl(Prev);
+
         }
+        break;
 
-        khui_cw_unlock_nc(nc);
+    case NC_PAGE_PROGRESS:
+        if (p)
+            EnableControl(Prev);
+        break;
 
-        if (khui_cw_is_ready(nc) && !IsControlEnabled(Retry))
-            EnableControl(Finish);
+    default:
+        if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
+            EnableControl(Next);
+
+        if (p && QPREV(p))
+            EnableControl(Prev);
     }
+
+    khui_cw_unlock_nc(nc);
+
+    if (khui_cw_is_ready(nc) && !IsControlEnabled(Retry))
+        EnableControl(Finish);
+}
 }

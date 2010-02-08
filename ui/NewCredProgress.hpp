@@ -24,21 +24,21 @@
 
 namespace nim {
 
-    class NewCredProgress : public DialogWindow {
-    public:
-        khui_new_creds *nc;
+class NewCredProgress : public DialogWindow {
+public:
+    khui_new_creds *nc;
 
-        AutoRef<ControlWindow> cw_container;
+    AutoRef<ControlWindow> cw_container;
 
-        NewCredProgress(khui_new_creds * _nc) :
-            DialogWindow( MAKEINTRESOURCE(IDD_NC_PROGRESS), khm_hInstance ),
-            nc(_nc),
-	    cw_container(NULL)
-	{ }
+    NewCredProgress(khui_new_creds * _nc) :
+        DialogWindow( MAKEINTRESOURCE(IDD_NC_PROGRESS), khm_hInstance ),
+        nc(_nc),
+        cw_container(NULL)
+    { }
 
-        HWND UpdateLayout() {
-            return NULL;
-        }
-    };
+    HWND UpdateLayout() {
+        return NULL;
+    }
+};
 
 }

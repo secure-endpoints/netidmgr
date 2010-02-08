@@ -31,55 +31,55 @@
 
 namespace nim
 {
-    class CredentialListConstructor {
-        Identity identity;
-        CredentialSet credset;
+class CredentialListConstructor {
+    Identity identity;
+    CredentialSet credset;
 
-        typedef std::map<khm_int32, int> StatMap;
+    typedef std::map<khm_int32, int> StatMap;
 
-        StatMap map;
+    StatMap map;
 
-    public:
-        CredentialListConstructor(Identity & _identity, CredentialSet & _credset) :
-            identity(_identity), credset(_credset) {}
+public:
+    CredentialListConstructor(Identity & _identity, CredentialSet & _credset) :
+        identity(_identity), credset(_credset) {}
 
-        static khm_int32 KHMCALLBACK CalculateStatCallback(Credential& c, void * param) {
-            CredentialListConstructor * l = reinterpret_cast<CredentialListConstructor *>(param);
+    static khm_int32 KHMCALLBACK CalculateStatCallback(Credential& c, void * param) {
+        CredentialListConstructor * l = reinterpret_cast<CredentialListConstructor *>(param);
 
-            if (c.GetIdentity() == l->identity) {
-                khm_int32 t = (khm_int32) c.GetType();
-                l->map[t]++;
-            }
-
-            return KHM_ERROR_SUCCESS;
+        if (c.GetIdentity() == l->identity) {
+            khm_int32 t = (khm_int32) c.GetType();
+            l->map[t]++;
         }
 
-        std::wstring GetCaption() {
-            std::wstringstream s;
-
-            credset.Apply(CalculateStatCallback, this);
-
-            for (StatMap::iterator i = map.begin(); i != map.end(); ++i) {
-                CredentialType ct(i->first);
-
-                if (i != map.begin())
-                    s << L"  ";
-
-                s << ct.GetResourceString(KCDB_RES_INSTANCE, KCDB_RFS_SHORT) << L" (" << i->second << L")";
-            }
-
-            std::wstring ss = s.str();
-            return ss;
-        }
-    };
-
-    void CwIdentityCredentialTypesListElement::UpdateLayoutPost(Graphics& g, const Rect& layout) {
-        CwTable * table = dynamic_cast<CwTable *>(owner);
-        CredentialListConstructor lc(identity, table->credset);
-
-        SetCaption(lc.GetCaption());
-
-        __super::UpdateLayoutPost(g, layout);
+        return KHM_ERROR_SUCCESS;
     }
+
+    std::wstring GetCaption() {
+        std::wstringstream s;
+
+        credset.Apply(CalculateStatCallback, this);
+
+        for (StatMap::iterator i = map.begin(); i != map.end(); ++i) {
+            CredentialType ct(i->first);
+
+            if (i != map.begin())
+                s << L"  ";
+
+            s << ct.GetResourceString(KCDB_RES_INSTANCE, KCDB_RFS_SHORT) << L" (" << i->second << L")";
+        }
+
+        std::wstring ss = s.str();
+        return ss;
+    }
+};
+
+void CwIdentityCredentialTypesListElement::UpdateLayoutPost(Graphics& g, const Rect& layout) {
+    CwTable * table = dynamic_cast<CwTable *>(owner);
+    CredentialListConstructor lc(identity, table->credset);
+
+    SetCaption(lc.GetCaption());
+
+    __super::UpdateLayoutPost(g, layout);
+}
 }
 

@@ -27,46 +27,46 @@
 
 namespace nim {
 
-    class IconSelectDialog :
+class IconSelectDialog :
         virtual public DialogWindow {
 
-        Identity m_identity;
-        AutoRef<PictureCropWindow> m_cropper;
+    Identity m_identity;
+    AutoRef<PictureCropWindow> m_cropper;
 
-        enum {
-            MAXCCH_URL = 2048
-        };
-
-    public:
-        IconSelectDialog(Identity&);
-
-        ~IconSelectDialog();
-
-        bool PrepareIdentityIconDirectory(wchar_t path[MAX_PATH]);
-
-        void DoBrowse();
-
-        void DoFetchURL();
-
-        void DoFetchFavicon();
-
-        void DoFetchGravatar();
-
-        void DoOk();
-
-        virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam);
-
-        virtual void OnClose() {
-            EndDialog(1);
-        }
-
-        virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
-
-        virtual void OnDestroy(void);
-
-        virtual LRESULT OnHelp(HELPINFO * info);
-
-        virtual LRESULT OnNotify(int id, NMHDR * pnmh);
+    enum {
+        MAXCCH_URL = 2048
     };
+
+public:
+    IconSelectDialog(Identity&);
+
+    ~IconSelectDialog();
+
+    bool PrepareIdentityIconDirectory(wchar_t path[MAX_PATH]);
+
+    void DoBrowse();
+
+    void DoFetchURL();
+
+    void DoFetchFavicon();
+
+    void DoFetchGravatar();
+
+    void DoOk();
+
+    virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam);
+
+    virtual void OnClose() {
+        EndDialog(1);
+    }
+
+    virtual void OnCommand(int id, HWND hwndCtl, UINT codeNotify);
+
+    virtual void OnDestroy(void);
+
+    virtual LRESULT OnHelp(HELPINFO * info);
+
+    virtual LRESULT OnNotify(int id, NMHDR * pnmh);
+};
 
 }
