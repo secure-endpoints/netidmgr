@@ -30,6 +30,11 @@
 #include<windows.h>
 #include<utils.h>
 
+#if defined(DEBUG) && (defined(KH_BUILD_PRIVATE) || defined(KH_BUILD_SPECIAL))
+#define USE_FILE_LOG 1
+#define DUMP_MEMORY_LEAKS 1
+#endif
+
 KHMEXP wchar_t *
 perf_wcsdup(const char * file, int line, const wchar_t * str)
 {
