@@ -38,13 +38,14 @@ void        NewCredIdentitySelector::UpdateLayout()
     if (nc->n_identities > 0) {
         Identity primary_id(nc->identities[0], false);
 
-        if (m_current &&
+        if (m_current != NULL &&
             m_current->identity != primary_id) {
             delete m_current;
             m_current = NULL;
         }
 
-        m_current = PNEW IdentityDisplayData(primary_id);
+        if (m_current == NULL)
+            m_current = PNEW IdentityDisplayData(primary_id);
     } else {
         if (m_current) {
             delete m_current;

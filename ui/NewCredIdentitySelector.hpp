@@ -57,6 +57,13 @@ public:
         DialogWindow(MAKEINTRESOURCE(IDD_NC_IDSEL), khm_hInstance)
     {}
 
+    ~NewCredIdentitySelector() {
+        if (m_current) {
+            delete m_current;
+            m_current = NULL;
+        }
+    }
+
     void    UpdateLayout();
 
     void    SetStatus(const wchar_t * status);
