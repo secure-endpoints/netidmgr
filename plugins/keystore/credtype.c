@@ -267,11 +267,11 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
         ks_keystore_serialize(ks, NULL, &cb_buffer);
 
         if (cb_buffer) {
-            buffer = malloc(cb_buffer);
+            buffer = PMALLOC(cb_buffer);
             ks_keystore_serialize(ks, buffer, &cb_buffer);
             WriteFile(hf, buffer, (DWORD) cb_buffer, &numwritten, NULL);
             assert(numwritten == cb_buffer);
-            free(buffer);
+            PFREE(buffer);
             buffer = NULL;
         }
 
@@ -280,10 +280,10 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
         ks_keystore_serialize(ks, NULL, &cb_buffer);
 
         if (cb_buffer) {
-            buffer = malloc(cb_buffer);
+            buffer = PMALLOC(cb_buffer);
             ks_keystore_serialize(ks, buffer, &cb_buffer);
             khc_write_binary(csp, L"KeystoreData", buffer, cb_buffer);
-            free(buffer);
+            PFREE(buffer);
             buffer = NULL;
         }
     } else {
@@ -295,7 +295,7 @@ write_keystore_to_location(keystore_t * ks, const wchar_t * path, khm_handle csp
     ks_keystore_set_flags(ks, KS_FLAG_MODIFIED, 0);
 
     if (buffer)
-        free(buffer);
+        PFREE(buffer);
 }
 
 
@@ -338,7 +338,7 @@ create_keystore_from_location(const wchar_t * path, khm_handle csp)
             }
 
             cb_buffer = (size_t) llsize.QuadPart;
-            buffer = malloc(cb_buffer);
+            buffer = PMALLOC(cb_buffer);
 
             if (buffer == NULL)
                 goto done_file;
@@ -356,7 +356,7 @@ create_keystore_from_location(const wchar_t * path, khm_handle csp)
             cb_buffer == 0)
             goto done_reg;
 
-        buffer  = malloc(cb_buffer);
+        buffer  = PMALLOC(cb_buffer);
         if (buffer == NULL)
             goto done_reg;
 
@@ -402,7 +402,7 @@ create_keystore_from_location(const wchar_t * path, khm_handle csp)
     }
 
     if (buffer)
-        free(buffer);
+        PFREE(buffer);
 
     return ks;
 }
@@ -771,7 +771,7 @@ get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks)
     LeaveCriticalSection(&cs_ks);
 
     if (n_ks > 0) {
-        *pks = malloc(sizeof((*pks)[0]) * n_ks);
+        *pks = PMALLOC(sizeof((*pks)[0]) * n_ks);
         assert(*pks);
         for (i=0; i < n_ks; i++)
             (*pks)[i] = aks[i];
@@ -832,7 +832,7 @@ free_keystores_list(keystore_t ** aks, khm_size n_ks)
     }
 
     if (aks)
-        free(aks);
+        PFREE(aks);
 }
 
 khm_int32

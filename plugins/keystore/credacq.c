@@ -318,7 +318,7 @@ creddlg_show_passwords(HWND hwlist, keystore_t * ks)
 
                     kcdb_cred_get_attrib(credential, L"Krb5PrivateKey1", NULL, NULL, &cb_data);
                     if (cb_data != 0) {
-                        pdata = malloc(cb_data);
+                        pdata = PMALLOC(cb_data);
                         kcdb_cred_get_attrib(credential, L"Krb5PrivateKey1", NULL, pdata, &cb_data);
                     }
 
@@ -329,7 +329,7 @@ creddlg_show_passwords(HWND hwlist, keystore_t * ks)
 
                     if (pdata) {
                         SecureZeroMemory(pdata, cb_data);
-                        free(pdata);
+                        PFREE(pdata);
                     }
 
                 } else if (KHM_SUCCEEDED(kcdb_cred_get_attrib(credential, L"PasswordString", NULL, NULL, NULL))) {
@@ -539,9 +539,9 @@ creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
         ks_keystore_release(d->aks[i]);
     }
     if (d->aks)
-        free(d->aks);
+        PFREE(d->aks);
     if (d->hw_privints)
-        free(d->hw_privints);
+        PFREE(d->hw_privints);
     if (d->ks)
         ks_keystore_release(d->ks);
 
@@ -562,7 +562,7 @@ creddlg_WMNC_IDENTITY_CHANGE_password(HWND hwnd, struct nc_dialog_data * d)
         return TRUE;
     }
 
-    d->hw_privints = malloc(sizeof(d->hw_privints[0]) * d->n_ks);
+    d->hw_privints = PMALLOC(sizeof(d->hw_privints[0]) * d->n_ks);
     for (i=0; i < d->n_ks; i++) {
         d->cur_idx = i;
         d->hw_privints[i] = CreateDialogParam(hResModule,
@@ -795,7 +795,7 @@ add_identkeys_from_credset(keystore_t * ks, khm_handle credset)
         ks_serialize_credential(cred, NULL, &cb);
         if (cb == 0)
             goto done;
-        data = malloc(cb);
+        data = PMALLOC(cb);
 
         ks_serialize_credential(cred, data, &cb);
         ks_datablob_copy(&idk->plain_key, data, cb, 0);
@@ -809,7 +809,7 @@ add_identkeys_from_credset(keystore_t * ks, khm_handle credset)
         if (identity) kcdb_identity_release(identity);
         if (identpro) kcdb_identpro_release(identpro);
         if (idk) ks_identkey_free(idk);
-        if (data) free(data);
+        if (data) PFREE(data);
     }
 }
 
@@ -1037,7 +1037,7 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
     size_t cb = 0;
     struct nc_dialog_data * d;
 
-    d = malloc(sizeof(*d));
+    d = PMALLOC(sizeof(*d));
     ZeroMemory(d, sizeof(*d));
 
     d->nct.type = credtype_id;
@@ -1049,7 +1049,7 @@ handle_kmsg_cred_new_creds(khui_new_creds * nc) {
     assert(cb > 0);
     cb += sizeof(wchar_t);
 
-    d->nct.name = malloc(cb);
+    d->nct.name = PMALLOC(cb);
     StringCbCopy(d->nct.name, cb, wshortdesc);
 
     d->nct.h_module = hResModule;
@@ -1078,7 +1078,7 @@ handle_kmsg_cred_renew_creds(khui_new_creds * nc) {
 
     /* TODO: add additional initialization etc. as needed */
 
-    d = malloc(sizeof(*d));
+    d = PMALLOC(sizeof(*d));
     ZeroMemory(d, sizeof(*d));
 
     d->nct.type = credtype_id;
@@ -1475,14 +1475,14 @@ handle_kmsg_cred_end(khui_new_creds * nc) {
         khui_cw_del_type(nc, credtype_id);
 
         if (d->nct.name)
-            free(d->nct.name);
+            PFREE(d->nct.name);
 
         if (d->ks) {
             ks_keystore_release(d->ks);
             d->ks = NULL;
         }
 
-        free(d);
+        PFREE(d);
     }
 
     return KHM_ERROR_SUCCESS;

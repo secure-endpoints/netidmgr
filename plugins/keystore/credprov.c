@@ -242,7 +242,7 @@ handle_kmsg_system_exit(void)
     EnterCriticalSection(&cs_ks);
     for (i=0; i < n_key_type_map; i++) {
         kcdb_credtype_unregister(key_type_map[i].ctype);
-        free(key_type_map[i].provider_name);
+        PFREE(key_type_map[i].provider_name);
         ZeroMemory(&key_type_map[i], sizeof(key_type_map[i]));
     }
     if (key_type_map)
@@ -435,7 +435,7 @@ handle_kmsg_cred_pp_begin(khui_property_sheet * ps)
         ps->cred) {
         /* We have been requested to show a property sheet for one of
            our credentials. */
-        p = malloc(sizeof(*p));
+        p = PMALLOC(sizeof(*p));
         ZeroMemory(p, sizeof(*p));
 
         p->dwSize = sizeof(*p);
@@ -461,7 +461,7 @@ handle_kmsg_cred_pp_end(khui_property_sheet * ps)
     khui_ps_find_page(ps, credtype_id, &p);
     if (p) {
         if (p->p_page)
-            free(p->p_page);
+            PFREE(p->p_page);
         p->p_page = NULL;
     }
 
@@ -495,7 +495,7 @@ handle_idk_kmsg_cred_pp_begin(khui_property_sheet * ps)
         ps->cred) {
         /* We have been requested to show a property sheet for one of
            our credentials. */
-        p = malloc(sizeof(*p));
+        p = PMALLOC(sizeof(*p));
         ZeroMemory(p, sizeof(*p));
 
         p->dwSize = sizeof(*p);
@@ -521,7 +521,7 @@ handle_idk_kmsg_cred_pp_end(khui_property_sheet * ps)
     khui_ps_find_page(ps, credtype_id, &p);
     if (p) {
         if (p->p_page)
-            free(p->p_page);
+            PFREE(p->p_page);
         p->p_page = NULL;
     }
 

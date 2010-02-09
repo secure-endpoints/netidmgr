@@ -50,7 +50,7 @@ config_ids_dlgproc(HWND hwnd,
     switch (uMsg) {
     case WM_INITDIALOG:
         {
-            d = malloc(sizeof(*d));
+            d = PMALLOC(sizeof(*d));
             assert(d);
             ZeroMemory(d, sizeof(*d));
 
@@ -89,7 +89,7 @@ config_ids_dlgproc(HWND hwnd,
         if (d) {
             /* TODO: Perform any additional uninitialization */
 
-            free (d);
+            PFREE (d);
             SetWindowLongPtr(hwnd, DWLP_USER, 0);
         }
         break;

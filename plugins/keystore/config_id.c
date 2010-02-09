@@ -372,7 +372,7 @@ config_id_dlgproc(HWND hwnd,
     switch (uMsg) {
     case WM_INITDIALOG:
         {
-            d = malloc(sizeof(*d));
+            d = PMALLOC(sizeof(*d));
             assert(d);
             ZeroMemory(d, sizeof(*d));
 
@@ -454,7 +454,7 @@ config_id_dlgproc(HWND hwnd,
                 if (d->ident)
                     kcdb_identity_release(d->ident);
 
-                free(d);
+                PFREE(d);
                 SetWindowLongPtr(hwnd, DWLP_USER, 0);
             }
         }

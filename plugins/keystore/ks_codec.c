@@ -341,7 +341,7 @@ decode_KS_CountedString(Codec * e, khm_size maxcch)
     }
 
     if (cch > 0) {
-        str = malloc((cch + 1) * sizeof(wchar_t));
+        str = PMALLOC((cch + 1) * sizeof(wchar_t));
         if (str == NULL) {
             e->last_error = KHM_ERROR_NO_RESOURCES;
             return NULL;
@@ -533,7 +533,7 @@ encode_KS_Credential(khm_handle credential, Codec * e)
     if (KHM_FAILED(rv))
         goto done;
 
-    attrlist = malloc(sizeof(khm_int32) * n_attrs);
+    attrlist = PMALLOC(sizeof(khm_int32) * n_attrs);
     rv = kcdb_attrib_get_ids(AND_FLAGS, EQ_FLAGS, attrlist, &n_attrs);
     if (KHM_FAILED(rv))
         goto done;
@@ -649,7 +649,7 @@ encode_KS_Credential(khm_handle credential, Codec * e)
 
  done:
     if (attrlist)
-        free(attrlist);
+        PFREE(attrlist);
     if (KHM_FAILED(rv))
         e->last_error = rv;
 }
@@ -698,10 +698,10 @@ decode_KS_Credential(Codec * e)
     done_with_names:
         if (identity) kcdb_identity_release(identity);
         if (identpro) kcdb_identpro_release(identpro);
-        if (cred_name) free(cred_name);
-        if (cred_type_name) free(cred_type_name);
-        if (ident_name) free(ident_name);
-        if (ident_prov_name) free(ident_prov_name);
+        if (cred_name) PFREE(cred_name);
+        if (cred_type_name) PFREE(cred_type_name);
+        if (ident_name) PFREE(ident_name);
+        if (ident_prov_name) PFREE(ident_prov_name);
     }
 
     if (!ENCOK(e)) goto done;
@@ -719,7 +719,7 @@ decode_KS_Credential(Codec * e)
             kcdb_cred_set_attrib(credential, attrib_name, db.data, db.cb_data);
 
         if (attrib_name)
-            free(attrib_name);
+            PFREE(attrib_name);
         ks_datablob_free(&db);
     }
     
@@ -903,7 +903,7 @@ decode_KS_Configuration(Codec * e)
                 if (ENCOK(e))
                     rv = khc_memory_store_add(conf, name, KC_STRING, val, KCONF_MAXCB_STRING);
                 if (val)
-                    free(val);
+                    PFREE(val);
             }
             break;
 

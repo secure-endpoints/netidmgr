@@ -40,7 +40,7 @@ ks_datablob_free(datablob_t * pd)
 {
     if (pd->data) {
         SecureZeroMemory(pd->data, pd->cb_data);
-        free(pd->data);
+        PFREE(pd->data);
         pd->data = NULL;
     }
     pd->cb_data = 0;
@@ -56,7 +56,7 @@ ks_datablob_copy(datablob_t *dest, const void * data, khm_size cb_data, khm_size
     else
         dest->cb_alloc = cb_data;
 
-    dest->data = malloc(cb_data);
+    dest->data = PMALLOC(cb_data);
     assert(dest->data != NULL);
 
     if (dest->data == NULL) {
@@ -82,7 +82,7 @@ ks_datablob_dup(datablob_t * dest, const datablob_t * src)
 
     dest->cb_data = src->cb_data;
     dest->cb_alloc = src->cb_alloc;
-    dest->data = malloc(src->cb_alloc);
+    dest->data = PMALLOC(src->cb_alloc);
     assert(dest->data);
 
     if (dest->data == NULL) {
@@ -103,7 +103,7 @@ ks_datablob_alloc(datablob_t * dest, khm_size cb)
     ks_datablob_free(dest);
 
     if (cb > 0) {
-        dest->data = malloc(cb);
+        dest->data = PMALLOC(cb);
         if (dest->data != NULL) {
             dest->cb_alloc = cb;
         }
@@ -117,7 +117,7 @@ ks_identkey_create_new(void)
 {
     identkey_t * idk;
 
-    idk = malloc(sizeof(*idk));
+    idk = PMALLOC(sizeof(*idk));
     assert(idk != NULL);
     memset(idk, 0, sizeof(*idk));
 
@@ -146,16 +146,16 @@ ks_identkey_free(identkey_t * idk)
         return KHM_ERROR_INVALID_PARAM;
 
     if (idk->provider_name)
-        free(idk->provider_name);
+        PFREE(idk->provider_name);
 
     if (idk->identity_name)
-        free(idk->identity_name);
+        PFREE(idk->identity_name);
 
     if (idk->display_name)
-        free(idk->display_name);
+        PFREE(idk->display_name);
 
     if (idk->key_description)
-        free(idk->key_description);
+        PFREE(idk->key_description);
 
     ks_datablob_free(&idk->key);
     ks_datablob_free(&idk->key_hash);
@@ -166,7 +166,7 @@ ks_identkey_free(identkey_t * idk)
         khc_memory_store_release(idk->cfg_store);
 
     memset(idk, 0, sizeof(*idk));
-    free(idk);
+    PFREE(idk);
 
     return KHM_ERROR_SUCCESS;
 }
@@ -176,7 +176,7 @@ ks_keystore_create_new(void)
 {
     keystore_t * ks;
 
-    ks = malloc(sizeof(*ks));
+    ks = PMALLOC(sizeof(*ks));
     memset(ks, 0, sizeof(*ks));
 
     ks->magic = KEYSTORE_MAGIC;
@@ -209,13 +209,13 @@ ks_keystore_free(keystore_t * ks)
         return;
 
     if (ks->display_name)
-        free(ks->display_name);
+        PFREE(ks->display_name);
 
     if (ks->description)
-        free(ks->description);
+        PFREE(ks->description);
 
     if (ks->location)
-        free(ks->location);
+        PFREE(ks->location);
 
     destroy_encryption_key(ks);
 
@@ -226,7 +226,7 @@ ks_keystore_free(keystore_t * ks)
         }
 
     if (ks->keys)
-        free(ks->keys);
+        PFREE(ks->keys);
 
     if (ks->identity)
         kcdb_identity_release(ks->identity);
@@ -235,7 +235,7 @@ ks_keystore_free(keystore_t * ks)
     DeleteCriticalSection(&ks->cs);
 
     memset(ks, 0, sizeof(*ks));
-    free(ks);
+    PFREE(ks);
 }
 
 void
@@ -309,7 +309,7 @@ ks_keystore_add_identkey(keystore_t * ks, identkey_t * idk)
         /* need to allocate more */
         ks->nc_keys = UBOUNDSS(ks->n_keys + 1, KS_KEY_ALLOC_INCR,
                                KS_KEY_ALLOC_INCR);
-        ks->keys = realloc(ks->keys, sizeof(ks->keys[0]) * ks->nc_keys);
+        ks->keys = PREALLOC(ks->keys, sizeof(ks->keys[0]) * ks->nc_keys);
     }
 
     ks->keys[i] = idk;
@@ -456,11 +456,11 @@ ks_keystore_set_string(keystore_t * ks, kcdb_resource_id r_id, const wchar_t * b
     }
 
     if (*dest) {
-        free(*dest);
+        PFREE(*dest);
         *dest = NULL;
     }
     if (buffer && buffer[0])
-        *dest = _wcsdup(buffer);
+        *dest = PWCSDUP(buffer);
     if (set_modified) {
         ks->flags |= KS_FLAG_MODIFIED;
         GetSystemTimeAsFileTime(&ks->ft_mtime);
