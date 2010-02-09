@@ -108,6 +108,9 @@ khui_cw_destroy_cred_blob(khui_new_creds *c)
     if (c->types)
         PFREE(c->types);
 
+    if (c->type_subs)
+        PFREE(c->type_subs);
+
     if (c->window_title)
         PFREE(c->window_title);
 
