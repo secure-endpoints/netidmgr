@@ -58,7 +58,7 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
 
     if (!w.IsNull() && w->m_progress.hwnd != NULL) {
 
-	AlertContainer * c = NULL;
+	AutoRef<AlertContainer> c(NULL);
 
         if (tnc == nc) {
 	    RECT r_pos;
@@ -76,16 +76,16 @@ khm_nc_track_progress_of_this_task(khui_new_creds * tnc)
                 MapWindowRect(HWND_DESKTOP, w->m_progress.hwnd, &r_pos);
             }
 
-	    c = PNEW AlertContainer();
-	    w->m_progress.cw_container = c;
+	    c.Assign(PNEW AlertContainer());
+	    w->m_progress.cw_container = &*c;
 
 	    c->Create(w->m_progress.hwnd, RectFromRECT(&r_pos));
 	    c->ShowWindow();
         } else {
-            c = dynamic_cast<AlertContainer *>(&*w->m_progress.cw_container);
+            c.Attach(dynamic_cast<AlertContainer *>(&*w->m_progress.cw_container));
         }
 
-	if (c) {
+	if (!c.IsNull()) {
 	    khui_alert * _a = NULL;
 
 	    khui_alert_create_empty(&_a);
