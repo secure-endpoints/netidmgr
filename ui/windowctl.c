@@ -27,25 +27,25 @@
 #include "khmapp.h"
 #include<assert.h>
 
-/* we support up to 32 simutaneous dialogs.  In reality, more than two
+/* we support up to 128 simutaneous dialogs.  In reality, more than two
    is pretty unlikely.  Property sheets are special and are handled
    separately. */
 #define MAX_UI_DIALOGS 128
 
-typedef struct khui_dialog {
+typedef struct ui_dialog {
     HWND hwnd;
 
-    LDCL(struct khui_dialog);
-} khui_dialog;
+    LDCL(struct ui_dialog);
+} ui_dialog;
 
-static khui_dialog * khui_dialogs = NULL;
+static ui_dialog * khui_dialogs = NULL;
 static int n_khui_dialogs = 0;
 static BOOL khui_main_window_active;
 
 /* should only be called from the UI thread */
 void khm_add_dialog(HWND dlg) {
     if (n_khui_dialogs < MAX_UI_DIALOGS) {
-        khui_dialog * d = PMALLOC(sizeof(*d));
+        ui_dialog * d = PMALLOC(sizeof(*d));
 
         d->hwnd = dlg;
         LINIT(d);
@@ -59,19 +59,23 @@ void khm_add_dialog(HWND dlg) {
 
 /* should only be called from the UI thread */
 void khm_del_dialog(HWND dlg) {
-    khui_dialog * d;
+    ui_dialog *d, *nd;
 
-    for (d = khui_dialogs; d; d = LNEXT(d)) {
+    for (d = khui_dialogs, nd = NULL; d; d = nd) {
+        nd = LNEXT(d);
         if (d->hwnd == dlg) {
             LDELETE(&khui_dialogs, d);
             n_khui_dialogs--;
+
+            d->hwnd = NULL;
+            PFREE(d);
         }
     }
 }
 
 BOOL khm_check_dlg_message(LPMSG pmsg) {
     BOOL found = FALSE;
-    khui_dialog *d;
+    ui_dialog *d;
 
     for(d = khui_dialogs; d; d = LNEXT(d)) {
         if(IsDialogMessage(d->hwnd, pmsg)) {
@@ -85,7 +89,7 @@ BOOL khm_check_dlg_message(LPMSG pmsg) {
 
 BOOL khm_is_dialog_active(void) {
     HWND hwnd;
-    khui_dialog * d;
+    ui_dialog * d;
 
     hwnd = GetForegroundWindow();
 
@@ -185,7 +189,7 @@ void khm_enter_modal(HWND hwnd)
     HWND enabled[MAX_UI_PROPSHEETS + MAX_UI_DIALOGS];
     int n_enabled = 0;
     int i;
-    khui_dialog * d;
+    ui_dialog * d;
     modal_dialog * md;
 
     for (d = khui_dialogs; d; d = LNEXT(d)) {
