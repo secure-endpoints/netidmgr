@@ -679,6 +679,9 @@ extern "C" void khm_exit_notifier()
     g_notifier->m_icon->Remove();
     g_notifier->DestroyWindow();
 
+    delete g_notifier;
+    g_notifier = NULL;
+
     ControlWindow::UnregisterWindowClass();
 }
 
