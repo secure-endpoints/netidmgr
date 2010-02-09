@@ -3,3 +3,7 @@ obj/
 plugins/keystore/
 Thumbs.db
 setupbuild.local.cmd
+GPATH
+GRTAGS
+GSYMS
+GTAGS
