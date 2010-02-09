@@ -77,13 +77,21 @@ KH_BUILD=DEBUG
 ! error The NetIDMgr build configuration is set for RETAIL while the Platform SDK build environment is set to DEBUG
 !endif
 
+
 # The default release type is PRIVATE if no other type is specified
-!if ("$(KH_RELEASE)" != "OFFICIAL") && ("$(KH_RELEASE)" != "PRERELEASE") && ("$(KH_RELEASE)" != "PRIVATE") && ("$(KH_RELEASE)" != "SPECIAL")
-! message KH_RELEASE is set to an invalid value.
+!ifndef KH_RELEASE
 KH_RELEASE=PRIVATE
 !endif
 
-# The target APPVER for x86 is 5.01.  For x64 it's 5.02
+!if ("$(KH_RELEASE)" != "OFFICIAL") && ("$(KH_RELEASE)" != "PRERELEASE") && ("$(KH_RELEASE)" != "PRIVATE") && ("$(KH_RELEASE)" != "SPECIAL")
+! message KH_RELEASE is set to an invalid value ($KH_RELEASE).  Setting to PRIVATE
+KH_RELEASE=PRIVATE
+!endif
+
+# The target APPVER for x86 is 5.01.  For x64 it's 5.02.  In the
+# future we will need to update the target APPVER value, but these
+# values ensure that the produced binaries work on Windows XP (32 or
+# 64 bit).
 !if ("$(CPU)"!="i386" || "$(APPVER)"!="5.01") && ("$(CPU)"!="AMD64" || "$(APPVER)"!="5.02") && "$(KH_RELEASE)" != "SPECIAL"
 ! error Unexpected APPVER value $(APPVER)
 !endif
