@@ -418,94 +418,94 @@ khui_alert_unlock(khui_alert * alert);
 
 namespace nim {
 
-    class Alert {
-	khui_alert * m_alert;
+class Alert {
+    khui_alert * m_alert;
 
-    public:
-	Alert() : m_alert(NULL) {
-	}
+public:
+    Alert() : m_alert(NULL) {
+    }
 
-	explicit
-	Alert(khui_alert * _alert, bool take_ownership = true) {
-	    m_alert = _alert;
-	    if (!take_ownership)
-		Hold();
-	}
+    explicit
+    Alert(khui_alert * _alert, bool take_ownership = true) {
+        m_alert = _alert;
+        if (!take_ownership)
+            Hold();
+    }
 
-	Alert(const Alert &that) {
-	    m_alert = that.m_alert;
-	    Hold();
-	}
+    Alert(const Alert &that) {
+        m_alert = that.m_alert;
+        Hold();
+    }
 
-	~Alert() {
-	    Release();
-	    m_alert = NULL;
-	}
+    ~Alert() {
+        Release();
+        m_alert = NULL;
+    }
 
-	void Hold() {
-	    if (m_alert)
-		khui_alert_hold(m_alert);
-	}
+    void Hold() {
+        if (m_alert)
+            khui_alert_hold(m_alert);
+    }
 
-	void Release() {
-	    if (m_alert)
-		khui_alert_release(m_alert);
-	}
+    void Release() {
+        if (m_alert)
+            khui_alert_release(m_alert);
+    }
 
-	size_t LockIndex() {
-	    return (size_t) m_alert;
-	}
+    size_t LockIndex() {
+        return (size_t) m_alert;
+    }
 
-	void Lock() {
-	    if (m_alert)
-		khui_alert_lock(m_alert);
-	}
+    void Lock() {
+        if (m_alert)
+            khui_alert_lock(m_alert);
+    }
 
-	void Unlock() {
-	    if (m_alert)
-		khui_alert_unlock(m_alert);
-	}
+    void Unlock() {
+        if (m_alert)
+            khui_alert_unlock(m_alert);
+    }
 
-	khui_alert * operator -> () {
-	    return m_alert;
-	}
+    khui_alert * operator -> () {
+        return m_alert;
+    }
 
-	const khui_alert * operator -> () const {
-	    return m_alert;
-	}
+    const khui_alert * operator -> () const {
+        return m_alert;
+    }
 
-	bool IsNull() const {
-	    return m_alert == NULL;
-	}
+    bool IsNull() const {
+        return m_alert == NULL;
+    }
 
-	Alert& operator = (const Alert& that) {
-	    if (this != &that) {
-		if (m_alert)
-		    Release();
-		m_alert = that.m_alert;
-		if (m_alert)
-		    Hold();
-	    }
-	    return *this;
-	}
+    Alert& operator = (const Alert& that) {
+        if (this != &that) {
+            if (m_alert)
+                Release();
+            m_alert = that.m_alert;
+            if (m_alert)
+                Hold();
+        }
+        return *this;
+    }
 
-	Alert& operator = (khui_alert * a) {
-	    if (m_alert)
-		Release();
-	    m_alert = a;
-	    if (m_alert)
-		Hold();
-	    return *this;
-	}
+    Alert& operator = (khui_alert * a) {
+        if (m_alert)
+            Release();
+        m_alert = a;
+        if (m_alert)
+            Hold();
+        return *this;
+    }
 
-	operator khui_alert *() const {
-	    return m_alert;
-	}
+    operator khui_alert *() const {
+        return m_alert;
+    }
 
-	bool operator == (const Alert& that) const {
-	    return m_alert == that.m_alert;
-	}
-    };
+    bool operator == (const Alert& that) const {
+        return m_alert == that.m_alert;
+    }
+};
 
 }
 

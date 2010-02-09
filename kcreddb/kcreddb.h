@@ -4303,1320 +4303,1320 @@ END_C
 
 namespace nim {
 
-    template<class T> class _EnumerationImpl {
-    protected:
-        kcdb_enumeration e;
-        khm_size n;
-        T *pT;
+template<class T> class _EnumerationImpl {
+protected:
+    kcdb_enumeration e;
+    khm_size n;
+    T *pT;
 
-    public:
-        _EnumerationImpl(kcdb_enumeration _e, khm_size _n) {
-            e = _e;
-            n = _n;
-            pT = new T();
-            Next();
-        }
+public:
+    _EnumerationImpl(kcdb_enumeration _e, khm_size _n) {
+        e = _e;
+        n = _n;
+        pT = new T();
+        Next();
+    }
 
-        ~_EnumerationImpl() {
-            kcdb_enum_end(e);
-            delete pT;
-        }
+    ~_EnumerationImpl() {
+        kcdb_enum_end(e);
+        delete pT;
+    }
 
-        T* Next() {
-            khm_handle h = pT->Detach();
-            kcdb_enum_next(e, &h);
-            pT->Attach(h);
-            if (h != NULL)
-                return pT;
-            else
-                return NULL;
-        }
-
-        void Reset() {
-            kcdb_enum_reset(e);
-            Next();
-        }
-
-        bool AtEnd() const {
-            return static_cast<khm_handle>(*pT) == NULL;
-        }
-
-        T* operator ++() {
-            return Next();
-        }
-
-        T& operator *() {
-            return *pT;
-        }
-
-        T* operator ->() {
+    T* Next() {
+        khm_handle h = pT->Detach();
+        kcdb_enum_next(e, &h);
+        pT->Attach(h);
+        if (h != NULL)
             return pT;
-        }
+        else
+            return NULL;
+    }
 
-        khm_size Size() const {
-            return n;
-        }
+    void Reset() {
+        kcdb_enum_reset(e);
+        Next();
+    }
 
-        typedef khm_int32 (KHMCALLBACK * Comparator)(const T& e1, const T& e2, void * param);
-        typedef khm_boolean (KHMCALLBACK * FilterProc)(const T& e, void * param);
+    bool AtEnd() const {
+        return static_cast<khm_handle>(*pT) == NULL;
+    }
 
-    private:
-        struct ComparatorData {
-            Comparator f;
-            void * param;
-        };
+    T* operator ++() {
+        return Next();
+    }
 
-        static khm_int32 KHMCALLBACK InternalComparator(khm_handle h1, khm_handle h2, void * param) {
-            ComparatorData * d = reinterpret_cast<ComparatorData *>(param);
-            T t1(h1, false);
-            T t2(h2, false);
-            return d->f(t1, t2, d->param);
-        }
+    T& operator *() {
+        return *pT;
+    }
 
-        struct FilterProcData {
-            FilterProc f;
-            void * param;
-        };
+    T* operator ->() {
+        return pT;
+    }
 
-        static khm_boolean KHMCALLBACK InternalFilterProc(khm_handle h, void * param) {
-            FilterProcData * d = reinterpret_cast<FilterProcData *>(param);
-            T t(h, false);
-            return d->f(t, d->param);
-        }
+    khm_size Size() const {
+        return n;
+    }
 
-    public:
+    typedef khm_int32 (KHMCALLBACK * Comparator)(const T& e1, const T& e2, void * param);
+    typedef khm_boolean (KHMCALLBACK * FilterProc)(const T& e, void * param);
 
-        khm_int32 Sort(Comparator f, void * param = NULL) {
-            khm_int32 rv;
-            ComparatorData d;
-
-            d.f = f;
-            d.param = param;
-            rv = kcdb_enum_sort(e, InternalComparator, &d);
-            Reset();
-            return rv;
-        }
-
-        khm_int32 Sort(kcdb_comp_func f, void * param = NULL) {
-            khm_int32 rv;
-
-            rv = kcdb_enum_sort(e, f, param);
-            Reset();
-            return rv;
-        }
-
-        khm_int32 Filter(FilterProc f, void * param = NULL) {
-            khm_int32 rv;
-            FilterProcData d;
-
-            d.f = f;
-            d.param = param;
-            rv = kcdb_enum_filter(e, InternalFilterProc, &d);
-            return rv;
-        }
+private:
+    struct ComparatorData {
+        Comparator f;
+        void * param;
     };
 
-    template<class T> class _BufferImpl {
+    static khm_int32 KHMCALLBACK InternalComparator(khm_handle h1, khm_handle h2, void * param) {
+        ComparatorData * d = reinterpret_cast<ComparatorData *>(param);
+        T t1(h1, false);
+        T t2(h2, false);
+        return d->f(t1, t2, d->param);
+    }
 
-    public:
+    struct FilterProcData {
+        FilterProc f;
+        void * param;
+    };
 
-        T& Attach(khm_handle _h) {
-            T *pT = static_cast<T*>(this);
-            if (pT->h)
-                pT->Release();
-            pT->h = _h;
-            return *pT;
+    static khm_boolean KHMCALLBACK InternalFilterProc(khm_handle h, void * param) {
+        FilterProcData * d = reinterpret_cast<FilterProcData *>(param);
+        T t(h, false);
+        return d->f(t, d->param);
+    }
+
+public:
+
+    khm_int32 Sort(Comparator f, void * param = NULL) {
+        khm_int32 rv;
+        ComparatorData d;
+
+        d.f = f;
+        d.param = param;
+        rv = kcdb_enum_sort(e, InternalComparator, &d);
+        Reset();
+        return rv;
+    }
+
+    khm_int32 Sort(kcdb_comp_func f, void * param = NULL) {
+        khm_int32 rv;
+
+        rv = kcdb_enum_sort(e, f, param);
+        Reset();
+        return rv;
+    }
+
+    khm_int32 Filter(FilterProc f, void * param = NULL) {
+        khm_int32 rv;
+        FilterProcData d;
+
+        d.f = f;
+        d.param = param;
+        rv = kcdb_enum_filter(e, InternalFilterProc, &d);
+        return rv;
+    }
+};
+
+template<class T> class _BufferImpl {
+
+public:
+
+    T& Attach(khm_handle _h) {
+        T *pT = static_cast<T*>(this);
+        if (pT->h)
+            pT->Release();
+        pT->h = _h;
+        return *pT;
+    }
+
+    khm_handle Detach() {
+        T *pT = static_cast<T*>(this);
+        khm_handle th = pT->h;
+        if (pT->h) {
+            pT->h = NULL;
         }
+        return th;
+    }
 
-        khm_handle Detach() {
-            T *pT = static_cast<T*>(this);
-            khm_handle th = pT->h;
-            if (pT->h) {
-                pT->h = NULL;
-            }
-            return th;
-        }
-
-        T& Assign(khm_handle _h) {
-            T *pT = static_cast<T*>(this);
-            if (pT->h)
-                pT->Release();
-            pT->h = _h;
-            if (pT->h)
-                pT->Hold();
-            return *pT;
-        }
-
-        void Unassign() {
-            T *pT = static_cast<T*>(this);
-            pT->Assign(NULL);
-        }
-
-        operator khm_handle () const {
-            const T *pT = static_cast<const T*>(this);
-            return pT->h;
-        }
-
-        khm_handle GetHandle() {
-            T *pT = static_cast<T*>(this);
+    T& Assign(khm_handle _h) {
+        T *pT = static_cast<T*>(this);
+        if (pT->h)
+            pT->Release();
+        pT->h = _h;
+        if (pT->h)
             pT->Hold();
-            return pT->h;
+        return *pT;
+    }
+
+    void Unassign() {
+        T *pT = static_cast<T*>(this);
+        pT->Assign(NULL);
+    }
+
+    operator khm_handle () const {
+        const T *pT = static_cast<const T*>(this);
+        return pT->h;
+    }
+
+    khm_handle GetHandle() {
+        T *pT = static_cast<T*>(this);
+        pT->Hold();
+        return pT->h;
+    }
+
+    std::wstring GetAttribStringObj(const wchar_t * attr_name, khm_int32 flags = 0) const {
+        const T *pT = static_cast<const T*>(this);
+        std::wstring ret;
+        khm_size cb_buf;
+        wchar_t * temp = NULL;
+        khm_int32 rv;
+
+        rv = pT->GetAttribString(attr_name, NULL, &cb_buf, flags);
+        while (rv == KHM_ERROR_TOO_LONG) {
+            wchar_t * t2 = static_cast<wchar_t*>(PREALLOC(temp, cb_buf));
+            if (t2 == NULL)
+                break;
+            temp = t2;
+            rv = pT->GetAttribString(attr_name, temp, &cb_buf, flags);
         }
 
-        std::wstring GetAttribStringObj(const wchar_t * attr_name, khm_int32 flags = 0) const {
-            const T *pT = static_cast<const T*>(this);
-            std::wstring ret;
-            khm_size cb_buf;
-            wchar_t * temp = NULL;
-            khm_int32 rv;
+        if (KHM_SUCCEEDED(rv))
+            ret = temp;
+        if (temp)
+            PFREE(temp);
 
-            rv = pT->GetAttribString(attr_name, NULL, &cb_buf, flags);
-            while (rv == KHM_ERROR_TOO_LONG) {
-                wchar_t * t2 = static_cast<wchar_t*>(PREALLOC(temp, cb_buf));
-                if (t2 == NULL)
-                    break;
-                temp = t2;
-                rv = pT->GetAttribString(attr_name, temp, &cb_buf, flags);
-            }
+        return ret;
+    }
 
-            if (KHM_SUCCEEDED(rv))
-                ret = temp;
-            if (temp)
-                PFREE(temp);
+    std::wstring GetAttribStringObj(khm_int32 attr_id, khm_int32 flags = 0) const {
+        const T *pT = static_cast<const T*>(this);
+        std::wstring ret;
+        khm_size cb_buf = 0;
+        wchar_t * temp = NULL;
+        khm_int32 rv = KHM_ERROR_TOO_LONG;
 
-            return ret;
-        }
-
-        std::wstring GetAttribStringObj(khm_int32 attr_id, khm_int32 flags = 0) const {
-            const T *pT = static_cast<const T*>(this);
-            std::wstring ret;
-            khm_size cb_buf = 0;
-            wchar_t * temp = NULL;
-            khm_int32 rv = KHM_ERROR_TOO_LONG;
-
-            while (rv == KHM_ERROR_TOO_LONG) {
-                if (cb_buf != 0) {
-                    wchar_t * t2;
-                    t2 = reinterpret_cast<wchar_t *>(PREALLOC(temp, cb_buf));
-                    if (t2 == NULL) {
-                        if (temp) {
-                            PFREE(temp);
-                            temp = NULL;
-                        }
-                        break;
+        while (rv == KHM_ERROR_TOO_LONG) {
+            if (cb_buf != 0) {
+                wchar_t * t2;
+                t2 = reinterpret_cast<wchar_t *>(PREALLOC(temp, cb_buf));
+                if (t2 == NULL) {
+                    if (temp) {
+                        PFREE(temp);
+                        temp = NULL;
                     }
-                    temp = t2;
-                }
-                rv = pT->GetAttribString(attr_id, temp, &cb_buf, flags);
-            }
-
-            if (KHM_SUCCEEDED(rv))
-                ret = temp;
-            if (temp)
-                PFREE(temp);
-
-            return ret;
-        }
-
-        khm_int32 GetAttribInt32(khm_int32 attr_id, khm_int32 def = 0) const {
-            khm_int32 t = 0;
-
-            if (KHM_FAILED(GetObject(attr_id, t)))
-                return def;
-            else
-                return t;
-        }
-
-        khm_int64 GetAttribFileTimeAsInt(khm_int32 attr_id, khm_int64 def = 0) const {
-            FILETIME ft;
-
-            if (KHM_FAILED(GetObject(attr_id, ft)))
-                return def;
-            else
-                return FtToInt(&ft);
-        }
-
-        FILETIME GetAttribFileTime(khm_int32 attr_id) const {
-            FILETIME ft = {0,0};
-
-            GetObject(attr_id, ft);
-            return ft;
-        }
-
-        template<class U> khm_int32 GetObject(const wchar_t * attr_name, U& target) const {
-            const T *pT = static_cast<const T*>(this);
-            khm_size cb = sizeof(target);
-            return pT->GetAttrib(attr_name, &target, &cb);
-        }
-
-        template<class U> khm_int32 GetObject(khm_int32 attr_id, U& target) const {
-            const T *pT = static_cast<const T*>(this);
-            khm_size cb = sizeof(target);
-            return pT->GetAttrib(attr_id, &target, &cb);
-        }
-
-        template<class U> khm_int32 SetObject(const wchar_t * attr_name, const U& target) {
-            T *pT = static_cast<T*>(this);
-            return pT->SetAttrib(attr_name, &target, sizeof(target));
-        }
-
-        template<class U> khm_int32 SetObject(khm_int32 attr_id, const U& target) {
-            T *pT = static_cast<T*>(this);
-            return pT->SetAttrib(attr_id, &target, sizeof(target));
-        }
-
-        bool Exists(const wchar_t * attr_name) const {
-            const T *pT = static_cast<const T*>(this);
-            return KHM_SUCCEEDED(pT->GetAttrib(attr_name, NULL, NULL));
-        }
-        
-        bool Exists(khm_int32 attr_id) const {
-            const T *pT = static_cast<const T*>(this);
-            return KHM_SUCCEEDED(pT->GetAttrib(attr_id, NULL, NULL));
-        }
-
-        khm_int32 GetResource(kcdb_resource_id r_id, khm_int32 flags, khm_int32 *prflags,
-                              void * vparam, void * buf, khm_size * pcb_buf) const {
-            const T *pT = static_cast<const T*>(this);
-            return kcdb_get_resource(pT->h, r_id, flags, prflags, vparam, buf, pcb_buf);
-        }
-
-        std::wstring GetResourceString(kcdb_resource_id r_id, khm_int32 flags = 0) const {
-            const T *pT = static_cast<const T*>(this);
-            std::wstring ret;
-            wchar_t * temp = NULL;
-            khm_size cb = 0;
-            khm_int32 rv;
-
-            rv = pT->GetResource(r_id, flags, NULL, NULL, NULL, &cb);
-            while (rv == KHM_ERROR_TOO_LONG) {
-                wchar_t * t2 = (wchar_t *) PREALLOC(temp, cb);
-                if (t2 == NULL)
                     break;
+                }
                 temp = t2;
-                rv = pT->GetResource(r_id, flags, NULL, NULL, temp, &cb);
             }
-
-            if (KHM_SUCCEEDED(rv))
-                ret = temp;
-            if (temp)
-                PFREE(temp);
-
-            return ret;
+            rv = pT->GetAttribString(attr_id, temp, &cb_buf, flags);
         }
 
-        HICON GetResourceIcon(kcdb_resource_id r_id, khm_int32 flags = 0) const {
-            const T *pT = static_cast<const T*>(this);
-            HICON icon = NULL;
-            khm_size cb = sizeof(icon);
+        if (KHM_SUCCEEDED(rv))
+            ret = temp;
+        if (temp)
+            PFREE(temp);
 
-            if (KHM_SUCCEEDED(pT->GetResource(r_id, flags, NULL, NULL, &icon, &cb)))
-                return icon;
-            else
-                return NULL;
+        return ret;
+    }
+
+    khm_int32 GetAttribInt32(khm_int32 attr_id, khm_int32 def = 0) const {
+        khm_int32 t = 0;
+
+        if (KHM_FAILED(GetObject(attr_id, t)))
+            return def;
+        else
+            return t;
+    }
+
+    khm_int64 GetAttribFileTimeAsInt(khm_int32 attr_id, khm_int64 def = 0) const {
+        FILETIME ft;
+
+        if (KHM_FAILED(GetObject(attr_id, ft)))
+            return def;
+        else
+            return FtToInt(&ft);
+    }
+
+    FILETIME GetAttribFileTime(khm_int32 attr_id) const {
+        FILETIME ft = {0,0};
+
+        GetObject(attr_id, ft);
+        return ft;
+    }
+
+    template<class U> khm_int32 GetObject(const wchar_t * attr_name, U& target) const {
+        const T *pT = static_cast<const T*>(this);
+        khm_size cb = sizeof(target);
+        return pT->GetAttrib(attr_name, &target, &cb);
+    }
+
+    template<class U> khm_int32 GetObject(khm_int32 attr_id, U& target) const {
+        const T *pT = static_cast<const T*>(this);
+        khm_size cb = sizeof(target);
+        return pT->GetAttrib(attr_id, &target, &cb);
+    }
+
+    template<class U> khm_int32 SetObject(const wchar_t * attr_name, const U& target) {
+        T *pT = static_cast<T*>(this);
+        return pT->SetAttrib(attr_name, &target, sizeof(target));
+    }
+
+    template<class U> khm_int32 SetObject(khm_int32 attr_id, const U& target) {
+        T *pT = static_cast<T*>(this);
+        return pT->SetAttrib(attr_id, &target, sizeof(target));
+    }
+
+    bool Exists(const wchar_t * attr_name) const {
+        const T *pT = static_cast<const T*>(this);
+        return KHM_SUCCEEDED(pT->GetAttrib(attr_name, NULL, NULL));
+    }
+        
+    bool Exists(khm_int32 attr_id) const {
+        const T *pT = static_cast<const T*>(this);
+        return KHM_SUCCEEDED(pT->GetAttrib(attr_id, NULL, NULL));
+    }
+
+    khm_int32 GetResource(kcdb_resource_id r_id, khm_int32 flags, khm_int32 *prflags,
+                          void * vparam, void * buf, khm_size * pcb_buf) const {
+        const T *pT = static_cast<const T*>(this);
+        return kcdb_get_resource(pT->h, r_id, flags, prflags, vparam, buf, pcb_buf);
+    }
+
+    std::wstring GetResourceString(kcdb_resource_id r_id, khm_int32 flags = 0) const {
+        const T *pT = static_cast<const T*>(this);
+        std::wstring ret;
+        wchar_t * temp = NULL;
+        khm_size cb = 0;
+        khm_int32 rv;
+
+        rv = pT->GetResource(r_id, flags, NULL, NULL, NULL, &cb);
+        while (rv == KHM_ERROR_TOO_LONG) {
+            wchar_t * t2 = (wchar_t *) PREALLOC(temp, cb);
+            if (t2 == NULL)
+                break;
+            temp = t2;
+            rv = pT->GetResource(r_id, flags, NULL, NULL, temp, &cb);
         }
 
-        bool operator == (T const &that) const {
-            const T *pT = static_cast<const T*>(this);
-            return pT->IsEqualTo(that);
-        }
+        if (KHM_SUCCEEDED(rv))
+            ret = temp;
+        if (temp)
+            PFREE(temp);
 
-        bool operator == (khm_handle that) const {
-            const T *pT = static_cast<const T*>(this);
-            return pT->IsEqualTo(that);
-        }
+        return ret;
+    }
 
-        bool operator != (T const &that) const {
-            const T *pT = static_cast<const T*>(this);
-            return !pT->IsEqualTo(that);
-        }
+    HICON GetResourceIcon(kcdb_resource_id r_id, khm_int32 flags = 0) const {
+        const T *pT = static_cast<const T*>(this);
+        HICON icon = NULL;
+        khm_size cb = sizeof(icon);
 
-        bool operator != (khm_handle that) const {
-            const T *pT = static_cast<const T*>(this);
-            return !pT->IsEqualTo(that);
-        }
+        if (KHM_SUCCEEDED(pT->GetResource(r_id, flags, NULL, NULL, &icon, &cb)))
+            return icon;
+        else
+            return NULL;
+    }
 
-        bool IsNull() const {
-            const T *pT = static_cast<const T*>(this);
+    bool operator == (T const &that) const {
+        const T *pT = static_cast<const T*>(this);
+        return pT->IsEqualTo(that);
+    }
 
-            return (pT->h == NULL);
-        }
+    bool operator == (khm_handle that) const {
+        const T *pT = static_cast<const T*>(this);
+        return pT->IsEqualTo(that);
+    }
 
-        typedef _EnumerationImpl<T> Enumeration;
-    };
+    bool operator != (T const &that) const {
+        const T *pT = static_cast<const T*>(this);
+        return !pT->IsEqualTo(that);
+    }
 
-    template <class T, class U> class _InfoImpl {
-    protected:
-        U         *info;
-        khm_int32  last_error;
+    bool operator != (khm_handle that) const {
+        const T *pT = static_cast<const T*>(this);
+        return !pT->IsEqualTo(that);
+    }
 
-        _InfoImpl() {
-            info = NULL;
-            last_error = KHM_ERROR_NOT_READY;
-        }
+    bool IsNull() const {
+        const T *pT = static_cast<const T*>(this);
 
-    public:
-        khm_int32 GetLastError() const {
-            const T *pT = static_cast<const T*>(this);
-            return (pT->info == NULL)? KHM_ERROR_NOT_READY: pT->last_error;
-        }
+        return (pT->h == NULL);
+    }
 
-        const U* operator -> () {
-            T *pT = static_cast<T*>(this);
-            return pT->info;
-        }
+    typedef _EnumerationImpl<T> Enumeration;
+};
 
-        bool InError() const {
-            const T *pT = static_cast<const T*>(this);
-            return KHM_FAILED(pT->GetLastError());
-        }
-    };
+template <class T, class U> class _InfoImpl {
+protected:
+    U         *info;
+    khm_int32  last_error;
 
-    class Buffer : public _BufferImpl<Buffer> {
-    protected:
-        khm_handle h;
+    _InfoImpl() {
+        info = NULL;
+        last_error = KHM_ERROR_NOT_READY;
+    }
 
-        friend class _BufferImpl<Buffer>;
+public:
+    khm_int32 GetLastError() const {
+        const T *pT = static_cast<const T*>(this);
+        return (pT->info == NULL)? KHM_ERROR_NOT_READY: pT->last_error;
+    }
 
-    public:
-        Buffer() {
-            h = NULL;
-        }
+    const U* operator -> () {
+        T *pT = static_cast<T*>(this);
+        return pT->info;
+    }
 
-        explicit
-        Buffer(khm_handle buf, bool take_ownership = true) {
-            h = buf;
-            if (!take_ownership)
-                Hold();
-        }
+    bool InError() const {
+        const T *pT = static_cast<const T*>(this);
+        return KHM_FAILED(pT->GetLastError());
+    }
+};
 
-        Buffer(const Buffer &that) {
-            h = that.h;
+class Buffer : public _BufferImpl<Buffer> {
+protected:
+    khm_handle h;
+
+    friend class _BufferImpl<Buffer>;
+
+public:
+    Buffer() {
+        h = NULL;
+    }
+
+    explicit
+    Buffer(khm_handle buf, bool take_ownership = true) {
+        h = buf;
+        if (!take_ownership)
             Hold();
+    }
+
+    Buffer(const Buffer &that) {
+        h = that.h;
+        Hold();
+    }
+
+    ~Buffer() {
+        Release();
+        h = NULL; 
+    }
+
+    Buffer& operator = (const Buffer& that) {
+        if (this != &that)
+            return Assign(that.h);
+        else
+            return *this;
+    }
+
+    Buffer& operator = (khm_handle _h) {
+        return Assign(_h);
+    }
+
+    khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
+        return kcdb_buf_get_attrib(h, attr_name, NULL, buffer, pcb_buf);
+    }
+
+    khm_int32 GetAttrib(khm_int32 attr_id, void * buffer, khm_size * pcb_buf) const {
+        return kcdb_buf_get_attr(h, attr_id, NULL, buffer, pcb_buf);
+    }
+
+    khm_int32 SetAttrib(const wchar_t * attr_name, const void * buffer, khm_size cb_buffer) {
+        return kcdb_buf_set_attrib(h, attr_name, buffer, cb_buffer);
+    }
+
+    khm_int32 SetAttrib(khm_int32 attr_id, const void * buffer, khm_size cb_buffer) {
+        return kcdb_buf_set_attr(h, attr_id, buffer, cb_buffer);
+    }
+
+    khm_int32 GetAttribString(const wchar_t * attr_name, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags) const {
+        return kcdb_buf_get_attrib_string(h, attr_name, buffer, pcb_buf, flags);
+    }
+
+    khm_int32 GetAttribString(khm_int32 attr_id, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags) const {
+        return kcdb_buf_get_attr_string(h, attr_id, buffer, pcb_buf, flags);
+    }
+
+    khm_int32 Hold() {
+        return kcdb_buf_hold(h);
+    }
+
+    khm_int32 Release() {
+        return kcdb_buf_release(h);
+    }
+
+    bool IsEqualTo(Buffer const &that) const {
+        return (h == that.h);
+    }
+
+    bool IsEqualTo(khm_handle that) const {
+        return (h == that);
+    }
+};
+
+class CredentialTypeInfo : public _InfoImpl<CredentialTypeInfo, kcdb_credtype> {
+private:
+    void Release() {
+        if (info) {
+            kcdb_credtype_release_info(info);
+            info = NULL;
         }
+    }
 
-        ~Buffer() {
-            Release();
-            h = NULL; 
-        }
+    friend class _InfoImpl<CredentialTypeInfo, kcdb_credtype>;
 
-        Buffer& operator = (const Buffer& that) {
-            if (this != &that)
-                return Assign(that.h);
-            else
-                return *this;
-        }
+public:
+    CredentialTypeInfo() {}
 
-        Buffer& operator = (khm_handle _h) {
-            return Assign(_h);
-        }
+    CredentialTypeInfo(khm_int32 _ctype) {
+        Lookup(_ctype);
+    }
 
-        khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
-            return kcdb_buf_get_attrib(h, attr_name, NULL, buffer, pcb_buf);
-        }
+    CredentialTypeInfo(const CredentialTypeInfo& that) {
+        if (that.info != NULL)
+            Lookup(that.info->id);
+        else
+            info = NULL;
+    }
 
-        khm_int32 GetAttrib(khm_int32 attr_id, void * buffer, khm_size * pcb_buf) const {
-            return kcdb_buf_get_attr(h, attr_id, NULL, buffer, pcb_buf);
-        }
+    ~CredentialTypeInfo() {
+        Release();
+    }
 
-        khm_int32 SetAttrib(const wchar_t * attr_name, const void * buffer, khm_size cb_buffer) {
-            return kcdb_buf_set_attrib(h, attr_name, buffer, cb_buffer);
-        }
+    khm_int32 Lookup(khm_int32 _ctype) {
+        last_error = kcdb_credtype_get_info(_ctype, &info);
+        return last_error;
+    }
+};
 
-        khm_int32 SetAttrib(khm_int32 attr_id, const void * buffer, khm_size cb_buffer) {
-            return kcdb_buf_set_attr(h, attr_id, buffer, cb_buffer);
-        }
+class CredentialType : public _BufferImpl<CredentialType> {
+protected:
+    khm_int32 ctype;
 
-        khm_int32 GetAttribString(const wchar_t * attr_name, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags) const {
-            return kcdb_buf_get_attrib_string(h, attr_name, buffer, pcb_buf, flags);
-        }
+    friend class _BufferImpl<CredentialType>;
 
-        khm_int32 GetAttribString(khm_int32 attr_id, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags) const {
-            return kcdb_buf_get_attr_string(h, attr_id, buffer, pcb_buf, flags);
-        }
+public:
+    CredentialType() {
+        ctype = KCDB_CREDTYPE_INVALID;
+    }
 
-        khm_int32 Hold() {
-            return kcdb_buf_hold(h);
-        }
+    CredentialType(khm_int32 _ctype) {
+        ctype = _ctype;
+    }
 
-        khm_int32 Release() {
-            return kcdb_buf_release(h);
-        }
+    CredentialType(const wchar_t * type_name) {
+        Lookup(type_name);
+    }
 
-        bool IsEqualTo(Buffer const &that) const {
-            return (h == that.h);
-        }
+    CredentialType(const CredentialType& that) {
+        ctype = that.ctype;
+    }
 
-        bool IsEqualTo(khm_handle that) const {
-            return (h == that);
-        }
-    };
+    ~CredentialType() { }
 
-    class CredentialTypeInfo : public _InfoImpl<CredentialTypeInfo, kcdb_credtype> {
-    private:
-        void Release() {
-            if (info) {
-                kcdb_credtype_release_info(info);
-                info = NULL;
-            }
-        }
-
-        friend class _InfoImpl<CredentialTypeInfo, kcdb_credtype>;
-
-    public:
-        CredentialTypeInfo() {}
-
-        CredentialTypeInfo(khm_int32 _ctype) {
-            Lookup(_ctype);
-        }
-
-        CredentialTypeInfo(const CredentialTypeInfo& that) {
-            if (that.info != NULL)
-                Lookup(that.info->id);
-            else
-                info = NULL;
-        }
-
-        ~CredentialTypeInfo() {
-            Release();
-        }
-
-        khm_int32 Lookup(khm_int32 _ctype) {
-            last_error = kcdb_credtype_get_info(_ctype, &info);
-            return last_error;
-        }
-    };
-
-    class CredentialType : public _BufferImpl<CredentialType> {
-    protected:
-        khm_int32 ctype;
-
-        friend class _BufferImpl<CredentialType>;
-
-    public:
-        CredentialType() {
-            ctype = KCDB_CREDTYPE_INVALID;
-        }
-
-        CredentialType(khm_int32 _ctype) {
-            ctype = _ctype;
-        }
-
-        CredentialType(const wchar_t * type_name) {
-            Lookup(type_name);
-        }
-
-        CredentialType(const CredentialType& that) {
+    CredentialType& operator = (const CredentialType& that) {
+        if (this != &that) {
             ctype = that.ctype;
         }
+        return *this;
+    }
 
-        ~CredentialType() { }
+    CredentialType& operator = (khm_int32 _ctype) {
+        ctype = _ctype;
+        return *this;
+    }
 
-        CredentialType& operator = (const CredentialType& that) {
-            if (this != &that) {
-                ctype = that.ctype;
-            }
-            return *this;
-        }
+    khm_int32 Lookup(const wchar_t * type_name) {
+        return kcdb_credtype_get_id(type_name, &ctype);
+    }
 
-        CredentialType& operator = (khm_int32 _ctype) {
-            ctype = _ctype;
-            return *this;
-        }
+    bool IsEqualTo(CredentialType const &that) const {
+        return ctype == that.ctype;
+    }
 
-        khm_int32 Lookup(const wchar_t * type_name) {
-            return kcdb_credtype_get_id(type_name, &ctype);
-        }
+    khm_int32 GetResource(kcdb_resource_id r_id, khm_int32 flags, khm_int32 *prflags,
+                          void * vparam, void * buf, khm_size * pcb_buf) const {
+        return kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(ctype),
+                                 r_id, flags, prflags, vparam, buf, pcb_buf);
+    }
 
-        bool IsEqualTo(CredentialType const &that) const {
-            return ctype == that.ctype;
-        }
+    operator khm_int32 () const {
+        return ctype;
+    }
 
-        khm_int32 GetResource(kcdb_resource_id r_id, khm_int32 flags, khm_int32 *prflags,
-                              void * vparam, void * buf, khm_size * pcb_buf) const {
-            return kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(ctype),
-                                     r_id, flags, prflags, vparam, buf, pcb_buf);
-        }
+    CredentialTypeInfo GetInfo() const {
+        return CredentialTypeInfo(ctype);
+    }
 
-        operator khm_int32 () const {
-            return ctype;
-        }
+    bool operator == (const CredentialType & that) const {
+        return ctype == that.ctype;
+    }
 
-        CredentialTypeInfo GetInfo() const {
-            return CredentialTypeInfo(ctype);
-        }
+    bool operator == (khm_int32 that) const {
+        return ctype == that;
+    }
 
-        bool operator == (const CredentialType & that) const {
-            return ctype == that.ctype;
-        }
+    bool operator != (const CredentialType & that) const {
+        return ctype != that.ctype;
+    }
 
-        bool operator == (khm_int32 that) const {
-            return ctype == that;
-        }
+    bool operator != (khm_int32 that) const {
+        return ctype != that;
+    }
+};
 
-        bool operator != (const CredentialType & that) const {
-            return ctype != that.ctype;
-        }
+class Identity;
 
-        bool operator != (khm_int32 that) const {
-            return ctype != that;
-        }
-    };
+class IdentityProvider : public _BufferImpl<IdentityProvider> {
+protected:
+    khm_handle h;
 
-    class Identity;
+    friend class _BufferImpl<IdentityProvider>;
 
-    class IdentityProvider : public _BufferImpl<IdentityProvider> {
-    protected:
-        khm_handle h;
+public:
+    IdentityProvider() {
+        h = NULL;
+    }
 
-        friend class _BufferImpl<IdentityProvider>;
-
-    public:
-        IdentityProvider() {
-            h = NULL;
-        }
-
-        explicit
-        IdentityProvider(khm_handle _h, bool take_ownership = true) {
-            h = _h;
-            if (!take_ownership)
-                Hold();
-        }
-
-        IdentityProvider(const wchar_t * name) {
-            kcdb_identpro_find(name, &h);
-        }
-
-        IdentityProvider(const IdentityProvider &that) {
-            h = that.h;
+    explicit
+    IdentityProvider(khm_handle _h, bool take_ownership = true) {
+        h = _h;
+        if (!take_ownership)
             Hold();
-        }
+    }
 
-        ~IdentityProvider() {
-            Release();
-            h = NULL;
-        }
+    IdentityProvider(const wchar_t * name) {
+        kcdb_identpro_find(name, &h);
+    }
 
-        IdentityProvider& operator = (const IdentityProvider& that) {
-            if (this != &that)
-                return Assign(that.h);
-            else
-                return *this;
-        }
+    IdentityProvider(const IdentityProvider &that) {
+        h = that.h;
+        Hold();
+    }
 
-        IdentityProvider& operator = (khm_handle _h) {
-            return Assign(_h);
-        }
+    ~IdentityProvider() {
+        Release();
+        h = NULL;
+    }
 
-        khm_int32 Hold() {
-            return kcdb_identpro_hold(h);
-        }
+    IdentityProvider& operator = (const IdentityProvider& that) {
+        if (this != &that)
+            return Assign(that.h);
+        else
+            return *this;
+    }
 
-        khm_int32 Release() {
-            return kcdb_identpro_release(h);
-        }
+    IdentityProvider& operator = (khm_handle _h) {
+        return Assign(_h);
+    }
 
-        bool IsEqualTo(IdentityProvider const &that) const {
-            return !!kcdb_identpro_is_equal(h, that.h);
-        }
+    khm_int32 Hold() {
+        return kcdb_identpro_hold(h);
+    }
 
-        bool IsEqualTo(khm_handle that) const {
-            return !!kcdb_identpro_is_equal(h, that);
-        }
+    khm_int32 Release() {
+        return kcdb_identpro_release(h);
+    }
 
-        std::wstring GetName() const {
-            wchar_t wname[KCDB_MAXCCH_NAME];
-            khm_size cb = sizeof(wname);
+    bool IsEqualTo(IdentityProvider const &that) const {
+        return !!kcdb_identpro_is_equal(h, that.h);
+    }
 
-            if (KHM_FAILED(kcdb_identpro_get_name(h, wname, &cb)))
-                wname[0] = L'\0';
+    bool IsEqualTo(khm_handle that) const {
+        return !!kcdb_identpro_is_equal(h, that);
+    }
 
-            return std::wstring(wname);
-        }
+    std::wstring GetName() const {
+        wchar_t wname[KCDB_MAXCCH_NAME];
+        khm_size cb = sizeof(wname);
 
-        CredentialType GetType() const {
-            khm_int32 ictype = KCDB_CREDTYPE_INVALID;
-            kcdb_identpro_get_type(h, &ictype);
+        if (KHM_FAILED(kcdb_identpro_get_name(h, wname, &cb)))
+            wname[0] = L'\0';
 
-            return CredentialType(ictype);
-        }
+        return std::wstring(wname);
+    }
 
-        Identity GetDefaultIdentity() const;
+    CredentialType GetType() const {
+        khm_int32 ictype = KCDB_CREDTYPE_INVALID;
+        kcdb_identpro_get_type(h, &ictype);
 
-        static Enumeration Enum() {
-            khm_size n = 0;
-            kcdb_enumeration e = NULL;
+        return CredentialType(ictype);
+    }
 
-            kcdb_identpro_begin_enum(&e, &n);
+    Identity GetDefaultIdentity() const;
 
-            return Enumeration(e, n);
-        }
+    static Enumeration Enum() {
+        khm_size n = 0;
+        kcdb_enumeration e = NULL;
 
-        static IdentityProvider GetDefault() {
-            khm_handle h = NULL;
+        kcdb_identpro_begin_enum(&e, &n);
 
-            kcdb_identpro_get_default(&h);
-            return IdentityProvider(h);
-        }
-    };
+        return Enumeration(e, n);
+    }
 
-    class Identity : public _BufferImpl<Identity> {
-    protected:
-        khm_handle h;
+    static IdentityProvider GetDefault() {
+        khm_handle h = NULL;
 
-        friend class _BufferImpl<Identity>;
+        kcdb_identpro_get_default(&h);
+        return IdentityProvider(h);
+    }
+};
 
-    public:
-        Identity() { h = NULL; }
+class Identity : public _BufferImpl<Identity> {
+protected:
+    khm_handle h;
 
-        explicit
-        Identity(khm_handle _identity, bool take_ownership = true) {
-            h = _identity;
-            if (!take_ownership)
-                Hold();
-        }
+    friend class _BufferImpl<Identity>;
 
-        Identity(IdentityProvider &provider, const wchar_t * name, khm_int32 flags, void * vparam = NULL) {
-            h = NULL;
-            Create(provider, name, flags, vparam);
-        }
+public:
+    Identity() { h = NULL; }
 
-        Identity(const Identity &that) {
-            h = that.h;
+    explicit
+    Identity(khm_handle _identity, bool take_ownership = true) {
+        h = _identity;
+        if (!take_ownership)
             Hold();
-        }
+    }
 
-        ~Identity() { 
-            Release();
-            h = NULL; 
-        }
+    Identity(IdentityProvider &provider, const wchar_t * name, khm_int32 flags, void * vparam = NULL) {
+        h = NULL;
+        Create(provider, name, flags, vparam);
+    }
 
-        Identity& operator = (const Identity& that) {
-            if (this != &that)
-                return Assign(that.h);
-            else
-                return *this;
-        }
+    Identity(const Identity &that) {
+        h = that.h;
+        Hold();
+    }
 
-        Identity& operator = (khm_handle _h) {
-            return Assign(_h);
-        }
+    ~Identity() { 
+        Release();
+        h = NULL; 
+    }
 
-        khm_int32 Create(IdentityProvider &provider, const wchar_t * name, khm_int32 flags,
-                         void * vparam = NULL) {
+    Identity& operator = (const Identity& that) {
+        if (this != &that)
+            return Assign(that.h);
+        else
+            return *this;
+    }
+
+    Identity& operator = (khm_handle _h) {
+        return Assign(_h);
+    }
+
+    khm_int32 Create(IdentityProvider &provider, const wchar_t * name, khm_int32 flags,
+                     void * vparam = NULL) {
+        Release();
+        h = NULL;
+        return kcdb_identity_create_ex(static_cast<khm_handle>(provider), name, flags,
+                                       vparam, &h);
+    }
+
+    khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
+        return kcdb_identity_get_attrib(h, attr_name, NULL, buffer, pcb_buf);
+    }
+
+    khm_int32 GetAttrib(khm_int32 attr_id, void * buffer, khm_size * pcb_buf) const {
+        return kcdb_identity_get_attr(h, attr_id, NULL, buffer, pcb_buf);
+    }
+
+    khm_int32 SetAttrib(const wchar_t * attr_name, const void * buffer, khm_size cb_buffer) {
+        return kcdb_identity_set_attrib(h, attr_name, buffer, cb_buffer);
+    }
+
+    khm_int32 SetAttrib(khm_int32 attr_id, const void * buffer, khm_size cb_buffer) {
+        return kcdb_identity_set_attr(h, attr_id, buffer, cb_buffer);
+    }
+
+    khm_int32 GetAttribString(const wchar_t * attr_name, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
+        return kcdb_identity_get_attrib_string(h, attr_name, buffer, pcb_buf, flags);
+    }
+
+    khm_int32 GetAttribString(khm_int32 attr_id, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
+        return kcdb_identity_get_attr_string(h, attr_id, buffer, pcb_buf, flags);
+    }
+
+    khm_int32 Hold() {
+        return kcdb_identity_hold(h);
+    }
+
+    khm_int32 Release() {
+        return kcdb_identity_release(h);
+    }
+
+    bool IsEqualTo(Identity const &that) const {
+        return !!kcdb_identity_is_equal(h, that.h);
+    }
+
+    bool IsEqualTo(khm_handle that) const {
+        return !!kcdb_identity_is_equal(h, that);
+    }
+
+    khm_int32 SetFlags(khm_int32 flags, khm_int32 mask) {
+        return kcdb_identity_set_flags(h, flags, mask);
+    }
+
+    khm_int32 GetFlags() const {
+        khm_int32 f = 0;
+        kcdb_identity_get_flags(h, &f);
+        return f;
+    }
+
+    khm_ui_8 GetSerial() const {
+        khm_ui_8 serial = 0;
+        kcdb_identity_get_serial(h, &serial);
+        return serial;
+    }
+
+    std::wstring GetName() const {
+        wchar_t wname[KCDB_IDENT_MAXCCH_NAME];
+        khm_size cb = sizeof(wname);
+
+        if (KHM_FAILED(kcdb_identity_get_name(h, wname, &cb)))
+            wname[0] = L'\0';
+
+        return std::wstring(wname);
+    }
+
+    CredentialType GetType() const {
+        khm_int32 ctype = KCDB_CREDTYPE_INVALID;
+        khm_size cb = sizeof(ctype);
+
+        kcdb_identity_get_attr(h, KCDB_ATTR_TYPE, NULL, &ctype, &cb);
+
+        if (ctype >= 0)
+            return CredentialType(ctype);
+        else
+            return CredentialType();
+    }
+
+    IdentityProvider GetProvider() const {
+        khm_handle pro = NULL;
+        kcdb_identity_get_identpro(h, &pro);
+        return IdentityProvider(pro);
+    }
+
+    ConfigSpace GetConfig(khm_int32 flags) const {
+        khm_handle csp = NULL;
+
+        /* TODO: should this also set up the shadow configuration space? */
+
+        if (KHM_SUCCEEDED(kcdb_identity_get_config(h, flags, &csp)))
+            return ConfigSpace(csp);
+        else
+            return ConfigSpace();
+    }
+
+    Identity GetParent() const {
+        khm_handle p = NULL;
+
+        kcdb_identity_get_parent(h, &p);
+        return Identity(p);
+    }
+
+    khm_int32 SetParent(Identity &p) {
+        return kcdb_identity_set_parent(h, static_cast<khm_handle>(p));
+    }
+
+    khm_int32 SetDefault() {
+        return kcdb_identity_set_default(h);
+    }
+
+    static Enumeration Enum(khm_int32 and_flags, khm_int32 eq_flags) {
+        kcdb_enumeration e = NULL;
+        khm_size n = 0;
+
+        kcdb_identity_begin_enum(and_flags, eq_flags, &e, &n);
+        return Enumeration(e, n);
+    }
+};
+
+inline Identity IdentityProvider::GetDefaultIdentity() const {
+    khm_handle h_id = NULL;
+    kcdb_identpro_get_default_identity(h, &h_id);
+
+    return Identity(h_id);
+}
+
+class Credential : public _BufferImpl<Credential> {
+protected:
+    khm_handle h;
+
+    friend class _BufferImpl<Credential>;
+
+public:
+    Credential() {
+        h = NULL;
+    }
+
+    Credential(const wchar_t * name, Identity & identity, CredentialType & ctype) {
+        kcdb_cred_create(name, static_cast<khm_handle>(identity),
+                         static_cast<khm_int32>(ctype), &h);
+    }
+
+    explicit
+    Credential(khm_handle _h, bool take_ownership = true) {
+        h = _h;
+        if (!take_ownership)
+            Hold();
+    }
+
+    Credential(const Credential &that) {
+        h = that.h;
+        Hold();
+    }
+
+    ~Credential() {
+        if (h) {
             Release();
             h = NULL;
-            return kcdb_identity_create_ex(static_cast<khm_handle>(provider), name, flags,
-                                           vparam, &h);
         }
+    }
 
-        khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
-            return kcdb_identity_get_attrib(h, attr_name, NULL, buffer, pcb_buf);
-        }
+    Credential& operator = (const Credential& that) {
+        if (this != &that)
+            return Assign(that.h);
+        else
+            return *this;
+    }
 
-        khm_int32 GetAttrib(khm_int32 attr_id, void * buffer, khm_size * pcb_buf) const {
-            return kcdb_identity_get_attr(h, attr_id, NULL, buffer, pcb_buf);
-        }
+    Credential& operator = (khm_handle _h) {
+        return Assign(_h);
+    }
 
-        khm_int32 SetAttrib(const wchar_t * attr_name, const void * buffer, khm_size cb_buffer) {
-            return kcdb_identity_set_attrib(h, attr_name, buffer, cb_buffer);
-        }
+    khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
+        return kcdb_cred_get_attrib(h, attr_name, NULL, buffer, pcb_buf);
+    }
 
-        khm_int32 SetAttrib(khm_int32 attr_id, const void * buffer, khm_size cb_buffer) {
-            return kcdb_identity_set_attr(h, attr_id, buffer, cb_buffer);
-        }
+    khm_int32 GetAttrib(khm_int32 attr_id, void * buffer, khm_size * pcb_buf) const {
+        return kcdb_cred_get_attr(h, attr_id, NULL, buffer, pcb_buf);
+    }
 
-        khm_int32 GetAttribString(const wchar_t * attr_name, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
-            return kcdb_identity_get_attrib_string(h, attr_name, buffer, pcb_buf, flags);
-        }
+    khm_int32 SetAttrib(const wchar_t * attr_name, const void * buffer, khm_size cb_buffer) {
+        return kcdb_cred_set_attrib(h, attr_name, buffer, cb_buffer);
+    }
 
-        khm_int32 GetAttribString(khm_int32 attr_id, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
-            return kcdb_identity_get_attr_string(h, attr_id, buffer, pcb_buf, flags);
-        }
+    khm_int32 SetAttrib(khm_int32 attr_id, const void * buffer, khm_size cb_buffer) {
+        return kcdb_cred_set_attr(h, attr_id, buffer, cb_buffer);
+    }
 
-        khm_int32 Hold() {
-            return kcdb_identity_hold(h);
-        }
+    khm_int32 GetAttribString(const wchar_t * attr_name, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
+        return kcdb_cred_get_attrib_string(h, attr_name, buffer, pcb_buf, flags);
+    }
 
-        khm_int32 Release() {
-            return kcdb_identity_release(h);
-        }
+    khm_int32 GetAttribString(khm_int32 attr_id, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
+        return kcdb_cred_get_attr_string(h, attr_id, buffer, pcb_buf, flags);
+    }
 
-        bool IsEqualTo(Identity const &that) const {
-            return !!kcdb_identity_is_equal(h, that.h);
-        }
+    khm_int32 Hold() {
+        return kcdb_cred_hold(h);
+    }
 
-        bool IsEqualTo(khm_handle that) const {
-            return !!kcdb_identity_is_equal(h, that);
-        }
+    khm_int32 Release() {
+        return kcdb_cred_release(h);
+    }
 
-        khm_int32 SetFlags(khm_int32 flags, khm_int32 mask) {
-            return kcdb_identity_set_flags(h, flags, mask);
-        }
+    bool IsEqualTo(Credential const &that) const {
+        return !!kcdb_creds_is_equal(h, that.h);
+    }
 
-        khm_int32 GetFlags() const {
-            khm_int32 f = 0;
-            kcdb_identity_get_flags(h, &f);
-            return f;
-        }
+    bool IsEqualTo(khm_handle that) const {
+        return !!kcdb_creds_is_equal(h, that);
+    }
 
-        khm_ui_8 GetSerial() const {
-            khm_ui_8 serial = 0;
-            kcdb_identity_get_serial(h, &serial);
-            return serial;
-        }
+    std::wstring GetName() const {
+        wchar_t name[KCDB_MAXCCH_NAME] = L"";
+        khm_size cb = sizeof(name);
 
-        std::wstring GetName() const {
-            wchar_t wname[KCDB_IDENT_MAXCCH_NAME];
-            khm_size cb = sizeof(wname);
+        kcdb_cred_get_name(h, name, &cb);
+        return std::wstring(name);
+    }
 
-            if (KHM_FAILED(kcdb_identity_get_name(h, wname, &cb)))
-                wname[0] = L'\0';
-
-            return std::wstring(wname);
-        }
-
-        CredentialType GetType() const {
-            khm_int32 ctype = KCDB_CREDTYPE_INVALID;
-            khm_size cb = sizeof(ctype);
-
-            kcdb_identity_get_attr(h, KCDB_ATTR_TYPE, NULL, &ctype, &cb);
-
-            if (ctype >= 0)
-                return CredentialType(ctype);
-            else
-                return CredentialType();
-        }
-
-        IdentityProvider GetProvider() const {
-            khm_handle pro = NULL;
-            kcdb_identity_get_identpro(h, &pro);
-            return IdentityProvider(pro);
-        }
-
-        ConfigSpace GetConfig(khm_int32 flags) const {
-            khm_handle csp = NULL;
-
-            /* TODO: should this also set up the shadow configuration space? */
-
-            if (KHM_SUCCEEDED(kcdb_identity_get_config(h, flags, &csp)))
-                return ConfigSpace(csp);
-            else
-                return ConfigSpace();
-        }
-
-        Identity GetParent() const {
-            khm_handle p = NULL;
-
-            kcdb_identity_get_parent(h, &p);
-            return Identity(p);
-        }
-
-        khm_int32 SetParent(Identity &p) {
-            return kcdb_identity_set_parent(h, static_cast<khm_handle>(p));
-        }
-
-        khm_int32 SetDefault() {
-            return kcdb_identity_set_default(h);
-        }
-
-        static Enumeration Enum(khm_int32 and_flags, khm_int32 eq_flags) {
-            kcdb_enumeration e = NULL;
-            khm_size n = 0;
-
-            kcdb_identity_begin_enum(and_flags, eq_flags, &e, &n);
-            return Enumeration(e, n);
-        }
-    };
-
-    inline Identity IdentityProvider::GetDefaultIdentity() const {
+    Identity GetIdentity() const {
         khm_handle h_id = NULL;
-        kcdb_identpro_get_default_identity(h, &h_id);
+
+        kcdb_cred_get_identity(h, &h_id);
 
         return Identity(h_id);
     }
 
-    class Credential : public _BufferImpl<Credential> {
-    protected:
-        khm_handle h;
-
-        friend class _BufferImpl<Credential>;
-
-    public:
-        Credential() {
-            h = NULL;
-        }
-
-        Credential(const wchar_t * name, Identity & identity, CredentialType & ctype) {
-            kcdb_cred_create(name, static_cast<khm_handle>(identity),
-                             static_cast<khm_int32>(ctype), &h);
-        }
-
-        explicit
-        Credential(khm_handle _h, bool take_ownership = true) {
-            h = _h;
-            if (!take_ownership)
-                Hold();
-        }
-
-        Credential(const Credential &that) {
-            h = that.h;
-            Hold();
-        }
-
-        ~Credential() {
-            if (h) {
-                Release();
-                h = NULL;
-            }
-        }
-
-        Credential& operator = (const Credential& that) {
-            if (this != &that)
-                return Assign(that.h);
-            else
-                return *this;
-        }
-
-        Credential& operator = (khm_handle _h) {
-            return Assign(_h);
-        }
-
-        khm_int32 GetAttrib(const wchar_t * attr_name, void * buffer, khm_size * pcb_buf) const {
-            return kcdb_cred_get_attrib(h, attr_name, NULL, buffer, pcb_buf);
-        }
-
-        khm_int32 GetAttrib(khm_int32 attr_id, void * buffer, khm_size * pcb_buf) const {
-            return kcdb_cred_get_attr(h, attr_id, NULL, buffer, pcb_buf);
-        }
-
-        khm_int32 SetAttrib(const wchar_t * attr_name, const void * buffer, khm_size cb_buffer) {
-            return kcdb_cred_set_attrib(h, attr_name, buffer, cb_buffer);
-        }
-
-        khm_int32 SetAttrib(khm_int32 attr_id, const void * buffer, khm_size cb_buffer) {
-            return kcdb_cred_set_attr(h, attr_id, buffer, cb_buffer);
-        }
-
-        khm_int32 GetAttribString(const wchar_t * attr_name, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
-            return kcdb_cred_get_attrib_string(h, attr_name, buffer, pcb_buf, flags);
-        }
-
-        khm_int32 GetAttribString(khm_int32 attr_id, wchar_t * buffer, khm_size * pcb_buf, khm_int32 flags = 0) const {
-            return kcdb_cred_get_attr_string(h, attr_id, buffer, pcb_buf, flags);
-        }
-
-        khm_int32 Hold() {
-            return kcdb_cred_hold(h);
-        }
-
-        khm_int32 Release() {
-            return kcdb_cred_release(h);
-        }
-
-        bool IsEqualTo(Credential const &that) const {
-            return !!kcdb_creds_is_equal(h, that.h);
-        }
-
-        bool IsEqualTo(khm_handle that) const {
-            return !!kcdb_creds_is_equal(h, that);
-        }
-
-        std::wstring GetName() const {
-            wchar_t name[KCDB_MAXCCH_NAME] = L"";
-            khm_size cb = sizeof(name);
-
-            kcdb_cred_get_name(h, name, &cb);
-            return std::wstring(name);
-        }
-
-        Identity GetIdentity() const {
-            khm_handle h_id = NULL;
-
-            kcdb_cred_get_identity(h, &h_id);
-
-            return Identity(h_id);
-        }
-
-        CredentialType GetType() const {
-            khm_int32 ctype = KCDB_CREDTYPE_INVALID;
-            kcdb_cred_get_type(h, &ctype);
-            return CredentialType(ctype);
-        }
-
-        khm_int32 GetFlags() const {
-            khm_int32 flags = 0;
-            kcdb_cred_get_flags(h, &flags);
-            return flags;
-        }
-
-        void SetFlags(khm_int32 flags, khm_int32 mask) {
-            kcdb_cred_set_flags(h, flags, mask);
-        }
-
-        khm_int32 CompareAttrib(const Credential &that, const wchar_t * attrib_name) const {
-            return kcdb_creds_comp_attrib(h, static_cast<khm_handle>(that), attrib_name);
-        }
-
-        khm_int32 CompareAttrib(const Credential &that, khm_int32 attr_id) const {
-            return kcdb_creds_comp_attr(h, static_cast<khm_handle>(that), attr_id);
-        }
-    };
-
-
-    class CredentialSetEnumeration;
-
-    class CredentialSet {
-    protected:
-        khm_handle h;
-        bool  delete_after_use;
-
-    public:
-        CredentialSet() {
-            h = NULL; 
-            delete_after_use = false; 
-            Create(); 
-        }
-
-        explicit
-        CredentialSet(khm_handle _h) {
-            h = NULL;
-            delete_after_use = false;
-            Attach(_h);
-        }
-
-        CredentialSet(const CredentialSet& _that) {
-            h = NULL;
-            delete_after_use = false;
-            Assign(_that.h);
-        }
-
-        ~CredentialSet() {
-            Detach();
-        }
-
-        CredentialSet& Attach(khm_handle _h) {
-            Detach();
-            h = _h;
-            delete_after_use = true;
-            return *this;
-        }
-
-        khm_handle Detach() {
-            khm_handle th;
-            if (delete_after_use) {
-                kcdb_credset_delete(h);
-            }
-            th = h;
-            h = NULL;
-            delete_after_use = false;
-            return th;
-        }
-
-        CredentialSet& Assign(khm_handle _h) {
-            Detach();
-            h = _h;
-            delete_after_use = false;
-            return *this;
-        }
-
-        void Unassign() {
-            Detach();
-        }
-
-        CredentialSet& operator = (const CredentialSet& that) {
-            if (this != &that)
-                return Assign(that.h);
-            else
-                return *this;
-        }
-
-        CredentialSet& operator = (khm_handle _h) {
-            return Assign(_h);
-        }
-
-        khm_int32 Create() {
-            khm_int32 rv;
-
-            Detach();
-            rv = kcdb_credset_create(&h);
-            if (KHM_SUCCEEDED(rv))
-                delete_after_use = true;
-            return rv;
-        }
-
-        khm_int32 Collect(CredentialSet * cs_from,
-                          khm_handle identity = NULL,
-                          khm_int32  ctype = KCDB_CREDTYPE_ALL,
-                          khm_int32 * delta = NULL) {
-            if (h == NULL)
-                return KHM_ERROR_INVALID_OPERATION;
-            return kcdb_credset_collect(h, (cs_from ? cs_from->h : NULL),
-                                        identity, ctype, delta);
-        }
-
-        khm_int32 Collect(CredentialSet * cs_from,
-                          kcdb_cred_filter_func filter, void * vparam,
-                          khm_int32 * delta = NULL) {
-            if (h == NULL)
-                return KHM_ERROR_INVALID_OPERATION;
-            return kcdb_credset_collect_filtered(h, (cs_from ? cs_from->h : NULL),
-                                                 filter, vparam, delta);
-        }
-
-        khm_int32 Flush() {
-            return kcdb_credset_flush(h);
-        }
-
-        Credential Get(khm_int32 idx) const {
-            khm_handle cred = NULL;
-            if (KHM_SUCCEEDED(kcdb_credset_get_cred(h, idx, &cred))) {
-                return Credential(cred);
-            } else {
-                return Credential(NULL);
-            }
-        }
-
-        Credential operator [] (khm_int32 idx) const {
-            return Get(idx);
-        }
-
-        khm_int32 Delete(khm_int32 idx) {
-            return kcdb_credset_del_cred(h, idx);
-        }
-
-        khm_int32 Delete(Credential & c) {
-            return kcdb_credset_del_cred_ref(h, static_cast<khm_handle>(c));
-        }
-
-        khm_int32 Add(Credential & c, khm_int32 idx = -1) {
-            return kcdb_credset_add_cred(h, static_cast<khm_handle>(c), idx);
-        }
-
-        khm_int32 Add(khm_handle cred, khm_int32 idx = -1) {
-            return kcdb_credset_add_cred(h, cred, idx);
-        }
-
-        khm_size Size() const {
-            khm_size s = 0;
-            kcdb_credset_get_size(h, &s);
-            return s;
-        }
-
-        khm_int32 Purge() {
-            return kcdb_credset_purge(h);
-        }
-
-        khm_int32 Apply(kcdb_cred_apply_func f, void * vparam) {
-            return kcdb_credset_apply(h, f, vparam);
-        }
-
-        khm_int32 Sort(kcdb_comp_func comp, void * vparam) {
-            return kcdb_credset_sort(h, comp, vparam);
-        }
-
-        khm_int32 Seal() {
-            return kcdb_credset_seal(h);
-        }
-
-        khm_int32 Unseal() {
-            return kcdb_credset_unseal(h);
-        }
-
-        operator khm_handle () {
-            return h;
-        }
-
-        typedef CredentialSetEnumeration Enumeration;
-
-        Enumeration Enum() const;
-
-        typedef khm_int32 (KHMCALLBACK * ApplyFunction)(Credential& c, void * param);
-
-        struct _InternalApplyData {
-            ApplyFunction f;
-            void * f_data;
-        };
-
-    private:
-        static khm_int32 KHMCALLBACK _InternalApplyFunction(khm_handle cred, void * pv) {
-            struct _InternalApplyData * data = static_cast<_InternalApplyData *>(pv);
-            Credential _cred;
-            _cred = cred;
-            return (*data->f)(_cred, data->f_data);
-        }
-
-    public:
-        khm_int32 Apply(ApplyFunction f, void * param) {
-            struct _InternalApplyData data;
-            data.f = f;
-            data.f_data = param;
-            return kcdb_credset_apply(h, _InternalApplyFunction, &data);
-        }
-    };
-
-    class CredentialSetEnumeration {
-    protected:
-        CredentialSet cs;
-        Credential    current;
-        khm_int32     next_idx;
-
-    private:
-        CredentialSetEnumeration(const CredentialSet * _cs) : cs(*_cs) {
-            Reset();
-        }
-        
-        friend class CredentialSet;
-
-    public:
-        Credential& Next() {
-            if ((khm_size) next_idx >= cs.Size())
-                current = (khm_handle) NULL;
-            else
-                current = cs.Get(next_idx++);
-            return current;
-        }
-
-        void Reset() {
-            next_idx = 0;
-            Next();
-        }
-
-        bool AtEnd() const {
-            return static_cast<khm_handle>(current) == NULL;
-        }
-
-        Credential& operator * () {
-            return current;
-        }
-
-        Credential& operator -> () {
-            return current;
-        }
-
-        Credential& operator ++ () {
-            return Next();
-        }
-    };
-
-    inline CredentialSet::Enumeration CredentialSet::Enum() const {
-        return Enumeration(this);
+    CredentialType GetType() const {
+        khm_int32 ctype = KCDB_CREDTYPE_INVALID;
+        kcdb_cred_get_type(h, &ctype);
+        return CredentialType(ctype);
     }
 
-    class AttributeTypeInfo : public _InfoImpl<AttributeTypeInfo, kcdb_type> {
-    private:
-        void Release() {
-            if (info) {
-                kcdb_type_release_info(info);
-                info = NULL;
-            }
-        }
+    khm_int32 GetFlags() const {
+        khm_int32 flags = 0;
+        kcdb_cred_get_flags(h, &flags);
+        return flags;
+    }
 
-        friend _InfoImpl<AttributeTypeInfo, kcdb_type>;
+    void SetFlags(khm_int32 flags, khm_int32 mask) {
+        kcdb_cred_set_flags(h, flags, mask);
+    }
 
-    public:
-        AttributeTypeInfo() {
-        }
+    khm_int32 CompareAttrib(const Credential &that, const wchar_t * attrib_name) const {
+        return kcdb_creds_comp_attrib(h, static_cast<khm_handle>(that), attrib_name);
+    }
 
-        AttributeTypeInfo(khm_int32 id) {
-            Lookup(id);
-        }
+    khm_int32 CompareAttrib(const Credential &that, khm_int32 attr_id) const {
+        return kcdb_creds_comp_attr(h, static_cast<khm_handle>(that), attr_id);
+    }
+};
 
-        AttributeTypeInfo(const wchar_t * name) {
-            Lookup(name);
-        }
 
-        AttributeTypeInfo(const AttributeTypeInfo& that) {
-            if (that.info != NULL) {
-                Lookup(that.info->id);
-            } else {
-                Release();
-            }
-        }
+class CredentialSetEnumeration;
 
-        ~AttributeTypeInfo() {
-            Release();
-        }
+class CredentialSet {
+protected:
+    khm_handle h;
+    bool  delete_after_use;
 
-        khm_int32 Lookup(khm_int32 id) {
-            last_error = kcdb_type_get_info(id, &info);
-        }
+public:
+    CredentialSet() {
+        h = NULL; 
+        delete_after_use = false; 
+        Create(); 
+    }
 
-        khm_int32 Lookup(const wchar_t * name) {
-            khm_int32 id = KCDB_TYPE_INVALID;
-            Release();
-            last_error = kcdb_type_get_id(name, &id);
-            if (KHM_SUCCEEDED(last_error)) {
-                last_error = kcdb_type_get_info(id, &info);
-            }
+    explicit
+    CredentialSet(khm_handle _h) {
+        h = NULL;
+        delete_after_use = false;
+        Attach(_h);
+    }
+
+    CredentialSet(const CredentialSet& _that) {
+        h = NULL;
+        delete_after_use = false;
+        Assign(_that.h);
+    }
+
+    ~CredentialSet() {
+        Detach();
+    }
+
+    CredentialSet& Attach(khm_handle _h) {
+        Detach();
+        h = _h;
+        delete_after_use = true;
+        return *this;
+    }
+
+    khm_handle Detach() {
+        khm_handle th;
+        if (delete_after_use) {
+            kcdb_credset_delete(h);
         }
+        th = h;
+        h = NULL;
+        delete_after_use = false;
+        return th;
+    }
+
+    CredentialSet& Assign(khm_handle _h) {
+        Detach();
+        h = _h;
+        delete_after_use = false;
+        return *this;
+    }
+
+    void Unassign() {
+        Detach();
+    }
+
+    CredentialSet& operator = (const CredentialSet& that) {
+        if (this != &that)
+            return Assign(that.h);
+        else
+            return *this;
+    }
+
+    CredentialSet& operator = (khm_handle _h) {
+        return Assign(_h);
+    }
+
+    khm_int32 Create() {
+        khm_int32 rv;
+
+        Detach();
+        rv = kcdb_credset_create(&h);
+        if (KHM_SUCCEEDED(rv))
+            delete_after_use = true;
+        return rv;
+    }
+
+    khm_int32 Collect(CredentialSet * cs_from,
+                      khm_handle identity = NULL,
+                      khm_int32  ctype = KCDB_CREDTYPE_ALL,
+                      khm_int32 * delta = NULL) {
+        if (h == NULL)
+            return KHM_ERROR_INVALID_OPERATION;
+        return kcdb_credset_collect(h, (cs_from ? cs_from->h : NULL),
+                                    identity, ctype, delta);
+    }
+
+    khm_int32 Collect(CredentialSet * cs_from,
+                      kcdb_cred_filter_func filter, void * vparam,
+                      khm_int32 * delta = NULL) {
+        if (h == NULL)
+            return KHM_ERROR_INVALID_OPERATION;
+        return kcdb_credset_collect_filtered(h, (cs_from ? cs_from->h : NULL),
+                                             filter, vparam, delta);
+    }
+
+    khm_int32 Flush() {
+        return kcdb_credset_flush(h);
+    }
+
+    Credential Get(khm_int32 idx) const {
+        khm_handle cred = NULL;
+        if (KHM_SUCCEEDED(kcdb_credset_get_cred(h, idx, &cred))) {
+            return Credential(cred);
+        } else {
+            return Credential(NULL);
+        }
+    }
+
+    Credential operator [] (khm_int32 idx) const {
+        return Get(idx);
+    }
+
+    khm_int32 Delete(khm_int32 idx) {
+        return kcdb_credset_del_cred(h, idx);
+    }
+
+    khm_int32 Delete(Credential & c) {
+        return kcdb_credset_del_cred_ref(h, static_cast<khm_handle>(c));
+    }
+
+    khm_int32 Add(Credential & c, khm_int32 idx = -1) {
+        return kcdb_credset_add_cred(h, static_cast<khm_handle>(c), idx);
+    }
+
+    khm_int32 Add(khm_handle cred, khm_int32 idx = -1) {
+        return kcdb_credset_add_cred(h, cred, idx);
+    }
+
+    khm_size Size() const {
+        khm_size s = 0;
+        kcdb_credset_get_size(h, &s);
+        return s;
+    }
+
+    khm_int32 Purge() {
+        return kcdb_credset_purge(h);
+    }
+
+    khm_int32 Apply(kcdb_cred_apply_func f, void * vparam) {
+        return kcdb_credset_apply(h, f, vparam);
+    }
+
+    khm_int32 Sort(kcdb_comp_func comp, void * vparam) {
+        return kcdb_credset_sort(h, comp, vparam);
+    }
+
+    khm_int32 Seal() {
+        return kcdb_credset_seal(h);
+    }
+
+    khm_int32 Unseal() {
+        return kcdb_credset_unseal(h);
+    }
+
+    operator khm_handle () {
+        return h;
+    }
+
+    typedef CredentialSetEnumeration Enumeration;
+
+    Enumeration Enum() const;
+
+    typedef khm_int32 (KHMCALLBACK * ApplyFunction)(Credential& c, void * param);
+
+    struct _InternalApplyData {
+        ApplyFunction f;
+        void * f_data;
     };
 
-    class AttributeInfo : public _InfoImpl<AttributeInfo, kcdb_attrib> {
-    private:
-        friend class _InfoImpl<AttributeInfo, kcdb_attrib>;
+private:
+    static khm_int32 KHMCALLBACK _InternalApplyFunction(khm_handle cred, void * pv) {
+        struct _InternalApplyData * data = static_cast<_InternalApplyData *>(pv);
+        Credential _cred;
+        _cred = cred;
+        return (*data->f)(_cred, data->f_data);
+    }
 
-        void Release() {
-            if (info)
-                kcdb_attrib_release_info(info);
+public:
+    khm_int32 Apply(ApplyFunction f, void * param) {
+        struct _InternalApplyData data;
+        data.f = f;
+        data.f_data = param;
+        return kcdb_credset_apply(h, _InternalApplyFunction, &data);
+    }
+};
+
+class CredentialSetEnumeration {
+protected:
+    CredentialSet cs;
+    Credential    current;
+    khm_int32     next_idx;
+
+private:
+    CredentialSetEnumeration(const CredentialSet * _cs) : cs(*_cs) {
+        Reset();
+    }
+        
+    friend class CredentialSet;
+
+public:
+    Credential& Next() {
+        if ((khm_size) next_idx >= cs.Size())
+            current = (khm_handle) NULL;
+        else
+            current = cs.Get(next_idx++);
+        return current;
+    }
+
+    void Reset() {
+        next_idx = 0;
+        Next();
+    }
+
+    bool AtEnd() const {
+        return static_cast<khm_handle>(current) == NULL;
+    }
+
+    Credential& operator * () {
+        return current;
+    }
+
+    Credential& operator -> () {
+        return current;
+    }
+
+    Credential& operator ++ () {
+        return Next();
+    }
+};
+
+inline CredentialSet::Enumeration CredentialSet::Enum() const {
+    return Enumeration(this);
+}
+
+class AttributeTypeInfo : public _InfoImpl<AttributeTypeInfo, kcdb_type> {
+private:
+    void Release() {
+        if (info) {
+            kcdb_type_release_info(info);
             info = NULL;
         }
+    }
 
-    public:
-        AttributeInfo() {
-        }
+    friend _InfoImpl<AttributeTypeInfo, kcdb_type>;
 
-        AttributeInfo(khm_int32 attr_id) {
-            Lookup(attr_id);
-        }
+public:
+    AttributeTypeInfo() {
+    }
 
-        AttributeInfo(const wchar_t * attr_name) {
-            Lookup(attr_name);
-        }
+    AttributeTypeInfo(khm_int32 id) {
+        Lookup(id);
+    }
 
-        AttributeInfo(const AttributeInfo& that) {
-            if (that.info != NULL)
-                Lookup(that.info->id);
-            else
-                Release();
-        }
+    AttributeTypeInfo(const wchar_t * name) {
+        Lookup(name);
+    }
 
-        ~AttributeInfo() {
+    AttributeTypeInfo(const AttributeTypeInfo& that) {
+        if (that.info != NULL) {
+            Lookup(that.info->id);
+        } else {
             Release();
         }
+    }
 
-        khm_int32 Lookup(khm_int32 attr_id) {
+    ~AttributeTypeInfo() {
+        Release();
+    }
+
+    khm_int32 Lookup(khm_int32 id) {
+        last_error = kcdb_type_get_info(id, &info);
+    }
+
+    khm_int32 Lookup(const wchar_t * name) {
+        khm_int32 id = KCDB_TYPE_INVALID;
+        Release();
+        last_error = kcdb_type_get_id(name, &id);
+        if (KHM_SUCCEEDED(last_error)) {
+            last_error = kcdb_type_get_info(id, &info);
+        }
+    }
+};
+
+class AttributeInfo : public _InfoImpl<AttributeInfo, kcdb_attrib> {
+private:
+    friend class _InfoImpl<AttributeInfo, kcdb_attrib>;
+
+    void Release() {
+        if (info)
+            kcdb_attrib_release_info(info);
+        info = NULL;
+    }
+
+public:
+    AttributeInfo() {
+    }
+
+    AttributeInfo(khm_int32 attr_id) {
+        Lookup(attr_id);
+    }
+
+    AttributeInfo(const wchar_t * attr_name) {
+        Lookup(attr_name);
+    }
+
+    AttributeInfo(const AttributeInfo& that) {
+        if (that.info != NULL)
+            Lookup(that.info->id);
+        else
             Release();
-            return last_error = kcdb_attrib_get_info(attr_id, &info);
-        }
+    }
 
-        khm_int32 Lookup(const wchar_t * name) {
-            khm_int32 attr_id;
+    ~AttributeInfo() {
+        Release();
+    }
 
-            Release();
-            if (KHM_SUCCEEDED(last_error = kcdb_attrib_get_id(name, &attr_id)))
-                return Lookup(attr_id);
-            else
-                return last_error;
-        }
+    khm_int32 Lookup(khm_int32 attr_id) {
+        Release();
+        return last_error = kcdb_attrib_get_info(attr_id, &info);
+    }
 
-        std::wstring GetDescription(khm_int32 flags = 0) const {
-            std::wstring desc;
+    khm_int32 Lookup(const wchar_t * name) {
+        khm_int32 attr_id;
 
-            if (info == NULL ||
-                (info->short_desc == NULL && info->long_desc == NULL))
-                desc = L"";
-            else if (info->long_desc == NULL || (flags & KCDB_TS_SHORT) == KCDB_TS_SHORT)
-                desc = info->short_desc;
-            else
-                desc = info->long_desc;
-            return desc;
-        }
+        Release();
+        if (KHM_SUCCEEDED(last_error = kcdb_attrib_get_id(name, &attr_id)))
+            return Lookup(attr_id);
+        else
+            return last_error;
+    }
 
-        AttributeTypeInfo GetTypeInfo() const {
-            return AttributeTypeInfo(info->type);
-        }
-    };
+    std::wstring GetDescription(khm_int32 flags = 0) const {
+        std::wstring desc;
+
+        if (info == NULL ||
+            (info->short_desc == NULL && info->long_desc == NULL))
+            desc = L"";
+        else if (info->long_desc == NULL || (flags & KCDB_TS_SHORT) == KCDB_TS_SHORT)
+            desc = info->short_desc;
+        else
+            desc = info->long_desc;
+        return desc;
+    }
+
+    AttributeTypeInfo GetTypeInfo() const {
+        return AttributeTypeInfo(info->type);
+    }
+};
 }
 
 #endif
