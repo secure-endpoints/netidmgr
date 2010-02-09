@@ -230,6 +230,7 @@ khcint_handle_free(kconf_handle * h)
         lower = h->lower;
         h->magic = 0;
         h->flags = 0;
+        h->lower = NULL;
         LPUSH(&conf_free_handles, h);
         h = lower;
     }
