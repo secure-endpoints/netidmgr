@@ -30,7 +30,7 @@ class AlertContextMonitor {
     AutoRef<ControlWindow>	listener;
     AlertElement		*element;
     UINT			controlID;
-    kherr_context           *context;
+    kherr_serial                serial;
 
 public:
     AlertContextMonitor(AlertElement * _e, ControlWindow *_cw, UINT controlID);

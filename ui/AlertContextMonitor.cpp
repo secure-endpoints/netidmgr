@@ -29,7 +29,7 @@
 namespace nim {
 
 AlertContextMonitor::AlertContextMonitor(AlertElement * _e, ControlWindow *_cw, UINT _controlID):
-    element(_e), listener(_cw), controlID(_controlID) {
+    element(_e), listener(_cw), controlID(_controlID), serial(0) {
 
     kherr_event * ev;
     khm_int32 evt_flags;
@@ -74,7 +74,7 @@ AlertContextMonitor::AlertContextMonitor(AlertElement * _e, ControlWindow *_cw, 
 
     element->SetMonitor(this);
 
-    context = a->err_context;
+    serial = a->err_context->serial;
     kherr_release_context(a->err_context);
     a->err_context = NULL;
 }
@@ -84,8 +84,8 @@ AlertContextMonitor::~AlertContextMonitor()
     Alert& a = element->m_alert;
     AutoLock<Alert> a_lock(&a);
 
-    if (context) {
-        kherr_remove_ctx_handler_param(ErrorContextCallback, context->serial,
+    if (serial) {
+        kherr_remove_ctx_handler_param(ErrorContextCallback, serial,
                                        (void *) this);
     }
 
