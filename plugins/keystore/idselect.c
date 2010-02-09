@@ -266,7 +266,7 @@ idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* Identity Selector control factory
 
    Runs in UI thread */
-khm_int32 KHMAPI 
+khm_int32 KHMAPI
 idsel_factory(HWND hwnd_parent, khui_identity_selector * u) {
 
     if (hwnd_parent) {

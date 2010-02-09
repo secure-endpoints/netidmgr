@@ -247,7 +247,7 @@ k4_id_write_params(HWND hwnd, k4_id_data * d) {
 
     if (csp_ident)
         khc_close_space(csp_ident);
-    
+
     if (csp_idk4)
         khc_close_space(csp_idk4);
 
@@ -397,7 +397,7 @@ krb4_confg_proc(HWND hwnd,
 
             in_init = TRUE;
 
-            // Set KRB.CON 
+            // Set KRB.CON
             memset(krb_path, '\0', sizeof(krb_path));
             if (!pkrb_get_krbconf2(krb_path, &krb_path_sz)) {
                 // Error has happened
@@ -407,9 +407,9 @@ krb4_confg_proc(HWND hwnd,
                 StringCbCopyA(d->krb_path, sizeof(d->krb_path), krb_path);
             }
 
-            // Set KRBREALM.CON 
+            // Set KRBREALM.CON
             memset(krbrealm_path, '\0', sizeof(krbrealm_path));
-            if (!pkrb_get_krbrealm2(krbrealm_path, &krbrealm_path_sz)) {   
+            if (!pkrb_get_krbrealm2(krbrealm_path, &krbrealm_path_sz)) {
                 // Error has happened
             } else {
                 AnsiStrToUnicode(wbuf, sizeof(wbuf), krbrealm_path);
@@ -430,8 +430,8 @@ krb4_confg_proc(HWND hwnd,
                 // Set TICKET.KRB file Editbox
                 *ticketName = 0;
                 pkrb_set_tkt_string(0);
-    
-                pticketName = ptkt_string(); 
+
+                pticketName = ptkt_string();
                 if (pticketName)
                     StringCbCopyA(ticketName, sizeof(ticketName), pticketName);
 

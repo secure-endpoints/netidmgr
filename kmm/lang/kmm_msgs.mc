@@ -1,4 +1,4 @@
-; // ** kmm_msgs.mc 
+; // ** kmm_msgs.mc
 
 ; /* Since .mc files can contain strings from any language, we define
 ; all our messages in one file in the /lang/ directory instead of
@@ -81,7 +81,7 @@ The DLL containing the module was not of the correct format.
 
 MessageId=
 SymbolicName=MSG_IM_INCOMPATIBLE
-Language=English 
+Language=English
 The DLL containing the module was not compatible with this version of NetIDMgr.
 .
 

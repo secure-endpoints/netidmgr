@@ -82,7 +82,7 @@ CwTable::RefreshGlobalColumnMenu(HWND hwnd)
                                          (void *)(UINT_PTR) i,
                                          KHUI_ACTIONTYPE_TOGGLE,
                                          sub);
-                    
+
                 attrib_to_action[i] = act;
 
                 khui_menu_insert_action(column_menu, 5000, act, 0);
@@ -150,7 +150,7 @@ CwTable::SaveView()
     }
 }
 
-void 
+void
 CwTable::LoadView(const wchar_t * cview)
 {
     std::wstring view_name;
@@ -175,7 +175,7 @@ CwTable::LoadView(const wchar_t * cview)
         cs_view.Open(cs_views, view_name.c_str(), KHM_PERM_READ);
 
         /* view data is very sensitive to version changes.  We
-           need to check if this configuration data was created 
+           need to check if this configuration data was created
            with this version of NetIDMgr.  If not, we switch to
            using a schema handle. */
         {
@@ -188,7 +188,7 @@ CwTable::LoadView(const wchar_t * cview)
                 std::wstring base = ((is_identity_view)? L"CompactIdentity" : L"ByIdentity");
 
                 cs_view.Close();
-                    
+
                 if (KHM_FAILED(cs_view.Open(cs_views, view_name.c_str(), KCONF_FLAG_SCHEMA))) {
                     cs_view.Open(cs_views, base.c_str(), KCONF_FLAG_SCHEMA);
                     view_name = base;

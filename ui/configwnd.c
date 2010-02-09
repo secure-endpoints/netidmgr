@@ -46,7 +46,7 @@ typedef struct tag_cfgui_wnd_data {
 
 static cfgui_wnd_data *
 cfgui_get_wnd_data(HWND hwnd) {
-    return (cfgui_wnd_data *)(LONG_PTR) 
+    return (cfgui_wnd_data *)(LONG_PTR)
         GetWindowLongPtr(hwnd, DWLP_USER);
 }
 
@@ -133,7 +133,7 @@ cfgui_add_node(cfgui_wnd_data * d,
     }
 }
 
-static void 
+static void
 cfgui_initialize_dialog(HWND hwnd) {
     cfgui_wnd_data * d;
     HWND hwtv;
@@ -148,7 +148,7 @@ cfgui_initialize_dialog(HWND hwnd) {
 
     /* create and fill the image list for the treeview */
 
-    d->hi_status = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 
+    d->hi_status = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
                                     ILC_COLOR8 | ILC_MASK,
                                     4,4);
 
@@ -185,8 +185,8 @@ cfgui_initialize_dialog(HWND hwnd) {
     cfgui_add_node(d, hwtv, NULL, NULL, FALSE);
 
     hdc = GetDC(hwnd);
-    hf = CreateFont(-MulDiv(12, 
-                            GetDeviceCaps(hdc, LOGPIXELSY), 
+    hf = CreateFont(-MulDiv(12,
+                            GetDeviceCaps(hdc, LOGPIXELSY),
                             72),
                     0,          /* nWidth */
                     0,          /* nEscapement */
@@ -620,7 +620,7 @@ cfgui_sync_node_list(cfgui_wnd_data * d, HWND hwnd) {
 }
 
 static void
-cfgui_update_state(HWND hwnd, 
+cfgui_update_state(HWND hwnd,
                    khm_int32 flags,
                    khui_config_node node) {
     cfgui_wnd_data * d;
@@ -726,7 +726,7 @@ cfgui_dlgproc_generic(HWND hwnd,
     return FALSE;
 }
 
-static INT_PTR CALLBACK 
+static INT_PTR CALLBACK
 cfgui_dlgproc(HWND hwnd,
               UINT uMsg,
               WPARAM wParam,
@@ -748,7 +748,7 @@ cfgui_dlgproc(HWND hwnd,
 
         d->hbr_white = CreateSolidBrush(RGB(255,255,255));
 
-        d->hw_generic_pane = 
+        d->hw_generic_pane =
             CreateDialogParam(khm_hInstance,
                               MAKEINTRESOURCE(IDD_CFG_GENERIC),
                               hwnd,
@@ -812,7 +812,7 @@ cfgui_dlgproc(HWND hwnd,
             case TVN_SELCHANGED:
                 lptv = (LPNMTREEVIEW) lParam;
                 cfgui_activate_node(hwnd,
-                                    (khui_config_node) 
+                                    (khui_config_node)
                                     lptv->itemNew.lParam);
                 return TRUE;
 
@@ -880,7 +880,7 @@ cfgui_dlgproc(HWND hwnd,
             break;
 
         case WMCFG_UPDATE_STATE:
-            cfgui_update_state(hwnd, LOWORD(wParam), 
+            cfgui_update_state(hwnd, LOWORD(wParam),
                                (khui_config_node) lParam);
             break;
 
@@ -938,7 +938,7 @@ khm_show_identity_config_pane(khm_handle identity) {
         khui_cfg_release(cfg_ids);
 }
 
-void 
+void
 khm_show_config_pane(khui_config_node node) {
     if (cfgui_hwnd != NULL) {
         SendMessage(cfgui_hwnd, KHUI_WM_CFG_NOTIFY,

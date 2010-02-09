@@ -94,7 +94,7 @@ kmmint_verify_trust_by_full_path(const wchar_t * filename)
     LONG (WINAPI *pWinVerifyTrust)(HWND hWnd, GUID* pgActionID, WINTRUST_DATA* pWinTrustData) = NULL;
     HINSTANCE hWinTrust;
 
-    if (filename == NULL) 
+    if (filename == NULL)
         return FALSE;
 
     hWinTrust = LoadLibrary(L"Wintrust");

@@ -82,7 +82,7 @@ int reg(void) {
     reg.name = reg.short_desc = reg.long_desc = L"B";
     reg.flags = 0;
     CHECK(KHM_SUCCEEDED(khui_cfg_register(NULL, &reg)));
-    
+
     reg.name = reg.short_desc = reg.long_desc = L"C";
     reg.flags = KHUI_CNFLAG_SORT_CHILDREN;
     CHECK(KHM_SUCCEEDED(khui_cfg_register(NULL, &reg)));

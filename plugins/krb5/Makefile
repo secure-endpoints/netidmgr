@@ -72,7 +72,7 @@ VERRESFILE=$(OBJ)\version.res
 $(OBJ)\krb5config.c: krbconfig.csv $(CONFDIR)\csvschema.cfg
 	$(CCSV) $** $@
 
-$(DLLFILE):  $(OBJFILES) $(VERRESFILE) 
+$(DLLFILE):  $(OBJFILES) $(VERRESFILE)
 	$(DLLGUILINK) $(MSGRESFILE) $(LIBFILES) $(SDKLIBFILES) $(SCLIB)
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)
@@ -105,7 +105,7 @@ $(OBJ)\langres_$(LANG).res: lang\$(LANG)\langres.rc
 	$(RC2RES)
 
 $(OBJ)\langres_ver_$(LANG).res: version.rc
-	$(RC) $(RFLAGS) $(rincflags) /d LANGVER /d LANG_$(LANG) /fo $@ $** 
+	$(RC) $(RFLAGS) $(rincflags) /d LANGVER /d LANG_$(LANG) /fo $@ $**
 # End language block
 
 clean::

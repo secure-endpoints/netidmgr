@@ -39,7 +39,7 @@ void
 hexdump(const unsigned char * buf, size_t cb)
 {
     size_t i;
-    static char nibbles[] = 
+    static char nibbles[] =
         { '0', '1', '2', '3', '4', '5', '6', '7',
           '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 

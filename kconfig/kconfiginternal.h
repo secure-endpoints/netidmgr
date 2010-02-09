@@ -125,7 +125,7 @@ khcint_create_empty_space(void);
 kconf_handle *
 khcint_handle_from_space(kconf_conf_space * s, khm_int32 flags);
 
-khm_boolean 
+khm_boolean
 khcint_is_valid_name(wchar_t * name);
 
 void
@@ -142,7 +142,7 @@ khcint_space_release(kconf_conf_space * s);
 
 /* Schema */
 
-khm_int32 
+khm_int32
 khcint_unload_schema(khm_handle parent, const kconf_schema * schema);
 
 khm_int32

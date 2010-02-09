@@ -90,7 +90,7 @@ ofn_load_icons(struct ch_icon_data * c, HWND hwnd, HWND hw_ofn)
     khm_restype restype;        /* resource type */
     khm_int32   flags;     /* flags for khui_load_icons_from_path() */
     HICON     * picons = NULL;  /* icons list */
-    
+
     HICON       icbuf[32];      /* icon buffer */
     wchar_t     path[MAX_PATH];
 
@@ -134,7 +134,7 @@ ofn_load_icons(struct ch_icon_data * c, HWND hwnd, HWND hw_ofn)
             khui_load_icons_from_path(path, KHM_RESTYPE_ICON,
                                       0, KHUI_LIFR_FROMLIB,
                                       NULL, &n_icons);
-            
+
             khui_load_icons_from_path(path, KHM_RESTYPE_BITMAP,
                                       0, KHUI_LIFR_FROMLIB,
                                       NULL, &n_bitmaps);

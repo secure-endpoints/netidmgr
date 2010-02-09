@@ -71,7 +71,7 @@ handle_kmsg_system_init(void)
                            assign a handle to an icon here.  The icon
                            will be used to represent the credentials
                            type.*/
-    
+
     kmq_create_subscription(credprov_msg_proc, &ct.sub);
 
     ct.is_equal = cred_is_equal;
@@ -497,10 +497,10 @@ list_certs(void)
 
         kcdb_cred_set_attr(credential, KCDB_ATTR_EXPIRE,
                            &pCtx->pCertInfo->NotAfter, KCDB_CBSIZE_AUTO);
-        
+
         kcdb_identity_set_attr(identity, KCDB_ATTR_EXPIRE,
                                &pCtx->pCertInfo->NotAfter, KCDB_CBSIZE_AUTO);
-        
+
         kcdb_cred_set_attr(credential, attr_id_issuer,
                            pCtx->pCertInfo->Issuer.pbData,
                            pCtx->pCertInfo->Issuer.cbData);

@@ -62,7 +62,7 @@ open_key(reg_node * node, khm_boolean create)
     if (node->h_key != NULL)
         return node->h_key;
 
-    if (RegOpenKeyEx(node->h_root, node->regpath, 0, 
+    if (RegOpenKeyEx(node->h_root, node->regpath, 0,
                      KEY_READ | KEY_WRITE, &node->h_key) == ERROR_ACCESS_DENIED &&
 
         RegOpenKeyEx(node->h_root, node->regpath, 0,
@@ -206,7 +206,7 @@ reg_begin_enum(void * nodeHandle)
         int idx;
 
         idx = 0;
-        while(RegEnumKey(node->h_key, idx, 
+        while(RegEnumKey(node->h_key, idx,
                          name, ARRAYLENGTH(name)) == ERROR_SUCCESS) {
             wchar_t * tilde;
 

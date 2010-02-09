@@ -116,7 +116,7 @@ show_combobox_balloon(HWND combobox, const wchar_t * title,
 
 /* Get the identity that has been selected in the UI.
  */
-static void 
+static void
 set_identity_from_ui(HWND hwnd) {
     struct idsel_dlg_data * d;
     wchar_t un[KCDB_IDENT_MAXCCH_NAME];
@@ -131,7 +131,7 @@ set_identity_from_ui(HWND hwnd) {
 #ifdef DEBUG
     assert(d && d->magic == IDSEL_DLG_DATA_MAGIC);
 #endif
- 
+
     cch = GetDlgItemText(hwnd, IDC_NC_UN, un, ARRAYLENGTH(un));
     if (cch == 0) {
         rv = KHM_ERROR_INVALID_NAME;
@@ -156,7 +156,7 @@ set_identity_from_ui(HWND hwnd) {
     *realm++ = L'@';
     *realm = L'\0';
     cch_left--;
-    
+
     cch = GetDlgItemText(hwnd, IDC_NC_REALM, realm, (int) cch_left);
     if (cch == 0) {
         rv = KHM_ERROR_INVALID_NAME;
@@ -194,7 +194,7 @@ set_identity_from_ui(HWND hwnd) {
     } else {
         SendDlgItemMessage(hwnd, IDC_NC_ICON, STM_SETICON, 0, 0);
     }
-    
+
     ident = NULL;
 
     {
@@ -323,7 +323,7 @@ update_crossfeed(HWND hwnd, khm_boolean from_uname) {
 
     SetWindowText(hw_un, un);
 
-    return TRUE;    
+    return TRUE;
 }
 
 /* Dialog procedure for IDD_NC_KRB5_IDSEL
@@ -546,7 +546,7 @@ k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             /* the username has changed.  Instead of handling this
                for every keystroke, set a timer that elapses some
                time afterwards and then handle the event. */
-            SetTimer(hwnd, NC_UNCHANGE_TIMER, 
+            SetTimer(hwnd, NC_UNCHANGE_TIMER,
                      NC_UNCHANGE_TIMEOUT, NULL);
             return TRUE;
 
@@ -618,7 +618,7 @@ k5_idspec_dlg_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 /* Identity Selector control factory
 
    Runs in UI thread */
-khm_int32 KHMAPI 
+khm_int32 KHMAPI
 k5_idselector_factory(HWND hwnd_parent, khui_identity_selector * u) {
 
     if (hwnd_parent) {
@@ -780,7 +780,7 @@ k5_ident_set_default_int(khm_handle def_ident) {
         khm_krb5_cc_name_cmp(reg_ccname, id_ccname)) {
 
         /* we have to write the new value in */
-            
+
         l = RegSetValueEx(hk_ccname, L"ccname", 0, REG_SZ, (BYTE *) id_ccname,
                           (DWORD) cb);
     }
@@ -803,7 +803,7 @@ k5_ident_set_default(khm_int32 msg_type,
                      khm_ui_4 uparam,
                      void * vparam) {
 
-    /* 
+    /*
        Currently, setting the default identity simply sets the
        "ccname" registry value at "Software\MIT\kerberos5".
     */
@@ -1208,7 +1208,7 @@ k5_refresh_default_identity(krb5_context ctx) {
         _reportf(L"Can't open default ccache. code=%d", code);
         goto _nc_cleanup;
     }
-    
+
     code = pkrb5_cc_get_principal(ctx, cc, &princ);
     if (code) {
         /* try to determine the identity from the ccache name */
@@ -1528,10 +1528,10 @@ k5_ident_(khm_int32 msg_type,
 }
 #endif
 
-khm_int32 KHMAPI 
-k5_msg_ident(khm_int32 msg_type, 
-               khm_int32 msg_subtype, 
-               khm_ui_4 uparam, 
+khm_int32 KHMAPI
+k5_msg_ident(khm_int32 msg_type,
+               khm_int32 msg_subtype,
+               khm_ui_4 uparam,
                void * vparam)
 {
     switch(msg_subtype) {
@@ -1680,7 +1680,7 @@ unsigned __stdcall k5_ccname_monitor_thread(void * lpParameter) {
     }
 
     dwSize = sizeof(reg_ccname);
-    
+
     l = RegQueryValueEx(hk_ccname,
                         L"ccname",
                         NULL,
@@ -1727,7 +1727,7 @@ unsigned __stdcall k5_ccname_monitor_thread(void * lpParameter) {
             wchar_t new_ccname[KRB5_MAXCCH_CCNAME];
 
             dwSize = sizeof(new_ccname);
-    
+
             l = RegQueryValueEx(hk_ccname,
                                 L"ccname",
                                 NULL,

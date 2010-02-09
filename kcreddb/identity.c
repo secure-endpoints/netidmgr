@@ -53,7 +53,7 @@ hash_identity(const void *);
 static khm_int32
 hash_identity_comp(const void *, const void *);
 
-void 
+void
 kcdbint_ident_init(void)
 {
     InitializeCriticalSection(&cs_ident);
@@ -65,7 +65,7 @@ kcdbint_ident_init(void)
     kcdb_config_check_event = CreateEvent(NULL, TRUE, FALSE, L"KCDB Config Check Completion Event");
 }
 
-void 
+void
 kcdbint_ident_exit(void)
 {
     EnterCriticalSection(&cs_ident);
@@ -76,14 +76,14 @@ kcdbint_ident_exit(void)
 }
 
 /* message completion routine */
-void 
+void
 kcdbint_ident_msg_completion(kmq_message * m)
 {
     kcdb_identity_release(m->vparam);
 }
 
 /*! \note cs_ident must be available. */
-void 
+void
 kcdbint_ident_post_message(khm_int32 op, kcdb_identity * id)
 {
     kcdb_identity_hold(id);
@@ -136,7 +136,7 @@ kcdb_handle_is_identity(khm_handle h)
 #pragma warning(disable: 4995)
 
 /* NOT called with cs_ident held */
-KHMEXP khm_boolean KHMAPI 
+KHMEXP khm_boolean KHMAPI
 kcdb_identity_is_valid_name(const wchar_t * name)
 {
     khm_int32 rv;
@@ -389,9 +389,9 @@ kcdb_identity_create_ex(khm_handle vidpro,
     return KHM_ERROR_SUCCESS;
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_identity_create(const wchar_t *name, 
-                     khm_int32 flags, 
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_create(const wchar_t *name,
+                     khm_int32 flags,
                      khm_handle * result)
 {
     wchar_t * pc;
@@ -571,7 +571,7 @@ KHMEXP khm_int32 KHMAPI
 khui_cache_del_by_owner(khm_handle owner);
 
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_delete(khm_handle vid)
 {
     kcdb_identity * id;
@@ -633,8 +633,8 @@ kcdb_identity_delete(khm_handle vid)
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_identity_set_flags(khm_handle vid, 
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_set_flags(khm_handle vid,
                         khm_int32 flag,
                         khm_int32 mask)
 {
@@ -707,8 +707,8 @@ kcdb_identity_set_flags(khm_handle vid,
         if ((flag ^ id->flags) & KCDB_IDENT_FLAG_STICKY) {
             khm_handle h_conf;
 
-            if (KHM_SUCCEEDED(kcdb_identity_get_config(vid, 
-                                                       KHM_FLAG_CREATE, 
+            if (KHM_SUCCEEDED(kcdb_identity_get_config(vid,
+                                                       KHM_FLAG_CREATE,
                                                        &h_conf))) {
                 khc_write_int32(h_conf, L"Sticky",
                                 !!(flag & KCDB_IDENT_FLAG_STICKY));
@@ -756,13 +756,13 @@ kcdb_identity_set_flags(khm_handle vid,
                                             cause a notification. */
 
     if((delta & KCDB_IDENT_FLAG_HIDDEN)) {
-        kcdbint_ident_post_message((newflags & KCDB_IDENT_FLAG_HIDDEN)?KCDB_OP_HIDE:KCDB_OP_UNHIDE, 
+        kcdbint_ident_post_message((newflags & KCDB_IDENT_FLAG_HIDDEN)?KCDB_OP_HIDE:KCDB_OP_UNHIDE,
                                    vid);
     }
 
     if((delta & KCDB_IDENT_FLAG_SEARCHABLE)) {
         kcdbint_ident_post_message((newflags & KCDB_IDENT_FLAG_SEARCHABLE)?
-                                   KCDB_OP_SETSEARCH:KCDB_OP_UNSETSEARCH, 
+                                   KCDB_OP_SETSEARCH:KCDB_OP_UNSETSEARCH,
                                    vid);
     }
 
@@ -825,8 +825,8 @@ kcdb_identity_set_parent(khm_handle vid,
     return KHM_ERROR_SUCCESS;
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_identity_get_flags(khm_handle vid, 
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_get_flags(khm_handle vid,
                         khm_int32 * flags) {
     kcdb_identity * id;
 
@@ -863,9 +863,9 @@ kcdb_identity_get_serial(khm_handle vid, khm_ui_8 * pserial)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_identity_get_name(khm_handle vid, 
-                       wchar_t * buffer, 
+KHMEXP khm_int32 KHMAPI
+kcdb_identity_get_name(khm_handle vid,
+                       wchar_t * buffer,
                        khm_size * pcbsize)
 {
     size_t namesize;
@@ -929,7 +929,7 @@ kcdb_identity_by_provider(khm_handle h_ident, const wchar_t * provider_name)
 #pragma warning(push)
 #pragma warning(disable: 4995)
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_default(khm_handle * pvid)
 {
     khm_handle idpro = NULL;
@@ -953,7 +953,7 @@ kcdb_identity_get_default_ex(khm_handle vidpro, khm_handle * pvid)
     return kcdb_identpro_get_default_identity(vidpro, pvid);
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_set_default(khm_handle vid) {
     return kcdb_identpro_set_default_identity(vid, TRUE);
 }
@@ -965,7 +965,7 @@ kcdb_identity_set_default_int(khm_handle vid) {
 
 /* May be called with cs_ident held. */
 KHMEXP khm_int32 KHMAPI
-kcdb_identity_get_config(khm_handle vid, 
+kcdb_identity_get_config(khm_handle vid,
                          khm_int32 flags,
                          khm_handle * result)
 {
@@ -1092,7 +1092,7 @@ kcdb_identity_get_config(khm_handle vid,
 }
 
 /*! \note cs_ident must be available. */
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_hold(khm_handle vid)
 {
     kcdb_identity * id;
@@ -1110,7 +1110,7 @@ kcdb_identity_hold(khm_handle vid)
 }
 
 /*! \note cs_ident must be available. */
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_release(khm_handle vid)
 {
     kcdb_identity * id;
@@ -1146,7 +1146,7 @@ struct kcdb_idref_result {
 
 /* Identity refresh callback.  Itereated over all the credentials in
    the root credentials set. */
-static khm_int32 KHMAPI 
+static khm_int32 KHMAPI
 kcdbint_idref_proc(khm_handle cred, void * r)
 {
     khm_handle vid;
@@ -1197,7 +1197,7 @@ kcdbint_idref_proc(khm_handle cred, void * r)
     return KHM_ERROR_SUCCESS;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_refresh(khm_handle vid)
 {
     kcdb_identity * ident = NULL;
@@ -1262,7 +1262,7 @@ kcdb_identity_refresh(khm_handle vid)
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_refresh_all(void)
 {
     kcdb_identity * ident;
@@ -1282,7 +1282,7 @@ kcdb_identity_refresh_all(void)
     do {
         hit_count = 0;
 
-        for (ident = kcdb_identities; 
+        for (ident = kcdb_identities;
              ident != NULL;
              ident = next) {
 
@@ -1353,7 +1353,7 @@ kcdbint_ident_attr_cb(khm_handle h,
             id->id_pro->cred_type <= 0)
             return KHM_ERROR_NOT_FOUND;
 
-        return kcdb_credtype_describe(id->id_pro->cred_type, buf, 
+        return kcdb_credtype_describe(id->id_pro->cred_type, buf,
                                       pcb_buf, KCDB_TS_SHORT);
 
     case KCDB_ATTR_LIFETIME:
@@ -1409,7 +1409,7 @@ kcdbint_ident_attr_cb(khm_handle h,
                 iftc = FtToInt(&ftc);
 
                 *((FILETIME *) buf) =
-                    IntToFt(FtToInt((FILETIME *) 
+                    IntToFt(FtToInt((FILETIME *)
                                     kcdb_buf_get(&id->buf,slot))
                             - iftc);
                 *pcb_buf = sizeof(FILETIME);
@@ -1423,7 +1423,7 @@ kcdbint_ident_attr_cb(khm_handle h,
         {
             khm_int32 rv = KHM_ERROR_SUCCESS;
             khm_size slot;
-                
+
             EnterCriticalSection(&cs_ident);
             if((slot = kcdb_buf_slot_by_id(&id->buf, (khm_ui_2) KCDB_ATTR_RENEW_EXPIRE))
                == KCDB_BUF_INVALID_SLOT ||
@@ -1471,7 +1471,7 @@ kcdbint_ident_attr_cb(khm_handle h,
             *pcb_buf = sizeof(khm_int32);
             return KHM_ERROR_TOO_LONG;
         }
-        
+
     case KCDB_ATTR_LAST_UPDATE:
         if (buf && *pcb_buf >= sizeof(FILETIME)) {
 
@@ -1572,7 +1572,7 @@ kcdbint_ident_attr_cb(khm_handle h,
     }
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_set_attr(khm_handle vid,
                        khm_int32 attr_id,
                        const void *buffer,
@@ -1669,7 +1669,7 @@ _exit:
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_set_attrib(khm_handle vid,
                          const wchar_t * attr_name,
                          const void * buffer,
@@ -1687,7 +1687,7 @@ kcdb_identity_set_attrib(khm_handle vid,
         cbbuf);
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_attr(khm_handle vid,
                        khm_int32 attr_id,
                        khm_int32 * attr_type,
@@ -1755,7 +1755,7 @@ _exit:
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_attrib(khm_handle vid,
                          const wchar_t * attr_name,
                          khm_int32 * attr_type,
@@ -1774,7 +1774,7 @@ kcdb_identity_get_attrib(khm_handle vid,
                                   pcbbuf);
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_attr_string(khm_handle vid,
                               khm_int32 attr_id,
                               wchar_t * buffer,
@@ -1861,7 +1861,7 @@ kcdb_identity_get_attr_string(khm_handle vid,
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_attrib_string(khm_handle vid,
                                 const wchar_t * attr_name,
                                 wchar_t * buffer,
@@ -1993,7 +1993,7 @@ check_config_for_identities(void)
 #pragma warning(push)
 #pragma warning(disable: 4995)
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_enum(khm_int32 and_flags,
                    khm_int32 eq_flags,
                    wchar_t * name_buf,

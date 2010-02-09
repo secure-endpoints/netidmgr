@@ -38,10 +38,10 @@ kcdb_type_i * kcdb_types = NULL;
 #define GENERIC_VOID_STR L"(Void)"
 
 khm_int32 KHMAPI kcdb_type_void_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags)
 {
     size_t cbsize;
@@ -99,10 +99,10 @@ khm_int32 KHMAPI kcdb_type_void_dup(
 
 /* String */
 khm_int32 KHMAPI kcdb_type_string_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags)
 {
     size_t cbsize;
@@ -189,10 +189,10 @@ khm_int32 KHMAPI kcdb_type_string_dup(
 /* Date and time */
 
 khm_int32 KHMAPI kcdb_type_date_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags)
 {
     const FILETIME * pft;
@@ -239,13 +239,13 @@ khm_int32 KHMAPI kcdb_type_date_dup(
 
 /* Interval */
 
-khm_int32 KHMAPI 
-kcdb_type_interval_toString(const void * data, 
-                            khm_size cbd, 
+khm_int32 KHMAPI
+kcdb_type_interval_toString(const void * data,
+                            khm_size cbd,
 
 
-                            wchar_t * buffer, 
-                            khm_size * cb_buf, 
+                            wchar_t * buffer,
+                            khm_size * cb_buf,
                             khm_int32 flags)
 {
     return FtIntervalToString((LPFILETIME) data, buffer, cb_buf);
@@ -296,10 +296,10 @@ khm_int32 KHMAPI kcdb_type_interval_dup(
 /* Int32 */
 
 khm_int32 KHMAPI kcdb_type_int32_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags)
 {
     size_t cbsize;
@@ -358,10 +358,10 @@ khm_int32 KHMAPI kcdb_type_int32_dup(
 /* Int64 */
 
 khm_int32 KHMAPI kcdb_type_int64_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags)
 {
     size_t cbsize;
@@ -422,10 +422,10 @@ khm_int32 KHMAPI kcdb_type_int64_dup(
 #define GENERIC_DATA_STR L"(Data)"
 
 khm_int32 KHMAPI kcdb_type_data_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags)
 {
     size_t cbsize;
@@ -501,7 +501,7 @@ khm_int32 KHMAPI kcdb_type_data_dup(
 }
 
 
-void kcdb_type_msg_completion(kmq_message * m) 
+void kcdb_type_msg_completion(kmq_message * m)
 {
     kcdb_type_release((kcdb_type_i *) m->vparam);
 }
@@ -774,11 +774,11 @@ KHMEXP khm_int32 KHMAPI kcdb_type_register(const kcdb_type * type, khm_int32 * n
     size_t cbsize;
     khm_int32 type_id;
 
-    if(!type || 
-        !type->comp || 
-        !type->dup || 
-        !type->isValid || 
-        !type->toString || 
+    if(!type ||
+        !type->comp ||
+        !type->dup ||
+        !type->isValid ||
+        !type->toString ||
         !type->name)
         return KHM_ERROR_INVALID_PARAM;
 
@@ -868,8 +868,8 @@ KHMEXP khm_int32 KHMAPI kcdb_type_unregister(khm_int32 id)
         /* we are going to remove t from the hash table.  If no one is holding
             a reference to it, then we can free it (actually, the del_ref code
             will take care of that anyway).  If there is a hold, then it will
-            get freed when they release it. 
-            
+            get freed when they release it.
+
             Actually, the post_message call above pretty much guarantees that
             the type has a hold on it.*/
         t->type.flags |= KCDB_TYPE_FLAG_DELETED;

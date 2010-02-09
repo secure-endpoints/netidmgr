@@ -148,7 +148,7 @@ int ms_append_test(void)
     log(KHERR_DEBUG_1, "MS[");
     print_ms(wbuf);
     log(KHERR_DEBUG_1, "] + [foo]=[");
-  
+
     cbbuf = sizeof(wbuf);
     code = multi_string_append(wbuf, &cbbuf, L"foo");
 

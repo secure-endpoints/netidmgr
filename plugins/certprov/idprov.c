@@ -355,10 +355,10 @@ handle_kmsg_ident_resource_req(kcdb_resource_request * preq)
     return KHM_ERROR_SUCCESS;
 }
 
-khm_int32 KHMAPI 
-handle_kmsg_ident(khm_int32 msg_type, 
-                  khm_int32 msg_subtype, 
-                  khm_ui_4 uparam, 
+khm_int32 KHMAPI
+handle_kmsg_ident(khm_int32 msg_type,
+                  khm_int32 msg_subtype,
+                  khm_ui_4 uparam,
                   void * vparam)
 {
     switch(msg_subtype) {

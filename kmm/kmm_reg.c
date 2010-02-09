@@ -27,23 +27,23 @@
 
 #include "kmminternal.h"
 
-KHMEXP khm_int32   KHMAPI 
-kmm_get_module_info(wchar_t * module_name, khm_int32 flags, 
+KHMEXP khm_int32   KHMAPI
+kmm_get_module_info(wchar_t * module_name, khm_int32 flags,
                     kmm_module_info * buffer, khm_size * cb_buffer)
 {
     /*TODO:Implement this */
     return KHM_ERROR_NOT_IMPLEMENTED;
 }
 
-KHMEXP khm_int32   KHMAPI 
-kmm_get_plugin_info(wchar_t * plugin_name, 
+KHMEXP khm_int32   KHMAPI
+kmm_get_plugin_info(wchar_t * plugin_name,
                     kmm_plugin_info * buffer, khm_size * cb_buffer)
 {
     /*TODO:Implement this */
     return KHM_ERROR_NOT_IMPLEMENTED;
 }
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_get_plugins_config(khm_int32 flags, khm_handle * result) {
     khm_handle csp_root;
     khm_handle csp_plugins;
@@ -66,7 +66,7 @@ kmm_get_plugins_config(khm_int32 flags, khm_handle * result) {
 }
 
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_get_modules_config(khm_int32 flags, khm_handle * result) {
     khm_handle croot;
     khm_handle kmm_all_modules;
@@ -89,7 +89,7 @@ kmm_get_modules_config(khm_int32 flags, khm_handle * result) {
 }
 
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_get_plugin_config(wchar_t * plugin, khm_int32 flags, khm_handle * result)
 {
     khm_handle csplugins;
@@ -111,7 +111,7 @@ kmm_get_plugin_config(wchar_t * plugin, khm_int32 flags, khm_handle * result)
 }
 
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_get_module_config(wchar_t * module, khm_int32 flags, khm_handle * result)
 {
     khm_handle csmodules;
@@ -132,7 +132,7 @@ kmm_get_module_config(wchar_t * module, khm_int32 flags, khm_handle * result)
     return rv;
 }
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -145,8 +145,8 @@ kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
 
     if((plugin == NULL) ||
 
-       (plugin->dependencies && 
-        KHM_FAILED(multi_string_length_cch(plugin->dependencies, 
+       (plugin->dependencies &&
+        KHM_FAILED(multi_string_length_cch(plugin->dependencies,
                                            KMM_MAXCCH_DEPS, &cch))) ||
 
        FAILED(StringCchLength(plugin->module, KMM_MAXCCH_NAME, &cch)) ||
@@ -186,7 +186,7 @@ kmm_register_plugin(kmm_plugin_reg * plugin, khm_int32 config_flags)
     }
 
     if(plugin->dependencies) {
-        rv = khc_write_multi_string(csp_plugin, L"Dependencies", 
+        rv = khc_write_multi_string(csp_plugin, L"Dependencies",
                                     plugin->dependencies);
         CKRV;
     }
@@ -252,7 +252,7 @@ _exit:
     return rv;
 }
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_register_module(kmm_module_reg * module, khm_int32 config_flags)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -262,8 +262,8 @@ kmm_register_module(kmm_module_reg * module, khm_int32 config_flags)
 
     if((module == NULL) ||
         FAILED(StringCchLength(module->name, KMM_MAXCCH_NAME, &cch)) ||
-        (module->description && 
-            FAILED(StringCchLength(module->description, 
+        (module->description &&
+            FAILED(StringCchLength(module->description,
                                    KMM_MAXCCH_DESC, &cch))) ||
         FAILED(StringCchLength(module->path, MAX_PATH, &cch)) ||
         (module->n_plugins > 0 && module->plugin_reg_info == NULL)) {
@@ -272,7 +272,7 @@ kmm_register_module(kmm_module_reg * module, khm_int32 config_flags)
 
 #define CKRV if(KHM_FAILED(rv)) goto _exit
 
-    rv = kmm_get_module_config(module->name, config_flags | KHM_FLAG_CREATE, 
+    rv = kmm_get_module_config(module->name, config_flags | KHM_FLAG_CREATE,
                                &csp_module);
     CKRV;
 
@@ -298,7 +298,7 @@ _exit:
     return rv;
 }
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_unregister_plugin(wchar_t * plugin, khm_int32 config_flags)
 {
     khm_handle csp_plugin = NULL;
@@ -319,7 +319,7 @@ kmm_unregister_plugin(wchar_t * plugin, khm_int32 config_flags)
     return rv;
 }
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_unregister_module(wchar_t * module, khm_int32 config_flags)
 {
     khm_handle csp_module = NULL;

@@ -35,7 +35,7 @@
 @{*/
 /*! \defgroup kplugin NetIDMgr Plugin Callbacks
 
-See the following related documentation pages for more information 
+See the following related documentation pages for more information
 about NetIDMgr plugins.
 
 These are prototypes of functions that must be implemented by a NetIDMgr

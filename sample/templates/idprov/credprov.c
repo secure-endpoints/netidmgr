@@ -71,7 +71,7 @@ handle_kmsg_system_init(void)
                            assign a handle to an icon here.  The icon
                            will be used to represent the credentials
                            type.*/
-    
+
     kmq_create_subscription(credprov_msg_proc, &ct.sub);
 
     ct.is_equal = cred_is_equal;

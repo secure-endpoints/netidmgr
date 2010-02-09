@@ -27,35 +27,35 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "..\\..\\langres.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "\r\n"
     "\0"
 END
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "..\\..\\langres.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "\r\n"
     "\0"
@@ -78,7 +78,7 @@ IDI_ID                  ICON                    "..\\..\\images\\id.ico"
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_CREDDB              "Khimaira Credentials Database"
     IDS_NAME                "Name"
@@ -93,7 +93,7 @@ BEGIN
     IDS_IVL_D_H             "%I64u days %I64u hours"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_IVL_H_M             "%I64u hours %I64u mins"
     IDS_IVL_M_S             "%I64u mins %I64u secs"
@@ -113,7 +113,7 @@ BEGIN
     IDS_IVL_D_SPEC          "d,day,days,ds"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_IVL_W_SPEC          "w,wk,wks,weeks"
     IDS_FLAGS               "Flags"
@@ -133,7 +133,7 @@ BEGIN
     IDS_STATUS              "Status"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_FTS_REL_TOD         "at %s"
     IDS_FTS_TS              "%1 %2"

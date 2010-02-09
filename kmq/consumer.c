@@ -286,7 +286,7 @@ void kmqint_post(kmq_msg_subscription * s, kmq_message * m, khm_boolean try_send
             LeaveCriticalSection(&cs_kmq_msg);
             LeaveCriticalSection(&cs_kmq_types);
 
-            rv = s->recipient.cb(m->type, m->subtype, 
+            rv = s->recipient.cb(m->type, m->subtype,
                                  m->uparam, m->vparam);
 
             EnterCriticalSection(&cs_kmq_types);
@@ -324,8 +324,8 @@ void kmqint_post(kmq_msg_subscription * s, kmq_message * m, khm_boolean try_send
 
 #ifdef _WIN32
     else if(s->rcpt_type == KMQ_RCPTTYPE_HWND) {
-        if(try_send && 
-           GetCurrentThreadId() == GetWindowThreadProcessId(s->recipient.hwnd, 
+        if(try_send &&
+           GetCurrentThreadId() == GetWindowThreadProcessId(s->recipient.hwnd,
                                                             NULL)) {
             /* kmqint_post does not know whether there are any other
                messages waiting to be posted at this point.  Hence,
@@ -344,7 +344,7 @@ void kmqint_post(kmq_msg_subscription * s, kmq_message * m, khm_boolean try_send
             /* the kmq_wm_begin()/kmq_wm_end() and kmq_wm_dispatch()
                handlers decrement the reference count on the message
                when they are done. */
-            SendMessage(s->recipient.hwnd, KMQ_WM_DISPATCH, 
+            SendMessage(s->recipient.hwnd, KMQ_WM_DISPATCH,
                         m->type, (LPARAM) m);
 
             EnterCriticalSection(&cs_kmq_types);
@@ -360,7 +360,7 @@ void kmqint_post(kmq_msg_subscription * s, kmq_message * m, khm_boolean try_send
             /* the kmq_wm_begin()/kmq_wm_end() and kmq_wm_dispatch()
                handlers decrement the reference count on the message
                when they are done. */
-            PostMessage(s->recipient.hwnd, KMQ_WM_DISPATCH, 
+            PostMessage(s->recipient.hwnd, KMQ_WM_DISPATCH,
                         m->type, (LPARAM) m);
         }
     }
@@ -446,7 +446,7 @@ KHMEXP khm_int32 KHMAPI kmq_create_hwnd_subscription(HWND hw,
 /*! \internal
     \note Obtains ::cs_kmq_global
 */
-KHMEXP khm_int32 KHMAPI kmq_create_subscription(kmq_callback_t cb, 
+KHMEXP khm_int32 KHMAPI kmq_create_subscription(kmq_callback_t cb,
                                                 khm_handle * result)
 {
     kmq_msg_subscription * s;
@@ -698,7 +698,7 @@ kmq_purge_queue(khm_int32 flags,
 
 /*! \internal
 
-    \note Obtains ::cs_kmq_global, kmq_queue::cs, ::cs_kmq_msg_ref, ::cs_kmq_msg, 
+    \note Obtains ::cs_kmq_global, kmq_queue::cs, ::cs_kmq_msg_ref, ::cs_kmq_msg,
 */
 KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout)
 {

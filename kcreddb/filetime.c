@@ -43,7 +43,7 @@ KHMEXP void KHMAPI TimetToFileTime( time_t t, LPFILETIME pft )
 KHMEXP void KHMAPI TimetToFileTimeInterval(time_t t, LPFILETIME pft)
 {
     LONGLONG ll;
-    
+
     if ( sizeof(time_t) == 4 )
 	ll = Int32x32To64(t, 10000000);
     else {
@@ -146,7 +146,7 @@ int _iv_is_in_spec(const wchar_t *s, int n, const wchar_t * spec)
         e = wcschr(b, L',');
         if(!e)
             e = b + wcslen(b);
-    
+
         if((e - b) == n  && !_wcsnicmp(b, s, n)) {
             return TRUE;
         }
@@ -239,7 +239,7 @@ KHMEXP khm_int32 KHMAPI IntervalStringToFt(FILETIME * pft, const wchar_t * str)
 /* Returns the number of milliseconds after which the representation
    of *pft would change.  The representation in question is what's
    reported by FtIntervalToString(). */
-KHMEXP long KHMAPI 
+KHMEXP long KHMAPI
 FtIntervalMsToRepChange(const FILETIME * pft)
 {
     __int64 ms,s,m,h,d;
@@ -248,7 +248,7 @@ FtIntervalMsToRepChange(const FILETIME * pft)
 
     ift = FtToInt(pft);
     ms = ift / 10000i64 - 1;
-    
+
     if(ms < 0 || ift == _I64_MAX)
         return -1;
 
@@ -274,7 +274,7 @@ FtIntervalMsToRepChange(const FILETIME * pft)
     return l;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 FtIntervalToString(const FILETIME * data, wchar_t * buffer, khm_size * cb_buf)
 {
     size_t cbsize;

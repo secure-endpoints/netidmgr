@@ -92,10 +92,10 @@ typedef struct tag_k5params {
 
 #define K5PARAM_FM_ALL    0x000007ff
 #define K5PARAM_FM_PROF   0x0000007f
- 
+
 /* Credential and principal operations */
 
-BOOL 
+BOOL
 khm_krb5_ms2mit(char * match_princ,
                 BOOL   match_realm,
                 BOOL   save_creds,
@@ -133,10 +133,10 @@ khm_convert524(krb5_context ctx);
 int
 khm_krb5_renew_cred(khm_handle cred);
 
-int 
+int
 khm_krb5_renew_ident(khm_handle identity);
 
-long 
+long
 khm_krb5_list_tickets(krb5_context *krbv5Context);
 
 long
@@ -157,19 +157,19 @@ khm_krb5_creds_is_equal(khm_handle vcred1, khm_handle vcred2, void * dummy);
 
 /* Configuration */
 
-BOOL 
+BOOL
 khm_krb5_get_profile_file(LPSTR confname, UINT szConfname);
 
-BOOL 
+BOOL
 khm_krb5_get_temp_profile_file(LPSTR confname, UINT szConfname);
 
-wchar_t * 
+wchar_t *
 khm_krb5_get_default_realm(void);
 
 long
 khm_krb5_set_default_realm(wchar_t * realm);
 
-wchar_t * 
+wchar_t *
 khm_krb5_get_realm_list(void);
 
 khm_int32
@@ -202,14 +202,14 @@ khm_krb5_get_identity_default_ccache_failover(khm_handle ident, wchar_t * buf, k
 
 /* Utility */
 
-wchar_t * 
+wchar_t *
 khm_get_realm_from_princ(wchar_t * princ);
 
 long
 khm_krb5_canon_cc_name(wchar_t * wcc_name,
                        size_t cb_cc_name);
 
-int 
+int
 khm_krb5_cc_name_cmp(const wchar_t * cc_name_1,
                      const wchar_t * cc_name_2);
 

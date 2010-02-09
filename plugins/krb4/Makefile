@@ -90,7 +90,7 @@ $(OBJ)\langres_$(LANG).res: lang\$(LANG)\langres.rc
 	$(RC2RES)
 
 $(OBJ)\langres_ver_$(LANG).res: version.rc
-	$(RC) $(RFLAGS) $(rincflags) /d LANGVER /d LANG_$(LANG) /fo $@ $** 
+	$(RC) $(RFLAGS) $(rincflags) /d LANGVER /d LANG_$(LANG) /fo $@ $**
 # End language block
 
 clean::

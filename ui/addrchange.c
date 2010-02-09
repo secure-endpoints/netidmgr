@@ -67,7 +67,7 @@ addr_change_thread(void * dummy) {
             goto _end_thread;
         }
     } while(TRUE);
-    
+
  _end_thread:
     return 0;
 }

@@ -35,7 +35,7 @@ extern "C" {
 
 #define CFGACTION_MAGIC 0x38f8
 
-void 
+void
 khm_show_config_pane(khui_config_node node);
 
 void

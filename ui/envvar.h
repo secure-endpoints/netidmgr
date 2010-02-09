@@ -23,7 +23,7 @@
  */
 
 
-#pragma once 
+#pragma once
 
 BEGIN_C
 

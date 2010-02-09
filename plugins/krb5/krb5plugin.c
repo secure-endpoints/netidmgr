@@ -178,7 +178,7 @@ k5_register_data_types(void)
         type_regd_kvno = TRUE;
     }
 
-    if (KHM_FAILED(kcdb_type_get_id(TYPENAME_KRB5_PRINC, 
+    if (KHM_FAILED(kcdb_type_get_id(TYPENAME_KRB5_PRINC,
                                     &type_id_krb5_princ))) {
         kcdb_type type;
         kcdb_type *pstr;
@@ -230,7 +230,7 @@ k5_register_attributes(void)
         LoadString(hResModule, IDS_KEY_ENCTYPE_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
         attrib.long_desc = lbuf;
-        
+
         rv = kcdb_attrib_register(&attrib, &attr_id_key_enctype);
 
         if(KHM_FAILED(rv))
@@ -256,7 +256,7 @@ k5_register_attributes(void)
         LoadString(hResModule, IDS_TKT_ENCTYPE_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
         attrib.long_desc = lbuf;
-        
+
         rv = kcdb_attrib_register(&attrib, &attr_id_tkt_enctype);
 
         if(KHM_FAILED(rv))
@@ -282,7 +282,7 @@ k5_register_attributes(void)
         LoadString(hResModule, IDS_ADDR_LIST_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
         attrib.long_desc = lbuf;
-        
+
         rv = kcdb_attrib_register(&attrib, &attr_id_addr_list);
 
         if(KHM_FAILED(rv))
@@ -307,7 +307,7 @@ k5_register_attributes(void)
         LoadString(hResModule, IDS_KRB5_FLAGS_SHORT_DESC, sbuf, ARRAYLENGTH(sbuf));
         attrib.short_desc = sbuf;
         attrib.long_desc = NULL;
-        
+
         rv = kcdb_attrib_register(&attrib, &attr_id_krb5_flags);
 
         if(KHM_FAILED(rv))
@@ -335,7 +335,7 @@ k5_register_attributes(void)
         LoadString(hResModule, IDS_KRB5_CCNAME_LONG_DESC, lbuf, ARRAYLENGTH(lbuf));
         attrib.short_desc = sbuf;
         attrib.long_desc = lbuf;
-        
+
         rv = kcdb_attrib_register(&attrib, &attr_id_krb5_ccname);
 
         if(KHM_FAILED(rv))
@@ -434,10 +434,10 @@ k5_register_credtype(void)
     ct.short_desc = short_desc;
     ct.long_desc = long_desc;
 
-    LoadString(hResModule, IDS_KRB5_SHORT_DESC, 
+    LoadString(hResModule, IDS_KRB5_SHORT_DESC,
                short_desc, ARRAYLENGTH(short_desc));
 
-    LoadString(hResModule, IDS_KRB5_LONG_DESC, 
+    LoadString(hResModule, IDS_KRB5_LONG_DESC,
                long_desc, ARRAYLENGTH(long_desc));
 
     ct.icon = NULL; /* TODO: set a proper icon */
@@ -496,8 +496,8 @@ k5_unregister_attributes(void)
 /*  The system message handler.
 
     Runs in the context of the plugin thread */
-khm_int32 KHMAPI 
-k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype, 
+khm_int32 KHMAPI
+k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
               khm_ui_4 uparam, void * vparam)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -578,8 +578,8 @@ k5_msg_kcdb(khm_int32 msg_type, khm_int32 msg_subtype,
 
     Runs in the context of the Krb5 plugin
 */
-khm_int32 KHMAPI 
-k5_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype, 
+khm_int32 KHMAPI
+k5_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype,
             khm_ui_4 uparam, void * vparam)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -624,7 +624,7 @@ k5_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype,
 
     default:
         if(IS_CRED_ACQ_MSG(msg_subtype))
-            return k5_msg_cred_dialog(msg_type, msg_subtype, 
+            return k5_msg_cred_dialog(msg_type, msg_subtype,
                                       uparam, vparam);
     }
 
@@ -636,8 +636,8 @@ k5_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype,
 
     Runs in the context of the Krb5 plugin
 */
-khm_int32 KHMAPI 
-k5_msg_callback(khm_int32 msg_type, khm_int32 msg_subtype, 
+khm_int32 KHMAPI
+k5_msg_callback(khm_int32 msg_type, khm_int32 msg_subtype,
                 khm_ui_4 uparam, void * vparam)
 {
     switch(msg_type) {

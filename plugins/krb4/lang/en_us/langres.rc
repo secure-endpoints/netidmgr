@@ -27,18 +27,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "..\\..\\langres.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "\r\n"
     "\0"
@@ -105,7 +105,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_NC_KRB4, DIALOG
     BEGIN
@@ -159,7 +159,7 @@ IDI_PLUGIN              ICON                    "..\\..\\images\\plugin.ico"
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_PLUGIN_DESC         "Kerberos v4 Credentials Provider"
     IDS_NC_K4_SHORT         "Kerberos v4"
@@ -172,7 +172,7 @@ BEGIN
     IDS_METHOD_AUTO         "Automatically determined method"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_KRB4_SHORT_DESC     "Kerberos v4 tickets"
     IDS_KRB4_LONG_DESC      "Kerberos v4 tickets"
@@ -180,7 +180,7 @@ BEGIN
     IDS_CFG_KRB4_SHORT      "Kerberos v4"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_METHOD_PWD          "Password"
     IDS_METHOD_K524         "Kerberos v5 to v4 translation"

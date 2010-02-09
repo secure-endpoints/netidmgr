@@ -775,7 +775,7 @@ prov_rec_mount_test(void)
     IS(khc_close_space(h3));
     IS(khc_close_space(h2));
     IS(khc_close_space(h1));
-    
+
     return 0;
 }
 

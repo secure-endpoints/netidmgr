@@ -186,7 +186,7 @@ handle_cert_import(HWND hwnd, struct idsel_dlg_data * d) {
                 kcdb_cred_release(cred);
             if (cred2)
                 kcdb_cred_release(cred2);
-            
+
             if (this_is_the_cert)
                 break;
         }

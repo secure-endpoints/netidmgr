@@ -30,7 +30,7 @@ void
 hexdump(unsigned char * buf, size_t cb)
 {
     size_t i;
-    static char nibbles[] = 
+    static char nibbles[] =
         { '0', '1', '2', '3', '4', '5', '6', '7',
           '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
@@ -107,7 +107,7 @@ encrypt(char * instr, char * password, void **pbuf, size_t *pcb)
 
     cbData = strlen(instr) + 1;
     CCall(CryptEncrypt(hKey,
-                       hEncHash, 
+                       hEncHash,
                        TRUE,     /* Final */
                        0,
                        NULL,
@@ -224,7 +224,7 @@ decrypt(void * buf, size_t cb, char * password, char ** outstr)
     printf("Hash:\n");
     hexdump(hash, cbHash);
 
-    
+
 
  done:
 

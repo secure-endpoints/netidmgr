@@ -237,30 +237,30 @@ k5_reply_to_acqpriv_id_request(khui_new_creds * nc,
 LRESULT
 k5_force_password_change(k5_dlg_data * d);
 
-void 
+void
 k5_pp_begin(khui_property_sheet * s);
 
-void 
+void
 k5_pp_end(khui_property_sheet * s);
 
-khm_int32 KHMAPI 
-k5_msg_cred_dialog(khm_int32 msg_type, 
-                   khm_int32 msg_subtype, 
-                   khm_ui_4 uparam, 
+khm_int32 KHMAPI
+k5_msg_cred_dialog(khm_int32 msg_type,
+                   khm_int32 msg_subtype,
+                   khm_ui_4 uparam,
                    void * vparam);
 
-khm_int32 KHMAPI 
-k5_msg_ident(khm_int32 msg_type, 
-               khm_int32 msg_subtype, 
-               khm_ui_4 uparam, 
+khm_int32 KHMAPI
+k5_msg_ident(khm_int32 msg_type,
+               khm_int32 msg_subtype,
+               khm_ui_4 uparam,
                void * vparam);
 
 khm_int32
 k5_remove_from_LRU(khm_handle identity);
 
-int 
-k5_get_realm_from_nc(khui_new_creds * nc, 
-                     wchar_t * buf, 
+int
+k5_get_realm_from_nc(khui_new_creds * nc,
+                     wchar_t * buf,
                      khm_size cch_buf);
 
 void
@@ -269,25 +269,25 @@ k5_register_config_panels(void);
 void
 k5_unregister_config_panels(void);
 
-INT_PTR CALLBACK 
+INT_PTR CALLBACK
 k5_ccconfig_dlgproc(HWND hwnd,
                     UINT uMsg,
                     WPARAM wParam,
                     LPARAM lParam);
 
-INT_PTR CALLBACK 
+INT_PTR CALLBACK
 k5_id_tab_dlgproc(HWND hwndDlg,
                   UINT uMsg,
                   WPARAM wParam,
                   LPARAM lParam);
 
-INT_PTR CALLBACK 
+INT_PTR CALLBACK
 k5_ids_tab_dlgproc(HWND hwnd,
                    UINT uMsg,
                    WPARAM wParam,
                    LPARAM lParam);
 
-khm_int32 KHMAPI 
+khm_int32 KHMAPI
 k5_idselector_factory(HWND hwnd_parent, khui_identity_selector * u);
 
 #endif

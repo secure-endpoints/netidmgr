@@ -40,7 +40,7 @@ k5_handle_wm_initdialog(HWND hwnd,
     HWND hw;
     k5_dlg_data * d;
     khui_new_creds * nc;
-    
+
     /* lParam is a pointer to a khui_new_creds structure */
     nc = (khui_new_creds *) lParam;
     khui_cw_find_type(nc, credtype_id_krb5, (khui_new_creds_by_type **) &d);
@@ -124,12 +124,12 @@ k5_force_password_change(k5_dlg_data * d) {
 
 INT_PTR
 k5_handle_wmnc_notify(HWND hwnd,
-                      WPARAM wParam, 
+                      WPARAM wParam,
                       LPARAM lParam)
 {
     k5_dlg_data * d;
 
-    d = (k5_dlg_data *)(LONG_PTR) 
+    d = (k5_dlg_data *)(LONG_PTR)
         GetWindowLongPtr(hwnd, DWLP_USER);
 
     if (d == NULL)
@@ -160,17 +160,17 @@ k5_handle_wmnc_notify(HWND hwnd,
                the controls overwrite the field. */
             old_sync = d->sync;
 
-            SendDlgItemMessage(hwnd, IDC_NCK5_RENEWABLE, 
+            SendDlgItemMessage(hwnd, IDC_NCK5_RENEWABLE,
                                BM_SETCHECK,
-			       (d->params.renewable? BST_CHECKED : BST_UNCHECKED), 
+			       (d->params.renewable? BST_CHECKED : BST_UNCHECKED),
                                0);
-            EnableWindow(GetDlgItem(hwnd, IDC_NCK5_RENEW_EDIT), 
+            EnableWindow(GetDlgItem(hwnd, IDC_NCK5_RENEW_EDIT),
                          !!d->params.renewable);
 
             khui_tracker_refresh(&d->tc_lifetime);
             khui_tracker_refresh(&d->tc_renew);
 
-            SendDlgItemMessage(hwnd, IDC_NCK5_FORWARDABLE, 
+            SendDlgItemMessage(hwnd, IDC_NCK5_FORWARDABLE,
                                BM_SETCHECK,
                                (d->params.forwardable ? BST_CHECKED : BST_UNCHECKED),
                                0);
@@ -227,8 +227,8 @@ k5_handle_wmnc_notify(HWND hwnd,
                 if (p_identity)
                     kcdb_identity_release(p_identity);
             } else {
-                kmq_post_sub_msg(k5_sub, KMSG_CRED, 
-                                 KMSG_CRED_DIALOG_NEW_IDENTITY, 
+                kmq_post_sub_msg(k5_sub, KMSG_CRED,
+                                 KMSG_CRED_DIALOG_NEW_IDENTITY,
                                  0, (void *) d->nct.nc);
             }
         }
@@ -237,8 +237,8 @@ k5_handle_wmnc_notify(HWND hwnd,
     case WMNC_DIALOG_PREPROCESS:
         {
             if(!d->sync && khui_cw_get_result(d->nct.nc) == KHUI_NC_RESULT_PROCESS) {
-                kmq_post_sub_msg(k5_sub, KMSG_CRED, 
-                                 KMSG_CRED_DIALOG_NEW_OPTIONS, 
+                kmq_post_sub_msg(k5_sub, KMSG_CRED,
+                                 KMSG_CRED_DIALOG_NEW_OPTIONS,
                                  0, (void *) d->nct.nc);
             }
         }
@@ -292,7 +292,7 @@ k5_handle_wm_command(HWND hwnd,
     switch(wParam) {
     case MAKEWPARAM(IDC_NCK5_RENEWABLE, BN_CLICKED):
 
-        c = (int) SendDlgItemMessage(hwnd, IDC_NCK5_RENEWABLE, 
+        c = (int) SendDlgItemMessage(hwnd, IDC_NCK5_RENEWABLE,
                                      BM_GETCHECK, 0, 0);
         d->params.renewable = (c == BST_CHECKED);
         EnableWindow(GetDlgItem(hwnd, IDC_NCK5_RENEW_EDIT), d->params.renewable);
@@ -300,7 +300,7 @@ k5_handle_wm_command(HWND hwnd,
 
     case MAKEWPARAM(IDC_NCK5_FORWARDABLE, BN_CLICKED):
 
-        c = (int) SendDlgItemMessage(hwnd, IDC_NCK5_FORWARDABLE, 
+        c = (int) SendDlgItemMessage(hwnd, IDC_NCK5_FORWARDABLE,
                                      BM_GETCHECK, 0, 0);
         d->params.forwardable = (c == BST_CHECKED);
         break;
@@ -331,14 +331,14 @@ k5_handle_wm_command(HWND hwnd,
 
     NOTE: Runs in the context of the UI thread
 */
-INT_PTR CALLBACK 
+INT_PTR CALLBACK
 k5_nc_dlg_proc(HWND hwnd,
                UINT uMsg,
                WPARAM wParam,
                LPARAM lParam)
 {
     switch(uMsg) {
-    case WM_INITDIALOG: 
+    case WM_INITDIALOG:
         return k5_handle_wm_initdialog(hwnd, wParam, lParam);
 
     case WM_COMMAND:
@@ -356,7 +356,7 @@ k5_nc_dlg_proc(HWND hwnd,
     return FALSE;
 }
 
-void 
+void
 k5_read_dlg_params(k5_dlg_data * d, khm_handle identity)
 {
     khui_action_context * pctx = NULL;
@@ -503,7 +503,7 @@ k5_ensure_identity_ccache_is_watched(khm_handle identity, char * ccache)
     } while(FALSE);
 }
 
-void 
+void
 k5_write_dlg_params(k5_dlg_data * d, khm_handle identity, char * ccache)
 {
 
@@ -525,7 +525,7 @@ k5_write_dlg_params(k5_dlg_data * d, khm_handle identity, char * ccache)
 }
 
 
-static khm_int32 KHMAPI 
+static khm_int32 KHMAPI
 k5_find_tgt_filter(khm_handle cred,
                    khm_int32 flags,
                    void * rock) {
@@ -660,7 +660,7 @@ k5_update_LRU(khm_handle identity)
     } else if (rv == KHM_ERROR_SUCCESS) {
         if (multi_string_find(wbuf, realm, KHM_CASE_SENSITIVE) != NULL) {
             /* remove the realm and add it at the top later. */
-            multi_string_delete(wbuf, realm, KHM_CASE_SENSITIVE); 
+            multi_string_delete(wbuf, realm, KHM_CASE_SENSITIVE);
         }
     } else {
         multi_string_init(wbuf, cb_ms);
@@ -678,7 +678,7 @@ k5_update_LRU(khm_handle identity)
     }
 
     rv = khc_write_multi_string(csp_params, L"LRURealms", wbuf);
-    
+
     assert(KHM_SUCCEEDED(rv));
 
  _done_with_LRU:
@@ -891,7 +891,7 @@ k5_handle_process_new_creds(khui_new_creds *nc,
             pkrb5_free_context(ctx);
     } else if (d->kinit_task == NULL) {
         /* the user cancelled the operation */
-        r = KHUI_NC_RESPONSE_EXIT | 
+        r = KHUI_NC_RESPONSE_EXIT |
             KHUI_NC_RESPONSE_SUCCESS;
     }
 
@@ -992,15 +992,15 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
         if (code == 0) {
             _reportf(L"Tickets successfully renewed");
 
-            khui_cw_set_response(nc, credtype_id_krb5, 
-                                 KHUI_NC_RESPONSE_EXIT | 
+            khui_cw_set_response(nc, credtype_id_krb5,
+                                 KHUI_NC_RESPONSE_EXIT |
                                  KHUI_NC_RESPONSE_SUCCESS);
         } else if (pctx->identity == NULL) {
 
             _report_mr0(KHERR_ERROR, MSG_ERR_NO_IDENTITY);
 
-            khui_cw_set_response(nc, credtype_id_krb5, 
-                                 KHUI_NC_RESPONSE_EXIT | 
+            khui_cw_set_response(nc, credtype_id_krb5,
+                                 KHUI_NC_RESPONSE_EXIT |
                                  KHUI_NC_RESPONSE_FAILED);
         } else if (CompareFileTime(&ftcurrent, &ftidexp) < 0) {
             wchar_t tbuf[1024];
@@ -1021,7 +1021,7 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
 
             _resolve();
 
-            khui_cw_set_response(nc, credtype_id_krb5, 
+            khui_cw_set_response(nc, credtype_id_krb5,
                                  KHUI_NC_RESPONSE_EXIT |
                                  KHUI_NC_RESPONSE_SUCCESS);
         } else {
@@ -1038,13 +1038,13 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
 
             _resolve();
 
-            khui_cw_set_response(nc, credtype_id_krb5, 
+            khui_cw_set_response(nc, credtype_id_krb5,
                                  ((sug_id == KHERR_SUGGEST_RETRY)?KHUI_NC_RESPONSE_NOEXIT:KHUI_NC_RESPONSE_EXIT) |
                                  KHUI_NC_RESPONSE_FAILED);
         }
     } else {
-        khui_cw_set_response(nc, credtype_id_krb5, 
-                             KHUI_NC_RESPONSE_EXIT | 
+        khui_cw_set_response(nc, credtype_id_krb5,
+                             KHUI_NC_RESPONSE_EXIT |
                              KHUI_NC_RESPONSE_SUCCESS);
     }
 
@@ -1316,7 +1316,7 @@ k5_handle_process_password(khui_new_creds * nc,
                 _resolve();
             }
 
-            khui_cw_set_response(nc, credtype_id_krb5, 
+            khui_cw_set_response(nc, credtype_id_krb5,
                                  KHUI_NC_RESPONSE_NOEXIT |
                                  KHUI_NC_RESPONSE_FAILED);
         } else {
@@ -1338,10 +1338,10 @@ k5_handle_process_password(khui_new_creds * nc,
 
     Runs in the context of the Krb5 plugin
 */
-khm_int32 KHMAPI 
-k5_msg_cred_dialog(khm_int32 msg_type, 
-                   khm_int32 msg_subtype, 
-                   khm_ui_4 uparam, 
+khm_int32 KHMAPI
+k5_msg_cred_dialog(khm_int32 msg_type,
+                   khm_int32 msg_subtype,
+                   khm_ui_4 uparam,
                    void * vparam)
 {
     khui_new_creds *nc = NULL;
@@ -1363,7 +1363,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
 
             d->nct.type = credtype_id_krb5;
 
-            LoadString(hResModule, IDS_KRB5_NC_NAME, 
+            LoadString(hResModule, IDS_KRB5_NC_NAME,
                        wbuf, ARRAYLENGTH(wbuf));
             d->nct.name = PWCSDUP(wbuf);
             d->nct.h_module = hResModule;
@@ -1416,11 +1416,11 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 k5_read_dlg_params(d, NULL);
             }
 
-            PostMessage(d->nct.hwnd_panel, KHUI_WM_NC_NOTIFY, 
+            PostMessage(d->nct.hwnd_panel, KHUI_WM_NC_NOTIFY,
                         MAKEWPARAM(0,WMNC_DIALOG_SETUP), 0);
         }
         break;
-            
+
     case KMSG_CRED_DIALOG_NEW_IDENTITY:
         {
             khm_handle ident = NULL;
@@ -1438,7 +1438,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                KHM_SUCCEEDED(khui_cw_get_primary_id(nc, &ident))) {
                 k5_read_dlg_params(d, ident);
 
-                PostMessage(d->nct.hwnd_panel, KHUI_WM_NC_NOTIFY, 
+                PostMessage(d->nct.hwnd_panel, KHUI_WM_NC_NOTIFY,
                             MAKEWPARAM(0,WMNC_DIALOG_SETUP), 0);
 
                 kcdb_identity_release(ident);
@@ -1644,7 +1644,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                 break;
 
             khui_cw_del_type(nc, credtype_id_krb5);
-    
+
             if (d->nct.name)
                 PFREE(d->nct.name);
             if (d->nct.credtext)

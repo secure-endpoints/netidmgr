@@ -302,7 +302,7 @@ k5_browse_for_ccache(HWND hwnd, k5_id_dlg_data * d)
     }
 }
 
-INT_PTR CALLBACK 
+INT_PTR CALLBACK
 k5_id_tab_dlgproc(HWND hwnd,
                   UINT uMsg,
                   WPARAM wParam,

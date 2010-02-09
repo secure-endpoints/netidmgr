@@ -160,7 +160,7 @@ void kmqint_detach_this_thread(void) {
         q->wait_o = NULL;
 
         q->flags &= ~KMQ_QUEUE_FLAG_DETACHING;
-        
+
         LeaveCriticalSection(&q->cs);
 
         /* For now, we don't free the queue. */
@@ -192,7 +192,7 @@ unsigned __stdcall kmqint_completion_thread_proc(void * p) {
 
     EnterCriticalSection(&cs_compl);
     do {
-       
+
         if (QTOP(&kmq_completion_xfer) == NULL) {
             LeaveCriticalSection(&cs_compl);
             WaitForSingleObject(compl_wx, INFINITE);

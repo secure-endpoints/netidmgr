@@ -41,7 +41,7 @@ INT_PTR CALLBACK krb5_pp_proc(HWND hwnd,
     UINT uMsg,
     WPARAM wParam,
     LPARAM lParam
-    ) 
+    )
 {
     switch(uMsg) {
     case WM_INITDIALOG:
@@ -71,8 +71,8 @@ INT_PTR CALLBACK krb5_pp_proc(HWND hwnd,
                 SetDlgItemText(hwnd, IDC_PPK5_NAME, buf);
 
                 cbsize = sizeof(buf);
-                rv = kcdb_cred_get_attr_string(s->cred, 
-                                               KCDB_ATTR_ISSUE, 
+                rv = kcdb_cred_get_attr_string(s->cred,
+                                               KCDB_ATTR_ISSUE,
                                                buf, &cbsize, 0);
                 if (KHM_SUCCEEDED(rv))
                     SetDlgItemText(hwnd, IDC_PPK5_ISSUE, buf);
@@ -80,8 +80,8 @@ INT_PTR CALLBACK krb5_pp_proc(HWND hwnd,
                     SetDlgItemText(hwnd, IDC_PPK5_ISSUE, unavailable);
 
                 cbsize = sizeof(buf);
-                rv = kcdb_cred_get_attr_string(s->cred, 
-                                               KCDB_ATTR_EXPIRE, 
+                rv = kcdb_cred_get_attr_string(s->cred,
+                                               KCDB_ATTR_EXPIRE,
                                                buf, &cbsize, 0);
                 if (KHM_SUCCEEDED(rv))
                     SetDlgItemText(hwnd, IDC_PPK5_VALID, buf);
@@ -89,8 +89,8 @@ INT_PTR CALLBACK krb5_pp_proc(HWND hwnd,
                     SetDlgItemText(hwnd, IDC_PPK5_VALID, unavailable);
 
                 cbsize = sizeof(buf);
-                rv = kcdb_cred_get_attr_string(s->cred, 
-                                               KCDB_ATTR_RENEW_EXPIRE, 
+                rv = kcdb_cred_get_attr_string(s->cred,
+                                               KCDB_ATTR_RENEW_EXPIRE,
                                                buf, &cbsize, 0);
                 if (KHM_SUCCEEDED(rv))
                     SetDlgItemText(hwnd, IDC_PPK5_RENEW, buf);

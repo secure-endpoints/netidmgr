@@ -54,10 +54,10 @@ void kcdb_type_check_and_delete(khm_int32 id);
 void kcdb_type_post_message(khm_int32 op, kcdb_type_i * t);
 
 khm_int32 KHMAPI kcdb_type_void_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags);
 
 khm_boolean KHMAPI kcdb_type_void_isValid(
@@ -77,10 +77,10 @@ khm_int32 KHMAPI kcdb_type_void_dup(
     khm_size * cbd_dst);
 
 khm_int32 KHMAPI kcdb_type_string_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags);
 
 khm_boolean KHMAPI kcdb_type_string_isValid(
@@ -100,10 +100,10 @@ khm_int32 KHMAPI kcdb_type_string_dup(
     khm_size * cbd_dst);
 
 khm_int32 KHMAPI kcdb_type_date_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags);
 
 khm_boolean KHMAPI kcdb_type_date_isValid(
@@ -123,10 +123,10 @@ khm_int32 KHMAPI kcdb_type_date_dup(
     khm_size * cbd_dst);
 
 khm_int32 KHMAPI kcdb_type_interval_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags);
 
 khm_boolean KHMAPI kcdb_type_interval_isValid(
@@ -146,10 +146,10 @@ khm_int32 KHMAPI kcdb_type_interval_dup(
     khm_size * cbd_dst);
 
 khm_int32 KHMAPI kcdb_type_int32_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags);
 
 khm_boolean KHMAPI kcdb_type_int32_isValid(
@@ -169,10 +169,10 @@ khm_int32 KHMAPI kcdb_type_int32_dup(
     khm_size * cbd_dst);
 
 khm_int32 KHMAPI kcdb_type_int64_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags);
 
 khm_boolean KHMAPI kcdb_type_int64_isValid(
@@ -192,10 +192,10 @@ khm_int32 KHMAPI kcdb_type_int64_dup(
     khm_size * cbd_dst);
 
 khm_int32 KHMAPI kcdb_type_data_toString(
-    const void * d, 
-    khm_size cbd, 
-    wchar_t * buffer, 
-    khm_size * cb_buf, 
+    const void * d,
+    khm_size cbd,
+    wchar_t * buffer,
+    khm_size * cb_buf,
     khm_int32 flags);
 
 khm_boolean KHMAPI kcdb_type_data_isValid(

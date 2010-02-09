@@ -244,7 +244,7 @@ config_dlgproc(HWND hwndDlg,
                LPARAM lParam);
 
 /* in idselect.c */
-khm_int32 KHMAPI 
+khm_int32 KHMAPI
 idsel_factory(HWND hwnd_parent, khui_identity_selector * u);
 
 

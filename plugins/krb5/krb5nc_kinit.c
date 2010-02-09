@@ -342,7 +342,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
     FILETIME expiry;
 
     assert(kt->nc);
-    
+
     if (KHM_FAILED(kcdb_identity_get_config(kt->identity, 0, &csp_idconfig)) ||
 
         KHM_FAILED(khc_open_space(csp_idconfig, CSNAME_KRB5CRED,
@@ -401,7 +401,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
             break;
 
         cb = sizeof(wprompt);
-        if (KHM_FAILED(khc_read_string(csp_p, L"Prompt", 
+        if (KHM_FAILED(khc_read_string(csp_p, L"Prompt",
                                        wprompt, &cb))) {
             khc_close_space(csp_p);
             break;
@@ -439,7 +439,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
             break;
 
         }
-        
+
 
         khc_close_space(csp_p);
     }
@@ -459,7 +459,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
         wchar_t wpname[KHUI_MAXCCH_PNAME];
 
         cb = sizeof(wbanner);
-        if (KHM_FAILED(khc_read_string(csp_prcache, L"Banner", 
+        if (KHM_FAILED(khc_read_string(csp_prcache, L"Banner",
                                       wbanner, &cb)))
             wbanner[0] = 0;
 
@@ -490,7 +490,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
             break;
 
         cb = sizeof(wprompt);
-        if (KHM_FAILED(khc_read_string(csp_p, L"Prompt", 
+        if (KHM_FAILED(khc_read_string(csp_p, L"Prompt",
                                        wprompt, &cb))) {
             khc_close_space(csp_p);
             break;
@@ -512,7 +512,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
     } else {
         rv = TRUE;
     }
-     
+
  _cleanup:
 
     if (csp_prcache)
@@ -527,7 +527,7 @@ cached_kinit_prompter(k5_kinit_task * kt) {
     return rv;
 }
 
-static krb5_error_code KRB5_CALLCONV 
+static krb5_error_code KRB5_CALLCONV
 kinit_prompter(krb5_context context,
                void *data,
                const char *name,
@@ -600,7 +600,7 @@ kinit_prompter(krb5_context context,
         khui_new_creds_prompt * p;
 
         if(prompts[i].prompt) {
-            AnsiStrToUnicode(wprompt, sizeof(wprompt), 
+            AnsiStrToUnicode(wprompt, sizeof(wprompt),
                              prompts[i].prompt);
         } else {
             wprompt[0] = L'\0';
@@ -745,7 +745,7 @@ kinit_prompter(krb5_context context,
         wchar_t wprompt[KHUI_MAXCCH_PROMPT];
 
         if(prompts[i].prompt) {
-            AnsiStrToUnicode(wprompt, sizeof(wprompt), 
+            AnsiStrToUnicode(wprompt, sizeof(wprompt),
                              prompts[i].prompt);
         } else {
             wprompt[0] = 0;
@@ -835,7 +835,7 @@ kinit_prompter(krb5_context context,
             d->length = 0;
         }
 
-        if (ptypes && 
+        if (ptypes &&
             ptypes[i] == KRB5_PROMPT_TYPE_PASSWORD &&
             d->length == 0)
 

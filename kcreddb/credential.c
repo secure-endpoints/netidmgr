@@ -66,11 +66,11 @@ kcdb_handle_is_cred(khm_handle h)
     can be called by kcdb_cred_dup with a write lock on l_creds and in other
     places with a read lock on l_creds.  New credentials must be creatable while
     holding either lock. */
-KHMEXP khm_int32 KHMAPI 
-kcdb_cred_create(const wchar_t * name, 
+KHMEXP khm_int32 KHMAPI
+kcdb_cred_create(const wchar_t * name,
                  khm_handle  identity,
                  khm_int32   cred_type,
-                 khm_handle * result) 
+                 khm_handle * result)
 {
     kcdb_cred * cred;
     size_t cb_name;
@@ -94,7 +94,7 @@ kcdb_cred_create(const wchar_t * name,
     cred->type = cred_type;
     cred->flags = KCDB_CRED_FLAG_DESTROYABLE;
     cred->refcount = 1; /* initially held */
-    
+
     LINIT(cred);
 
     kcdb_buf_new(&cred->buf, KCDB_ATTR_MAX_ID + 1);
@@ -230,7 +230,7 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_dup(
     if(KHM_FAILED(kcdb_cred_create(cred->name,
                                    cred->identity,
                                    cred->type,
-                                   &vnewcred))) 
+                                   &vnewcred)))
     {
         code = KHM_ERROR_UNKNOWN;
         goto _exit;
@@ -352,7 +352,7 @@ khm_int32 kcdbint_cred_attr_cb(khm_handle h,
         }
 
     case KCDB_ATTR_ID_NAME:
-        return kcdb_identity_get_name((khm_handle) c->identity, 
+        return kcdb_identity_get_name((khm_handle) c->identity,
                                       (wchar_t *) buf, pcb_buf);
 
     case KCDB_ATTR_ID_DISPLAY_NAME:
@@ -372,7 +372,7 @@ khm_int32 kcdbint_cred_attr_cb(khm_handle h,
         }
 
     case KCDB_ATTR_TYPE_NAME:
-        return kcdb_credtype_describe(c->type, buf, 
+        return kcdb_credtype_describe(c->type, buf,
                                       pcb_buf, KCDB_TS_SHORT);
 
     case KCDB_ATTR_LIFETIME:
@@ -418,7 +418,7 @@ khm_int32 kcdbint_cred_attr_cb(khm_handle h,
                 iftc = FtToInt(&ftc);
 
                 *((FILETIME *) buf) =
-                    IntToFt(FtToInt((FILETIME *) 
+                    IntToFt(FtToInt((FILETIME *)
                                     kcdb_cred_buf_get(c,KCDB_ATTR_EXPIRE))
                             - iftc);
                 *pcb_buf = sizeof(FILETIME);
@@ -481,9 +481,9 @@ khm_int32 kcdbint_cred_attr_cb(khm_handle h,
 }
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_set_attrib(
-    khm_handle cred, 
-    const wchar_t * name, 
-    void * buffer, 
+    khm_handle cred,
+    const wchar_t * name,
+    void * buffer,
     khm_size cbbuf)
 {
     khm_int32 attr_id = -1;
@@ -499,9 +499,9 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_set_attrib(
 }
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_set_attr(
-    khm_handle vcred, 
-    khm_int32 attr_id, 
-    const void *buffer, 
+    khm_handle vcred,
+    khm_int32 attr_id,
+    const void *buffer,
     khm_size cbbuf)
 {
     kcdb_cred * cred;
@@ -564,7 +564,7 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_set_attr(
     }
 
     if(KHM_FAILED(code =
-        type->dup(buffer, cbbuf, kcdb_cred_buf_get(cred,attr_id), &cbdest))) 
+        type->dup(buffer, cbbuf, kcdb_cred_buf_get(cred,attr_id), &cbdest)))
     {
         kcdb_buf_alloc(&cred->buf, attr_id, (khm_ui_2) attr_id, 0);
         goto _exit;
@@ -584,11 +584,11 @@ _exit:
 }
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_get_attrib(
-    khm_handle cred, 
-    const wchar_t * name, 
+    khm_handle cred,
+    const wchar_t * name,
     khm_int32 * attr_type,
-    void * buffer, 
-    khm_size * cbbuf) 
+    void * buffer,
+    khm_size * cbbuf)
 {
     khm_int32 attr_id = -1;
 
@@ -604,11 +604,11 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_attrib(
 }
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_get_attrib_string(
-    khm_handle cred, 
-    const wchar_t * name, 
-    wchar_t * buffer, 
+    khm_handle cred,
+    const wchar_t * name,
+    wchar_t * buffer,
     khm_size * cbbuf,
-    khm_int32 flags) 
+    khm_int32 flags)
 {
     khm_int32 attr_id = -1;
 
@@ -623,11 +623,11 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_attrib_string(
         flags);
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_cred_get_attr(khm_handle vcred, 
+KHMEXP khm_int32 KHMAPI
+kcdb_cred_get_attr(khm_handle vcred,
                    khm_int32 attr_id,
                    khm_int32 * attr_type,
-                   void * buffer, 
+                   void * buffer,
                    khm_size * pcbbuf)
 {
     khm_int32 code = KHM_ERROR_SUCCESS;
@@ -688,9 +688,9 @@ _exit:
 }
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_get_attr_string(
-    khm_handle vcred, 
+    khm_handle vcred,
     khm_int32 attr_id,
-    wchar_t * buffer, 
+    wchar_t * buffer,
     khm_size * pcbbuf,
     khm_int32 flags)
 {
@@ -785,8 +785,8 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_attr_string(
 
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_get_name(
-    khm_handle vcred, 
-    wchar_t * buffer, 
+    khm_handle vcred,
+    wchar_t * buffer,
     khm_size * cbbuf)
 {
     khm_int32 code = KHM_ERROR_SUCCESS;
@@ -797,7 +797,7 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_name(
         return KHM_ERROR_INVALID_PARAM;
 
     kcdb_cred_lock_read();
-    
+
     if(!kcdb_cred_is_active_cred(vcred)) {
         code = KHM_ERROR_INVALID_PARAM;
         goto _exit;
@@ -829,7 +829,7 @@ _exit:
 }
 
 KHMEXP khm_int32 KHMAPI kcdb_cred_get_identity(
-    khm_handle vcred, 
+    khm_handle vcred,
     khm_handle * identity)
 {
     khm_int32 code = KHM_ERROR_SUCCESS;
@@ -850,7 +850,7 @@ KHMEXP khm_int32 KHMAPI kcdb_cred_get_identity(
     kcdb_identity_hold((khm_handle) cred->identity);
 
     *identity = cred->identity;
-    
+
 _exit:
     kcdb_cred_unlock_read();
     return code;
@@ -897,7 +897,7 @@ _exit:
     kcdb_cred_unlock_write();
 
     kcdb_cred_check_and_delete(vcred);
-    
+
     return code;
 }
 
@@ -967,9 +967,9 @@ _exit:
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_creds_comp_attrib(khm_handle cred1, 
-                       khm_handle cred2, 
+KHMEXP khm_int32 KHMAPI
+kcdb_creds_comp_attrib(khm_handle cred1,
+                       khm_handle cred2,
                        const wchar_t * name)
 {
     khm_int32 attr_id;
@@ -980,9 +980,9 @@ kcdb_creds_comp_attrib(khm_handle cred1,
     return kcdb_creds_comp_attr(cred1, cred2, attr_id);
 }
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_creds_comp_attr(khm_handle vcred1, 
-                     khm_handle vcred2, 
+KHMEXP khm_int32 KHMAPI
+kcdb_creds_comp_attr(khm_handle vcred1,
+                     khm_handle vcred2,
                      khm_int32 attr_id)
 {
     khm_int32 code = 0;
@@ -1037,11 +1037,11 @@ kcdb_creds_comp_attr(khm_handle vcred1,
 
         code = 0;
 
-        if(attrib->compute_cb(vcred1, attr_id, 
+        if(attrib->compute_cb(vcred1, attr_id,
                               NULL, &cb1) != KHM_ERROR_TOO_LONG)
             goto _exit_1;
 
-        if(attrib->compute_cb(vcred2, attr_id, 
+        if(attrib->compute_cb(vcred2, attr_id,
                               NULL, &cb2) != KHM_ERROR_TOO_LONG)
             goto _exit_1;
 
@@ -1068,7 +1068,7 @@ kcdb_creds_comp_attr(khm_handle vcred1,
         code = type->comp(buf1, cb1,
                           buf2, cb2);
 _exit_1:
-        if(buf1 && (buf1 < (void *)vbuf || 
+        if(buf1 && (buf1 < (void *)vbuf ||
                     buf1 >= (void*)(vbuf + sizeof(vbuf))))
             PFREE(buf1);
         if(buf2 && (buf2 < (void *)vbuf ||
@@ -1091,7 +1091,7 @@ _exit:
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_creds_is_equal(khm_handle vcred1,
                     khm_handle vcred2)
 {
@@ -1140,7 +1140,7 @@ _exit:
     return code;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_cred_get_flags(khm_handle vcred,
                     khm_int32 * pflags)
 {
@@ -1164,13 +1164,13 @@ kcdb_cred_get_flags(khm_handle vcred,
 
     /* Update flags if necessary */
 
-    if (!(f & KCDB_CRED_FLAG_EXPIRED) && 
+    if (!(f & KCDB_CRED_FLAG_EXPIRED) &&
         kcdb_cred_buf_exist(cred, KCDB_ATTR_EXPIRE)) {
 
         FILETIME ftc;
-            
+
         GetSystemTimeAsFileTime(&ftc);
-        if (CompareFileTime(&ftc, ((FILETIME *) 
+        if (CompareFileTime(&ftc, ((FILETIME *)
                                    kcdb_cred_buf_get(cred, KCDB_ATTR_EXPIRE)))
             >= 0)
             f |= KCDB_CRED_FLAG_EXPIRED;

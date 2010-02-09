@@ -141,16 +141,16 @@ typedef struct tagTHREADNAME_INFO
 } THREADNAME_INFO;
 #pragma pack(pop)
 
-void
+static void
 set_thread_name(DWORD tid, const wchar_t * name)
 {
     THREADNAME_INFO info;
     char cname[128];
 
-    if (WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, 
-                            name, -1, 
-                            cname, sizeof(cname), 
-                            NULL, 
+    if (WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS,
+                            name, -1,
+                            cname, sizeof(cname),
+                            NULL,
                             NULL) == 0)
         return;
 

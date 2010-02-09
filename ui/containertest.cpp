@@ -240,11 +240,19 @@ public:
 
 HINSTANCE khm_hInstance;
 
+<<<<<<< HEAD
 int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, 
                    LPSTR lpszCmdLine, int nCmdShow) 
 { 
     MSG msg;
     BOOL bRet; 
+=======
+int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+                   LPSTR lpszCmdLine, int nCmdShow)
+{
+    MSG msg;
+    BOOL bRet;
+>>>>>>> 28d113a... Fix line-endings and trailing white-space, again
     HWND hw;
     MyControlWindow *cw = new MyControlWindow();
     GdiplusStartupInput s_input;
@@ -261,8 +269,13 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
 
     GdiplusStartup(&gp_token, &s_input, NULL);
+<<<<<<< HEAD
  
     khm_hInstance = hInstance;  // save instance handle 
+=======
+
+    khm_hInstance = hInstance;  // save instance handle
+>>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 
     MyControlWindow::RegisterWindowClass();
 
@@ -313,6 +326,7 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         return 1;
     }
 
+<<<<<<< HEAD
     ShowWindow(hw, nCmdShow); 
     UpdateWindow(hw);
 
@@ -322,6 +336,17 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
  
     while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
     { 
+=======
+    ShowWindow(hw, nCmdShow);
+    UpdateWindow(hw);
+
+    HACCEL ha = CreateAcceleratorTable(accel_table, sizeof(accel_table)/sizeof(accel_table[0]));
+
+    // Start the message loop.
+
+    while( (bRet = GetMessage( &msg, NULL, 0, 0 )) != 0)
+    {
+>>>>>>> 28d113a... Fix line-endings and trailing white-space, again
         if (bRet == -1)
         {
             // handle the error and possibly exit
@@ -329,11 +354,19 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         else
         {
             if (!TranslateAccelerator(hw, ha, &msg)) {
+<<<<<<< HEAD
                 TranslateMessage(&msg); 
                 DispatchMessage(&msg); 
             }
         }
     } 
+=======
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+    }
+>>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 
 
     delete cw;
@@ -341,8 +374,16 @@ int PASCAL WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     MyControlWindow::UnregisterWindowClass();
 
     GdiplusShutdown(gp_token);
+<<<<<<< HEAD
  
     // Return the exit code to the system. 
  
     return msg.wParam; 
 } 
+=======
+
+    // Return the exit code to the system.
+
+    return msg.wParam;
+}
+>>>>>>> 28d113a... Fix line-endings and trailing white-space, again

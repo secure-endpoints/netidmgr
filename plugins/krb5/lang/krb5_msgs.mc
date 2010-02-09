@@ -1,4 +1,4 @@
-; // ** krb5_msgs.mc 
+; // ** krb5_msgs.mc
 
 ; /* Since .mc files can contain strings from any language, we define
 ; all our messages in one file in the /lang/ directory instead of
@@ -84,7 +84,7 @@ SymbolicName=MSG_ERR_KDC_CONTACT
 Language=English
 Cannot contact the Kerberos server for the requested realm.
 .
- 
+
 MessageId=
 SymbolicName=MSG_ERR_INSECURE_PW
 Language=English

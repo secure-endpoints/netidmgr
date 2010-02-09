@@ -37,8 +37,8 @@ khm_boolean krb4_initialized = FALSE;
 khm_handle krb4_credset = NULL;
 
 /* Kerberos IV stuff */
-khm_int32 KHMAPI 
-krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype, 
+khm_int32 KHMAPI
+krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
                 khm_ui_4 uparam, void * vparam)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -62,7 +62,7 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
             ct.id = KCDB_CREDTYPE_AUTO;
             ct.name = KRB4_CREDTYPE_NAME;
 
-            if(LoadString(hResModule, IDS_KRB4_SHORT_DESC, 
+            if(LoadString(hResModule, IDS_KRB4_SHORT_DESC,
                           buf, ARRAYLENGTH(buf)))
                 {
                     StringCbLength(buf, KCDB_MAXCB_SHORT_DESC, &cbsize);
@@ -74,7 +74,7 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
             /* even though ideally we should be setting limits
                based KCDB_MAXCB_LONG_DESC, our long description
                actually fits nicely in KCDB_MAXCB_SHORT_DESC */
-            if(LoadString(hResModule, IDS_KRB4_LONG_DESC, 
+            if(LoadString(hResModule, IDS_KRB4_LONG_DESC,
                           buf, ARRAYLENGTH(buf)))
                 {
                     StringCbLength(buf, KCDB_MAXCB_SHORT_DESC, &cbsize);
@@ -92,7 +92,7 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
                 rv = kcdb_credset_create(&krb4_credset);
 
             if (KHM_SUCCEEDED(rv))
-                rv = kcdb_credtype_get_id(KRB5_CREDTYPE_NAME, 
+                rv = kcdb_credtype_get_id(KRB5_CREDTYPE_NAME,
                                           &credtype_id_krb5);
 
             if(ct.short_desc)
@@ -162,38 +162,38 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
             }
 
             /* Lookup common data types */
-            if(KHM_FAILED(kcdb_type_get_id(TYPENAME_ENCTYPE, 
+            if(KHM_FAILED(kcdb_type_get_id(TYPENAME_ENCTYPE,
                                            &type_id_enctype))) {
                 rv = KHM_ERROR_UNKNOWN;
             }
 
-            if(KHM_FAILED(kcdb_type_get_id(TYPENAME_ADDR_LIST, 
+            if(KHM_FAILED(kcdb_type_get_id(TYPENAME_ADDR_LIST,
                                            &type_id_addr_list))) {
                 rv = KHM_ERROR_UNKNOWN;
             }
 
-            if(KHM_FAILED(kcdb_type_get_id(TYPENAME_KRB5_FLAGS, 
+            if(KHM_FAILED(kcdb_type_get_id(TYPENAME_KRB5_FLAGS,
                                            &type_id_krb5_flags))) {
                 rv = KHM_ERROR_UNKNOWN;
             }
 
             /* Lookup common attributes */
-            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KEY_ENCTYPE, 
+            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KEY_ENCTYPE,
                                              &attr_id_key_enctype))) {
                 rv = KHM_ERROR_UNKNOWN;
             }
 
-            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_TKT_ENCTYPE, 
+            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_TKT_ENCTYPE,
                                              &attr_id_tkt_enctype))) {
                 rv = KHM_ERROR_UNKNOWN;
             }
 
-            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_ADDR_LIST, 
+            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_ADDR_LIST,
                                              &attr_id_addr_list))) {
                 rv = KHM_ERROR_UNKNOWN;
             }
 
-            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KRB5_FLAGS, 
+            if(KHM_FAILED(kcdb_attrib_get_id(ATTRNAME_KRB5_FLAGS,
                                              &attr_id_krb5_flags))) {
                 rv = KHM_ERROR_UNKNOWN;
             }
@@ -227,8 +227,8 @@ krb4_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
     return rv;
 }
 
-khm_int32 KHMAPI 
-krb4_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype, 
+khm_int32 KHMAPI
+krb4_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype,
               khm_ui_4 uparam, void * vparam)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -280,8 +280,8 @@ krb4_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype,
     return rv;
 }
 
-khm_int32 KHMAPI 
-krb4_cb(khm_int32 msg_type, khm_int32 msg_subtype, 
+khm_int32 KHMAPI
+krb4_cb(khm_int32 msg_type, khm_int32 msg_subtype,
         khm_ui_4 uparam, void * vparam)
 {
     switch(msg_type) {

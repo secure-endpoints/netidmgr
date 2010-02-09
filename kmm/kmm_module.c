@@ -121,7 +121,7 @@ KHMEXP khm_int32   KHMAPI kmm_release_module(kmm_module vm)
 
     EnterCriticalSection(&cs_kmm);
     m = kmm_module_from_handle(vm);
-    if(! --(m->refcount)) 
+    if(! --(m->refcount))
     {
         /* note that a 0 ref count means that there are no active
            plugins */
@@ -265,7 +265,7 @@ kmmint_read_module_info(kmm_module_i * m) {
     if (!VerQueryValue(m->version_info,
                        resname, (LPVOID *) &r, &c)) {
         rv = KHM_ERROR_INVALID_PARAM;
-        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING, 
+        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING,
                     _cstr(TEXT(NIMV_MODULE)));
         goto _cleanup;
     }
@@ -294,7 +294,7 @@ kmmint_read_module_info(kmm_module_i * m) {
     if (!VerQueryValue(m->version_info,
                        resname, (LPVOID *) &r, &c)) {
         rv = KHM_ERROR_INVALID_PARAM;
-        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING, 
+        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING,
                     _cstr(TEXT(NIMV_APIVER)));
         goto _cleanup;
     }
@@ -332,7 +332,7 @@ kmmint_read_module_info(kmm_module_i * m) {
     if (!VerQueryValue(m->version_info,
                        resname, (LPVOID *) &r, &c)) {
         rv = KHM_ERROR_INVALID_PARAM;
-        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING, 
+        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING,
                     _cstr(L"FileDescription"));
         goto _cleanup;
     }
@@ -402,7 +402,7 @@ kmmint_read_module_info(kmm_module_i * m) {
     if (!VerQueryValue(m->version_info,
                        resname, (LPVOID *) &r, &c)) {
         rv = KHM_ERROR_INVALID_PARAM;
-        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING, 
+        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING,
                     _cstr(L"LegalCopyright"));
         goto _cleanup;
     }
@@ -429,7 +429,7 @@ kmmint_read_module_info(kmm_module_i * m) {
         c != sizeof(*vff)) {
 
         rv = KHM_ERROR_INVALID_PARAM;
-        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING, 
+        _report_mr1(KHERR_WARNING, MSG_RMI_RES_MISSING,
                     _cstr(L"Fixed Version Info"));
         goto _cleanup;
     }
@@ -457,8 +457,8 @@ kmmint_read_module_info(kmm_module_i * m) {
     return rv;
 }
 
-KHMEXP khm_int32   KHMAPI kmm_load_module(wchar_t * modname, 
-                                          khm_int32 flags, 
+KHMEXP khm_int32   KHMAPI kmm_load_module(wchar_t * modname,
+                                          khm_int32 flags,
                                           kmm_module * result)
 {
     kmm_module_i * m = NULL;
@@ -478,8 +478,8 @@ KHMEXP khm_int32   KHMAPI kmm_load_module(wchar_t * modname,
         /* check if the module has either failed to load or if it has
            been terminated.  If so, we try once again to load the
            module. */
-        if(!(flags & KMM_LM_FLAG_NOLOAD) && 
-            (mi->state < 0 || mi->state == KMM_MODULE_STATE_EXITED)) 
+        if(!(flags & KMM_LM_FLAG_NOLOAD) &&
+            (mi->state < 0 || mi->state == KMM_MODULE_STATE_EXITED))
         {
             mi->state = KMM_MODULE_STATE_PREINIT;
         }
@@ -518,9 +518,9 @@ KHMEXP khm_int32   KHMAPI kmm_load_module(wchar_t * modname,
 
     if(flags & KMM_LM_FLAG_SYNC) {
         kmm_hold_module(kmm_handle_from_module(m));
-        kmq_send_message(KMSG_KMM, 
-                         KMSG_KMM_I_REG, 
-                         KMM_REG_INIT_MODULE, 
+        kmq_send_message(KMSG_KMM,
+                         KMSG_KMM_I_REG,
+                         KMM_REG_INIT_MODULE,
                          (void*) m);
         if(m->state <= 0) {
             /* failed to load ? */
@@ -542,9 +542,9 @@ KHMEXP khm_int32   KHMAPI kmm_load_module(wchar_t * modname,
         }
     } else {
         kmm_hold_module(kmm_handle_from_module(m));
-        kmq_post_message(KMSG_KMM, 
-                         KMSG_KMM_I_REG, 
-                         KMM_REG_INIT_MODULE, 
+        kmq_post_message(KMSG_KMM,
+                         KMSG_KMM_I_REG,
+                         KMM_REG_INIT_MODULE,
                          (void*) m);
         if(result)
             *result = kmm_handle_from_module(m);
@@ -555,7 +555,7 @@ KHMEXP khm_int32   KHMAPI kmm_load_module(wchar_t * modname,
     return rv;
 }
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_get_module_state(kmm_module m)
 {
     if(!kmm_is_module(m))
@@ -609,22 +609,22 @@ kmm_release_module_info_i(kmm_module_info * info) {
 }
 
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_unload_module(kmm_module module) {
 
     if(!kmm_is_module(module))
         return KHM_ERROR_INVALID_PARAM;
 
     kmm_hold_module(module);
-    kmq_post_message(KMSG_KMM, 
-		     KMSG_KMM_I_REG, 
-		     KMM_REG_EXIT_MODULE, 
+    kmq_post_message(KMSG_KMM,
+		     KMSG_KMM_I_REG,
+		     KMM_REG_EXIT_MODULE,
 		     (void *) kmm_module_from_handle(module));
 
     return KHM_ERROR_SUCCESS;
 }
 
-KHMEXP khm_int32   KHMAPI 
+KHMEXP khm_int32   KHMAPI
 kmm_load_default_modules(void) {
     khm_handle csm = NULL;
     khm_handle cs_mod = NULL;
@@ -673,7 +673,7 @@ kmm_load_default_modules(void) {
 }
 
 #ifdef _WIN32
-KHMEXP HMODULE     KHMAPI 
+KHMEXP HMODULE     KHMAPI
 kmm_get_hmodule(kmm_module m)
 {
     if(!kmm_is_module(m))

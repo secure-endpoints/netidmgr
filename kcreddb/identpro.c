@@ -388,7 +388,7 @@ kcdb_identpro_is_equal(khm_handle idp1, khm_handle idp2)
     return idp1 == idp2;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_set_provider(khm_handle sub)
 {
     kmm_plugin plugin = NULL;
@@ -450,7 +450,7 @@ kcdb_identity_set_provider(khm_handle sub)
 }
 
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_set_type(khm_int32 cred_type)
 {
     kmm_plugin plugin = NULL;
@@ -495,7 +495,7 @@ kcdb_identity_set_type(khm_int32 cred_type)
 #pragma warning(push)
 #pragma warning(disable: 4995)
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_provider(khm_handle * sub)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -514,7 +514,7 @@ kcdb_identity_get_provider(khm_handle * sub)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identity_get_type(khm_int32 * ptype)
 {
     if (ptype != NULL)
@@ -689,7 +689,7 @@ kcdb_identpro_get_default_identity(khm_handle vidpro, khm_handle * pvident)
 #pragma warning(disable: 4995)
 
 /* NOT called with cs_ident held */
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_validate_name(const wchar_t * name)
 {
     kcdb_identpro_i * p;
@@ -714,7 +714,7 @@ kcdb_identpro_validate_name(const wchar_t * name)
 #pragma warning(pop)
 
 #if 0
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_validate_identity(khm_handle videntity)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
@@ -739,10 +739,10 @@ kcdb_identpro_validate_identity(khm_handle videntity)
 }
 #endif
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_canon_name_ex(khm_handle vidpro,
-                            const wchar_t * name_in, 
-                            wchar_t * name_out, 
+                            const wchar_t * name_in,
+                            wchar_t * name_out,
                             khm_size * cb_name_out)
 {
     khm_handle sub;
@@ -771,7 +771,7 @@ kcdb_identpro_canon_name_ex(khm_handle vidpro,
                               KMSG_IDENT_CANON_NAME,
                               0,
                               (void *) &namex);
-        
+
         if(KHM_SUCCEEDED(namex.result)) {
             const wchar_t * name_result;
             khm_size cb;
@@ -805,9 +805,9 @@ kcdb_identpro_canon_name_ex(khm_handle vidpro,
 #pragma warning(push)
 #pragma warning(disable: 4995)
 
-KHMEXP khm_int32 KHMAPI 
-kcdb_identpro_canon_name(const wchar_t * name_in, 
-                         wchar_t * name_out, 
+KHMEXP khm_int32 KHMAPI
+kcdb_identpro_canon_name(const wchar_t * name_in,
+                         wchar_t * name_out,
                          khm_size * cb_name_out)
 {
     kcdb_identpro_i * p;
@@ -834,7 +834,7 @@ kcdb_identpro_canon_name(const wchar_t * name_in,
 
 #pragma warning(pop)
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_compare_name_ex(khm_handle vidpro,
                               const wchar_t * name1,
                               const wchar_t * name2)
@@ -871,7 +871,7 @@ kcdb_identpro_compare_name_ex(khm_handle vidpro,
 #pragma warning(push)
 #pragma warning(disable: 4995)
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_compare_name(const wchar_t * name1,
                            const wchar_t * name2)
 {
@@ -958,7 +958,7 @@ kcdb_identpro_get_type(khm_handle vidpro, khm_int32 * ptype)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_set_default_identity(khm_handle videntity, khm_boolean ask_idpro)
 {
     khm_handle sub = NULL;
@@ -1032,7 +1032,7 @@ kcdb_identpro_set_default_identity(khm_handle videntity, khm_boolean ask_idpro)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_set_searchable(khm_handle videntity,
                              khm_boolean searchable)
 {
@@ -1058,7 +1058,7 @@ kcdb_identpro_set_searchable(khm_handle videntity,
 }
 
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_update(khm_handle identity)
 {
     khm_handle sub;
@@ -1082,7 +1082,7 @@ kcdb_identpro_update(khm_handle identity)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_notify_create(khm_handle identity)
 {
     khm_handle sub;
@@ -1104,7 +1104,7 @@ kcdb_identpro_notify_create(khm_handle identity)
     return rv;
 }
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_notify_config_create(khm_handle identity)
 {
     khm_handle sub;
@@ -1129,7 +1129,7 @@ kcdb_identpro_notify_config_create(khm_handle identity)
 #pragma warning(push)
 #pragma warning(disable: 4995)
 
-KHMEXP khm_int32 KHMAPI 
+KHMEXP khm_int32 KHMAPI
 kcdb_identpro_get_ui_cb(void * rock)
 {
     kcdb_identpro_i * p;

@@ -42,7 +42,7 @@ typedef struct schema_mount_parameters {
 } schema_mount_parameters;
 
 /* no locks */
-khm_int32 
+khm_int32
 validate_schema(const kconf_schema *schema,
                 int                 begin,
                 int                *end)
@@ -93,7 +93,7 @@ validate_schema(const kconf_schema *schema,
                 return KHM_ERROR_INVALID_PARAM;
             }
             break;
-            
+
         default:
             /* unreachable */
             return KHM_ERROR_INVALID_PARAM;
@@ -355,7 +355,7 @@ schema_read_value(void * nodeHandle, const wchar_t * valuename,
                 i64 = (khm_int64) s->value;
                 src = &i64;
                 break;
-                
+
             case KC_STRING:
                 if(FAILED(StringCbLength((wchar_t *) s->value, KCONF_MAXCB_STRING, &cbsize))) {
                     break;
@@ -398,7 +398,7 @@ schema_remove_value(void * nodeHandle, const wchar_t * valuename)
     return KHM_ERROR_READONLY;
 }
 
-khm_int32 
+khm_int32
 khcint_unload_schema(khm_handle parent, const kconf_schema * schema)
 {
     khm_int32 rv;
