@@ -108,6 +108,22 @@ public:
     }
 
     T* operator = (T * _pT) {
+        return Attach(_pT);
+    }
+
+    bool IsNull() {
+        return pT == NULL;
+    }
+
+    T* Assign(T * _pT) {
+        if (pT)
+            pT->Release();
+        pT = _pT;
+
+        return pT;
+    }
+
+    T* Attach(T * _pT) {
         if (pT)
             pT->Release();
         pT = _pT;
@@ -115,10 +131,6 @@ public:
             pT->Hold();
 
         return pT;
-    }
-
-    bool IsNull() {
-        return pT == NULL;
     }
 };
 
