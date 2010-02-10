@@ -29,6 +29,7 @@
 
 #include<windows.h>
 #include<utils.h>
+#include<netidmgr_intver.h>
 
 #if defined(DEBUG) && (defined(KH_BUILD_PRIVATE) || defined(KH_BUILD_SPECIAL))
 #define USE_FILE_LOG 1
