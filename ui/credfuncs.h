@@ -39,17 +39,10 @@ khm_cred_end_new_cred_op(void);
 khm_boolean
 khm_new_cred_ops_pending(void);
 
-<<<<<<< HEAD
-void KHMAPI 
-kmsg_cred_completion(kmq_message *m);
-
-void 
-=======
 void KHMAPI
 kmsg_cred_completion(kmq_message *m);
 
 void
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_destroy_creds(khm_boolean sync,
                        khm_boolean quiet);
 
@@ -59,15 +52,6 @@ khm_cred_destroy_identity(khm_handle identity);
 void
 khm_cred_renew_all_identities(void);
 
-<<<<<<< HEAD
-void 
-khm_cred_renew_identity(khm_handle identity);
-
-void 
-khm_cred_renew_cred(khm_handle cred);
-
-void 
-=======
 void
 khm_cred_renew_identity(khm_handle identity);
 
@@ -75,7 +59,6 @@ void
 khm_cred_renew_cred(khm_handle cred);
 
 void
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_renew_creds(void);
 
 void
@@ -85,11 +68,7 @@ void
 khm_cred_prompt_for_identity_modal(const wchar_t * w_title,
                                    khm_handle *pidentity);
 
-<<<<<<< HEAD
-void 
-=======
 void
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_obtain_new_creds(wchar_t * window_title);
 
 void
@@ -104,25 +83,12 @@ khm_cred_collect_privileged_creds(khui_collect_privileged_creds_data * pcpcd);
 khm_int32
 khm_cred_derive_identity_from_privileged_creds(khui_collect_privileged_creds_data * pcd);
 
-<<<<<<< HEAD
-void 
-=======
 void
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_set_default(void);
 
 void
 khm_cred_set_default_identity(khm_handle identity);
 
-<<<<<<< HEAD
-void 
-khm_cred_change_password(wchar_t * window_title);
-
-void 
-khm_cred_dispatch_process_message(khui_new_creds *nc);
-
-BOOL 
-=======
 void
 khm_cred_change_password(wchar_t * window_title);
 
@@ -130,7 +96,6 @@ void
 khm_cred_dispatch_process_message(khui_new_creds *nc);
 
 BOOL
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_dispatch_process_level(khui_new_creds *nc);
 
 khm_int32
@@ -161,11 +126,7 @@ khm_cred_addr_change(void);
 void
 khm_cred_import(void);
 
-<<<<<<< HEAD
-void 
-=======
 void
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_end_dialog(khui_new_creds * nc);
 
 END_C

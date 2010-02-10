@@ -48,11 +48,7 @@ dialog_sync_init(void) {
     }
 }
 
-<<<<<<< HEAD
-BOOL 
-=======
 BOOL
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_begin_dialog(void) {
     BOOL rv;
 
@@ -91,11 +87,7 @@ khm_cred_begin_dialog(void) {
     return rv;
 }
 
-<<<<<<< HEAD
-void 
-=======
 void
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_end_dialog(khui_new_creds * nc) {
     dialog_sync_init();
 
@@ -266,11 +258,7 @@ khm_new_cred_progress_broadcast(enum kherr_ctx_event evt,
    credentials operation is triggered, each successive message
    completion notification will be used to dispatch the messages for
    the next step in processing the operation. */
-<<<<<<< HEAD
-void KHMAPI 
-=======
 void KHMAPI
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 kmsg_cred_completion(kmq_message *m)
 {
     khui_new_creds * nc;
@@ -290,11 +278,7 @@ kmsg_cred_completion(kmq_message *m)
     case KMSG_CRED_ACQPRIV_ID:
         /* Cred types have attached themselves.  Trigger the next
            phase. */
-<<<<<<< HEAD
-        kmq_post_message(KMSG_CRED, KMSG_CRED_DIALOG_SETUP, 0, 
-=======
         kmq_post_message(KMSG_CRED, KMSG_CRED_DIALOG_SETUP, 0,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                          m->vparam);
         break;
 
@@ -351,15 +335,9 @@ kmsg_cred_completion(kmq_message *m)
 
         kmq_post_subs_msg(nc->type_subs,
                           nc->n_types,
-<<<<<<< HEAD
-                          KMSG_CRED, 
-                          KMSG_CRED_DIALOG_START, 
-                          0, 
-=======
                           KMSG_CRED,
                           KMSG_CRED_DIALOG_START,
                           0,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                           m->vparam);
         /* at this point, the dialog window takes over.  We let it run
            the show until KMSG_CRED_DIALOG_END is posted by the dialog
@@ -382,17 +360,10 @@ kmsg_cred_completion(kmq_message *m)
 
             if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
                 if (nc->n_children == 0)
-<<<<<<< HEAD
-                    kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, 
-                                     m->vparam);
-            } else {
-                PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
-=======
                     kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0,
                                      m->vparam);
             } else {
                 PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                             MAKEWPARAM(has_error, WMNC_DIALOG_PROCESS_COMPLETE),
                             0);
             }
@@ -465,20 +436,12 @@ kmsg_cred_completion(kmq_message *m)
 
         /* all the pages should have been added by now.  Just send out
            the precreate message */
-<<<<<<< HEAD
-        kmq_post_message(KMSG_CRED, KMSG_CRED_PP_PRECREATE, 0, 
-=======
         kmq_post_message(KMSG_CRED, KMSG_CRED_PP_PRECREATE, 0,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                          m->vparam);
         break;
 
     case KMSG_CRED_PP_END:
-<<<<<<< HEAD
-        kmq_post_message(KMSG_CRED, KMSG_CRED_PP_DESTROY, 0, 
-=======
         kmq_post_message(KMSG_CRED, KMSG_CRED_PP_DESTROY, 0,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                          m->vparam);
         break;
 
@@ -620,20 +583,6 @@ void khm_cred_destroy_creds(khm_boolean sync, khm_boolean quiet)
         wchar_t title[256];
         wchar_t message[256];
 
-<<<<<<< HEAD
-        LoadString(khm_hInstance, 
-                   IDS_ALERT_NOSEL_TITLE, 
-                   title, 
-                   ARRAYLENGTH(title));
-
-        LoadString(khm_hInstance, 
-                   IDS_ALERT_NOSEL, 
-                   message, 
-                   ARRAYLENGTH(message));
-
-        khui_alert_show_simple(title, 
-                               message, 
-=======
         LoadString(khm_hInstance,
                    IDS_ALERT_NOSEL_TITLE,
                    title,
@@ -646,7 +595,6 @@ void khm_cred_destroy_creds(khm_boolean sync, khm_boolean quiet)
 
         khui_alert_show_simple(title,
                                message,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                                KHERR_WARNING);
 
         khui_context_release(pctx);
@@ -998,11 +946,7 @@ void khm_cred_obtain_new_creds(wchar_t * title)
         _report_sr0(KHERR_NONE, IDS_CTX_NEW_CREDS);
         _describe();
 
-<<<<<<< HEAD
-        kmq_post_message(KMSG_CRED, KMSG_CRED_NEW_CREDS, 0, 
-=======
         kmq_post_message(KMSG_CRED, KMSG_CRED_NEW_CREDS, 0,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                          (void *) nc);
         _end_task();
     } else {
@@ -1188,11 +1132,7 @@ khm_cred_conclude_processing(khui_new_creds * nc)
 /* this is called by khm_cred_dispatch_process_message and the
    kmsg_cred_completion to initiate and continue checked broadcasts of
    KMSG_CRED_DIALOG_PROCESS messages.
-<<<<<<< HEAD
-   
-=======
 
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
    Returns TRUE if more KMSG_CRED_DIALOG_PROCESS messages were
    posted. */
 BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
@@ -1338,11 +1278,7 @@ describe_new_creds_operation(khui_new_creds * nc)
         }
 
         _report_sr1(KHERR_NONE, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
-<<<<<<< HEAD
-                                 IDS_CTX_PROC_NEW_CREDS :IDS_CTX_PROC_RENEW_CREDS), 
-=======
                                  IDS_CTX_PROC_NEW_CREDS :IDS_CTX_PROC_RENEW_CREDS),
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                     _cstr(wsinsert));
     } else if (nc->subtype == KMSG_CRED_PASSWORD) {
         cbsize = sizeof(wsinsert);
@@ -1389,11 +1325,7 @@ describe_new_creds_operation(khui_new_creds * nc)
    - ::KMSG_CREDP_END_NEWCRED
 */
 
-<<<<<<< HEAD
-void 
-=======
 void
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
 khm_cred_dispatch_process_message(khui_new_creds *nc)
 {
     khm_size i;
@@ -1465,11 +1397,7 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
     if (nc->subtype == KMSG_CRED_RENEW_CREDS)
         kmq_post_message(KMSG_CRED, KMSG_CRED_END, 0, (void *) nc);
     else
-<<<<<<< HEAD
-        PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY, 
-=======
         PostMessage(nc->hwnd, KHUI_WM_NC_NOTIFY,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                     MAKEWPARAM(0, WMNC_DIALOG_PROCESS_COMPLETE), 0);
 }
 

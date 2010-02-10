@@ -62,11 +62,7 @@ void update_dialog_fields(HWND hwnd,
         StringCbPrintf(buf, sizeof(buf), fmt, info->plugin.reg.name);
         SetDlgItemText(hwnd, IDC_CFG_DESC, buf);
     }
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
     switch(info->plugin.state) {
     case KMM_PLUGIN_STATE_FAIL_INIT:
         resid = IDS_PISTATE_FAILINIT;
@@ -374,11 +370,7 @@ khm_cfg_plugins_proc(HWND hwnd,
             LPNMHDR lpnm;
             HWND hw;
 
-<<<<<<< HEAD
-            d = (plugin_dlg_data *) (LONG_PTR) 
-=======
             d = (plugin_dlg_data *) (LONG_PTR)
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                 GetWindowLongPtr(hwnd, DWLP_USER);
             if (d == NULL)
                 return FALSE;
@@ -402,11 +394,7 @@ khm_cfg_plugins_proc(HWND hwnd,
                     EnableWindow(GetDlgItem(hwnd, IDC_CFG_ENABLE), FALSE);
                     EnableWindow(GetDlgItem(hwnd, IDC_CFG_DISABLE), FALSE);
                     EnableWindow(GetDlgItem(hwnd, IDC_CFG_UNREGISTER), FALSE);
-<<<<<<< HEAD
-                    SendDlgItemMessage(hwnd, IDC_CFG_DEPS, 
-=======
                     SendDlgItemMessage(hwnd, IDC_CFG_DEPS,
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                                        LB_RESETCONTENT, 0, 0);
                     SendDlgItemMessage(hwnd, IDC_CFG_ICON, STM_SETICON,
                                        (WPARAM) d->plugin_ico, 0);
@@ -628,11 +616,7 @@ khm_cfg_plugins_proc(HWND hwnd,
 
             case MAKEWPARAM(IDC_CFG_REGISTER, BN_CLICKED):
                 {
-<<<<<<< HEAD
-                    
-=======
 
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                 }
                 break;
             }
@@ -643,11 +627,7 @@ khm_cfg_plugins_proc(HWND hwnd,
         {
             khm_size i;
 
-<<<<<<< HEAD
-            d = (plugin_dlg_data *) (LONG_PTR) 
-=======
             d = (plugin_dlg_data *) (LONG_PTR)
->>>>>>> 28d113a... Fix line-endings and trailing white-space, again
                 GetWindowLongPtr(hwnd, DWLP_USER);
 #ifdef DEBUG
             assert(d);
