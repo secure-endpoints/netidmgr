@@ -411,7 +411,7 @@ STRINGTABLE
 BEGIN
     IDS_INVALIDREASON       "The KeyStore for this identity could not be opened."
     IDS_DEF_KSNAME          "My Keystore"
-    IDS_DEF_KSDESCF         "Default user keystore for %s"
+    IDS_DEF_KSDESCF         "Default keystore for %s"
     IDS_CFG_KSLIST_C0       "KeyStores"
     IDS_CFG_KSLIST_C1       "Location"
     IDS_PWR_ADD             "Keystore password must be supplied before new passwords can be added to the keystore."

@@ -179,8 +179,16 @@ create_default_keystore(void)
         ks_keystore_set_string(ks, KCDB_RES_DISPLAYNAME, idname);
     }
     {
+        wchar_t descf[64];
         wchar_t desc[KCDB_MAXCCH_SHORT_DESC];
-        LoadString(hResModule, IDS_DEF_KSDESCF, desc, ARRAYLENGTH(desc));
+        wchar_t uname[KCDB_MAXCCH_SHORT_DESC];
+        DWORD cch;
+
+        LoadString(hResModule, IDS_DEF_KSDESCF, descf, ARRAYLENGTH(descf));
+        cch = ARRAYLENGTH(uname);
+        if (!GetUserName(uname, &cch))
+            StringCbCopy(uname, sizeof(uname), L"current user");
+        StringCbPrintf(desc, sizeof(desc), descf, uname);
         ks_keystore_set_string(ks, KCDB_RES_DESCRIPTION, desc);
     }
     ks_keystore_set_string(ks, KCDB_ATTR_LOCATION, KS_DEFAULT_KEYSTORE_LOCATION);
