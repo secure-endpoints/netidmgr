@@ -84,9 +84,9 @@ typedef struct tag_khui_tracker {
     int lbl_rx;
     DWORD act_time;
 
-    time_t current;             /*!< Current selection */
-    time_t min;                 /*!< Minimum (inclusive)  */
-    time_t max;                 /*!< Maximum (inclusive) */
+    khm_int32 current;          /*!< Current selection */
+    khm_int32 min;              /*!< Minimum (inclusive)  */
+    khm_int32 max;              /*!< Maximum (inclusive) */
 } khui_tracker;
 
 /*! \brief Install a tracker into an edit control
