@@ -53,6 +53,7 @@ typedef struct OptArg {
 #define KSFF_IDENTKEY_MAGIC      0x981cb3ef
 #define KSFF_HEADER_MAGIC        0x33f0a303
 #define KSFF_OPTSIG_MAGIC        0xfefd0000
+#define KSFF_OPTHDR_MAGIC        0xeafd00a3
 
 #define KSFF_ALIGNMENT 4
 
@@ -85,6 +86,27 @@ declare_serial_buffer(Codec * e, khm_size allocsize, khm_boolean init_to_zero)
 
         return rbuf;
     }
+}
+
+void
+begin_encode_opt_header(Codec * e)
+{
+    khm_int32 i = KSFF_OPTHDR_MAGIC;
+    khm_int32 * pi = declare_serial_buffer(e, sizeof(i), TRUE);
+    if (pi) {
+        memcpy(pi, &i, sizeof(i));
+    }
+}
+
+khm_boolean
+begin_decode_opt_header(Codec * e)
+{
+    khm_int32 *pi = e->current;
+    if (e->cb_free >= sizeof(khm_int32) && *pi == KSFF_OPTHDR_MAGIC) {
+        declare_serial_buffer(e, sizeof(khm_int32), FALSE);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 void
