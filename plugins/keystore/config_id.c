@@ -54,7 +54,7 @@ typedef struct tag_config_id_dlg_data {
                                    ident if ident is not a keystore */
     khm_size   n_aks;           /* number of keystores in aks */
 
-    /* TODO: Add any fields for holding state here */
+    khui_tracker key_lifetime;  /* Lifetime of the private key */
 } config_id_dlg_data;
 
 void
@@ -172,6 +172,31 @@ config_id_ks_configure_identkey(HWND hwnd, config_id_dlg_data * d)
     return TRUE;
 }
 
+void
+refresh_id_ks_lifetime_display(HWND hwnd, config_id_dlg_data * d)
+{
+    BOOL never_expire = (IsDlgButtonChecked(hwnd, IDC_NEVEREXPIRE) == BST_CHECKED);
+    EnableWindow(GetDlgItem(hwnd, IDC_LIFETIME), !never_expire);
+    if (never_expire)
+        SetDlgItemText(hwnd, IDC_LIFETIME, L"(Key does not expire)");
+    else
+        khui_tracker_refresh(&d->key_lifetime);
+}
+
+BOOL
+check_for_mod_id_ks(HWND hwnd, config_id_dlg_data * d)
+{
+    BOOL modified =
+        ((IsDlgButtonChecked(hwnd, IDC_NEVEREXPIRE) == BST_CHECKED)?
+         (FtToInt(&d->ks->ft_key_lifetime) != KS_INF_KEY_LIFETIME) :
+         (FtIntervalToSeconds(&d->ks->ft_key_lifetime) != d->key_lifetime.current));
+
+    khui_cfg_set_flags_inst(&d->cfg, (modified)? KHUI_CNFLAG_MODIFIED : 0,
+                            KHUI_CNFLAG_MODIFIED);
+
+    return modified;
+}
+
 INT_PTR CALLBACK
 config_id_ks_dlgproc(HWND hwnd,
                      UINT uMsg,
@@ -202,12 +227,34 @@ config_id_ks_dlgproc(HWND hwnd,
             creddlg_setup_idlist(hw_list);
             creddlg_refresh_idlist(hw_list, d->ks);
 
+            khui_tracker_initialize(&d->key_lifetime);
+            d->key_lifetime.min = FT_TO_SECONDS(KS_MIN_KEY_LIFETIME);
+            d->key_lifetime.max = FT_TO_SECONDS(KS_MAX_KEY_LIFETIME);
+
             KSLOCK(d->ks);
             SetDlgItemText(hwnd, IDC_NAME, d->ks->display_name);
             SetDlgItemText(hwnd, IDC_LOCATION, d->ks->location);
+            d->key_lifetime.current = FtIntervalToSeconds(&d->ks->ft_key_lifetime);
             KSUNLOCK(d->ks);
+
+            khui_tracker_install(GetDlgItem(hwnd, IDC_LIFETIME), &d->key_lifetime);
+
+            CheckDlgButton(hwnd, IDC_NEVEREXPIRE,
+                           (d->key_lifetime.current > d->key_lifetime.max)? BST_CHECKED: BST_UNCHECKED);
+            if (d->key_lifetime.current > d->key_lifetime.max)
+                d->key_lifetime.current = FT_TO_SECONDS(KS_DEFAULT_KEY_LIFETIME);
+
+            refresh_id_ks_lifetime_display(hwnd, d);
         }
         return FALSE;
+
+    case WM_DESTROY:
+        d = (config_id_dlg_data *)
+            GetWindowLongPtr(hwnd, DWLP_USER);
+        if (d == NULL || d->ks == NULL)
+            break;
+        khui_tracker_kill_controls(&d->key_lifetime);
+        break;
 
     case WM_NOTIFY:
         {
@@ -227,6 +274,40 @@ config_id_ks_dlgproc(HWND hwnd,
         }
         return TRUE;
 
+    case KHUI_WM_CFG_NOTIFY:
+        {
+            d = (config_id_dlg_data *)
+                GetWindowLongPtr(hwnd, DWLP_USER);
+            if (d == NULL || d->ks == NULL)
+                return TRUE;
+
+            if (HIWORD(wParam) == WMCFG_APPLY &&
+                check_for_mod_id_ks(hwnd, d)) {
+
+                KSLOCK(d->ks);
+                if (IsDlgButtonChecked(hwnd, IDC_NEVEREXPIRE) == BST_CHECKED) {
+                    d->ks->ft_key_lifetime = IntToFt(KS_INF_KEY_LIFETIME);
+                } else {
+                    d->ks->ft_key_lifetime = IntToFt(SECONDS_TO_FT(d->key_lifetime.current));
+                }
+                ks_keystore_set_flags(d->ks, KS_FLAG_MODIFIED, KS_FLAG_MODIFIED);
+                KSUNLOCK(d->ks);
+
+                save_keystore_with_identity(d->ks);
+
+                if (ks_keystore_hold_key(d->ks)) {
+                    ks_keystore_reset_key_timer(d->ks);
+                    ks_keystore_release_key(d->ks);
+
+                    list_credentials();
+                }
+
+                khui_cfg_set_flags_inst(&d->cfg, KHUI_CNFLAG_APPLIED,
+                                        KHUI_CNFLAG_APPLIED|KHUI_CNFLAG_MODIFIED);
+            }
+        }
+        return TRUE;
+
     case WM_COMMAND:
         d = (config_id_dlg_data *)
             GetWindowLongPtr(hwnd, DWLP_USER);
@@ -236,6 +317,17 @@ config_id_ks_dlgproc(HWND hwnd,
         {
             int code = HIWORD(wParam);
             int id = LOWORD(wParam);
+
+            if (code == EN_CHANGE && id == IDC_LIFETIME) {
+                check_for_mod_id_ks(hwnd, d);
+                return TRUE;
+            }
+
+            if (code == BN_CLICKED && id == IDC_NEVEREXPIRE) {
+                refresh_id_ks_lifetime_display(hwnd, d);
+                check_for_mod_id_ks(hwnd, d);
+                return TRUE;
+            }
 
             if (code == BN_CLICKED && id == IDC_ADDNEW) {
                 return config_id_ks_add_new_identkey(hwnd, d);
@@ -425,9 +517,7 @@ config_id_dlgproc(HWND hwnd,
             break;
 
         if (HIWORD(wParam) == WMCFG_APPLY) {
-            /* TODO: apply changes */
-
-            return TRUE;
+            return SendMessage(d->child_panel, KHUI_WM_CFG_NOTIFY, wParam, lParam);
         } else if (HIWORD(wParam) == WMCFG_INIT_PANEL) {
             khm_int32 * prv = (khm_int32 *) lParam;
 

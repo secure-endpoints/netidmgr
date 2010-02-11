@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\netidmgrcpp\plugins\keystore\lang\en_us\langres.rc
+// Used by C:\work\netidmgr.git\plugins\keystore\lang\en_us\langres.rc
 //
 #define IDD_PP_CRED                     106
 #define IDD_PP_IDENT                    107
@@ -95,14 +95,17 @@
 #define IDC_KSLIST                      1066
 #define IDC_REASON                      1067
 #define IDC_SHOWPW                      1071
+#define IDC_LIFETIME                    1072
+#define IDC_CHECK1                      1073
+#define IDC_NEVEREXPIRE                 1073
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        125
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1072
+#define _APS_NEXT_CONTROL_VALUE         1074
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

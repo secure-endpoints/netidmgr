@@ -27,18 +27,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE
+1 TEXTINCLUDE 
 BEGIN
     "..\\..\\langres.h\0"
 END
 
-2 TEXTINCLUDE
+2 TEXTINCLUDE 
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -182,17 +182,21 @@ END
 
 IDD_CONFIG_ID_KS DIALOGEX 0, 0, 349, 173
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_SYSMENU
+EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    LTEXT           "Name",IDC_STATIC,7,10,19,8
+    LTEXT           "&Name",IDC_STATIC,7,10,19,8
     EDITTEXT        IDC_NAME,61,7,281,14,ES_AUTOHSCROLL | ES_READONLY
-    LTEXT           "Location",IDC_STATIC,7,27,28,8
+    LTEXT           "&Location",IDC_STATIC,7,27,28,8
     EDITTEXT        IDC_LOCATION,61,24,281,14,ES_AUTOHSCROLL | ES_READONLY
-    LTEXT           "&Identities contained in this keystore:",IDC_STATIC,7,42,118,8
-    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,52,335,93
+    LTEXT           "&Key lifetime",IDC_STATIC,7,44,38,8
+    EDITTEXT        IDC_LIFETIME,61,41,217,14,ES_AUTOHSCROLL
+    CONTROL         "Ne&ver expire",IDC_NEVEREXPIRE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,285,43,57,10
+    LTEXT           "&Identities contained in this keystore:",IDC_STATIC,7,61,118,8
+    CONTROL         "",IDC_IDLIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,73,335,72
     PUSHBUTTON      "&Add new identity ...",IDC_ADDNEW,7,152,79,14
+    PUSHBUTTON      "&Configure ...",IDC_CONFIGURE,217,152,66,14,WS_DISABLED
     PUSHBUTTON      "&Remove ...",IDC_REMOVE,287,152,55,14,WS_DISABLED
-    PUSHBUTTON      "Configure ...",IDC_CONFIGURE,217,152,66,14,WS_DISABLED
     CONTROL         "&Show passwords",IDC_SHOWPW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,139,156,73,10
 END
 
@@ -226,7 +230,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
+GUIDELINES DESIGNINFO 
 BEGIN
     IDD_PP_CRED, DIALOG
     BEGIN
@@ -356,14 +360,14 @@ IDB_NC_STATE            BITMAP                  "..\\..\\images\\nc_item_state.b
 // String Table
 //
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_CREDPROV_DESC       "KeyStore Credentials Plug-in"
     IDS_CT_SHORT_DESC       "KeyStore"
     IDS_CT_LONG_DESC        "KeyStore"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_CUE_NAME            "(Enter a name for the keystore)"
     IDS_CUE_DESC            "(Enter a description)"
@@ -383,7 +387,7 @@ BEGIN
     IDS_NCLC_ID             "Identity name"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_NCLC_TYPE           "Type"
     IDS_TNOPASS             "No password entered"
@@ -403,7 +407,7 @@ BEGIN
     IDS_INVALIDID           "[Invalid KeyStore]"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_INVALIDREASON       "The KeyStore for this identity could not be opened."
     IDS_DEF_KSNAME          "My Keystore"
