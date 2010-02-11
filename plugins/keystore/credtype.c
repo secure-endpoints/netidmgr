@@ -703,7 +703,8 @@ get_keystore_credential(keystore_t * ks)
 
     KSLOCK(ks);
     kcdb_cred_set_attr(credential, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, KCDB_CBSIZE_AUTO);
-    if (FtToInt(&ks->ft_key_expire) != 0)
+    if (FtToInt(&ks->ft_key_expire) != 0 &&
+        FtToInt(&ks->ft_key_lifetime) < KS_INF_KEY_LIFETIME)
         kcdb_cred_set_attr(credential, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, KCDB_CBSIZE_AUTO);
     if (ks->location)
         kcdb_cred_set_attr(credential, KCDB_ATTR_LOCATION, ks->location, KCDB_CBSIZE_AUTO);

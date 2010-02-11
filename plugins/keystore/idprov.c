@@ -213,7 +213,10 @@ handle_kmsg_ident_update(khm_handle ident) {
         if (ks_keystore_has_key(ks)) {
             KSLOCK(ks);
             kcdb_identity_set_attr(ident, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, sizeof(FILETIME));
-            kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, sizeof(FILETIME));
+            if (FtToInt(&ks->ft_key_lifetime) < KS_INF_KEY_LIFETIME)
+                kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, &ks->ft_key_expire, sizeof(FILETIME));
+            else
+                kcdb_identity_set_attr(ident, KCDB_ATTR_EXPIRE, NULL, 0);
             KSUNLOCK(ks);
             can_init = TRUE;
         } else {
