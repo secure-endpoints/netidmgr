@@ -132,9 +132,14 @@ public:
 
                 expire = identity.GetAttribFileTimeAsInt(KCDB_ATTR_EXPIRE);
 
-                if (expire < now + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL)) {
+                if (expire == 0 && identity.Exists(KCDB_ATTR_ISSUE)) {
+                    g_theme->DrawCredMeterState(g, bounds, DrawStatePostDated, &ms);
+                    is_expired = false;
+
+                } else if (expire < now + SECONDS_TO_FT(TT_TIMEEQ_ERROR_SMALL)) {
                     g_theme->DrawCredMeterState(g, bounds, DrawStateExpired, &ms);
                     is_expired = true;
+
                 } else {
                     khm_int64 lifetime;
 
@@ -212,7 +217,7 @@ public:
         } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0 ||
                    !identity.Exists(KCDB_ATTR_EXPIRE)) {
 
-            return std::wstring(L"(Unknown expiration)");
+            return LoadStringResource(IDS_CW_NOEXP);
 
         } else {
             FILETIME ft_exp;

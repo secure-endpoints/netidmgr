@@ -1113,6 +1113,7 @@ BEGIN
     IDS_NC_NOPWCHANGE       "The selected identity does not support changing passwords."
     IDS_MBT_IDREMOVE        "Removing %s"
     IDS_MB_IDREMOVE         "Are you sure you want to remove configuration information for %s ?\nThis will remove all configured settings and stored passwords for this identity."
+    IDS_CW_NOEXP            "(No expiration time)"
 END
 
 #endif    // English (U.S.) resources
