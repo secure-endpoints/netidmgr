@@ -427,6 +427,11 @@ BEGIN
     IDS_PWR_ACQ             "Keystore password must be supplied before derived identities can be initialized."
 END
 
+STRINGTABLE 
+BEGIN
+    IDS_DOESNOTEXPIRE       "(The key does not expire)"
+END
+
 #endif    // English (U.S.) resources
 /////////////////////////////////////////////////////////////////////////////
 

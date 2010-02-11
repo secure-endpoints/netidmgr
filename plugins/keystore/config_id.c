@@ -177,10 +177,14 @@ refresh_id_ks_lifetime_display(HWND hwnd, config_id_dlg_data * d)
 {
     BOOL never_expire = (IsDlgButtonChecked(hwnd, IDC_NEVEREXPIRE) == BST_CHECKED);
     EnableWindow(GetDlgItem(hwnd, IDC_LIFETIME), !never_expire);
-    if (never_expire)
-        SetDlgItemText(hwnd, IDC_LIFETIME, L"(Key does not expire)");
-    else
+    if (never_expire) {
+        wchar_t buf[128] = L"";
+
+        LoadString(hResModule, IDS_DOESNOTEXPIRE, buf, ARRAYLENGTH(buf));
+        SetDlgItemText(hwnd, IDC_LIFETIME, buf);
+    } else {
         khui_tracker_refresh(&d->key_lifetime);
+    }
 }
 
 BOOL
