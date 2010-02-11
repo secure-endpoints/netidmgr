@@ -448,6 +448,8 @@ encode_KS_Header(const keystore_t * ks, Codec * e)
     for (i=0; i < ks->n_keys; i++) {
         encode_KS_IdentKey(ks->keys[i], e);
     }
+    begin_encode_opt_header(e);
+    E_OPT(32); encode_KS_Time(ks->ft_key_lifetime, e); E_ENDOPT();
 }
 
 keystore_t *
@@ -493,6 +495,11 @@ decode_KS_Header(Codec * e)
                     ks_identkey_free(idkey);
             }
         }
+    }
+
+    if (begin_decode_opt_header(e)) {
+        D_OPT(32); ks->ft_key_lifetime = decode_KS_Time(e); D_ENDOPT();
+        skip_optional(e);
     }
 
  done:
