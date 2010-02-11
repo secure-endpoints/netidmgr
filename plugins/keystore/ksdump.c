@@ -28,6 +28,7 @@
 #include <share.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <wchar.h>
 
 const char * ks_filename = NULL;
 
@@ -103,6 +104,19 @@ dump_filetime(const FILETIME * ft, const char * prefix) {
                (int) st.wSecond, (int) st.wMilliseconds,
                (int) st.wYear, (int) st.wMonth, (int) st.wDay);
     }
+}
+
+void
+dump_filetime_interval(const FILETIME * ft, const char * prefix) {
+    wchar_t srep[1024];
+    khm_size cb;
+
+    printf("%s", prefix);
+
+    cb = sizeof(srep);
+    FtIntervalToString(ft, srep, &cb);
+
+    wprintf(L"%s\n", srep);
 }
 
 
@@ -202,6 +216,7 @@ dump_keystore(keystore_t * ks) {
     dump_filetime(&ks->ft_expire, "  ft_expire:");
     dump_filetime(&ks->ft_ctime,  "  ft_ctime:");
     dump_filetime(&ks->ft_mtime,  "  ft_mtime:");
+    dump_filetime_interval(&ks->ft_key_lifetime, "  ft_key_lifetime:");
 
     {
         datablob_t db;
