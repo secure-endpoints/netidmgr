@@ -1,4 +1,4 @@
-# Copyright (c) 2009 Secure Endpoints Inc.
+# Copyright (c) 2009-2010 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -43,7 +43,7 @@
 
 use File::Copy;
 
-$targetyear = 2009;
+$targetyear = 2010;
 
 open NC, '>', "no-copyright.txt" or die "Can't open no-copyright.txt";
 

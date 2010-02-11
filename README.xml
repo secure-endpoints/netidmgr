@@ -19,6 +19,8 @@
         building Network Identity Manager binaries, archives and
         installers from source.</t>
     </abstract>
+
+    <!-- Copyright (C) 2010 Secure-Endpoints Inc. (See LICENSE) -->
   </front>
 
   <middle>
