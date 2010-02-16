@@ -29,7 +29,7 @@
 #ifndef __KHIMAIRA_KHERROR_H
 #define __KHIMAIRA_KHERROR_H
 
-/*! \defgroup kherror NetIDMgr errors
+/*! \defgroup kherror API Error Codes
 
 @{*/
 /*! \brief Base for error codes

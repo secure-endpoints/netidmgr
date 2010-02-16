@@ -28,7 +28,7 @@
 #ifndef __KHIMAIRA_KMQ_H__
 #define __KHIMAIRA_KMQ_H__
 
-/*! \defgroup kmq NetIDMgr Message Queue
+/*! \defgroup kmq Message Queue
 
     The Network Identity Manager Message Queue handles all the
     messaging within the application and all loaded plug-ins.

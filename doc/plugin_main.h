@@ -27,7 +27,7 @@
 
 /*!
 
-\page plug-ins Network Identity Manager Modules and Plug-ins
+\page plug-ins Modules and Plug-ins
 
   The Network Identity Manager application does not include any
   ability to manage any specific type of credential.  Instead it

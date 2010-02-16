@@ -34,7 +34,7 @@
 
 BEGIN_C
 
-/*! \defgroup kconf NetIDMgr Configuration Provider */
+/*! \defgroup kconf Configuration Provider */
 /*@{*/
 
 /*! \brief Configuration schema descriptor record 

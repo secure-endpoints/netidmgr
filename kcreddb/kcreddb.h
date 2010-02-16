@@ -33,7 +33,7 @@
 
 BEGIN_C
 
-/*! \defgroup kcdb NetIDMgr Credentials Database */
+/*! \defgroup kcdb Credentials Database */
 /*@{*/
 
 /*! \brief Maximum length in characters of short description 

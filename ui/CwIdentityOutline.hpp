@@ -386,12 +386,6 @@ public:
 };
 
 
-/*! \brief Default identity control
-
-  This is the control which allows the user to set an identity as
-  the default.  It also indicates whether the current identity is
-  default.
-*/
 class CwSticktyIdentityElement : public ButtonElement< &KhmDraw::DrawStickyWidget > {
     Identity * pidentity;
 
@@ -424,7 +418,6 @@ public:
     }
 };
 
-//class CwProgressBarElement : public WithFixedSizePos< ProgressBarElement > { };
 typedef ProgressBarElement CwProgressBarElement;
 
 /*! \brief  Identity Outline Node

@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2005 Massachusetts Institute of Technology
- * Copyright (c) 2007-2010 Secure Endpoints Inc.
+ * Copyright (c) 2010 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,12 +24,10 @@
 
 /* $Id$ */
 
-/*! \page khui User Interface Topics
+/*! \page cfgp Configuration Providers
 
-    \section khui_contents Contents
+    \section cfgp_contents Contents
 
-    - \subpage khui_actions
-    - \subpage khui_menus
-    - \subpage khui_context
-    - \subpage idnotif
- */
+    - \subpage kconf_sp_life
+    - \subpage kconf_p_handles
+*/

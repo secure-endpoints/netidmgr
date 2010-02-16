@@ -28,7 +28,7 @@
 #ifndef __KHIMAIRA_KHERR_H
 #define __KHIMAIRA_KHERR_H
 
-/*! \defgroup kherr NetIDMgr Error Reporting
+/*! \defgroup kherr Error and Event Reporting
 
     Error reporting functions provide a mechanism to construct
     meaningful and user friendly error reports for the user.

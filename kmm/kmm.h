@@ -31,7 +31,7 @@
 #include "khdefs.h"
 #include "kmq.h"
 
-/*! \defgroup kmm NetIDMgr Module Manager
+/*! \defgroup kmm Plug-in Manager
 @{*/
 
 #ifdef __cplusplus

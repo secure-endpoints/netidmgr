@@ -42,9 +42,9 @@
     - \subpage bugs
     - \subpage releases
 
-    &copy; 2004-2007 Massachusetts Institute of Technology
+    Copyright &copy; 2004-2007 Massachusetts Institute of Technology
 
-    &copy; 2005-2009 Secure Endpoints Inc.
+    Copyright &copy; 2005-2010 Secure Endpoints Inc.
 */
 
 /*!
@@ -92,12 +92,13 @@
 
 /*! \page bugs Reporting bugs
 
-    Network Identity Manager bugs can be reported to 
-    <a href="mailto:kfw-bugs@mit.edu">kfw-bugs@mit.edu</a> or 
-    <a href="mailto:netidmgr@secure-endpoints.com">netidmgr@secure-endpoints.com</a>
+    Network Identity Manager bugs can be reported to <a
+    href="mailto:netidmgr@secure-endpoints.com">netidmgr@secure-endpoints.com</a>
 
     When reporting bugs, please include as much information as
-    possible to help reproduce the problem.
+    possible to help reproduce the problem.  For information about
+    collecting debug logs and submitting bug reports, please see the
+    Network Identity Manager user documentation.
 
     \image html khimaira_logo_small.png
 */
@@ -118,6 +119,9 @@
     <tt>nidmgr32.dll</tt>.  A plug-in that was built against a
     particular API version will be compatible with any version of
     Network Identity Manager whose API version is the same.
+
+    - <b>1.99.24.128</b> Network Identity Manager pre v2.0 Beta 1 <em>January 28, 2010</em>\n
+      API version : <b>14</b>
 
     - <b>1.3.0.0</b> Kerberos for Windows 3.2 <em>August 15, 2007</em>\n
       API version : <b>9</b>

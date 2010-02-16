@@ -1294,7 +1294,7 @@ describe_new_creds_operation(khui_new_creds * nc)
 
 }
 
-/*! \page notif Identity Event Notification
+/*! \page idnotif Identity Event Notification
 
  * When a lengthy credentials operation begins for an identity, the
    following happens:

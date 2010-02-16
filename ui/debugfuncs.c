@@ -48,41 +48,6 @@ static CRITICAL_SECTION cs_dbg;
 FILE * logfile = NULL;
 BOOL log_started = FALSE;
 
-/*! \page logformat Format of the debug log file
-
-  The format of the log file created by Network Identity Manager is as
-  follows:
-
-  When logging starts, the debug runtime will write out several
-  diagnostic messages that indicate the version of Network Identity
-  Manager running as well as information about the plug-ins that have
-  been loaded.
-
-  The prologue of the log file is:
-
-  Logging started for Network Identity Manager
-  Version: x.x.x.x
-  Plug-ins active:
-     plug-in-Name plug-in-Version
-  Active threads:
-     thread-ID[*] thread-Name
-  Begin logging at long-Timestamp
-
-  Each logging context that is started will be annotated as follows:
-
-  timestamp [context-ID] Begin: description
-
-  Each reported event is recorded as:
-
-  timestamp thread-ID[context-ID] severity:(facility) message
-
-  The end of the logging context is recorded as:
-
-  timestamp [context-ID] End
-
-  timestamp [DBG] debug string
-*/
-
 static wchar_t *
 severity_string(kherr_severity severity) {
     switch(severity) {
@@ -148,13 +113,15 @@ debug_event_handler(enum kherr_ctx_event e,
                                    report context begin events until
                                    we have a description. */
     } else if (e == KHERR_CTX_DESCRIBE) {
-        SYSTEMTIME systime;
-
         LeaveCriticalSection(&cs_dbg);
 	evt = kherr_get_desc_event(c);
 	if (evt) {
+            FILETIME ltime;
+            SYSTEMTIME systime;
+
 	    kherr_evaluate_event(evt);
-            FileTimeToSystemTime(&evt->time_ft, &systime);
+            FileTimeToLocalFileTime(&evt->time_ft, &ltime);
+            FileTimeToSystemTime(&ltime, &systime);
 
             EnterCriticalSection(&cs_dbg);
             fwprint_systime(logfile, &systime, FALSE);
@@ -168,7 +135,7 @@ debug_event_handler(enum kherr_ctx_event e,
     } else if (e == KHERR_CTX_END) {
         SYSTEMTIME systime;
 
-        GetSystemTime(&systime);
+        GetLocalTime(&systime);
         fwprint_systime(logfile, &systime, FALSE);
         fwprintf(logfile, L"[%d] End\n", c->serial);
 
@@ -177,9 +144,11 @@ debug_event_handler(enum kherr_ctx_event e,
 	evt = kherr_get_last_event(c);
 	if (evt && (evt->short_desc || evt->long_desc)) {
 	    SYSTEMTIME systime;
+            FILETIME ltime;
 
 	    kherr_evaluate_event(evt);
-	    FileTimeToSystemTime(&evt->time_ft, &systime);
+            FileTimeToLocalFileTime(&evt->time_ft, &ltime);
+	    FileTimeToSystemTime(&ltime, &systime);
 
             EnterCriticalSection(&cs_dbg);
 
@@ -232,7 +201,7 @@ fwprint_prologue(FILE * f)
 {
     SYSTEMTIME systime;
 
-    GetSystemTime(&systime);
+    GetLocalTime(&systime);
 
     fwprintf(f, L"Logging started for Network Identity Manager at ");
     fwprint_systime(f, &systime, TRUE);
@@ -366,7 +335,7 @@ static unsigned __stdcall ods_collector(void * param)
                 continue;       /* We are only listening for our own
                                    debug messages for now. */
 
-            GetSystemTime(&systime);
+            GetLocalTime(&systime);
 
             EnterCriticalSection(&cs_dbg);
             fwprint_systime(logfile, &systime, FALSE);
