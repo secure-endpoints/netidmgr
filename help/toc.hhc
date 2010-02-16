@@ -95,6 +95,12 @@
 		  <param name="Name" value="General options">
 		  <param name="Local" value="html\config_general.htm">
 		</object>
+                <ul>
+	          <li> <object type="text/sitemap">
+		      <param name="Name" value="Debug log file format">
+		      <param name="Local" value="html\logfile.htm">
+		    </object>
+                </ul>
 	      <li> <object type="text/sitemap">
 		  <param name="Name" value="Appearance">
 		  <param name="Local" value="html\config_appearance.htm">

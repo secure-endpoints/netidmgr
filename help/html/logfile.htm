@@ -1,0 +1,119 @@
+<html>
+<head>
+  <title>Log file format</title>
+  <meta name="description" content="Using NetIDMgr">
+  <meta name="keywords" content="using">
+  <link rel="stylesheet" type="text/css" href="nidmgr.css">
+  <object type="application/x-oleobject" classid="clsid:1e2a7bd0-dab9-11d0-b93a-00c04fc99f9e">
+    <param name="Keyword" value="Log file format">
+    <param name="Keyword" value="Debug log file">
+  </object>
+</head>
+<body>
+
+<h1>Format of the debug log file</h1>
+
+<p>
+  Debug log file can be enabled using
+  the <a href="config_general.htm">General Options</a> panel.
+  Information about reporting problems can be
+  found <a href="bugs.htm">here</a>.
+</p>
+
+<p>The debug log file starts with a header that identifies the version
+  of Network Identity Manager that produced the log file.  E.g.:
+</p>
+
+<pre>
+Logging started for Network Identity Manager at 2010-2-16 03:39:23.805 
+Product: NetIDMgr 1.99.24.128.PRIVATE.DEBUG
+         © 2006-2009 Secure Endpoints Inc.
+         Private build.  Please send bug reports to netidmgr@secure-endpoints.com
+</pre>
+
+<p>
+  Each line of the debug log has a timestamp and an identifier for the
+  thread and logging context, either of which may be omitted if not
+  applicable.
+</p>
+
+<pre>
+03:39:23.885 [3] Begin: Initializing plug-in [GenericX509Provider]
+03:39:23.885 1272[3] Info:(KMM) Leaving plug-in [GenericX509Provider] in state [5]
+03:39:23.885 [3] End
+</pre>
+
+<p>
+  The logging context identifier will be displayed in square brackets
+  following the timestamp and (if applicable) the thread ID.  Logging
+  contexts are used to track events that are related to a single
+  operation across thread boundaries.  In the example above, the
+  logging context identifier is <span class="pre">3</span>.  The
+  beginning and end of the context will be indicated on the log
+  including a description.
+</p>
+
+<p>
+  Thread identifiers indicate the thread in which the event was
+  reported.  The second line from the above example shows that the
+  event was reported on thread #<span class="pre">1272</span>.
+</p>
+
+<div class="note">
+  <img src="images/task.png" alt="Tip" />
+  <p>Each plug-in in Network Identity Manager runs in a separate
+    thread.  With the exception of user interface handling code, most
+    of the plug-in tasks happen in the plug-in thread.  If you have
+    access to a full log (a log that was collecting events since the
+    current Network Identity Manager session was started), then you
+    can look for events of the form</p>
+
+    <pre>Initializing plug-in [some plug-in name]</pre>
+
+    <p>... followed by an event of the form</p>
+
+    <pre>Info:(KMM) Leaving plug-in [some plug-in name] in state [x]</pre>
+
+    <p>The thread associated with the second event is the plug-in thread
+    for the named plug-in.</p>
+  </p>
+</div>
+
+<p>
+  For most log entries, following the thread and logging context
+  identifiers will be a small tag identifying the severity of the
+  logged event.  The current severity levels are:
+
+  <ul>
+    <li><span class="title">FATAL</span>: A fatal error.  This may
+      indicate a reason why the application was unexpectedly
+      terminated.</li>
+    <li><span class="title">ERROR</span>: An error condition.</li>
+    <li><span class="title">Warning</span>: A warning.</li>
+    <li><span class="title">Info</span>: Informational.</li>
+    <li><span class="title">Debug</span>: Debugging events.  There are
+      three levels of debug events.  Therefore there might be events
+      of the
+      form <span class="pre">Debug(1)</span>, <span class="pre">Debug(2)</span>,
+      or <span class="pre">Debug(3)</span>.</li>
+  </ul>
+</p>
+
+<p>
+  In addition, you may also see events of the form:
+</p>
+
+<pre>
+03:39:25.237 [DBG] KCDB_IDENT &lt;KCDB_OP_NEWPARENT&gt;
+</pre>
+
+<p>
+  The <span class="pre">[DBG]</span> events are debug output generated
+  by <span class="pre"><a href="http://msdn.microsoft.com/en-us/library/aa363362(VS.85).aspx" class="external">OutputDebugString() <img src="images/link.png"/></a></span>
+  function calls from plug-ins or libraries that are running within
+  the Network Identity Manager process space including the application
+  itself.
+</p>
+
+</body>
+</html>
