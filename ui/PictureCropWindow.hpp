@@ -210,10 +210,22 @@ public:
         }
 
         {
+            Bitmap imgorig(m_image->GetWidth(), m_image->GetHeight(), PixelFormat32bppARGB);
+
+            {
+                Graphics g(&imgorig);
+                g.SetInterpolationMode(InterpolationModeHighQualityBicubic);
+                g.DrawImage(m_image, RectF(0, 0, (REAL)m_image->GetWidth(), (REAL)m_image->GetHeight()),
+                            0, 0, (REAL)m_image->GetWidth(), (REAL)m_image->GetHeight(),
+                            UnitPixel, NULL);
+            }
+
             if (FAILED(StringCchPrintf(path, ARRAYLENGTH(path), L"%s-full.bmp", opath)))
                 return false;
-            m_image->Save(path, &bmp_clsid, NULL);
+
+            imgorig.Save(path, &bmp_clsid, NULL);
             unexpand_env_var_prefix(path, sizeof(path));
+
             cfg.Set(L"IconOriginal", path);
             cfg.SetObject(L"IconCrop", m_crop);
         }
