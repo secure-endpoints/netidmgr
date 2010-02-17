@@ -476,6 +476,8 @@
 #define IDC_FAVGRP                      1220
 #define IDC_GRAVGRP                     1221
 #define IDC_ICONCTL                     1222
+#define IDC_BUTTON1                     1224
+#define IDC_ABORT                       1224
 #define IDA_ACTIVATE_MENU               40003
 #define IDA_UP                          40004
 #define IDA_DOWN                        40005
@@ -491,7 +493,7 @@
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        243
 #define _APS_NEXT_COMMAND_VALUE         40010
-#define _APS_NEXT_CONTROL_VALUE         1224
+#define _APS_NEXT_CONTROL_VALUE         1226
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

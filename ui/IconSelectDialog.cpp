@@ -27,7 +27,6 @@
 #include <shlobj.h>
 #include "khmapp.h"
 #include "IconSelectDialog.hpp"
-#include "httpfetch.h"
 #include <strsafe.h>
 #include <assert.h>
 
@@ -37,12 +36,35 @@ IconSelectDialog::IconSelectDialog(Identity& _identity) :
     DialogWindow(MAKEINTRESOURCE(IDD_ICONSELECT),
                  khm_hInstance),
     m_identity(_identity),
-    m_cropper(new PictureCropWindow(), RefCount::TakeOwnership)
+    m_cropper(new PictureCropWindow(), RefCount::TakeOwnership),
+    m_request(NULL)
 {
 }
 
 IconSelectDialog::~IconSelectDialog()
 {
+    SetRequest(NULL, 0);
+}
+
+void IconSelectDialog::SetRequest(HttpRequest * req, UINT msg_target)
+{
+    if (!m_request.IsNull())
+        m_request->Abort();
+    m_request.Assign(req);
+
+    ShowItem(IDC_ABORT, (req != NULL));
+    ShowItem(IDC_PROGRESS, (req != NULL));
+    SendItemMessage(IDC_PROGRESS, PBM_SETMARQUEE, (req != NULL), 100);
+    EnableItem(IDC_BROWSE, (req == NULL));
+    EnableItem(IDC_URLGO, (req == NULL));
+    EnableItem(IDC_FAVGO, (req == NULL));
+    EnableItem(IDC_GRAVGO, (req == NULL));
+    EnableItem(IDC_PATH, (req == NULL));
+    EnableItem(IDC_URL, (req == NULL));
+    EnableItem(IDC_DOMAIN, (req == NULL));
+    EnableItem(IDC_EMAIL, (req == NULL));
+
+    m_msg_edit = msg_target;
 }
 
 BOOL IconSelectDialog::OnInitDialog(HWND hwndFocus, LPARAM lParam)
@@ -148,6 +170,16 @@ void IconSelectDialog::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
         OnClose();
         return;
     }
+
+    if (codeNotify == BN_CLICKED && id == IDC_ABORT) {
+        SetRequest(NULL, 0);
+    }
+
+    if (codeNotify == BN_CLICKED && id == IDC_IMGEDITOR) {
+        if (hwndCtl != NULL)
+            m_cropper->SetImage((const wchar_t *) hwndCtl);
+        SetRequest(NULL, 0);
+    }
 }
 
 void IconSelectDialog::OnDestroy(void)
@@ -174,95 +206,57 @@ void IconSelectDialog::DoBrowse()
     }
 }
 
+void IconSelectDialog::HttpRequestStatus(kherr_severity severity,
+                                         const wchar_t * status,
+                                         const wchar_t * long_desc)
+{
+    if (m_msg_edit != 0 &&
+        (severity == KHERR_ERROR ||
+         severity == KHERR_WARNING)) {
+        EDITBALLOONTIP tip;
+
+        tip.cbStruct = sizeof(tip);
+        tip.pszTitle = (status)? status : L"";
+        tip.pszText = (long_desc)? long_desc : L"";
+        tip.ttiIcon = ((severity == KHERR_ERROR)? TTI_ERROR : TTI_WARNING);
+
+        Edit_ShowBalloonTip(GetItem(m_msg_edit), &tip);
+    }
+}
+
+void IconSelectDialog::HttpRequestCompleted(const wchar_t * path)
+{
+    FORWARD_WM_COMMAND(hwnd, IDC_IMGEDITOR, path, BN_CLICKED, ::SendMessage);
+}
+
 void IconSelectDialog::DoFetchURL()
 {
     wchar_t url[MAXCCH_URL];
-    wchar_t path_o[MAX_PATH] = L"";
-    wchar_t path[MAX_PATH] = L"";
-    HANDLE hFile = INVALID_HANDLE_VALUE;
 
-    __try {
-        if (!khm_get_temp_path(path_o, ARRAYLENGTH(path_o)))
-            return;
-        StringCchCopy(path, ARRAYLENGTH(path), path_o);
+    if (GetItemText(IDC_URL, url, ARRAYLENGTH(url)) == 0)
+        return;
 
-        if (GetItemText(IDC_URL, url, ARRAYLENGTH(url)) == 0)
-            return;
-
-        hFile = khm_get_image_from_url(url, path, ARRAYLENGTH(path));
-        if (hFile == INVALID_HANDLE_VALUE) {
-            // Show some sort of error message
-            return;
-        }
-
-        CloseHandle(hFile);
-
-        m_cropper->SetImage(path);
-    }
-    __finally {
-        if (path_o[0] != L'\0')
-            DeleteFile(path_o);
-        if (path[0] != L'\0')
-            DeleteFile(path);
-    };
+    SetRequest(HttpRequest::CreateRequest(url, HttpRequest::ByURL, this), IDC_URL);
 }
 
 void IconSelectDialog::DoFetchFavicon()
 {
     wchar_t url[MAXCCH_URL];
-    wchar_t path[MAX_PATH] = L"";
-    HANDLE hFile = INVALID_HANDLE_VALUE;
 
-    __try {
-        if (!khm_get_temp_path(path, ARRAYLENGTH(path)))
-            return;
+    if (GetItemText(IDC_DOMAIN, url, ARRAYLENGTH(url)) == 0)
+        return;
 
-        if (GetItemText(IDC_DOMAIN, url, ARRAYLENGTH(url)) == 0)
-            return;
-
-        hFile = khm_get_favicon_for_domain(url, path);
-        if (hFile == INVALID_HANDLE_VALUE) {
-            // Show some sort of error message
-            return;
-        }
-
-        CloseHandle(hFile);
-
-        m_cropper->SetImage(path);
-    }
-    __finally {
-        if (path[0] != L'\0')
-            DeleteFile(path);
-    };
+    SetRequest(HttpRequest::CreateRequest(url, HttpRequest::ByFavIcon, this), IDC_DOMAIN);
 }
 
 void IconSelectDialog::DoFetchGravatar()
 {
     wchar_t email[MAXCCH_URL];
-    wchar_t path[MAX_PATH] = L"";
-    HANDLE hFile = INVALID_HANDLE_VALUE;
 
-    __try {
-        if (!khm_get_temp_path(path, ARRAYLENGTH(path)))
-            return;
+    if (GetItemText(IDC_EMAIL, email, ARRAYLENGTH(email)) == 0)
+        return;
 
-        if (GetItemText(IDC_EMAIL, email, ARRAYLENGTH(email)) == 0)
-            return;
-
-        hFile = khm_get_gravatar_for_email(email, path);
-        if (hFile == INVALID_HANDLE_VALUE) {
-            // Show some sort of error message
-            return;
-        }
-
-        CloseHandle(hFile);
-
-        m_cropper->SetImage(path);
-    }
-    __finally {
-        if (path[0] != L'\0')
-            DeleteFile(path);
-    };
+    SetRequest(HttpRequest::CreateRequest(email, HttpRequest::ByGravatar, this), IDC_EMAIL);
 }
 
 bool IconSelectDialog::PrepareIdentityIconDirectory(wchar_t path[MAX_PATH])

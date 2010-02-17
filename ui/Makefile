@@ -50,6 +50,7 @@ OBJFILES=				    \
 	$(OBJ)\DisplayColumnList.obj	    \
 	$(OBJ)\DisplayContainer.obj	    \
 	$(OBJ)\DisplayElement.obj	    \
+	$(OBJ)\HttpRequest.obj		    \
 	$(OBJ)\IconSelectDialog.obj	    \
 	$(OBJ)\NewCredAdvancedPanel.obj	    \
 	$(OBJ)\NewCredBasicPanel.obj	    \
@@ -77,7 +78,6 @@ OBJFILES=				    \
 	$(OBJ)\drawfuncs.obj		    \
 	$(OBJ)\envvar.obj		    \
 	$(OBJ)\htwnd.obj		    \
-	$(OBJ)\httpfetch.obj		    \
 	$(OBJ)\iconselectwnd.obj	    \
 	$(OBJ)\main.obj			    \
 	$(OBJ)\mainmenu.obj		    \

@@ -23,15 +23,23 @@
  */
 
 #pragma once
+
 #include "PictureCropWindow.hpp"
+#include "HttpRequest.hpp"
 
 namespace nim {
 
 class IconSelectDialog :
-        virtual public DialogWindow {
+        virtual public DialogWindow,
+        public HttpRequestStatusListener {
 
-    Identity m_identity;
+    Identity                   m_identity;
     AutoRef<PictureCropWindow> m_cropper;
+    AutoRef<HttpRequest>       m_request;
+
+    UINT                       m_msg_edit;
+    // Edit control that receives status messages from the HttpRequest
+    // object
 
     enum {
         MAXCCH_URL = 2048
@@ -54,6 +62,8 @@ public:
 
     void DoOk();
 
+    void SetRequest(HttpRequest * req, UINT msg_target);
+
     virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam);
 
     virtual void OnClose() {
@@ -67,6 +77,12 @@ public:
     virtual LRESULT OnHelp(HELPINFO * info);
 
     virtual LRESULT OnNotify(int id, NMHDR * pnmh);
+
+    virtual void HttpRequestStatus(kherr_severity severity,
+                                   const wchar_t * status,
+                                   const wchar_t * long_desc);
+
+    virtual void HttpRequestCompleted(const wchar_t * path);
 };
 
 }
