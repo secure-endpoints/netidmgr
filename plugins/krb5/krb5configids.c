@@ -145,34 +145,34 @@ k5_ids_read_params(k5_ids_dlg_data * d) {
     d->opt = d->opt_saved;
 
     khui_tracker_initialize(&d->tc_life);
-    d->tc_life.current = d->life;
+    d->tc_life.current = (khm_int32) d->life;
     d->tc_life.min = 0;
     d->tc_life.max = 3600 * 24 * 7;
 
     khui_tracker_initialize(&d->tc_renew);
-    d->tc_renew.current = d->renew_life;
+    d->tc_renew.current = (khm_int32) d->renew_life;
     d->tc_renew.min = 0;
     d->tc_renew.max = 3600 * 24 * 30;
 
     khui_tracker_initialize(&d->tc_life_min);
-    d->tc_life_min.current = d->life_min;
-    d->tc_life_min.min = d->tc_life.min;
-    d->tc_life_min.max = d->tc_life.max;
+    d->tc_life_min.current = (khm_int32) d->life_min;
+    d->tc_life_min.min = (khm_int32) d->tc_life.min;
+    d->tc_life_min.max = (khm_int32) d->tc_life.max;
 
     khui_tracker_initialize(&d->tc_life_max);
-    d->tc_life_max.current = d->life_max;
-    d->tc_life_max.min = d->tc_life.min;
-    d->tc_life_max.max = d->tc_life.max;
+    d->tc_life_max.current = (khm_int32) d->life_max;
+    d->tc_life_max.min = (khm_int32) d->tc_life.min;
+    d->tc_life_max.max = (khm_int32) d->tc_life.max;
 
     khui_tracker_initialize(&d->tc_renew_min);
-    d->tc_renew_min.current = d->renew_min;
-    d->tc_renew_min.min = d->tc_renew.min;
-    d->tc_renew_min.max = d->tc_renew.max;
+    d->tc_renew_min.current = (khm_int32) d->renew_min;
+    d->tc_renew_min.min = (khm_int32) d->tc_renew.min;
+    d->tc_renew_min.max = (khm_int32) d->tc_renew.max;
 
     khui_tracker_initialize(&d->tc_renew_max);
-    d->tc_renew_max.current = d->renew_max;
-    d->tc_renew_max.min = d->tc_renew.min;
-    d->tc_renew_max.max = d->tc_renew.max;
+    d->tc_renew_max.current = (khm_int32) d->renew_max;
+    d->tc_renew_max.min = (khm_int32) d->tc_renew.min;
+    d->tc_renew_max.max = (khm_int32) d->tc_renew.max;
 }
 
 INT_PTR CALLBACK

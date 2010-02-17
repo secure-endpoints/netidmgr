@@ -95,7 +95,7 @@ GetLastErrorString()
 void
 HttpRequest::Abort()
 {
-    InterlockedExchangePointer(&m_listener, NULL);
+    InterlockedExchangePointer((volatile PVOID *) &m_listener, NULL);
 }
 
 void

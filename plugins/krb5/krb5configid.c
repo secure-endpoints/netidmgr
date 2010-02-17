@@ -118,12 +118,12 @@ k5_id_read_params(k5_id_dlg_data * d) {
 #endif
 
     khui_tracker_initialize(&d->tc_life);
-    d->tc_life.current = d->life;
+    d->tc_life.current = (khm_int32) d->life;
     d->tc_life.min = 0;
     d->tc_life.max = 3600 * 24 * 7;
 
     khui_tracker_initialize(&d->tc_renew);
-    d->tc_renew.current = d->renew_life;
+    d->tc_renew.current = (khm_int32) d->renew_life;
     d->tc_renew.min = 0;
     d->tc_renew.max = 3600 * 24 * 30;
 

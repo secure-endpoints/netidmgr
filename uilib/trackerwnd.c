@@ -224,7 +224,7 @@ duration_tracker_proc(HWND hwnd,
                     FILETIME ft;
                     khm_size cbbuf;
 
-                    tc->current = t;
+                    tc->current = (khm_int32) t;
                     //d->dirty = TRUE;
                     cbbuf = sizeof(buf);
                     TimetToFileTimeInterval(t, &ft);
@@ -396,7 +396,7 @@ duration_edit_proc(HWND hwnd,
                     if(KHM_SUCCEEDED(IntervalStringToFt(&ft, buf))) {
                         ts = FtIntervalToSeconds(&ft);
                         if(ts >= tc->min && ts <= tc->max) {
-                            tc->current = ts;
+                            tc->current = (khm_int32) ts;
                             //d->dirty = TRUE;
                             if(tc->hw_slider != NULL)
                                 SendMessage(tc->hw_slider, TBM_SETPOS, TRUE, (LPARAM) time_t_to_ticks(tc->min, tc->current));
