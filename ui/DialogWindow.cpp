@@ -69,6 +69,21 @@ BOOL DialogWindow::EnableItem(int nID, BOOL bEnable) {
     return EnableWindow(hwnd_item, bEnable);
 }
 
+BOOL DialogWindow::ShowItem(int nID, BOOL bShow) {
+    HWND hwnd_item = GetItem(nID);
+
+    if (hwnd_item == NULL)
+        return FALSE;
+
+    if (!bShow && GetFocus() == hwnd_item) {
+        PostMessage(WM_NEXTDLGCTL, 0, 0);
+    }
+
+    return SetWindowPos(hwnd_item, NULL, 0, 0, 0, 0,
+                        ((bShow)?SWP_SHOWWINDOW: SWP_HIDEWINDOW)|
+                        SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOOWNERZORDER|
+                        SWP_NOSIZE|SWP_NOZORDER);
+}
 
 INT_PTR CALLBACK DialogWindow::HandleOnInitDialog(HWND hwnd, HWND hwnd_focus, LPARAM lParam)
 {

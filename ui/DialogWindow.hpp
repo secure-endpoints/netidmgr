@@ -99,6 +99,8 @@ public:
 
     BOOL EnableItem(int nID, BOOL bEnable = TRUE);
 
+    BOOL ShowItem(int nID, BOOL show = TRUE);
+
 public:
     virtual BOOL OnInitDialog(HWND hwndFocus, LPARAM lParam) { return FALSE; }
 
