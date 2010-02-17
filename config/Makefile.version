@@ -32,11 +32,11 @@ NETIDMGR_VERSION_INC=1
 
 NETIDMGR_VERSION_MAJOR=1
 NETIDMGR_VERSION_MINOR=99
-NETIDMGR_VERSION_PATCH=24
-NETIDMGR_VERSION_AUX=128
+NETIDMGR_VERSION_PATCH=25
+NETIDMGR_VERSION_AUX=217
 
 # Release description
-NETIDMGR_RELEASEDESC=Pre 2.0 Beta
+NETIDMGR_RELEASEDESC=Pre 2.0 Beta 2
 
 # The API version.  This number must be incremented each time the API
 # changes.  Plugins specify the version of the API that they were
