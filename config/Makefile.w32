@@ -271,7 +271,7 @@ DLLGUILINK=$(LINK) /NOLOGO $(khldllguiflags) /OUT:$@ /IMPLIB:$(LIBDIR)\$(@B).lib
 
 DLLRESLINK=$(LINK) /NOLOGO /DLL /NOENTRY /MACHINE:$(PROCESSOR_ARCHITECTURE) /OUT:$@ $**
 
-RC2RES=$(RC) $(RFLAGS) $(rincflags) /fo $@ $**
+RC2RES=$(RC) $(rcflags) $(rcvars) -D_WIN32_WINNT=$(NMAKE_WINVER) $(RFLAGS) $(rincflags) /fo $@ $**
 
 MC2RC=$(MC) $(MCFLAGS) -h $(OBJ)\ -m 1024 -r $(OBJ)\ -x $(OBJ)\ $**
 
