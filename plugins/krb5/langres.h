@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\netidmgrcpp\plugins\krb5\lang\en_us\langres.rc
+// Used by C:\work\netidmgr.git\plugins\krb5\lang\en_us\langres.rc
 //
 #define IDS_UNK_ADDR_FMT                101
 #define IDD_NC_KRB5                     102
@@ -210,6 +210,8 @@
 #define IDC_CFG_ADDRESSLESS             1077
 #define IDC_CFG_FORWARD                 1078
 #define IDC_CHECK1                      1079
+#define IDC_NCK5_PROXIABLE              1079
+#define IDC_CFG_PROXY                   1079
 #define IDC_NC_UN                       1080
 #define IDC_NC_REALM                    1081
 #define IDC_GRPBOX                      1082
@@ -220,7 +222,7 @@
 #define ID_FOO_BAR                      40001
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        221

@@ -35,6 +35,7 @@
 typedef struct tag_k5_ids_opts {
     khm_int32 renewable;
     khm_int32 forwardable;
+    khm_int32 proxiable;
     khm_int32 addressless;
 } k5_ids_opts;
 
@@ -70,6 +71,7 @@ k5_ids_is_mod(k5_ids_dlg_data * d) {
         d->renew_min != d->tc_renew_min.current ||
         !!d->opt.renewable != !!d->opt_saved.renewable ||
         !!d->opt.forwardable != !!d->opt_saved.forwardable ||
+        !!d->opt.proxiable != !!d->opt_saved.proxiable ||
         !!d->opt.addressless != !!d->opt_saved.addressless)
         return TRUE;
     return FALSE;
@@ -111,6 +113,7 @@ k5_ids_write_params(k5_ids_dlg_data * d) {
     WRITEPARAM(d->renew_min,d->tc_renew_min.current, L"MinRenewLifetime");
     WRITEPARAM(d->opt_saved.renewable, d->opt.renewable, L"Renewable");
     WRITEPARAM(d->opt_saved.forwardable, d->opt.forwardable, L"Forwardable");
+    WRITEPARAM(d->opt_saved.proxiable, d->opt.proxiable, L"Proxiable");
     WRITEPARAM(d->opt_saved.addressless, d->opt.addressless, L"Addressless");
 
 #undef WRITEPARAM
@@ -135,6 +138,7 @@ k5_ids_read_params(k5_ids_dlg_data * d) {
     d->renew_min = p.renew_life_min;
 
     d->opt_saved.forwardable = p.forwardable;
+    d->opt_saved.proxiable = p.proxiable;
     d->opt_saved.renewable = p.renewable;
     d->opt_saved.addressless = p.addressless;
 
@@ -215,6 +219,7 @@ k5_ids_tab_dlgproc(HWND hwnd,
 
         CheckDlgButton(hwnd, IDC_CFG_RENEW, (d->opt.renewable ? BST_CHECKED: BST_UNCHECKED));
         CheckDlgButton(hwnd, IDC_CFG_FORWARD, (d->opt.forwardable ? BST_CHECKED: BST_UNCHECKED));
+        CheckDlgButton(hwnd, IDC_CFG_PROXY, (d->opt.proxiable ? BST_CHECKED : BST_UNCHECKED));
         CheckDlgButton(hwnd, IDC_CFG_ADDRESSLESS, (d->opt.addressless ? BST_CHECKED: BST_UNCHECKED));
         break;
 
@@ -235,6 +240,10 @@ k5_ids_tab_dlgproc(HWND hwnd,
 
             case IDC_CFG_FORWARD:
                 d->opt.forwardable = (IsDlgButtonChecked(hwnd, IDC_CFG_FORWARD) == BST_CHECKED);
+                break;
+
+            case IDC_CFG_PROXY:
+                d->opt.proxiable = (IsDlgButtonChecked(hwnd, IDC_CFG_PROXY) == BST_CHECKED);
                 break;
 
             case IDC_CFG_ADDRESSLESS:

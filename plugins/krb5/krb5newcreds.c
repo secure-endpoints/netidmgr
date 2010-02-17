@@ -175,6 +175,11 @@ k5_handle_wmnc_notify(HWND hwnd,
                                (d->params.forwardable ? BST_CHECKED : BST_UNCHECKED),
                                0);
 
+            SendDlgItemMessage(hwnd, IDC_NCK5_PROXIABLE,
+                               BM_SETCHECK,
+                               (d->params.proxiable ? BST_CHECKED : BST_UNCHECKED),
+                               0);
+
             SendDlgItemMessage(hwnd, IDC_NCK5_ADDRESS,
                                BM_SETCHECK,
                                (d->params.addressless ? BST_CHECKED : BST_UNCHECKED),
@@ -303,6 +308,13 @@ k5_handle_wm_command(HWND hwnd,
         c = (int) SendDlgItemMessage(hwnd, IDC_NCK5_FORWARDABLE,
                                      BM_GETCHECK, 0, 0);
         d->params.forwardable = (c == BST_CHECKED);
+        break;
+
+    case MAKEWPARAM(IDC_NCK5_PROXIABLE, BN_CLICKED):
+
+        c = (int) SendDlgItemMessage(hwnd, IDC_NCK5_PROXIABLE,
+                                     BM_GETCHECK, 0, 0);
+        d->params.proxiable = (c == BST_CHECKED);
         break;
 
     case MAKEWPARAM(IDC_NCK5_ADDRESS, BN_CLICKED):

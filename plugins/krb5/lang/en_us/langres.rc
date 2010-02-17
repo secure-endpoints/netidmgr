@@ -27,18 +27,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE
+1 TEXTINCLUDE 
 BEGIN
     "..\\..\\langres.h\0"
 END
 
-2 TEXTINCLUDE
+2 TEXTINCLUDE 
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE
+3 TEXTINCLUDE 
 BEGIN
     "\r\n"
     "\0"
@@ -67,6 +67,7 @@ BEGIN
     CONTROL         "Addressless",IDC_NCK5_ADDRESS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,87,54,10
     LTEXT           "Additional IP address",IDC_STATIC,118,88,68,8,NOT WS_VISIBLE
     CONTROL         "",IDC_NCK5_PUBLICIP,"SysIPAddress32",NOT WS_VISIBLE | WS_TABSTOP,192,84,100,15
+    CONTROL         "&Proxiable",IDC_NCK5_PROXIABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,107,45,10
 END
 
 IDD_PP_KRB5C DIALOGEX 0, 0, 235, 156
@@ -160,6 +161,7 @@ BEGIN
     CONTROL         "&Renewable",IDC_CFG_RENEW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,47,51,10
     CONTROL         "&Forwardable",IDC_CFG_FORWARD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,47,56,10
     CONTROL         "&Addressless",IDC_CFG_ADDRESSLESS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,63,54,10
+    CONTROL         "&Proxiable",IDC_CFG_PROXY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,94,63,45,10
     GROUPBOX        "Credential lifetime range",IDC_CFG_LIFEGRP,7,79,336,31
     LTEXT           "From",IDC_STATIC,13,93,17,8
     EDITTEXT        IDC_CFG_LRNG_MIN,38,90,79,14,ES_AUTOHSCROLL
@@ -186,6 +188,7 @@ BEGIN
     CONTROL         "Addressless",IDC_CFG_ADDRESSLESS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,77,54,10
     LTEXT           "Additional IP address",IDC_STATIC,69,78,68,8,NOT WS_VISIBLE
     CONTROL         "",IDC_CFG_PUBLICIP,"SysIPAddress32",NOT WS_VISIBLE | WS_TABSTOP,145,75,100,15
+    CONTROL         "Proxiable",IDC_CFG_PROXY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,7,95,45,10
     LTEXT           "Credential cache",IDC_STATIC,7,154,58,8
     EDITTEXT        IDC_CFG_CCACHE,69,151,167,14,ES_AUTOHSCROLL
     PUSHBUTTON      "Browse for FILE: ccache",IDC_BROWSE,241,151,101,14
@@ -236,7 +239,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO
+GUIDELINES DESIGNINFO 
 BEGIN
     IDD_NC_KRB5, DIALOG
     BEGIN
@@ -356,7 +359,7 @@ IDI_KERBEROS            ICON                    "..\\..\\images\\kerberos.ico"
 // String Table
 //
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_UNK_ADDR_FMT        "Unknown address type %d"
     IDS_KRB5_CREDTEXT_0     "<p><a id=""SwitchPanel"" param=""Krb5Cred""><b>Krb5</b></a><tab>: Tickets for realm %s</p>"
@@ -371,7 +374,7 @@ BEGIN
     IDS_ETYPE_DES_CBC_CRC   "DES-CBC-CRC"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_ETYPE_DES_CBC_MD4   "DES-CBC-MD4"
     IDS_ETYPE_DES_CBC_MD5   "DES-CBC-MD5"
@@ -391,7 +394,7 @@ BEGIN
     IDS_KRB5_LONG_DESC      "Kerberos v5 tickets"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_OFN_IDCCT           "Select credential cache file"
     IDS_PNAME_PW            "Kerberos 5 password"
@@ -408,7 +411,7 @@ BEGIN
     IDS_K5CFG_SHORT_DESC    "Kerberos v5"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_K5CFG_LONG_DESC     "Kerberos v5 Configuration"
     IDS_K5RLM_SHORT_DESC    "Realms"
@@ -428,7 +431,7 @@ BEGIN
     IDS_K5CCC_SHORT_DESC    "Credential Caches"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_K5CCC_LONG_DESC     "Kerberos v5 Credential Caches"
     IDS_CFG_FCTITLE         "File based Credential Caches"
@@ -448,14 +451,14 @@ BEGIN
     IDS_FLG_INITIAL         "Initial"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_FLG_PRE_AUTH        "Pre-authenticated"
     IDS_FLG_HW_AUTH         "Hardware authentication"
     IDS_FLG_TRANSIT_POL     "Transit policy checked"
     IDS_FLG_OK_DELEGATE     "Approved for delegation"
     IDS_FLG_ANONYMOUS       "Anonymous"
-    IDS_K5ERR_CANTWRITEPROFILE
+    IDS_K5ERR_CANTWRITEPROFILE 
                             "The Kerberos v5 profile file could not be written"
     IDS_K5ERR_PROFNOWRITE   "The file %s could not be opened as a profile file for writing."
     IDS_K5ERR_PROFUSETEMP   "The file %s could not be opened for writing.  The current changes will be saved to %s temporarily."
@@ -469,7 +472,7 @@ BEGIN
     IDS_CFG_RE_HEAD_ADMIN   "Admin"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_CFG_RE_HEAD_MASTER  "Master"
     IDS_CFG_RE_HEAD_DOMAIN  "Domain"
@@ -489,7 +492,7 @@ BEGIN
     IDS_CFG_RE_DMNUT        "Can't add new domain map %s for realm %s"
 END
 
-STRINGTABLE
+STRINGTABLE 
 BEGIN
     IDS_CFG_RE_DMNUM        "There already is a domain named %s mapping to realm %s.  The new domain map could not be added."
     IDS_CFG_RE_MNR          "&Add new realm"

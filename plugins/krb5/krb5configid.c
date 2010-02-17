@@ -151,6 +151,8 @@ k5_id_is_mod(HWND hw, k5_id_dlg_data * d) {
 
         (IsDlgButtonChecked(hw, IDC_CFG_FORWARD) == BST_CHECKED) != d->forwardable ||
 
+        (IsDlgButtonChecked(hw, IDC_CFG_PROXY) == BST_CHECKED) != d->proxiable ||
+
         (IsDlgButtonChecked(hw, IDC_CFG_ADDRESSLESS) == BST_CHECKED)
         != d->addressless ||
 
@@ -213,6 +215,13 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     if (b != d->forwardable) {
         d->forwardable = b;
         khc_write_int32(csp_ident, L"Forwardable", (khm_int32) b);
+        applied = TRUE;
+    }
+
+    b = (IsDlgButtonChecked(hw, IDC_CFG_PROXY) == BST_CHECKED);
+    if (b != d->proxiable) {
+        d->proxiable = b;
+        khc_write_int32(csp_ident, L"Proxiable", (khm_int32) b);
         applied = TRUE;
     }
 
@@ -355,6 +364,9 @@ k5_id_tab_dlgproc(HWND hwnd,
 
         CheckDlgButton(hwnd, IDC_CFG_FORWARD,
                        (d->forwardable? BST_CHECKED: BST_UNCHECKED));
+
+        CheckDlgButton(hwnd, IDC_CFG_PROXY,
+                       (d->proxiable? BST_CHECKED: BST_UNCHECKED));
 
         CheckDlgButton(hwnd, IDC_CFG_ADDRESSLESS,
                        (d->addressless? BST_CHECKED: BST_UNCHECKED));
