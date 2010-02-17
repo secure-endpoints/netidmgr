@@ -535,7 +535,9 @@ HttpRequest::HttpRequest(const wchar_t * target, Method method,
     m_task(NULL), m_target(target), m_method(method), m_listener(listener),
     m_muted(false)
 {
+#ifdef DEBUG
     SetOkToDispose(true);       // These can be disposed at any time
+#endif
 }
 
 HttpRequest::~HttpRequest()
