@@ -1,0 +1,68 @@
+
+  Network Identity Manager
+  ========================
+
+  Version 1.99.25.217 (Pre v2.0 Beta 2)
+  -------------------------------------
+
+  Changes since 1.99.24.128 (Pre v2.0 Beta 1)
+
+  KeyStore:
+
+    - Master key lifetime can now be configured.  It can also be set
+      to never expire.
+
+  Application:
+
+    - Support for non-expiring identities.
+
+    - Identity icon selection dialog now makes HTTP requests
+      asynchronously.  The UI reports any errors that may occur during
+      an HTTP fetch and provides a 'Stop' button to abort lengthy
+      operations.
+
+  Kerberos v5:
+
+    - Added UI controls for setting the 'Proxiable' flag for a new
+      TGT.  The setting can be controlled as a global default and as a
+      per-identity setting.
+
+  Bug fixes:
+
+    - Handling of custom menus was fixed to avoid a situation where
+      the wrong submenu may be displayed for an action.
+
+    - Fixed several memory leaks.
+
+    - The generated description for the default keystore had an
+      unexpanded insertion sequence.
+
+    - Saved originals of an identity icon image may have a different
+      resolution than the source image and may not matched the saved
+      crop rectangle.
+
+  User documentation:
+
+    - Add missing how_to_choose_a_password.htm topic.
+
+    - Add a section describing the format of the debug log file.
+
+  Source:
+
+    - Updated copyright information.
+
+    - Updated developer documentation.
+
+    - Switch to khm_int32 for time intervals in khui_tracker controls
+      to preserve ABI compatibility.
+
+    - Introduce context menu notifications for credentials related
+      context menus.  Plug-ins can now customize credentials context
+      menus on a per-identity or per-credential basis.
+
+    - Added LICENSE, README.xml and README.txt containing build
+      instructions.
+
+    - Moved to WiX 3.0 for building MSI based installers.
+
+    - Refactored installers to generate .wixlibs for each plug-in.
