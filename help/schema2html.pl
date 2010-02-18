@@ -186,7 +186,7 @@ $tmpl_value = <<'T_VALUE';
 
     <p class="schema-value-type">
       <span class="schema-label">Type:</span>
-      <span class="schema-value pre">$value_type</span>
+      <span class="schema-value">$value_type</span>
     </p>
 
     <p class="schema-value-def">
@@ -331,6 +331,11 @@ while(<IN>) {
                 $value_type = $data_type;
                 $value_def = $fields[2];
                 $value_doc = $doc;
+
+                $value_def =~ s/&/&amp;/g;
+                $value_def =~ s/</&lt;/g;
+                $value_def =~ s/>/&gt;/g;
+                if ($value_def =~ /^$/) { $value_def = "&nbsp;"; }
 
                 {
                     my $t;

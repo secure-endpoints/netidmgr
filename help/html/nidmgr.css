@@ -118,7 +118,7 @@
 
   div.schema-space {
       border-left: 1px solid rgb(230, 206, 142);
-      padding: 0pt;
+      padding: 0;
       margin-left: 1em;
       margin-top: 0.5em;
       margin-bottom: 0.5em;
@@ -136,7 +136,7 @@
   p.schema-space {
       border-top: 1px solid rgb(230, 206, 142);
       margin: 0pt;
-      padding: 1em;
+      padding: 0.5em;
       font-weight: bold;
       font-size: 10pt;
       background-color: rgb(242, 233, 208);
@@ -152,8 +152,8 @@
   span.schema-label {
       display: block;
       float: left;
-      margin-left: 2em;
-      width: 10em;
+      margin-left: 1em;
+      width: 7em;
   }
 
   span.schema-value {
@@ -168,12 +168,14 @@
       background-color: rgb(234, 242, 208);
       margin-left: 1em;
       margin-right: 1em;
-      margin-bottom: 1em;
+      margin-bottom: 0.2em;
   }
 
   p.schema-value-name {
-      margin: 0.5em 1em;
-      padding: 0.5em 1em;
+      margin: 0.2em 1em;
+      padding: 0.2em 0.2em;
+      float: left;
+      width: 12em;
   }
 
   span.schema-value-name {
@@ -181,12 +183,36 @@
       font-weight: bold;
   }
 
-  p.schema-value-type {  }
+  p.schema-value-type {
+      padding: 0.1em 1em 0.1em 0.1em;
+      margin: 0.5em 0 0 1em;
+      float: left;
+  }
 
-  p.schema-value-def {  }
+  p.schema-value-type span.schema-label {
+      display: none;
+  }
+
+  p.schema-value-type span.schema-value {
+      width: 10em;
+      font-size: 8pt;
+      text-align: center;
+      background-color: rgb(240, 240, 240);
+  }
+
+  p.schema-value-def {
+      padding: 0.1em 1em 0.1em 0.1em;
+      margin: 0.5em 0 0 1em;
+  }
+
+  p.schema-value-def span.schema-label {
+      width: 1%;
+      margin-right: 0.2em;
+  }
 
   div.schema-value-doc {
       padding: 1em;
+      margin: 0 0 0 3em;
   }
 
   dl.options {

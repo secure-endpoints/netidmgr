@@ -16,42 +16,42 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
   PaddingHeader,KC_INT32,16,"[PRIVATE]"
   RefreshTimeout,KC_INT32,600,"Number of seconds between credentials window refreshes.  The credentials window automatically triggers a refresh operation.  This value specifies the number of seconds that must elapse between two refreshes.  During the refresh, all the credentials provider plug-ins will need to re-enumerate their respective credentials."
   LogToFile,KC_INT32,0,Boolean. If true logs trace events to a nidmdbg.log in the temp folder
-  DestroyCredsOnExit,KC_INT32,0,Boolean.  If true; all credentials will be destroyed when NetIDMgr exits.
-  NotificationAction,KC_INT32,50025,Action to perform when the user clicks on the notification icon.
+  DestroyCredsOnExit,KC_INT32,0,Boolean.  If non-zero; all credentials will be destroyed when NetIDMgr exits.
+  NotificationAction,KC_INT32,50025,"Action to perform when the user clicks on the notification icon.  This can be either: <dl class='options small'><dt>50025</dt><dd>Open application</dd><dt>50008</dt><dd>Obtain new credentials</dd></dl>"
   DefaultWindowMode,KC_INT32,1,(0-normal; 1-mini)
   DefaultTheme,KC_STRING,Default,Default theme.  The name should correspond to a subspace in Themes
   ViewAllIdents,KC_INT32,0,"Boolean. Try to display all known identities if non-zero."
   Windows,KC_SPACE,0,Window parameters
-    _Schema,KC_SPACE,0,Schema
-      Width,KC_INT32,0,
-      Height,KC_INT32,0,
-      XPos,KC_INT32,0,
-      YPos,KC_INT32,0,
-      Dock,KC_INT32,0,Dock on window corner (0-none; 1-top left; 2-top right; 3-bottom right; 4-bottom left)
+    _Schema,KC_SPACE,0,Schema for window parameters
+      Width,KC_INT32,0,"Width, in dialog units"
+      Height,KC_INT32,0,"Height, in dialog units"
+      XPos,KC_INT32,0,"X position, in dialog units"
+      YPos,KC_INT32,0,"Y position, in dialog units"
+      Dock,KC_INT32,0,"Dock on window corner.  This can be one of the following values: <dl class='options small'><dt>0</dt><dd>Do not dock</dd><dt>1</dt><dd>Dock in top left corner</dd><dt>2</dt><dd>Dock in top right corner</dd><dt>3</dt><dd>Dock in bottom right corner</dd><dt>4</dt><dd>Dock in bottom left corner</dd><dl>"
     _Schema,KC_ENDSPACE,0,
     Main,KC_SPACE,0,Main window
     Main,KC_ENDSPACE,0,
-    MainMini,KC_SPACE,0,Main window (mini mode)
+    MainMini,KC_SPACE,0,Main window (Basic mode)
       Width,KC_INT32,470,
       Height,KC_INT32,500,
       Dock,KC_INT32,3,
     MainMini,KC_ENDSPACE,0,
-    NewCred,KC_SPACE,0,New credentials window
-      ForceToTop,KC_INT32,1,Force new creds window to the top
+    NewCred,KC_SPACE,0,New credentials wizard
+      ForceToTop,KC_INT32,1,Force new credentials wizard to the top
       CloseAfterProcessEnd,KC_INT32,1,Close the new credentials window automatically after the new credentials process ends.
     NewCred,KC_ENDSPACE,0,
   Windows,KC_ENDSPACE,0,
   Views,KC_SPACE,0,Preconfigured views for credentials
    _Schema,KC_SPACE,0,Schema for view definitions
      Description,KC_STRING,"",Description of the view
-     ColumnList,KC_STRING,"","List of columns for the view, in order"
-     _AppVersion,KC_BINARY,0,Binary version stamp
+     ColumnList,KC_STRING,"","List of columns for the view, in order.  Column names are separated with a comma, with no white-spaces."
+     _AppVersion,KC_BINARY,0,"Binary version stamp.  This field keeps track of the version of Network Identity Manager that created the column definition."
      Base,KC_STRING,"",View on which this view is based on
      Columns,KC_SPACE,0,"Column definitions.  Each column name should have a corresponding subspace here.  The name of the column should be a property or field name, unless it is a pseudo column like _CWFlags."
        _Schema,KC_SPACE,0,Column definition schema
-        Width,KC_INT32,0,Width of the column
+        Width,KC_INT32,0,"Width of the column, in dialog units"
         SortIndex,KC_INT32,0,Sort index
-        Flags,KC_INT32,0,Flags (See KHUI_CW_COL_* values)
+        Flags,KC_INT32,0,"Flags (See KHUI_CW_COL_* values)"
        _Schema,KC_ENDSPACE,0
      Columns,KC_ENDSPACE,0
    _Schema,KC_ENDSPACE,0,
@@ -84,7 +84,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
       TimeLeft,KC_ENDSPACE,0
     Columns,KC_ENDSPACE,0
    Custom_0,KC_ENDSPACE,0,
-   ByIdentity,KC_SPACE,0,The default view
+   ByIdentity,KC_SPACE,0,View grouped by identity and credential type.  This is the default view.
     Description,KC_STRING,View grouped by identity and credential type,
     ColumnList,KC_STRING,"_CWFlags,IdentityDisplayName,TypeName,Location,Name,TimeLeft",
     Columns,KC_SPACE,0,Columns
@@ -118,7 +118,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
       TimeLeft,KC_ENDSPACE,0
     Columns,KC_ENDSPACE,0
    ByIdentity,KC_ENDSPACE,0
-   ByType,KC_SPACE,0,The default view
+   ByType,KC_SPACE,0,View grouped by type and identity.
     Description,KC_STRING,View grouped by type and identity,
     ColumnList,KC_STRING,"_CWFlags,TypeName,IdentityDisplayName,Name,TimeLeft",
     Columns,KC_SPACE,0,Columns
@@ -209,7 +209,7 @@ CredWindow,KC_SPACE,0,"Options for the credentials window as well as the Network
    Custom_1,KC_ENDSPACE,0
   Views,KC_ENDSPACE,0
   Notices,KC_SPACE,0,Notices and alerts
-    MinimizeWarning,KC_INT32,1,Show the minimize warning?
+    MinimizeWarning,KC_INT32,1,"Show warning on minimize that the Network Identity Manager application is still running.  This is usually set to 0 after the first time the notice is displayed."
   Notices,KC_ENDSPACE,0
   Themes,KC_SPACE,0,Color schemes for the credentials display
     _Schema,KC_SPACE,0,Schema for color schemes
