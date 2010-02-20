@@ -56,7 +56,7 @@ KEYSTORE=$(SRC)\plugins\keystore
 # External libraries
 # KCAPLUGINLIB=\path\to\kcacred-*.wixlib
 
-!ifdef KCAPLUGINLIB
+!if defined(KCAPLUGINLIB) || defined(KFWWIXLIB)
 COMBINED=1
 !endif
 
@@ -100,6 +100,9 @@ MSILIBS=
 !ifdef KCAPLUGINLIB
 MSILIBS=$(MSILIBS) $(KCAPLUGINLIB)
 !endif
+!ifdef KFWWIXLIB
+MSILIBS=$(MSILIBS) $(KFWWIXLIB)
+!endif
 
 $(MSIFILE): $(MSIOBJS) $(MSILIBS)
 	"$(WIXDIR)\light.exe" -nologo -out "$@"		\
@@ -132,6 +135,9 @@ $(OBJ)\installer.wixobj: installer.wxs
 		-dClVer=$(KH_CLVER)			\
 !ifdef KCAPLUGINLIB
 		-dIncludeKCACred=yes			\
+!endif
+!ifdef KFWWIXLIB
+		-dIncludeKfW=yes			\
 !endif
 !ifndef COMBINED
 		-dMITCompatibilityMode=yes		\
