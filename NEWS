@@ -1,68 +1,100 @@
 
-  Network Identity Manager
-  ========================
+Network Identity Manager
+========================
 
-  Version 1.99.25.217 (Pre v2.0 Beta 2)
-  -------------------------------------
+Version 1.99.26.225 (Pre v2.0 Beta 2a)
+--------------------------------------
 
-  Changes since 1.99.24.128 (Pre v2.0 Beta 1)
+Kerberos v5:
 
-  KeyStore:
+  - Fix a race condition where the initial credentials listing can be
+    attempted before the identity provider has finished intializing.
+    In this case, the credentials listing will fail at first and if
+    the --autoinit option is used, Network Identity Manager may
+    display the new credentials dialog even when the user has
+    credentials.
 
-    - Master key lifetime can now be configured.  It can also be set
-      to never expire.
+  - Be more descriptive with logging Kerberos v5 error codes.  New log
+    entries are more verbose and include description of the error as
+    well as the error code.
 
-  Application:
+Application:
 
-    - Support for non-expiring identities.
+  - Debug log file now includes details about the process token for
+    the Network Identity Manager process.  This is to help identify
+    recurrent problems with restricted tokens on Vista and Windows 7.
 
-    - Identity icon selection dialog now makes HTTP requests
-      asynchronously.  The UI reports any errors that may occur during
-      an HTTP fetch and provides a 'Stop' button to abort lengthy
-      operations.
+User documentation:
 
-  Kerberos v5:
+  - Fix broken links.
 
-    - Added UI controls for setting the 'Proxiable' flag for a new
-      TGT.  The setting can be controlled as a global default and as a
-      per-identity setting.
+  - Explain Kerberos v5 proxiable tickets.
 
-  Bug fixes:
+  - Explain UI changes in identity icon dialog.
 
-    - Handling of custom menus was fixed to avoid a situation where
-      the wrong submenu may be displayed for an action.
+  - Changes to registry documentation layout and content.
 
-    - Fixed several memory leaks.
+Version 1.99.25.217 (Pre v2.0 Beta 2)
+-------------------------------------
 
-    - The generated description for the default keystore had an
-      unexpanded insertion sequence.
+Changes since 1.99.24.128 (Pre v2.0 Beta 1)
 
-    - Saved originals of an identity icon image may have a different
-      resolution than the source image and may not matched the saved
-      crop rectangle.
+KeyStore:
 
-  User documentation:
+  - Master key lifetime can now be configured.  It can also be set
+    to never expire.
 
-    - Add missing how_to_choose_a_password.htm topic.
+Application:
 
-    - Add a section describing the format of the debug log file.
+  - Support for non-expiring identities.
 
-  Source:
+  - Identity icon selection dialog now makes HTTP requests
+    asynchronously.  The UI reports any errors that may occur during
+    an HTTP fetch and provides a 'Stop' button to abort lengthy
+    operations.
 
-    - Updated copyright information.
+Kerberos v5:
 
-    - Updated developer documentation.
+  - Added UI controls for setting the 'Proxiable' flag for a new
+    TGT.  The setting can be controlled as a global default and as a
+    per-identity setting.
 
-    - Switch to khm_int32 for time intervals in khui_tracker controls
-      to preserve ABI compatibility.
+Bug fixes:
 
-    - Introduce context menu notifications for credentials related
-      context menus.  Plug-ins can now customize credentials context
-      menus on a per-identity or per-credential basis.
+  - Handling of custom menus was fixed to avoid a situation where
+    the wrong submenu may be displayed for an action.
 
-    - Added LICENSE, README.xml and README.txt containing build
-      instructions.
+  - Fixed several memory leaks.
 
-    - Moved to WiX 3.0 for building MSI based installers.
+  - The generated description for the default keystore had an
+    unexpanded insertion sequence.
 
-    - Refactored installers to generate .wixlibs for each plug-in.
+  - Saved originals of an identity icon image may have a different
+    resolution than the source image and may not matched the saved
+    crop rectangle.
+
+User documentation:
+
+  - Add missing how_to_choose_a_password.htm topic.
+
+  - Add a section describing the format of the debug log file.
+
+Source:
+
+  - Updated copyright information.
+
+  - Updated developer documentation.
+
+  - Switch to khm_int32 for time intervals in khui_tracker controls
+    to preserve ABI compatibility.
+
+  - Introduce context menu notifications for credentials related
+    context menus.  Plug-ins can now customize credentials context
+    menus on a per-identity or per-credential basis.
+
+  - Added LICENSE, README.xml and README.txt containing build
+    instructions.
+
+  - Moved to WiX 3.0 for building MSI based installers.
+
+  - Refactored installers to generate .wixlibs for each plug-in.
