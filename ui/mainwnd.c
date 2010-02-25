@@ -624,7 +624,22 @@ khm_main_wnd_proc(HWND hwnd,
                 khm_update_standard_toolbar();
                 khm_refresh_config();
 
-                kmq_post_message(KMSG_ACT, KMSG_ACT_BEGIN_CMDLINE, 0, 0);
+                /* The completion handler for KMSG_CRED_REFRESH posts
+                   a KMSG_ACT_BEGIN_CMDLINE that starts command-line
+                   option processing.  The refresh command is issued
+                   here because we need to have a complete inventory
+                   of our credentials before we start any other
+                   credential operaion.
+
+                   In addition, waiting for the refresh message to
+                   complete ensures that by the time we begin
+                   comand-line processing, all credentials providers
+                   have operational message pumps. (Note that
+                   KMM_I_DONE message is sent after all plug-in have
+                   finished initializing but the message pumps are
+                   started after the initialization.)
+                */
+                kmq_post_message(KMSG_CRED, KMSG_CRED_REFRESH, 0, &khm_startup);
 
             } else if (MsgIs(KMSG_KCDB, KMSG_KCDB_IDENT)) {
 

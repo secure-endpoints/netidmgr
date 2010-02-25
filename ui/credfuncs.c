@@ -483,6 +483,13 @@ kmsg_cred_completion(kmq_message *m)
 
     case KMSG_CRED_REFRESH:
         kcdb_identity_refresh_all();
+
+        if (m->vparam == &khm_startup) {
+
+            /* We should start processing the command-line */
+
+            kmq_post_message(KMSG_ACT, KMSG_ACT_BEGIN_CMDLINE, 0, 0);
+        }
         break;
     }
 }
