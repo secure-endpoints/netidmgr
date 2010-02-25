@@ -25,6 +25,8 @@
 
 /* $Id$ */
 
+#define KHERR_FACILITY L"Krb5"
+
 #include<windows.h>
 #include<netidmgr.h>
 #include<dynimport.h>
@@ -34,34 +36,26 @@
 #endif
 #include<strsafe.h>
 
-/**************************************/
-/* khm_krb5_error():           */
-/**************************************/
-int
+krb5_error_code
 khm_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
-                 int FreeContextFlag, krb5_context * ctx,
-                 krb5_ccache * cache)
+               int FreeContextFlag, krb5_context * ctx,
+               krb5_ccache * cache)
 {
-#ifdef NO_KRB5
-    return -1;
-#else
-
-#ifdef SHOW_MESSAGE_IN_AN_ANNOYING_WAY
-    char message[256];
     const char *errText;
     int krb5Error = ((int)(rc & 255));
 
     errText = perror_message(rc);
-    _snprintf(message, sizeof(message),
-        "%s\n(Kerberos error %ld)\n\n%s failed",
-        errText,
-        krb5Error,
-        FailedFunctionName);
 
-    MessageBoxA(NULL, message, "Kerberos Five", MB_OK | MB_ICONERROR |
-        MB_TASKMODAL |
-        MB_SETFOREGROUND);
-#endif
+    /* Reporting this as an INFO event because this function is called
+       to log a return value from a function and the logged message is
+       not meant to be very user friendly.  Reporting as a KHERR_ERROR
+       event causes additional handling to be invoked including the
+       message being displayed to the user. */
+    _report_cs3(KHERR_INFO, L"%1!S! failed. %2!S! (Code=%3!d!)",
+                _cptr(FailedFunctionName),
+                _cptr(errText),
+                _int32(krb5Error));
+    _resolve();
 
     if (FreeContextFlag == 1)
     {
@@ -78,8 +72,6 @@ khm_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
     }
 
     return rc;
-
-#endif //!NO_KRB5
 }
 
 int
@@ -87,10 +79,6 @@ khm_krb5_initialize(khm_handle ident,
                     krb5_context *ctx,
                     krb5_ccache *cache)
 {
-#ifdef NO_KRB5
-    return(-1);
-#else
-
     LPCSTR          functionName = NULL;
     int             freeContextFlag = 0;
     krb5_error_code	rc = -1;
@@ -176,7 +164,6 @@ khm_krb5_initialize(khm_handle ident,
 
 on_error:
     return khm_krb5_error(rc, functionName, freeContextFlag, ctx, cache);
-#endif //!NO_KRB5
 }
 
 #define TIMET_TOLERANCE (60*5)
