@@ -1559,6 +1559,10 @@ khm_cred_process_startup_actions(void) {
     if (!khm_startup.processing)
         return;
 
+    _begin_task(0);
+    _reportf(L"Processing commandline");
+    _describe();
+
     if (khm_startup.init ||
         khm_startup.renew ||
         khm_startup.destroy ||
@@ -1566,8 +1570,25 @@ khm_cred_process_startup_actions(void) {
         khm_handle idpro;
 
         if (KHM_SUCCEEDED(kcdb_identpro_get_default(&idpro))) {
+            wchar_t name[KCDB_MAXCCH_NAME];
+            khm_size cb;
+            cb = sizeof(name);
+
+            kcdb_get_resource(idpro, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              name, &cb);
+            _reportf(L"Selected identity provider [%s]", name);
+
             kcdb_identpro_get_default_identity(idpro, &defident);
             kcdb_identpro_release(idpro);
+
+            if (defident) {
+                cb = sizeof(name);
+                kcdb_get_resource(defident, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  name, &cb);
+                _reportf(L"Default identity [%s]", name);
+            } else {
+                _reportf(L"No default identity");
+            }
         }
     }
 
@@ -1585,6 +1606,8 @@ khm_cred_process_startup_actions(void) {
         }
 
         if (khm_startup.import) {
+            _reportf(L"Importing...");
+
             khm_cred_import();
             khm_startup.import = FALSE;
 
@@ -1596,6 +1619,8 @@ khm_cred_process_startup_actions(void) {
         }
 
         if (khm_startup.renew) {
+
+            _reportf(L"Renewing...");
 
             /* if there are no credentials, we just skip over the
                renew action. */
@@ -1614,6 +1639,8 @@ khm_cred_process_startup_actions(void) {
 
         if (khm_startup.destroy) {
 
+            _reportf(L"Destroying credentials ...");
+
             khm_startup.destroy = FALSE;
 
             if (defident) {
@@ -1626,6 +1653,8 @@ khm_cred_process_startup_actions(void) {
             khm_int32 count = 0;
             khm_size cb;
 
+            _reportf(L"Autoinit ...");
+
             khm_startup.autoinit = FALSE;
 
             if (defident) {
@@ -1634,6 +1663,9 @@ khm_cred_process_startup_actions(void) {
             }
 
             if (count == 0) {
+
+                _reportf(L"No credentials for default identity.  Invoking new credentials wizard");
+
                 if (defident)
                     khui_context_set(KHUI_SCOPE_IDENT,
                                      defident,
@@ -1649,6 +1681,8 @@ khm_cred_process_startup_actions(void) {
         }
 
         if (khm_startup.exit) {
+            _reportf(L"Exiting...");
+
             PostMessage(khm_hwnd_main,
                         WM_COMMAND,
                         MAKEWPARAM(KHUI_ACTION_EXIT, 0), 0);
@@ -1673,6 +1707,8 @@ khm_cred_process_startup_actions(void) {
 
     if (defident)
         kcdb_identity_release(defident);
+
+    _end_task();
 }
 
 void
