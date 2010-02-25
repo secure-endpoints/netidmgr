@@ -197,10 +197,30 @@ void khm_get_file_log_path(khm_size cb_buf, wchar_t * buf) {
     StringCbCat(buf, cb_buf, _T(LOGFILENAME));
 }
 
+
 static BOOL
-GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
+IsUserAdmin(VOID)
 {
+    BOOL b;
+    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+    PSID AdministratorsGroup;
+
+    b = AllocateAndInitializeSid(&NtAuthority,
+                                 2,
+                                 SECURITY_BUILTIN_DOMAIN_RID,
+                                 DOMAIN_ALIAS_RID_ADMINS,
+                                 0, 0, 0, 0, 0, 0,
+                                 &AdministratorsGroup);
+    if(b) {
+        if (!CheckTokenMembership( NULL, AdministratorsGroup, &b)) {
+            b = FALSE;
+        }
+        FreeSid(AdministratorsGroup);
+    }
+
+    return(b);
 }
+
 
 static void
 log_logon_session_data(FILE * f)
@@ -294,9 +314,14 @@ log_logon_session_data(FILE * f)
 
         cch = ARRAYLENGTH(pName);
         if (LookupPrivilegeName(NULL, &pPrivs->Privileges[i].Luid, pName, &cch)) {
-            fwprintf(f, L"         : %s\n", pName);
+            fwprintf(f, L"         : %s (%s)\n", pName,
+                     (pPrivs->Privileges[i].Attributes & (SE_PRIVILEGE_ENABLED_BY_DEFAULT |
+                                                          SE_PRIVILEGE_ENABLED)) ? L"Enabled" : L"Disabled");
         }
     }
+
+    fwprintf(f, L"        Process tokens %s admin privileges.\n",
+             (IsUserAdmin())? L"HAVE": L"have no");
 
  cleanup:
     if ( TokenHandle )
