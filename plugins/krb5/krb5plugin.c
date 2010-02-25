@@ -30,9 +30,7 @@
 #include<strsafe.h>
 #include<krb5.h>
 
-#ifdef DEBUG
 #include<assert.h>
-#endif
 
 khm_int32 type_id_enctype       = -1;
 khm_int32 type_id_addr_list     = -1;
