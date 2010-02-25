@@ -52,7 +52,7 @@
 #define PREALLOC(d,s) realloc(d,s)
 #define PFREE(p)   free(p)
 #define PWCSDUP(s) _wcsdup(s)
-#define PSTRDUP(s) strdup(s)
+#define PSTRDUP(s) _strdup(s)
 
 #define PINIT()    ((void) 0)
 #define PEXIT()    ((void) 0)
