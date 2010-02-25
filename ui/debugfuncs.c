@@ -25,11 +25,12 @@
 
 /* $Id$ */
 
-#include<tchar.h>
+#include <tchar.h>
 
-#include<shlwapi.h>
+#include <shlwapi.h>
 #include "khmapp.h"
 #include "netidmgr_intver.h"
+#include <ntsecapi.h>
 
 #include<stdio.h>
 #include<share.h>
@@ -196,6 +197,119 @@ void khm_get_file_log_path(khm_size cb_buf, wchar_t * buf) {
     StringCbCat(buf, cb_buf, _T(LOGFILENAME));
 }
 
+static BOOL
+GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
+{
+}
+
+static void
+log_logon_session_data(FILE * f)
+{
+    PSECURITY_LOGON_SESSION_DATA pSessionData = NULL;
+    NTSTATUS Status = 0;
+    HANDLE  TokenHandle = NULL;
+    TOKEN_STATISTICS Stats;
+    PTOKEN_PRIVILEGES pPrivs = NULL;
+    DWORD   ReqLen = 0;
+    BOOL    Success;
+    DWORD i;
+
+    Success = OpenProcessToken( GetCurrentProcess(), TOKEN_QUERY, &TokenHandle );
+    if ( !Success ) {
+        fwprintf(f, L"        GetCurrentProcess() failed.  GLE=%d\n", GetLastError());
+        goto cleanup;
+    }
+
+    Success = GetTokenInformation( TokenHandle, TokenPrivileges, NULL, 0, &ReqLen );
+    if ( Success || GetLastError() != ERROR_INSUFFICIENT_BUFFER || ReqLen == 0 ) {
+        fwprintf(f, L"        GetTokenInformation() failed.  GLE=%d\n", GetLastError());
+        goto cleanup;
+    }
+
+    pPrivs = PMALLOC(ReqLen);
+    Success = GetTokenInformation( TokenHandle, TokenPrivileges, pPrivs, ReqLen, &ReqLen );
+    if ( !Success ) {
+        fwprintf(f, L"        GetTokenInformation() failed.  GLE=%d\n", GetLastError());
+        goto cleanup;
+    }
+
+    Success = GetTokenInformation( TokenHandle, TokenStatistics,
+                                   &Stats, sizeof(TOKEN_STATISTICS), &ReqLen );
+    if ( !Success ) {
+        fwprintf(f, L"        GetTokenInformation() failed(2).  GLE=%d\n", GetLastError());
+        goto cleanup;;
+    }
+
+    Status = LsaGetLogonSessionData( &Stats.AuthenticationId, &pSessionData );
+    if ( FAILED(Status) || !pSessionData ) {
+        fwprintf(f, L"        LsaGetLogonSessionData() failed.  GLE=%d\n", GetLastError());
+        goto cleanup;
+    }
+
+    fwprintf(f, L"        Logon session: [%.*s]@[%.*s]\n",
+             pSessionData->UserName.Length / sizeof(wchar_t),
+             pSessionData->UserName.Buffer,
+             pSessionData->LogonDomain.Length / sizeof(wchar_t),
+             pSessionData->LogonDomain.Buffer);
+
+    fwprintf(f, L"        UPN: [%.*s]\n",
+             pSessionData->Upn.Length / sizeof(wchar_t),
+             pSessionData->Upn.Buffer);
+
+    fwprintf(f, L"        Logon server: [%.*s] @[%.*s]\n",
+             pSessionData->LogonServer.Length / sizeof(wchar_t),
+             pSessionData->LogonServer.Buffer,
+             pSessionData->DnsDomainName.Length / sizeof(wchar_t),
+             pSessionData->DnsDomainName.Buffer);
+
+    fwprintf(f, L"        Authentication package: [%.*s]\n",
+             pSessionData->AuthenticationPackage.Length,
+             pSessionData->AuthenticationPackage.Buffer);
+
+    fwprintf(f, L"        Authentication package: [%.*s], Logon Type: %s\n",
+             pSessionData->AuthenticationPackage.Length,
+             pSessionData->AuthenticationPackage.Buffer,
+             (pSessionData->LogonType == Interactive)? L"Interactive":
+             (pSessionData->LogonType == Network)? L"Network":
+             (pSessionData->LogonType == Batch)? L"Batch":
+             (pSessionData->LogonType == Service)? L"Service":
+             (pSessionData->LogonType == Proxy)? L"Proxy":
+             (pSessionData->LogonType == Unlock)? L"Unlock":
+             (pSessionData->LogonType == NetworkCleartext)? L"NetworkCleartext":
+             (pSessionData->LogonType == NewCredentials)? L"NewCredentials":
+#if (_WIN32_WINNT >= 0x0501)
+             (pSessionData->LogonType == RemoteInteractive)? L"RemoteInteractive":
+             (pSessionData->LogonType == CachedInteractive)? L"CachedInteractive":
+#endif
+#if (_WIN32_WINNT >= 0x0502)
+             (pSessionData->LogonType == CachedRemoteInteractive)? L"CachedRemoteInteractive":
+             (pSessionData->LogonType == CachedUnlock)? L"CachedUnlock":
+#endif
+             L"Other/Unknown");
+
+    fwprintf(f, L"        Token privileges:\n");
+    for (i = 0; i < pPrivs->PrivilegeCount; i++) {
+        wchar_t pName[128];
+        DWORD cch;
+
+        cch = ARRAYLENGTH(pName);
+        if (LookupPrivilegeName(NULL, &pPrivs->Privileges[i].Luid, pName, &cch)) {
+            fwprintf(f, L"         : %s\n", pName);
+        }
+    }
+
+ cleanup:
+    if ( TokenHandle )
+        CloseHandle( TokenHandle );
+
+    if ( pPrivs )
+        PFREE( pPrivs );
+
+    if ( pSessionData )
+        LsaFreeReturnBuffer(pSessionData);
+}
+
+
 static void
 fwprint_prologue(FILE * f)
 {
@@ -211,6 +325,8 @@ fwprint_prologue(FILE * f)
 #ifdef KH_VERSTR_BUILDINFO_1033
     fwprintf(f, L"         %s\n", _T(KH_VERSTR_BUILDINFO_1033));
 #endif
+
+    log_logon_session_data(f);
 
     fwprint_systime(f, &systime, FALSE);
     fwprintf(f, L"Begin logging\n");

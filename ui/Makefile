@@ -119,7 +119,8 @@ SDKLIBFILES= 			\
 	ole32.lib		\
 	shell32.lib		\
 	shlwapi.lib		\
-	winhttp.lib
+	winhttp.lib		\
+	secur32.lib
 
 !if "$(APPVER)" != "5.0"
 SDKLIBFILES = $(SDKLIBFILES) uxtheme.lib
