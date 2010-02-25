@@ -1209,15 +1209,14 @@ k5_refresh_default_identity(krb5_context ctx) {
         goto _nc_cleanup;
     }
 
+    ccname = pkrb5_cc_get_name(ctx, cc);
+    _reportf(L"CC name is [%S]", (ccname ? ccname : "[Unknown cache name]"));
+
     code = pkrb5_cc_get_principal(ctx, cc, &princ);
     if (code) {
         /* try to determine the identity from the ccache name */
-        ccname = pkrb5_cc_get_name(ctx, cc);
-
         if (ccname) {
             char * namepart = strchr(ccname, ':');
-
-            _reportf(L"CC name is [%S]", ccname);
 
             if (namepart == NULL)
                 namepart = ccname;

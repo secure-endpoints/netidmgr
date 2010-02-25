@@ -449,9 +449,10 @@ tc_free_idlist(identlist * idlist) {
 
 #define MAX_ADDRS 256
 
-static long get_tickets_from_cache(krb5_context ctx,
-                                   krb5_ccache cache,
-                                   identlist * idlist)
+static long
+get_tickets_from_cache(krb5_context ctx,
+                       krb5_ccache cache,
+                       identlist * idlist)
 {
     krb5_error_code code;
     krb5_principal  KRBv5Principal;
@@ -615,6 +616,8 @@ static long get_tickets_from_cache(krb5_context ctx,
             (*pkrb5_free_cred_contents)(ctx, &KRBv5Credentials);
             continue;
         }
+
+        _reportf(L"Ticket [%s]", wbuf);
 
         kcdb_cred_set_attr(cred, KCDB_ATTR_DISPLAY_NAME, wbuf, KCDB_CBSIZE_AUTO);
 
@@ -928,8 +931,10 @@ khm_krb5_list_tickets(krb5_context *krbv5Context)
 
             code = (*pkrb5_cc_resolve)(ctx, ccname, &cache);
 
-            if (code)
+            if (code) {
+                khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cache);
                 continue;
+            }
 
             code = get_tickets_from_cache(ctx, cache, &idl);
 
@@ -946,6 +951,8 @@ khm_krb5_list_tickets(krb5_context *krbv5Context)
 
         if (code == 0 && cache) {
             code = get_tickets_from_cache(ctx, cache, &idl);
+        } else {
+            khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cache);
         }
 
         if (ctx != NULL && cache != NULL)
@@ -1185,12 +1192,16 @@ khm_krb5_renew_ident(khm_handle identity)
                 goto import_failed;
 
             code = pkrb5_cc_resolve(ctx, "MSLSA:", &cc);
-            if (code)
+            if (code) {
+                khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cc);
                 goto import_failed;
+            }
 
             code = pkrb5_cc_get_principal(ctx, cc, &princ);
-            if (code)
+            if (code) {
+                khm_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cc);
                 goto import_failed;
+            }
 
             pkrb5_cc_initialize(ctx, cc, princ);
 
@@ -1272,8 +1283,10 @@ khm_krb5_renew_ident(khm_handle identity)
         goto cleanup;
 
     code = pkrb5_cc_get_principal(ctx, cc, &me);
-    if (code)
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cc);
         goto cleanup;
+    }
 
     realm = krb5_princ_realm(ctx, me);
 
@@ -1304,13 +1317,22 @@ khm_krb5_renew_ident(khm_handle identity)
     }
 
     code = pkrb5_cc_initialize(ctx, cc, me);
-    if (code) goto cleanup;
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_initialize()", 0, &ctx, &cc);
+        goto cleanup;
+    }
 
     code = pkrb5_cc_set_flags(ctx, cc, KRB5_TC_OPENCLOSE);
-    if (code) goto cleanup;
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_set_flags()", 0, &ctx, &cc);
+        goto cleanup;
+    }
 
     code = pkrb5_cc_store_cred(ctx, cc, &my_creds);
-    if (code) goto cleanup;
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_store_cred()", 0, &ctx, &cc);
+        goto cleanup;
+    }
 
 cleanup:
     if (my_creds.client == me)
@@ -1403,9 +1425,10 @@ khm_krb5_kinit(krb5_context       alt_ctx,
         code = pkrb5_cc_resolve(ctx, pccname, &cc);
     }
 
-    _reportf(L"krb5_cc_resolve returns code %d", code);
-
-    if (code) goto cleanup;
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cc);
+        goto cleanup;
+    }
 
     code = pkrb5_parse_name(ctx, principal_name, &me);
     if (code) goto cleanup;
@@ -1498,17 +1521,22 @@ khm_krb5_kinit(krb5_context       alt_ctx,
                                       0, // start time
                                       0, // service name
                                       &options);
-    _reportf(L"krb5_get_init_creds_password returns code %d", code);
-
-    if (code) goto cleanup;
+    if (code) {
+        khm_krb5_error(code, "krb5_get_init_creds_password()", 0, &ctx, NULL);
+        goto cleanup;
+    }
 
     code = pkrb5_cc_initialize(ctx, cc, me);
-    _reportf(L"krb5_cc_initialize returns code %d", code);
-    if (code) goto cleanup;
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_initialize()", 0, &ctx, NULL);
+        goto cleanup;
+    }
 
     code = pkrb5_cc_store_cred(ctx, cc, &my_creds);
-    _reportf(L"krb5_cc_store_cred returns code %d", code);
-    if (code) goto cleanup;
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_store_cred()", 0, &ctx, NULL);
+        goto cleanup;
+    }
 
 cleanup:
     if ( addrs ) {
@@ -1571,22 +1599,33 @@ khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
     }
 
     code = pkrb5_cc_resolve(ctx, scc_dest, &cc_dest);
-    if (code)
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_resolve() for dest", 0, &ctx, NULL);
         goto _cleanup;
+    }
 
     code = pkrb5_cc_resolve(ctx, scc_src, &cc_src);
-    if (code)
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_resolve() for source", 0, &ctx, NULL);
         goto _cleanup;
+    }
 
     code = pkrb5_cc_get_principal(ctx, cc_src, &princ_src);
-    if (code)
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cc_src);
         goto _cleanup;
+    }
 
     code = pkrb5_cc_initialize(ctx, cc_dest, princ_src);
-    if (code)
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_initialize()", 0, &ctx, &cc_dest);
         goto _cleanup;
+    }
 
     code = pkrb5_cc_copy_creds(ctx, cc_src, cc_dest);
+    if (code) {
+        khm_krb5_error(code, "krb5_cc_copy_creds()", 0, &ctx, NULL);
+    }
 
  _cleanup:
     if (princ_src)
@@ -1600,8 +1639,6 @@ khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
 
     if (free_ctx && ctx)
         pkrb5_free_context(ctx);
-
-    _reportf(L"Code = %d", code);
 
     return code;
 }
@@ -1889,7 +1926,7 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
             code = pkrb5_cc_destroy(ctx, cc);
 
             if (code) {
-                _reportf(L"krb5_cc_destroy returns code %d", code);
+                khm_krb5_error(code, "krb5_cc_destroy()", 0, &ctx, &cc);
             }
 
         _delete_this_set:
@@ -1996,14 +2033,20 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
                                       KRB5_TC_SUPPORTED_KTYPES,
                                       &in_cred,
                                       &out_cred);
-        if (code)
+        if (code) {
+            khm_krb5_error(code, "krb5_cc_retrieve_cred()", 0, &ctx, &cc);
             goto _do_next_cred_0;
+        }
 
         code = pkrb5_cc_remove_cred(ctx, cc,
                                     KRB5_TC_MATCH_SRV_NAMEONLY |
                                     KRB5_TC_SUPPORTED_KTYPES |
                                     KRB5_TC_MATCH_AUTHDATA,
                                     &out_cred);
+
+        if (code) {
+            khm_krb5_error(code, "krb5_cc_remove_cred()", 0, &ctx, &cc);
+        }
 
         pkrb5_free_cred_contents(ctx, &out_cred);
     _do_next_cred_0:
@@ -2130,7 +2173,7 @@ GetSecurityLogonSessionData(PSECURITY_LOGON_SESSION_DATA * ppSessionData)
         return FALSE;
 
     Status = pLsaGetLogonSessionData( &Stats.AuthenticationId, ppSessionData );
-    if ( FAILED(Status) || !ppSessionData )
+    if ( FAILED(Status) || !*ppSessionData )
         return FALSE;
 
     return TRUE;
@@ -2172,7 +2215,6 @@ IsKerberosLogon(VOID)
     return Success;
 }
 
-
 BOOL
 khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
                 khm_handle * ret_ident)
@@ -2199,22 +2241,26 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
     if ( !pkrb5_init_context )
         goto cleanup;
 
-    if (code = pkrb5_init_context(&kcontext))
+    if (code = pkrb5_init_context(&kcontext)) {
+        khm_krb5_error(code, "krb5_init_context() for MSLSA:", 0, &kcontext, NULL);
         goto cleanup;
+    }
 
-    kherr_reportf(L"Resolving MSLSA\n");
-
-    if (code = pkrb5_cc_resolve(kcontext, "MSLSA:", &mslsa_ccache))
+    if (code = pkrb5_cc_resolve(kcontext, "MSLSA:", &mslsa_ccache)) {
+        khm_krb5_error(code, "krb5_cc_resolve() for MSLSA:", 0, &kcontext, NULL);
         goto cleanup;
+    }
 
     if ( save_creds ) {
-        kherr_reportf(L"Getting principal\n");
-        if (code = pkrb5_cc_get_principal(kcontext, mslsa_ccache, &princ))
+        if (code = pkrb5_cc_get_principal(kcontext, mslsa_ccache, &princ)) {
+            khm_krb5_error(code, "krb5_cc_get_principal() for MSLSA:", 0, &kcontext, &mslsa_ccache);
             goto cleanup;
+        }
 
-        kherr_reportf(L"Unparsing name\n");
-        if (code = pkrb5_unparse_name(kcontext, princ, &princ_name))
+        if (code = pkrb5_unparse_name(kcontext, princ, &princ_name)) {
+            khm_krb5_error(code, "krb5_unparse_name()", 0, &kcontext, NULL);
             goto cleanup;
+        }
 
         AnsiStrToUnicode(idname, sizeof(idname), princ_name);
 
@@ -2279,18 +2325,20 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
             kherr_reportf(L"Cannot resolve cache [%S] with code=%d.  Trying default.\n", cache_name, code);
 
             if (code = pkrb5_cc_default(kcontext, &ccache)) {
-                kherr_reportf(L"Failed to resolve default ccache. Code=%d", code);
+                khm_krb5_error(code, "krb5_cc_default()", 0, &kcontext, NULL);
                 goto cleanup;
             }
         }
 
-        kherr_reportf(L"Initializing ccache\n");
-        if (code = pkrb5_cc_initialize(kcontext, ccache, princ))
+        if (code = pkrb5_cc_initialize(kcontext, ccache, princ)) {
+            khm_krb5_error(code, "krb5_cc_initialize()", 0, &kcontext, &ccache);
             goto cleanup;
+        }
 
-        kherr_reportf(L"Copying credentials\n");
-        if (code = pkrb5_cc_copy_creds(kcontext, mslsa_ccache, ccache))
+        if (code = pkrb5_cc_copy_creds(kcontext, mslsa_ccache, ccache)) {
+            khm_krb5_error(code, "krb5_cc_copy_creds()", 0, &kcontext, NULL);
             goto cleanup;
+        }
 
         /* and mark the identity as having been imported */
         if (ident) {
@@ -2306,12 +2354,15 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
 
     } else {
         /* Enumerate tickets from cache looking for an initial ticket */
-        if ((code = pkrb5_cc_start_seq_get(kcontext, mslsa_ccache, &cursor)))
+        if ((code = pkrb5_cc_start_seq_get(kcontext, mslsa_ccache, &cursor))) {
+            khm_krb5_error(code, "krb5_cc_start_seq_get()", 0, &kcontext, &mslsa_ccache);
             goto cleanup;
+        }
 
         while (!(code = pkrb5_cc_next_cred(kcontext, mslsa_ccache,
                                            &cursor, &creds))) {
             if ( creds.ticket_flags & TKT_FLG_INITIAL ) {
+                kherr_reportf(L"Found initial ticket");
                 rc = TRUE;
                 pkrb5_free_cred_contents(kcontext, &creds);
                 break;
@@ -2322,8 +2373,6 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
     }
 
 cleanup:
-    kherr_reportf(L"  Received code=%d", code);
-
     if (princ_name)
         pkrb5_free_unparsed_name(kcontext, princ_name);
     if (princ)
@@ -2740,14 +2789,9 @@ khm_krb5_changepwd(char * principal,
                                            password, 0, 0, 0,
                                            "kadmin/changepw", &opts)) {
         if (rc == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
-#if 0
-            com_err(argv[0], 0,
-                    "Password incorrect while getting initial ticket");
-#endif
+            *error_str = PSTRDUP("Password incorrect while getting initial ticket");
         } else {
-#if 0
-            com_err(argv[0], ret, "getting initial ticket");
-#endif
+            *error_str = PSTRDUP(perror_message(rc));
         }
         goto cleanup;
     }
@@ -2755,9 +2799,7 @@ khm_krb5_changepwd(char * principal,
     if (rc = pkrb5_change_password(context, &creds, newpassword,
                                    &result_code, &result_code_string,
                                    &result_string)) {
-#if 0
-        com_err(argv[0], ret, "changing password");
-#endif
+        *error_str = PSTRDUP(perror_message(rc));
         goto cleanup;
     }
 

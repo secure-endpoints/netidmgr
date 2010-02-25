@@ -31,7 +31,7 @@ kmm_module h_khModule;          /* KMM's handle to this module */
 HINSTANCE hInstance;            /* Instance of this DLL */
 HMODULE hResModule;             /* HMODULE to the resource library */
 
-const wchar_t * k5_facility = L"Krb5Cred"; /* Facility name for event reporting */
+const wchar_t * k5_facility = L"Krb5"; /* Facility name for event reporting */
 
 khm_handle csp_plugins      = NULL;
 khm_handle csp_krbcred   = NULL;
