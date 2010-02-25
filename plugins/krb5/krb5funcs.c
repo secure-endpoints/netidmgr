@@ -523,8 +523,10 @@ get_tickets_from_cache(krb5_context ctx,
     ClientName = NULL;
     sServerName = NULL;
     if ((code = (*pkrb5_unparse_name)(ctx, KRBv5Principal,
-        (char **)&PrincipalName)))
-    {
+                                      (char **)&PrincipalName))) {
+
+        khm_krb5_error(code, "krb5_unparse_name()", 0, &ctx, &cache);
+
         if (PrincipalName != NULL)
             (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
 
@@ -535,6 +537,8 @@ get_tickets_from_cache(krb5_context ctx,
 
     if (!strcspn(PrincipalName, "@" ))
     {
+        _reportf(L"PrincipalName contains no realm [%S]", PrincipalName);
+
         if (PrincipalName != NULL)
             (*pkrb5_free_unparsed_name)(ctx, PrincipalName);
 
@@ -546,7 +550,7 @@ get_tickets_from_cache(krb5_context ctx,
     AnsiStrToUnicode(wbuf, sizeof(wbuf), PrincipalName);
     if(KHM_FAILED(kcdb_identity_create(wbuf, KCDB_IDENT_FLAG_CREATE,
                                        &ident))) {
-        /* something bad happened */
+        _reportf(L"Can't create identity");
         code = 1;
         goto _exit;
     }

@@ -72,6 +72,8 @@ khm_handle k5_sub = NULL;
 
 krb5_context k5_identpro_ctx = NULL;
 
+HANDLE h_idprov_event = NULL;
+
 extern khm_int32 KHMAPI
 k5_ident_name_comp_func(const void * dl, khm_size cb_dl,
                         const void * dr, khm_size cb_dr);
@@ -505,6 +507,9 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
     switch(msg_subtype) {
     case KMSG_SYSTEM_INIT:
 
+        assert(h_idprov_event == NULL);
+        h_idprov_event = CreateEvent(NULL, TRUE, FALSE, L"Local\\Krb5IdentWaiter");
+
         rv = k5_register_data_types();
         if (KHM_FAILED(rv)) break;
 
@@ -523,15 +528,6 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
 
         k5_register_config_panels();
 
-        {
-            krb5_context ctx = NULL;
-
-            khm_krb5_list_tickets(&ctx);
-
-            if(ctx != NULL)
-                pkrb5_free_context(ctx);
-        }
-
         break;
 
     case KMSG_SYSTEM_EXIT:
@@ -549,6 +545,11 @@ k5_msg_system(khm_int32 msg_type, khm_int32 msg_subtype,
 
         k5_unregister_attributes();
         k5_unregister_data_types();
+
+        if (h_idprov_event != NULL) {
+            CloseHandle(h_idprov_event);
+            h_idprov_event = NULL;
+        }
 
         break;
     }
@@ -583,6 +584,11 @@ k5_msg_cred(khm_int32 msg_type, khm_int32 msg_subtype,
             khm_ui_4 uparam, void * vparam)
 {
     khm_int32 rv = KHM_ERROR_SUCCESS;
+
+    assert(h_idprov_event != NULL);
+
+    if (h_idprov_event != NULL)
+	WaitForSingleObject(h_idprov_event, INFINITE);
 
     switch(msg_subtype) {
     case KMSG_CRED_REFRESH:

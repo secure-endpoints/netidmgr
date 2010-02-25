@@ -38,6 +38,7 @@
 
 khm_handle k5_identpro = NULL;     /* Handle to self */
 
+extern HANDLE h_idprov_event;
 
 /************************************************************/
 /*                Identity Selector Control                 */
@@ -1390,6 +1391,12 @@ k5_ident_init(khm_int32 msg_type,
             kcdb_enum_end(e);
         }
     }
+
+    /* It is now safe to resume the credentials provider message
+       pump. */
+    assert(h_idprov_event);
+    if (h_idprov_event)
+        SetEvent(h_idprov_event);
 
     return KHM_ERROR_SUCCESS;
 }
