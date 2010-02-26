@@ -438,7 +438,7 @@ kcdb_attrib_init(void)
     LoadString(hinst_kcreddb, IDS_LAST_UPDATE, sbuf, ARRAYLENGTH(sbuf));
     attrib.short_desc  = sbuf;
     attrib.long_desc   = NULL;
-    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED;
+    attrib.flags       = KCDB_ATTR_FLAG_SYSTEM | KCDB_ATTR_FLAG_COMPUTED | KCDB_ATTR_FLAG_HIDDEN;
     attrib.compute_cb  = kcdb_attr_sys_cb;
     attrib.compute_min_cbsize = sizeof(FILETIME);
     attrib.compute_max_cbsize = sizeof(FILETIME);
