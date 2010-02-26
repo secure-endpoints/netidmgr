@@ -807,13 +807,13 @@ kcdb_identity_set_parent(khm_handle vid,
     id = (kcdb_identity *) vid;
 
     EnterCriticalSection(&cs_ident);
-    old_parent = id->parent;
-    id->parent = (kcdb_identity *) vparent;
-    if (vparent)
-        kcdb_identity_hold(vparent);
-    notify = !(id->flags & KCDB_IDENT_FLAG_NO_NOTIFY);
-    if (!notify)
-        id->flags |= KCDB_IDENT_FLAG_NEED_NOTIFY;
+    if (id->parent != (kcdb_identity *) vparent) {
+        old_parent = id->parent;
+        id->parent = (kcdb_identity *) vparent;
+        if (vparent)
+            kcdb_identity_hold(vparent);
+        notify = TRUE;
+    }
     LeaveCriticalSection(&cs_ident);
 
     if (old_parent)
