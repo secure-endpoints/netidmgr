@@ -34,6 +34,8 @@
 #if defined(DEBUG) && (defined(KH_BUILD_PRIVATE) || defined(KH_BUILD_SPECIAL))
 #define USE_FILE_LOG 1
 #define DUMP_MEMORY_LEAKS 1
+
+#include<strsafe.h>
 #endif
 
 KHMEXP wchar_t *
@@ -178,6 +180,17 @@ perf_set_thread_desc(const char * file, int line,
     _RPTW3(_CRT_WARN, L"Beginning thread: %s (ID: %d, by %s)",
            name, GetCurrentThreadId(), creator);
     _RPT2(_CRT_WARN, "  @%s:%d\n", file, line);
+
+#if defined(DEBUG) && (defined(KH_BUILD_PRIVATE) || defined(KH_BUILD_SPECIAL))
+    {
+        wchar_t wstr[1024];
+
+        StringCchPrintf(wstr, ARRAYLENGTH(wstr), L"Thread ID: (%d) %s by %s\n",
+                        GetCurrentThreadId(), name, creator);
+        OutputDebugString(wstr);
+    }
+#endif
+
     set_thread_name((DWORD) -1, name);
 }
 
