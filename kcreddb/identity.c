@@ -1634,6 +1634,20 @@ kcdb_identity_set_attr(khm_handle vid,
         goto _exit;
     }
 
+    {
+        /* If the existing value is identical to the new value, then
+           we don't bother setting the attribute. */
+        slot = kcdb_buf_slot_by_id(&id->buf,  (khm_ui_2) attr_id);
+        if (slot != KCDB_BUF_INVALID_SLOT &&
+            kcdb_buf_exist(&id->buf, slot) &&
+            type->comp(buffer, cbbuf,
+                       kcdb_buf_get(&id->buf, slot),
+                       kcdb_buf_size(&id->buf, slot)) == 0) {
+            code = KHM_ERROR_SUCCESS;
+            goto _exit;
+        }
+    }
+
     if((type->dup(buffer, cbbuf, NULL, &cbdest)) != KHM_ERROR_TOO_LONG) {
         code = KHM_ERROR_INVALID_PARAM;
         goto _exit;
