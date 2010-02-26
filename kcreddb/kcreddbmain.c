@@ -111,7 +111,8 @@ kcdb_op_to_string(khm_int32 op)
         L"OP_UNSETSEARCH",
         L"OP_NEW_DEFAULT",
         L"OP_DELCONFIG",
-        L"OP_RESUPDATE"
+        L"OP_RESUPDATE",
+        L"OP_NEWPARENT"
     };
 
     if (op >= 0 && op < ARRAYLENGTH(ops))
