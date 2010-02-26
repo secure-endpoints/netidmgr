@@ -202,20 +202,19 @@ kmqint_report_message(const wchar_t * prefix,
     wchar_t buf[128];
     wchar_t tbuf[64];
 
-    switch (ty) {
-    case KMSG_CRED:
-        if (decode_kmsg_cred_message_to_string(buf, sizeof(buf), ty, sty, up, vp))
+    do {
+        if (ty == KMSG_CRED &&
+            decode_kmsg_cred_message_to_string(buf, sizeof(buf), ty, sty, up, vp))
             break;
 
-    case KMSG_KCDB:
-        if (decode_kmsg_kcdb_message_to_string(buf, sizeof(buf), ty, sty, up, vp))
+        if (ty == KMSG_KCDB &&
+            decode_kmsg_kcdb_message_to_string(buf, sizeof(buf), ty, sty, up, vp))
             break;
 
-    default:
         StringCbPrintf(buf, sizeof(buf), L"%s with uparam=%d, vparam=0x%p",
                        kmqint_msgsubtype_to_str(tbuf, sizeof(tbuf), ty, sty),
                        up, vp);
-    }
+    } while (FALSE);
 
     _reportf(L"%s %s", prefix, buf);
 }
