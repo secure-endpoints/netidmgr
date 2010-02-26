@@ -119,17 +119,23 @@ debug_event_handler(enum kherr_ctx_event e,
 	if (evt) {
             FILETIME ltime;
             SYSTEMTIME systime;
+            kherr_context * p;
 
 	    kherr_evaluate_event(evt);
             FileTimeToLocalFileTime(&evt->time_ft, &ltime);
             FileTimeToSystemTime(&ltime, &systime);
 
             EnterCriticalSection(&cs_dbg);
+            p = TPARENT(c);
             fwprint_systime(logfile, &systime, FALSE);
 	    fwprintf(logfile,
-                     L"[%d] Begin: %s\n",
+                     L"[%d] Begin: %s",
                      c->serial,
                      (evt->long_desc)? evt->long_desc: evt->short_desc);
+            if (p)
+                fwprintf(logfile, L" (child of [%d])\n", p->serial);
+            else
+                fwprintf(logfile, L"\n");
 	} else {
             EnterCriticalSection(&cs_dbg);
         }

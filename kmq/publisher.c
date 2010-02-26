@@ -195,7 +195,7 @@ extern khm_boolean
 decode_kmsg_kcdb_message_to_string(wchar_t * buf, khm_size cb,
                                    khm_int32 ty, khm_int32 sty, khm_ui_4 up, void * vp);
 
-static void
+void
 kmqint_report_message(const wchar_t * prefix,
                       khm_int32 ty, khm_int32 sty, khm_ui_4 up, void * vp)
 {

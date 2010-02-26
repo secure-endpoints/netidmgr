@@ -570,6 +570,10 @@ KHMEXP LRESULT KHMAPI kmq_wm_begin(LPARAM lparm, kmq_message ** m) {
     *m = (kmq_message *) lparm;
     if ((*m)->err_ctx) {
         kherr_push_context((*m)->err_ctx);
+#ifdef DEBUG
+        kmqint_report_message(L"Handling message ",
+                              (*m)->type, (*m)->subtype, (*m)->uparam, (*m)->vparam);
+#endif
     }
     kmqint_set_queue_message(kmqint_get_thread_queue(), *m);
     return TRUE;
@@ -580,8 +584,13 @@ KHMEXP LRESULT KHMAPI kmq_wm_begin(LPARAM lparm, kmq_message ** m) {
     */
 KHMEXP LRESULT KHMAPI kmq_wm_end(kmq_message *m, khm_int32 rv) {
     kmqint_set_queue_message(kmqint_get_thread_queue(), NULL);
-    if (m->err_ctx)
+
+    if (m->err_ctx) {
+#ifdef DEBUG
+        _reportf(L"Done handling message");
+#endif
         kherr_pop_context();
+    }
 
     EnterCriticalSection(&cs_kmq_msg);
     m->refcount--;
@@ -607,8 +616,13 @@ KHMEXP LRESULT KHMAPI kmq_wm_dispatch(LPARAM lparm, kmq_callback_t cb) {
 
     m = (kmq_message *) lparm;
 
-    if (m->err_ctx)
+    if (m->err_ctx) {
         kherr_push_context(m->err_ctx);
+#ifdef DEBUG
+        kmqint_report_message(L"Handling message ",
+                              m->type, m->subtype, m->uparam, m->vparam);
+#endif
+    }
 
     kmqint_set_queue_message(kmqint_get_thread_queue(), m);
 
@@ -616,8 +630,12 @@ KHMEXP LRESULT KHMAPI kmq_wm_dispatch(LPARAM lparm, kmq_callback_t cb) {
 
     kmqint_set_queue_message(kmqint_get_thread_queue(), NULL);
 
-    if (m->err_ctx)
+    if (m->err_ctx) {
+#ifdef DEBUG
+        _reportf(L"Done handling message");
+#endif
         kherr_pop_context();
+    }
 
     EnterCriticalSection(&cs_kmq_msg);
 
@@ -721,8 +739,13 @@ KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout)
         if(m->type != KMSG_SYSTEM || m->subtype != KMSG_SYSTEM_EXIT) {
             khm_boolean rv;
 
-            if (m->err_ctx)
+            if (m->err_ctx) {
                 kherr_push_context(m->err_ctx);
+#ifdef DEBUG
+                kmqint_report_message(L"Handling message ",
+                                      m->type, m->subtype, m->uparam, m->vparam);
+#endif
+            }
 
             kmqint_set_queue_message(q, m);
 
@@ -731,8 +754,12 @@ KHMEXP khm_int32 KHMAPI kmq_dispatch(kmq_timer timeout)
 
             kmqint_set_queue_message(q, NULL);
 
-            if (m->err_ctx)
+            if (m->err_ctx) {
+#ifdef DEBUG
+                _reportf(L"Done handling message");
+#endif
                 kherr_pop_context();
+            }
 
             EnterCriticalSection(&cs_kmq_msg);
             EnterCriticalSection(&cs_kmq_msg_ref);

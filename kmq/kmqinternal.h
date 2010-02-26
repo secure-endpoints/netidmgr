@@ -228,6 +228,11 @@ int kmqint_call_completion_handler(kmq_msg_completion_handler h,
 /* global */
 extern kconf_schema schema_kmqconfig[];
 
+#ifdef DEBUG
+void kmqint_report_message(const wchar_t * prefix,
+                           khm_int32 ty, khm_int32 sty, khm_ui_4 up, void * vp);
+#endif
+
 /* Lock hiearchy :
 
     cs_kmq_types
