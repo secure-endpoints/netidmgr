@@ -2,37 +2,57 @@
 Network Identity Manager
 ========================
 
-Version 1.99.26.225 (Pre v2.0 Beta 2a)
+Version 1.99.27.227 (Pre v2.0 Beta 3)
 --------------------------------------
-
-Kerberos v5:
-
-  - Fix a race condition where the initial credentials listing can be
-    attempted before the identity provider has finished intializing.
-    In this case, the credentials listing will fail at first and if
-    the --autoinit option is used, Network Identity Manager may
-    display the new credentials dialog even when the user has
-    credentials.
-
-  - Be more descriptive with logging Kerberos v5 error codes.  New log
-    entries are more verbose and include description of the error as
-    well as the error code.
 
 Application:
 
-  - Debug log file now includes details about the process token for
-    the Network Identity Manager process.  This is to help identify
+  - Identity and credential property sheets no longer display empty
+    properties.
+
+  - Debug log file includes details about the process token for the
+    Network Identity Manager process.  This is to help identify
     recurrent problems with restricted tokens on Vista and Windows 7.
+
+  - Redundant change notifications have been suppressed within in the
+    Network Identity Manager framework.
+
+Kerberos v5:
+
+  - Logged Kerberos v5 errors now include the description as well as
+    the code.
 
 User documentation:
 
-  - Fix broken links.
+  - Broken links have been fixed.
 
-  - Explain Kerberos v5 proxiable tickets.
+  - Includes explanation of Kerberos v5 proxiable tickets.
 
-  - Explain UI changes in identity icon dialog.
+  - Explains UI changes in identity icon dialog.
 
-  - Changes to registry documentation layout and content.
+  - Registry documentation layout and content have been revised.
+
+Bug fixes:
+
+  - A race condition where the initial credentials listing can be
+    attempted before the identity provider has finished intializing
+    has been fixed.  Earlier, the credentials listing will fail at
+    first and if the `--autoinit` option is used, Network Identity
+    Manager may display the new credentials dialog even when the user
+    has credentials.
+
+Source:
+
+  - On debug builds, we now report the thread ID and name using
+    OutputDebugString() so that this information can appear in the
+    application debug log.
+
+  - On debug builds, the decoding of KMSG_CRED messages has been
+    fixed.  Log entries for these messages used to have an incorrect
+    description.
+
+  - Includes a Python script for parsing and analyzing execution
+    contexts in a debug log.
 
 Version 1.99.25.217 (Pre v2.0 Beta 2)
 -------------------------------------
