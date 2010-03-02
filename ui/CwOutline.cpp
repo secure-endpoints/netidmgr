@@ -40,6 +40,9 @@ void CwOutline::LayoutOutlineSetup(Graphics& g, Rect& layout)
                   (unsigned)col_idx + 1 < owner->columns.size() &&
                   NextOutline(TQFIRSTCHILD(this)) != NULL);
 
+    // Check for identity view outlines with child outline levels.  We
+    // are being generic here to allow for the possibility of having
+    // other types of nested outlines than just identities.
     if (!expandable) {
         for (CwOutline * c = NextOutline(TQFIRSTCHILD(this));
              c != NULL; c =  NextOutline(TQNEXTSIBLING(c)))
@@ -65,8 +68,6 @@ void CwOutline::LayoutOutlineSetup(Graphics& g, Rect& layout)
             outline_widget->Show(false);
         layout.X = g_theme->sz_margin.Width;
         layout.Width -= layout.X;
-
-        Expand(false);
     }
 
     layout.Y = g_theme->sz_margin.Height;
