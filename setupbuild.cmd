@@ -1,6 +1,6 @@
 @echo off
 
-set PSDKDir=%PROGRAMFILES%\Microsoft SDKs\Windows\v6.1\a
+set PSDKDir=%PROGRAMFILES%\Microsoft SDKs\Windows\v6.1\
 
 for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v6.1\WinSDKWin32Tools" /v InstallationFolder') do set PSDKDir=%%B
 
@@ -74,3 +74,4 @@ echo  Also, the compiler may generate lots of warnings.  To suppress some
 echo  of them, the KH_AUXCFLAGS environment variable was specified with
 echo  a number of /wdxxxx flags.
 
+title NetIDMgr %CPU% %KH_BUILD% %KH_RELEASE%
