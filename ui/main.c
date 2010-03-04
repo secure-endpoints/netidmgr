@@ -542,6 +542,10 @@ int WINAPI WinMain(HINSTANCE hInstance,
            processes started by plugins. */
         SetEnvironmentVariable(L"KERBEROSLOGIN_NEVER_PROMPT", L"1");
 
+        /* Suppress error messages when we can't load a library due to
+           unmet dependencies or if the library can't be found. */
+        SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+
         khm_version_init();
 
         khm_commctl_version = khm_get_commctl_version(NULL);
