@@ -340,7 +340,7 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,267,7,50,14
     LTEXT           "Productname",IDC_PRODUCT,41,7,225,13,NOT WS_GROUP
-    LTEXT           "© 2005-2007 Massachusetts Institute of Technology\n© 2006-2009 Secure Endpoints Inc.",IDC_COPYRIGHT,41,23,276,23,NOT WS_GROUP
+    LTEXT           "Copyright © 2005-2007 Massachusetts Institute of Technology\nCopyright © 2006-2010 Secure Endpoints Inc.",IDC_COPYRIGHT,41,23,276,23,NOT WS_GROUP
     LTEXT           "BuildInfo",IDC_BUILDINFO,41,49,276,21,NOT WS_GROUP
     ICON            IDI_MAIN_APP,IDC_STATIC,6,7,20,20
     CONTROL         "",IDC_MODULES,"SysListView32",LVS_REPORT | LVS_SORTASCENDING | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,41,84,276,147
