@@ -2,6 +2,17 @@
 Network Identity Manager
 ========================
 
+Version 2.0.0.304 (Release)
+---------------------------
+
+Application:
+
+  - Preserve expanded state of credentials display outlines so that
+    newly obtained credentials aren't hidden from view.
+
+  - Suppress modal error dialogs when a plug-in can't be loaded due to
+    missing dependencies.
+
 Version 1.99.27.227 (Pre v2.0 Beta 3)
 --------------------------------------
 
