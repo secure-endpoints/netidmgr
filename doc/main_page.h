@@ -120,6 +120,15 @@
     particular API version will be compatible with any version of
     Network Identity Manager whose API version is the same.
 
+    - <b>2.0.0.304</b> Network Identity Manager v2.0 <em>March 4, 2010</em>\n
+      API version : <b>15</b>
+
+    - <b>1.99.27.227</b> Network Identity Manager pre v2.0 Beta 3 <em>February 27, 2010</em>\n
+      API version : <b>15</b>
+
+    - <b>1.99.25.217</b> Network Identity Manager pre v2.0 Beta 2 <em>February 17, 2010</em>\n
+      API version : <b>15</b>
+
     - <b>1.99.24.128</b> Network Identity Manager pre v2.0 Beta 1 <em>January 28, 2010</em>\n
       API version : <b>14</b>
 
