@@ -184,13 +184,12 @@ khui_cfg_register(khui_config_node vparent,
     EnterCriticalSection(&cs_cfgui);
     TADDCHILD(parent, node);
     cfgui_hold_node(parent);
+    LeaveCriticalSection(&cs_cfgui);
 
     if (hwnd_cfgui) {
         SendMessage(hwnd_cfgui, KHUI_WM_CFG_NOTIFY,
                     MAKEWPARAM(0, WMCFG_SYNC_NODE_LIST), 0);
     }
-
-    LeaveCriticalSection(&cs_cfgui);
 
     /* When the root config list changes, we need to notify the UI.
        this way, the Options menu can be kept in sync. */
