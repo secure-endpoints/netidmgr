@@ -170,8 +170,27 @@ privint_CheckIfReady(HWND hwnd)
             wchar_t pw2[KHUI_MAXCCH_PASSWORD] = L"";
 
             if (GetDlgItemText(hwnd, IDC_NEWPW1, pw1, ARRAYLENGTH(pw1)) == 0 ||
-                GetDlgItemText(hwnd, IDC_NEWPW2, pw2, ARRAYLENGTH(pw2)) == 0 ||
-                wcscmp(pw1, pw2))
+                GetDlgItemText(hwnd, IDC_NEWPW2, pw2, ARRAYLENGTH(pw2)) == 0)
+                break;
+
+            if (wcsncmp(pw1, pw2, wcslen(pw2))) {
+                EDITBALLOONTIP bt;
+
+                wchar_t title[64];
+                wchar_t msg[128];
+
+                LoadString(hResModule, IDS_TMISMPASS, title, ARRAYLENGTH(title));
+                LoadString(hResModule, IDS_MISMPASS, msg, ARRAYLENGTH(msg));
+
+                bt.cbStruct = sizeof(bt);
+                bt.pszTitle = title;
+                bt.pszText = msg;
+                bt.ttiIcon = TTI_WARNING;
+
+                SendDlgItemMessage(hwnd, IDC_NEWPW2, EM_SHOWBALLOONTIP, 0, (LPARAM) &bt);
+            }
+
+            if (wcscmp(pw1, pw2))
                 break;
         }
 
