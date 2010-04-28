@@ -187,7 +187,9 @@ handle_kmsg_ident_notify_create(khm_handle identity)
                                pCtx->pCertInfo->SerialNumber.pbData,
                                pCtx->pCertInfo->SerialNumber.cbData);
 
-        kcdb_identity_set_flags(identity, KCDB_IDENT_FLAG_VALID, KCDB_IDENT_FLAG_VALID);
+        kcdb_identity_set_flags(identity,
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_CRED_INIT,
+                                KCDB_IDENT_FLAG_VALID | KCDB_IDENT_FLAG_CRED_INIT);
     } else {
 
         /* TODO: going here.  We want to query the issuer and serial
