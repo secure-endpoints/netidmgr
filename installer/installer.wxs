@@ -223,6 +223,10 @@
 
       <MergeRef Id="VCRT" />
 
+      <?ifdef Omaha?>
+      <ComponentGroupRef Id="NetIdMgrOmaha" />
+      <?endif?>
+
     </Feature>
 
     <Icon Id="NIMIcon" SourceFile="$(var.SrcDir)\ui\images\id.ico" />

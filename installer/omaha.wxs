@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <!--
+
+      Copyright (c) 2010 Secure Endpoints Inc.
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use,
+      copy, modify, merge, publish, distribute, sublicense, and/or
+      sell copies of the Software, and to permit persons to whom the
+      Software is furnished to do so, subject to the following
+      conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+      OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+      OTHER DEALINGS IN THE SOFTWARE.
+
+    -->
+
+  <?if $(env.CPU)="i386" Or $(env.CPU)="x86" ?>
+  <?define Platform=x86 ?>
+  <?elseif $(env.CPU)="x64" Or $(env.CPU)="AMD64" ?>
+  <?define Platform=x64 ?>
+  <?else ?>
+  <?error Unknown value for CPU environment variable. ?>
+  <?endif ?>
+
+  <!-- Platform dependencies -->
+
+  <?if $(var.Platform)="x86" ?>
+
+  <?define Win64="no" ?>
+
+  <?define omaha_nim_appid="{0A2F3270-5A29-40F2-92C9-DAD001D5B345}"?>
+
+  <?define omaha_reg_guid="7095D5FC-6238-4BC6-89CE-CA5DFB16A006" ?>
+
+  <?elseif $(var.Platform)="x64" ?>
+
+  <?define Win64="yes" ?>
+
+  <?define omaha_nim_appid="{3BAA0D1F-B539-43E7-960B-A5077F5AE35D}"?>
+
+  <?define omaha_reg_guid="EE82AFE9-D15F-46F9-9482-CCF89A65A2DC" ?>
+
+  <?else ?>
+  <?error Unknown value for Platform variable ?>
+  <?endif ?>
+
+  <Fragment>
+
+    <Property Id="OMAHA_APPID">$(var.omaha_nim_appid)</Property>
+    <Property Id="OMAHA_OSVERSION">5.1</Property>
+
+    <DirectoryRef Id="APPDIR" FileSource="$(var.BinDir)" DiskId="1">
+
+      <Component Win64="$(var.Win64)" Id="omaha_regkeys" Guid="$(var.omaha_reg_guid)">
+        <RegistryKey Root="HKLM" Key="SOFTWARE\Secure Endpoints\Update\Clients\[OMAHA_APPID]"
+                     Action="createAndRemoveOnUninstall" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Secure Endpoints\Update\Clients\[OMAHA_APPID]"
+                       Name="name" Type="string" Value="!(loc.ProductName)" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Secure Endpoints\Update\Clients\[OMAHA_APPID]"
+                       Name="lang" Type="string" Value="!(loc.LanguageCode)" />
+        <RegistryValue Root="HKLM" Key="SOFTWARE\Secure Endpoints\Update\Clients\[OMAHA_APPID]"
+                       Name="pv" Type="string" Value="$(var.ProductVersion)" KeyPath="yes"/>
+      </Component>
+
+    </DirectoryRef>
+
+    <ComponentGroup Id="NetIdMgrOmaha">
+      <ComponentRef Id="omaha_regkeys" />
+    </ComponentGroup>
+
+  </Fragment>
+</Wix>

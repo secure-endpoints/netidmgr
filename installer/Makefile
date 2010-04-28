@@ -78,6 +78,9 @@ TARGET=no-wix
 !endif
 !endif
 
+# Build with Omaha updater additions
+OMAHA=1
+
 # Suppress validation
 LIGHTVAL=-sval
 
@@ -93,6 +96,10 @@ MSIOBJS=						\
 
 !if "$(CPU)" == "i386" || "$(CPU)" == "x86"
 MSIOBJS=$(MSIOBJS) "$(OBJ)\krb4cred.wixobj"
+!endif
+
+!ifdef OMAHA
+MSIOBJS=$(MSIOBJS) "$(OBJ)\omaha.wixobj"
 !endif
 
 MSILIBS=
@@ -142,6 +149,9 @@ $(OBJ)\installer.wixobj: installer.wxs
 !ifndef COMBINED
 		-dMITCompatibilityMode=yes		\
 !endif
+!ifdef OMAHA
+		-dOmaha=yes				\
+!endif
 		-dIncludeKeystore=yes
 
 $(OBJ)\nim-core.wixobj: nim-core.wxs
@@ -157,6 +167,15 @@ $(OBJ)\nim-core.wixobj: nim-core.wxs
 !endif
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)
+
+!ifdef OMAHA
+$(OBJ)\omaha.wixobj: omaha.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
+		-dProductVersion=$(NETIDMGR_VERSION)	\
+		-dBinDir=$(BINDIR)\			\
+		-dSrcDir=$(SRC)				\
+		-dClVer=$(KH_CLVER)
+!endif
 
 $(OBJ)\krb5cred.wixobj: krb5cred.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
@@ -380,4 +399,4 @@ clean::
 	$(RM) $(MSIFILE)
 	$(RM) $(ZIPFILE)
 	$(RM) $(SDKZIPFILE)
-	$(RM) $(OBJ)\installer.wixobj
+	$(RM) $(OBJ)\*.wixobj

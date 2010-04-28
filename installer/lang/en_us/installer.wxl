@@ -30,6 +30,8 @@
 
   <String Id="LanguageId">1033</String>
 
+  <String Id="LanguageCode">en</String>
+
   <String Id="CodePage">1252</String>
 
   <String Id="ProductManufacturer">Secure-Endpoints Inc.</String>
