@@ -1,13 +1,22 @@
 @echo off
 
-set PSDKDir=%PROGRAMFILES%\Microsoft SDKs\Windows\v6.1\
-
 for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v6.1\WinSDKWin32Tools" /v InstallationFolder') do set PSDKDir=%%B
+
+if "%PSDKDir%"=="" (
+for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0\WinSDKWin32Tools" /v InstallationFolder') do set PSDKDir=%%B
+)
+
+if "%PSDKDir%"=="" (
+   set PSDKDir=%PROGRAMFILES%\Microsoft SDKs\Windows\v6.1\
+)
 
 if exist "%PSDKDir%bin\SetEnvVS8.Cmd" (
   call "%PSDKDir%bin\SetEnvVS8.Cmd" %1 %2 %3 %4
-) else (
+) else if exist "%PSDKDir%bin\SetEnv.Cmd" (
   call "%PSDKDir%bin\SetEnv.Cmd" %1 %2 %3 %4
+) else if exist "%PSDKDir%SetEnv.Cmd" (
+  echo foo
+  call "%PSDKDir%SetEnv.Cmd" %1 %2 %3 %4
 )
 
 cl.exe 2> "%TEMP%\clver.txt" 1> NUL
@@ -46,24 +55,88 @@ set KH_RELEASE=PRIVATE
 
 set KH_AUXCFLAGS=/wd4512 /wd4267 /wd4389 /wd4245 /wd4311 /wd4127 /wd4115 /wd4100
 
+rem Try to figure out runtime merge module location
+if "%CommonProgramFiles(x86)%"=="" set mmdir=%CommonProgramFiles%\Merge Modules
+if not "%CommonProgramFiles(x86)%"=="" set mmdir=%CommonProgramFiles(x86)%\Merge Modules
+
+if exist "%mmdir%" goto runtime-%KH_CLVER%-%KH_BUILD%-%CPU%
+
+:runtime-PSDK
+rem We don't have a merge module directory.  Perhaps, we have a redist directory?
+if exist "%PSDKDir%\Redist\VC" (
+	set mmdir=%PSDKDir%\Redist\VC
+)
+
+if exist "%PSDKDir%\..\Redist\VC" (
+	set mmdir=%PSDKDir%\..\Redist\VC
+)
+
+if "%CPU%"=="AMD64" set KH_RUNTIME_MSM=%mmdir%\microsoft.vcxx.crt.x64_msm.msm
+if "%CPU%"=="i386" set KH_RUNTIME_MSM=%mmdir%\microsoft.vcxx.crt.x86_msm.msm
+
+goto done-runtime
+
+:runtime-vc8-DEBUG-AMD64
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC80_DebugCRT_x86_x64.msm
+goto done-runtime
+
+:runtime-vc8-RETAIL-AMD64
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC80_CRT_x86_x64.msm
+goto done-runtime
+
+:runtime-vc8-DEBUG-i386
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC80_DebugCRT_x86.msm
+goto done-runtime
+
+:runtime-vc8-RETAIL-i386
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC80_CRT_x86.msm
+goto done-runtime
+
+:runtime-vc9-DEBUG-AMD64
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC90_DebugCRT_x86_x64.msm
+goto done-runtime
+
+:runtime-vc9-RETAIL-AMD64
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC90_CRT_x86_x64.msm
+goto done-runtime
+
+:runtime-vc9-DEBUG-i386
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC90_DebugCRT_x86.msm
+goto done-runtime
+
+:runtime-vc9-RETAIL-i386
+set KH_RUNTIME_MSM=%mmdir%\Microsoft_VC90_CRT_x86.msm
+goto done-runtime
+
+:done-runtime
+if not exist "%KH_RUNTIME_MSM%" (
+	echo Error: Can't determine Visual C++ runtime merge module
+	set KH_RUNTIME_MSM=
+	exit /b 1
+)
+set mmdir=
+
 rem ------------------------------------------------------
 rem setupbuild.local.cmd
 rem ------------------------------------------------------
-rem
-rem  Use a setupbuild.local.cmd file to setup variables
-rem  that are specific for your build environment.
-rem  The following are required:
-rem
-rem  - perl.exe should on the system path
-rem  - KH_DOXYFULLPATH should be the full path to doxygen.exe
-rem  - KH_HHCFULLPATH should be the full path to hhc.exe
-rem  - WIXDIR should be the directory containing WiX 2.x
-rem  - ZIP should be the full path to 7-Zip command line executable
-rem  - KH_KFWPATH should be the path to the MIT Kerberos for Windows installation
-rem  - PISMERE Should be the pismere directory
-rem  - CODESIGN Can be set to the command used to sign binaries
 
-if exist setupbuild.local.cmd call setupbuild.local.cmd
+if exist setupbuild.local.cmd (
+   call setupbuild.local.cmd
+) else (
+    @echo off
+    echo Use a setupbuild.local.cmd file to setup variables
+    echo that are specific for your build environment.
+    echo The following are required:
+    echo.
+    echo - perl.exe should on the system path
+    echo - KH_DOXYFULLPATH should be the full path to doxygen.exe
+    echo - KH_HHCFULLPATH should be the full path to hhc.exe
+    echo - WIXDIR should be the directory containing WiX 3.x
+    echo - ZIP should be the full path to 7-Zip command line executable
+    echo - KH_KFWPATH should be the path to the MIT Kerberos for Windows installation
+    echo - PISMERE Should be the pismere directory
+    echo - CODESIGN Can be set to the command used to sign binaries
+)
 
 @echo off
 echo. Warning! If the mkdir being used is not what ships with Windows

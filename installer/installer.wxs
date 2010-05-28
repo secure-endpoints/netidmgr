@@ -136,66 +136,12 @@
     <!-- Runtime -->
 
     <DirectoryRef Id="APPDIR">
-
-      <?ifdef env.CommonProgramFiles6432?>
-      <?define CPF="$(env.CommonProgramFiles(x86)"?>
-      <?else ?>
-      <?define CPF="$(env.CommonProgramFiles)"?>
-      <?endif ?>
-
-      <?if $(var.ClVer)=vc7 ?>
-
-      <?error Not supported?>
-
-      <?elseif $(var.ClVer)=vc8 ?>
-
-      <?ifdef Debug ?>
-
-      <!-- VC++ 14.00 Debug -->
-      <?if $(var.Platform) = "x64" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC80_DebugCRT_x86_x64.msm" />
-      <?elseif $(var.Platform) = "x86" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC80_DebugCRT_x86.msm" />
-      <?endif ?>
-
-      <?else ?>
-      <!-- !Debug -->
-
-      <!-- VC++ 14.00 Retail -->
-      <?if $(var.Platform) = "x64" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC80_CRT_x86_x64.msm" />
-      <?elseif $(var.Platform) = "x86" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC80_CRT_x86.msm" />
-      <?endif ?>
-
-      <?endif ?>
-      <!-- !Debug -->
-
-      <?elseif $(var.ClVer)=vc9 ?>
-
-      <?ifdef Debug ?>
-
-      <!-- VC++ 15.00 Debug -->
-      <?if $(var.Platform) = "x64" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC90_DebugCRT_x86_x64.msm" />
-      <?elseif $(var.Platform) = "x86" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC90_DebugCRT_x86.msm" />
-      <?endif ?>
-
-      <?else ?>
-      <!--!Debug -->
-
-      <!-- VC++ 15.00 Retail -->
-      <?if $(var.Platform) = "x64" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC90_CRT_x86_x64.msm" />
-      <?elseif $(var.Platform) = "x86" ?>
-      <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(var.CPF)\Merge Modules\Microsoft_VC90_CRT_x86.msm" />
-      <?endif ?>
-
-      <?endif ?>
-      <!-- !Debug -->
-      <?endif ?>
-      <!-- ClVer -->
+	
+	  <?ifdef env.KH_RUNTIME_MSM?>
+	  <Merge Id="VCRT" DiskId="1" Language="0" SourceFile="$(env.KH_RUNTIME_MSM)" />
+	  <?else?>
+	  <?error No runtime merge module ?>
+	  <?endif?>
 
     </DirectoryRef> <!-- /Runtime -->
 
