@@ -45,6 +45,9 @@ kherr_serial ctx_serial = 0;
 static kherr_context *
 peek_context(void);
 
+static void
+get_progress(kherr_context * c, khm_ui_4 * pnum, khm_ui_4 * pdenom);
+
 #ifdef DEBUG
 #define DEBUG_CONTEXT
 #endif
@@ -226,54 +229,47 @@ kherr_remove_ctx_handler_param(kherr_ctx_handler_param h,
 
 /* Called with cs_error held. Lets go of cs_error while processing */
 static void
-notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
+notify_ctx_event(enum kherr_ctx_event e, kherr_context * c,
+		 kherr_context * d_c, kherr_event * evt, int p)
 {
-    khm_size i;
+    int i, nh = 0;
+    kherr_ctx_event_data d;
+#define MAX_NOTIFICATIONS 8
+    kherr_handler_node h[MAX_NOTIFICATIONS];
 
-    for (i=0; i<n_ctx_handlers; i++) {
+    ZeroMemory(&d, sizeof(d));
+    d.event = e;
+    d.ctx = c;
+    switch (e) {
+    case KHERR_CTX_END:
+    case KHERR_CTX_BEGIN:
+	break;
+
+    case KHERR_CTX_DESCRIBE:
+    case KHERR_CTX_ERROR:
+    case KHERR_CTX_EVTCOMMIT:
+    case KHERR_CTX_FOLDCHILD:
+	d.data.event = evt;
+	break;
+
+    case KHERR_CTX_NEWCHILD:
+	d.data.child_ctx = d_c;
+	break;
+
+    case KHERR_CTX_PROGRESS:
+	d.data.progress = p;
+	break;
+
+    default:
+	assert(FALSE);
+    }
+
+    for (i=0; i < n_ctx_handlers && nh < MAX_NOTIFICATIONS; i++) {
         if ((ctx_handlers[i].filter & e) != 0 &&
             (ctx_handlers[i].serial == 0 ||
              ctx_handlers[i].serial == c->serial)) {
 
-            if (ctx_handlers[i].use_param) {
-                kherr_ctx_handler_param h;
-                void * vparam;
-
-                h = ctx_handlers[i].h.p_handler_param;
-                vparam = ctx_handlers[i].vparam;
-
-                assert(cs_error.RecursionCount == 1);
-                LeaveCriticalSection(&cs_error);
-
-                (*h)(e, c, vparam);
-
-                EnterCriticalSection(&cs_error);
-
-                /* A context handler is allowed to remove itself.  It
-                   is not allowed to remove anything else.  If it did
-                   so, we need to look at this entry again.*/
-                if (h != ctx_handlers[i].h.p_handler_param) {
-                    i--;
-                    continue;
-                }
-            } else {
-                kherr_ctx_handler h;
-
-                h = ctx_handlers[i].h.p_handler;
-
-                assert(cs_error.RecursionCount == 1);
-                LeaveCriticalSection(&cs_error);
-
-                (*h)(e, c);
-
-                EnterCriticalSection(&cs_error);
-
-                /* See above */
-                if (h != ctx_handlers[i].h.p_handler) {
-                    i--;
-                    continue;
-                }
-            }
+	    h[nh++] = ctx_handlers[i];
 
             /* If this was a notification that the context is done, we
                should remove the handler. */
@@ -281,7 +277,6 @@ notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
                 remove_ctx_handler_by_index(i);
                 i--;
             }
-
         } else if (e == KHERR_CTX_EVTCOMMIT &&
 		   !(ctx_handlers[i].filter & KHERR_CTX_EVTCOMMIT)) {
 	    /* All handlers that filter for commit events are at the
@@ -291,6 +286,18 @@ notify_ctx_event(enum kherr_ctx_event e, kherr_context * c)
 	    break;
 	}
     }
+
+    assert(cs_error.RecursionCount == 1);
+    LeaveCriticalSection(&cs_error);
+
+    for (i = 0; i < nh; i++) {
+	if (h[i].use_param)
+	    (*h[i].h.p_handler_param)(e, &d, h[i].vparam);
+	else
+	    (*h[i].h.p_handler)(e, c);
+    }
+
+    EnterCriticalSection(&cs_error);
 }
 
 void
@@ -468,28 +475,6 @@ free_event(kherr_event * e)
     assert(LPREV(e) == NULL);
 #endif
 
-#ifdef DEBUG_CONTEXT
-    if (IsDebuggerPresent()) {
-        if (!(e->flags & KHERR_RF_STR_RESOLVED))
-            resolve_event_strings(e);
-
-        if (e->short_desc && e->long_desc) {
-            kherr_debug_printf(L"E:%s (%s)\n", e->short_desc, e->long_desc);
-        } else if (e->short_desc) {
-            kherr_debug_printf(L"E:%s\n", e->short_desc);
-        } else if (e->long_desc) {
-            kherr_debug_printf(L"E:%s\n", e->long_desc);
-        } else {
-            kherr_debug_printf(L"E:[No description for event 0x%p]\n", e);
-        }
-
-        if (e->suggestion)
-            kherr_debug_printf(L"  Suggest:[%s]\n", e->suggestion);
-        if (e->facility)
-            kherr_debug_printf(L"  Facility:[%s]\n", e->facility);
-    }
-#endif
-
     if(e->flags & KHERR_RF_FREE_SHORT_DESC) {
         assert(e->short_desc);
         PFREE((void *) e->short_desc);
@@ -587,7 +572,29 @@ commit_event(kherr_context * c, kherr_event * e)
     if (e->flags & KHERR_RF_COMMIT)
         return;
 
-    notify_ctx_event(KHERR_CTX_EVTCOMMIT, c);
+#ifdef DEBUG_CONTEXT
+    if (IsDebuggerPresent()) {
+        if (!(e->flags & KHERR_RF_STR_RESOLVED))
+            resolve_event_strings(e);
+
+        if (e->short_desc && e->long_desc) {
+            kherr_debug_printf(L"E:%s (%s)\n", e->short_desc, e->long_desc);
+        } else if (e->short_desc) {
+            kherr_debug_printf(L"E:%s\n", e->short_desc);
+        } else if (e->long_desc) {
+            kherr_debug_printf(L"E:%s\n", e->long_desc);
+        } else {
+            kherr_debug_printf(L"E:[No description for event 0x%p]\n", e);
+        }
+
+        if (e->suggestion)
+            kherr_debug_printf(L"  Suggest:[%s]\n", e->suggestion);
+        if (e->facility)
+            kherr_debug_printf(L"  Facility:[%s]\n", e->facility);
+    }
+#endif
+
+    notify_ctx_event(KHERR_CTX_EVTCOMMIT, c, NULL, e, 0);
     e->flags |= KHERR_RF_COMMIT;
 
     if(c->severity >= e->severity) {
@@ -596,7 +603,7 @@ commit_event(kherr_context * c, kherr_event * e)
         c->flags &= ~KHERR_CF_DIRTY;
 
         if (e->severity <= KHERR_ERROR)
-            notify_ctx_event(KHERR_CTX_ERROR, c);
+            notify_ctx_event(KHERR_CTX_ERROR, c, NULL, e, 0);
     }
 }
 
@@ -1197,7 +1204,7 @@ kherr_set_desc_event(void)
     e->severity = KHERR_NONE;
     resolve_event_strings(e);
 
-    notify_ctx_event(KHERR_CTX_DESCRIBE, c);
+    notify_ctx_event(KHERR_CTX_DESCRIBE, c, NULL, e, 0);
 
 _exit:
     LeaveCriticalSection(&cs_error);
@@ -1267,9 +1274,9 @@ kherr_push_new_context(khm_int32 flags)
     c->flags |= flags;
     push_context(c);
 
-    notify_ctx_event(KHERR_CTX_BEGIN, c);
+    notify_ctx_event(KHERR_CTX_BEGIN, c, NULL, NULL, 0);
     if (IS_KHERR_CTX(p)) {
-        notify_ctx_event(KHERR_CTX_NEWCHILD, p);
+        notify_ctx_event(KHERR_CTX_NEWCHILD, p, c, NULL, 0);
     }
 
     LeaveCriticalSection(&cs_error);
@@ -1278,7 +1285,10 @@ kherr_push_new_context(khm_int32 flags)
 /* does the context 'c' use it's own progress marker? If this is
    false, the progress marker for the context is derived from the
    progress markers of its children. */
-#define CTX_USES_OWN_PROGRESS(c) ((c)->progress_num != 0 || (c)->progress_denom != 0 || ((c)->flags & KHERR_CF_OWN_PROGRESS))
+#define CTX_USES_OWN_PROGRESS(c)		\
+    ((c)->progress_num != 0 ||			\
+     (c)->progress_denom != 0 ||		\
+     ((c)->flags & KHERR_CF_OWN_PROGRESS))
 
 /* MUST be called with cs_error held */
 static void
@@ -1289,13 +1299,15 @@ set_and_notify_progress_change(kherr_context * c, khm_ui_4 num, khm_ui_4 denom)
     c->progress_denom = denom;
     c->progress_num = num;
 
-    notify_ctx_event(KHERR_CTX_PROGRESS, c);
+    notify_ctx_event(KHERR_CTX_PROGRESS, c, NULL, NULL, (denom != 0)? num * 256 / denom : 0);
 
     for (p = TPARENT(c);
 	 IS_KHERR_CTX(p) && !CTX_USES_OWN_PROGRESS(p);
 	 p = TPARENT(p)) {
 
-	notify_ctx_event(KHERR_CTX_PROGRESS, p);
+	get_progress(p, &num, &denom);
+	notify_ctx_event(KHERR_CTX_PROGRESS, p, NULL, NULL,
+			 (denom != 0)? num * 256 / denom : 0);
     }
 }
 
@@ -1432,8 +1444,10 @@ fold_context(kherr_context * c)
         c->desc_event = NULL;
     }
 
-    if (IS_KHERR_EVENT(e))
+    if (IS_KHERR_EVENT(e)) {
         e->flags |= KHERR_RF_CONTEXT_FOLD;
+	e->flags &= ~KHERR_RF_COMMIT;
+    }
 
     LeaveCriticalSection(&cs_error);
 
@@ -1476,18 +1490,21 @@ release_context(kherr_context * c)
 
             p = TPARENT(c);
 
-            notify_ctx_event(KHERR_CTX_END, c);
+#ifdef DEBUG
+	    kherr_debug_printf(L"Posting KHERR_CTX_END for %p\n", (void *) c);
+#endif
+            notify_ctx_event(KHERR_CTX_END, c, NULL, NULL, 0);
 
             if (IS_KHERR_CTX(p)) {
                 kherr_event * e;
 
                 e = fold_context(c);
-                if (e)
-                    add_event(p, e);
-
                 TDELCHILD(p, c);
-
-                notify_ctx_event(KHERR_CTX_FOLDCHILD, p);
+                
+		if (e) {
+                    add_event(p, e);
+		    notify_ctx_event(KHERR_CTX_FOLDCHILD, p, NULL, e, 0);
+		}
 
                 release_context(p);
             } else {

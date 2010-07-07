@@ -427,6 +427,16 @@ enum kherr_ctx_event {
 typedef void (KHMCALLBACK * kherr_ctx_handler)(enum kherr_ctx_event,
                                                kherr_context *);
 
+typedef struct kherr_ctx_event_data {
+    enum kherr_ctx_event event;
+    kherr_context	*ctx;
+    union {
+	kherr_context		*child_ctx;
+	kherr_event		*event;
+	khm_ui_4		 progress;
+    } data;
+} kherr_ctx_event_data;
+
 /*! \brief Context even handler with parameter
 
     Similar to ::kherr_ctx_handler but also includes an additional
@@ -436,7 +446,7 @@ typedef void (KHMCALLBACK * kherr_ctx_handler)(enum kherr_ctx_event,
     \see kherr_add_ctx_handler_param()
  */
 typedef void (KHMCALLBACK * kherr_ctx_handler_param)(enum kherr_ctx_event,
-                                                     kherr_context *,
+                                                     kherr_ctx_event_data *,
                                                      void * vparam);
 
 /*! \brief Add a context event handler
@@ -507,6 +517,7 @@ typedef void (KHMCALLBACK * kherr_ctx_handler_param)(enum kherr_ctx_event,
 KHMEXP void KHMAPI kherr_add_ctx_handler(kherr_ctx_handler h,
                                          khm_int32 filter,
                                          kherr_serial serial);
+#pragma deprecated(kherr_add_ctx_handler)
 
 /*! \brief Add a context event handler with a parameter
 
@@ -1207,9 +1218,7 @@ KHMEXP khm_boolean KHMAPI kherr_context_is_equal(kherr_context *c1, kherr_contex
 /*@}*/
 
 /* In debug mode, outputs the formatted string to the debug console */
-#ifdef DEBUG
 KHMEXP void kherr_debug_printf(wchar_t * fmt, ...);
-#endif
 
 #ifdef __cplusplus
 }
