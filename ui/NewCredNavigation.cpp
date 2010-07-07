@@ -177,7 +177,7 @@ void NewCredNavigation::CheckControls()
         break;
 
     case NC_PAGE_PROGRESS:
-        if (p)
+        if (p && !(nc->response & KHUI_NC_RESPONSE_PROCESSING))
             EnableControl(Prev);
         break;
 
