@@ -31,6 +31,7 @@
 #define __KHIMAIRA_KRB5COMMON_H
 
 #include<krb5.h>
+#include<com_err.h>
 
 krb5_error_code
 khm_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
@@ -52,4 +53,31 @@ khm_int32 KHMAPI
 khm_get_identity_expiration_time(krb5_context ctx, krb5_ccache cc,
                                  khm_handle ident,
                                  krb5_timestamp * pexpiration);
+
+#ifdef HEIMDAL
+
+#define IS_IMPORTED(sym) 1
+
+#else
+
+#define IS_IMPORTED(sym) (p ## sym != NULL)
+
+#define error_message		(*perror_message)
+#define krb5_cc_close		(*pkrb5_cc_close)
+#define krb5_cc_default		(*pkrb5_cc_default)
+#define krb5_cc_end_seq_get	(*pkrb5_cc_end_seq_get)
+#define krb5_cc_get_principal	(*pkrb5_cc_get_principal)
+#define krb5_cc_next_cred	(*pkrb5_cc_next_cred)
+#define krb5_cc_resolve		(*pkrb5_cc_resolve)
+#define krb5_cc_set_flags	(*pkrb5_cc_set_flags)
+#define krb5_cc_start_seq_get	(*pkrb5_cc_start_seq_get)
+#define krb5_free_context 	(*pkrb5_free_context)
+#define krb5_free_principal 	(*pkrb5_free_principal)
+#define krb5_free_unparsed_name	(*pkrb5_free_unparsed_name)
+#define krb5_init_context	(*pkrb5_init_context)
+#define krb5_timeofday		(*pkrb5_timeofday)
+#define krb5_unparse_name	(*pkrb5_unparse_name)
+
+#endif
+
 #endif

@@ -161,6 +161,8 @@ ui: nidmgrdll
 	$(CD) ..
 	$(ECHO) -- Done with $@
 
+!ifdef BUILD_KFW
+
 # Now build the plugins
 plugincommon: ui
 	$(ECHO) -- Entering $@
@@ -168,6 +170,8 @@ plugincommon: ui
 	$(RMAKE)
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
+
+finale: krb5plugin
 
 krb5plugin: plugincommon
 	$(ECHO) -- Entering $@
@@ -187,13 +191,25 @@ krb4plugin: plugincommon
 	$(ECHO) -- Done with $@
 !endif
 
-!ifdef NODOCBUILD
-doctarget=
-!else
-doctarget=doc
+!endif				# BUILD_KFW
+
+!ifdef BUILD_HEIMDAL
+finale: heimdal
+
+heimdal: ui
+	$(ECHO) -- Entering $@
+	$(CD) plugins\heimdal
+	$(RMAKE)
+	$(CD) ..\..
+	$(ECHO) -- Done with $@
+!endif				# BUILD_HEIMDAL
+
+!ifndef NODOCBUILD
+finale: doc
+
 !endif
 
-finale: krb5plugin $(doctarget)
+finale: ui
 	$(ECHO) -- Done.
 
 !if exist( plugins\keystore )

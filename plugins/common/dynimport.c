@@ -42,6 +42,7 @@ HINSTANCE hCCAPI = 0;
 
 DWORD     AfsAvailable = 0;
 
+#ifndef HEIMDAL
 // CCAPI
 DECL_FUNC_PTR(cc_initialize);
 DECL_FUNC_PTR(cc_shutdown);
@@ -78,6 +79,7 @@ DECL_FUNC_PTR(krb_save_credentials);
 DECL_FUNC_PTR(krb_get_krbconf2);
 DECL_FUNC_PTR(krb_get_krbrealm2);
 DECL_FUNC_PTR(krb_life_to_time);
+#endif	/* HEIMDAL */
 
 // krb5 functions
 DECL_FUNC_PTR(krb5_change_password);
@@ -146,14 +148,17 @@ DECL_FUNC_PTR(krb5_free_addresses);
 DECL_FUNC_PTR(krb5_free_default_realm);
 DECL_FUNC_PTR(krb5_string_to_deltat);
 
+#ifndef HEIMDAL
 // Krb524 functions
 DECL_FUNC_PTR(krb524_init_ets);
 DECL_FUNC_PTR(krb524_convert_creds_kdc);
+#endif
 
 // ComErr functions
 DECL_FUNC_PTR(com_err);
 DECL_FUNC_PTR(error_message);
 
+#ifndef HEIMDAL
 // Profile functions
 DECL_FUNC_PTR(profile_init);
 DECL_FUNC_PTR(profile_flush);
@@ -169,6 +174,7 @@ DECL_FUNC_PTR(profile_add_relation);
 DECL_FUNC_PTR(profile_update_relation);
 DECL_FUNC_PTR(profile_release_string);
 DECL_FUNC_PTR(profile_rename_section);
+#endif
 
 // Service functions
 DECL_FUNC_PTR(OpenSCManagerA);
@@ -184,6 +190,7 @@ DECL_FUNC_PTR(LsaCallAuthenticationPackage);
 DECL_FUNC_PTR(LsaFreeReturnBuffer);
 DECL_FUNC_PTR(LsaGetLogonSessionData);
 
+#ifndef HEIMDAL
 // CCAPI
 FUNC_INFO ccapi_fi[] = {
     MAKE_FUNC_INFO(cc_initialize),
@@ -226,6 +233,7 @@ FUNC_INFO k4_fi[] = {
     MAKE_FUNC_INFO(krb_life_to_time),
     END_FUNC_INFO
 };
+#endif	/* HEIMDAL */
 
 FUNC_INFO k5_fi[] = {
     MAKE_FUNC_INFO(krb5_change_password),
@@ -296,6 +304,7 @@ FUNC_INFO k5_fi[] = {
     END_FUNC_INFO
 };
 
+#ifndef HEIMDAL
 FUNC_INFO k524_fi[] = {
     MAKE_FUNC_INFO(krb524_init_ets),
     MAKE_FUNC_INFO(krb524_convert_creds_kdc),
@@ -319,6 +328,7 @@ FUNC_INFO profile_fi[] = {
     MAKE_FUNC_INFO(profile_rename_section),
     END_FUNC_INFO
 };
+#endif
 
 FUNC_INFO ce_fi[] = {
     MAKE_FUNC_INFO(com_err),
@@ -380,9 +390,11 @@ khm_int32 init_imports(void) {
     }                     \
  } while (FALSE)
 
+#ifndef HEIMDAL
 #ifndef _WIN64
     imp_rv = LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 0, 0);
     CKRV(KRB4_DLL);
+#endif
 #endif
 
     imp_rv = LoadFuncs(KRB5_DLL, k5_fi, &hKrb5, 0, 1, 0, 0);
@@ -397,6 +409,7 @@ khm_int32 init_imports(void) {
     imp_rv = LoadFuncs(SECUR32_DLL, lsa_fi, &hSecur32, 0, 1, 1, 1);
     CKRV(SECUR32_DLL);
 
+#ifndef HEIMDAL
 #ifndef _WIN64
     imp_rv = LoadFuncs(KRB524_DLL, k524_fi, &hKrb524, 0, 1, 1, 1);
     CKRV(KRB524_DLL);
@@ -407,6 +420,7 @@ khm_int32 init_imports(void) {
 
     imp_rv = LoadFuncs(CCAPI_DLL, ccapi_fi, &hCCAPI, 0, 1, 0, 0);
     /* CCAPI_DLL is optional.  No error check. */
+#endif
 
     memset(&osvi, 0, sizeof(OSVERSIONINFO));
     osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
@@ -445,8 +459,14 @@ khm_int32 init_imports(void) {
 khm_int32 exit_imports(void) {
     //afscompat_close();
 
+#ifndef HEIMDAL
     if (hKrb4)
         FreeLibrary(hKrb4);
+    if (hKrb524)
+        FreeLibrary(hKrb524);
+    if (hPsapi)
+        FreeLibrary(hPsapi);
+#endif
     if (hKrb5)
         FreeLibrary(hKrb5);
     if (hProfile)
@@ -457,10 +477,6 @@ khm_int32 exit_imports(void) {
         FreeLibrary(hService);
     if (hSecur32)
         FreeLibrary(hSecur32);
-    if (hKrb524)
-        FreeLibrary(hKrb524);
-    if (hPsapi)
-        FreeLibrary(hPsapi);
     if (hToolHelp32)
         FreeLibrary(hToolHelp32);
 
