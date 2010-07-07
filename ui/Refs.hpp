@@ -160,4 +160,19 @@ public:
             pT_aux->Unlock();
     }
 };
+
+template <>
+class AutoLock<CRITICAL_SECTION> {
+    CRITICAL_SECTION *cs;
+
+public:
+    AutoLock(CRITICAL_SECTION * _cs) : cs(_cs) {
+	EnterCriticalSection(cs);
+    }
+
+    ~AutoLock() {
+	LeaveCriticalSection(cs);
+    }
+};
+
 }
