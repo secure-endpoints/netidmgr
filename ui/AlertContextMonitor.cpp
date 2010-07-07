@@ -37,8 +37,11 @@ AlertContextMonitor::AlertContextMonitor(AlertElement * _e, ControlWindow *_cw, 
     Alert& a = element->m_alert;
     AutoLock<Alert> a_lock(&a);
 
+    QINIT(this);
+    InitializeCriticalSection(&cs);
+
     if (a->err_context == NULL) {
-        delete this;
+	Dispose();
         return;
     }
 
@@ -90,11 +93,69 @@ AlertContextMonitor::~AlertContextMonitor()
     }
 
     element->SetMonitor(NULL);
+
+    ContextEvent * ce = NULL;
+
+    while ((ce = NextEvent()) != NULL) {
+	delete ce;
+    }
+
+    DeleteCriticalSection(&cs);
+}
+
+AlertContextMonitor::ContextEvent *
+AlertContextMonitor::NextEvent()
+{
+    ContextEvent * ce = NULL;
+    AutoLock<CRITICAL_SECTION> l(&cs);
+
+    QGET(this, &ce);
+
+    return ce;
+}
+
+bool
+AlertContextMonitor::ContextEventFromData(kherr_ctx_event_data * d)
+{
+    ContextEvent * ce = NULL;
+    AutoLock<CRITICAL_SECTION> l(&cs);
+
+    switch(d->event) {
+    case KHERR_CTX_BEGIN:
+    case KHERR_CTX_END:
+	ce = new ContextEvent(d);
+	break;
+
+    case KHERR_CTX_DESCRIBE:
+	ce = new ContextDescribeEvent(d);
+	break;
+
+    case KHERR_CTX_FOLDCHILD:
+    case KHERR_CTX_EVTCOMMIT:
+    case KHERR_CTX_ERROR:
+	if (!(d->data.event->flags & KHERR_RF_STR_RESOLVED))
+	    kherr_evaluate_event(d->data.event);
+	ce = new ContextCommitEvent(d);
+	break;
+
+    case KHERR_CTX_NEWCHILD:
+	ce = new ContextNewChildEvent(d);
+	break;
+
+    case KHERR_CTX_PROGRESS:
+	ce = new ContextProgressEvent(d);
+	break;
+    }
+
+    assert(ce != NULL);
+
+    QPUT(this, ce);
+    return true;
 }
 
 void KHMAPI
 AlertContextMonitor::ErrorContextCallback(enum kherr_ctx_event e,
-                                          kherr_context * c,
+                                          kherr_ctx_event_data * d,
                                           void * vparam)
 {
     AlertContextMonitor * m;
@@ -102,11 +163,17 @@ AlertContextMonitor::ErrorContextCallback(enum kherr_ctx_event e,
     m = static_cast<AlertContextMonitor *>(vparam);
     assert(m);
 
-    m->listener->PostMessage(WM_COMMAND,
-                             MAKEWPARAM(m->controlID, e),
-                             (LPARAM) m->element);
+    if (m->ContextEventFromData(d)) {
+	m->listener->PostMessage(WM_COMMAND,
+				 MAKEWPARAM(m->controlID, 0),
+				 (LPARAM) m->element);
+    }
+
     if (e == KHERR_CTX_END) {
-        delete m;
+#ifdef DEBUG
+	m->SetOkToDispose(true);
+#endif
+        m->Release();
     }
 }
 }

@@ -55,8 +55,7 @@ AlertElement::~AlertElement()
         m_alert->displayed = FALSE;
     }
 
-    if (m_monitor)
-        delete m_monitor;
+    m_monitor.Attach(NULL);
 }
 
 // alert must be locked
@@ -118,9 +117,15 @@ void AlertElement::UpdateLayoutPre(Graphics & g, Rect & layout)
     if (m_alert->flags & KHUI_ALERT_FLAG_VALID_ERROR) {
 
         if (!el_progress) {
+	    khm_ui_4 p = 0;
+	    if (m_err_context) {
+		khm_ui_4 num, denom;
+		kherr_get_progress_i(m_err_context, &num, &denom);
+		p = (denom != 0)? num * 256 / denom : 0;
+	    }
             el_progress = PNEW ProgressBarElement();
             InsertChildAfter(el_progress);
-            UpdateProgress();
+            UpdateProgress(p);
         }
 
         if (!el_expose) {
@@ -228,25 +233,8 @@ void AlertElement::UpdateIcon()
         el_icon->SetIcon(IconForAlert());
 }
 
-void AlertElement::UpdateProgress()
+void AlertElement::UpdateProgress(khm_ui_4 norm_progress)
 {
-    khm_ui_4 num, denom;
-    int norm_progress;
-
-    if (m_err_context) {
-        AutoLock<Alert> a_lock(&m_alert);
-        kherr_get_progress_i(m_err_context, &num, &denom);
-    } else {
-        num = denom = 1;
-    }
-
-    if (denom == 0)
-        norm_progress = 0;
-    else if (num > denom)
-        norm_progress = 256;
-    else
-        norm_progress = (num * 256) / denom;
-
     if (el_progress)
         el_progress->SetProgress(norm_progress);
     else {
@@ -262,8 +250,8 @@ void AlertElement::UpdateProgress()
 
 void AlertElement::SetMonitor(AlertContextMonitor * m)
 {
-    assert (m_monitor == NULL || m == NULL);
-    m_monitor = m;
+    assert (m_monitor.IsNull() || m == NULL);
+    m_monitor.Attach(m);
     m_err_context = m_alert->err_context;
     assert(m_err_context != NULL || m == NULL);
 }
@@ -305,52 +293,58 @@ void AlertElement::TryMonitorNewChildContext(kherr_context * c)
     dynamic_cast<AlertContainer *>(owner)->BeginMonitoringAlert(alert);
 }
 
-void AlertElement::OnErrCtxEvent(enum kherr_ctx_event e)
+void AlertElement::OnErrCtxEvent()
 {
-    if (m_err_context == NULL)
-        return;
+    AlertContextMonitor::ContextEvent * event = NULL;
 
-    switch (e) {
-    case KHERR_CTX_DESCRIBE:
+    while (!m_monitor.IsNull() &&
+	   (event = m_monitor->NextEvent()) != NULL) {
+#ifdef DEBUG
+	kherr_debug_printf(L"AlertElement %p received event %s\n",
+			   (void *) this,
+			   (event->e == KHERR_CTX_BEGIN)? L"BEGIN":
+			   (event->e == KHERR_CTX_DESCRIBE)? L"DESCRIBE":
+			   (event->e == KHERR_CTX_END)? L"END":
+			   (event->e == KHERR_CTX_ERROR)? L"ERROR":
+			   (event->e == KHERR_CTX_EVTCOMMIT)? L"EVTCOMMIT":
+			   (event->e == KHERR_CTX_NEWCHILD)? L"NEWCHILD":
+			   (event->e == KHERR_CTX_FOLDCHILD)? L"FOLDCHILD":
+			   (event->e == KHERR_CTX_PROGRESS)? L"PROGRESS":
+			   L"(*UNKNOWN*)");
+#endif
+
+	switch (event->e) {
+	case KHERR_CTX_DESCRIBE:
         {
             AutoLock<Alert> a_lock(&m_alert);
-            kherr_event * ev;
+	    AlertContextMonitor::ContextDescribeEvent * ev =
+		static_cast<AlertContextMonitor::ContextDescribeEvent *>(event);
 
-            ev = kherr_get_desc_event(m_err_context);
-            if (ev) {
-                if (ev->short_desc && ev->long_desc) {
-                    khui_alert_set_title(m_alert, ev->long_desc);
-                    khui_alert_set_message(m_alert, ev->short_desc);
-                } else if (ev->long_desc) {
-                    khui_alert_set_title(m_alert, ev->long_desc);
-                } else if (ev->short_desc) {
-                    khui_alert_set_title(m_alert, ev->short_desc);
-                }
-            }
+	    khui_alert_set_title(m_alert, ev->description.c_str());
             MarkForExtentUpdate();
             Invalidate();
         }
         break;
 
-    case KHERR_CTX_END:
+	case KHERR_CTX_END:
         {
             m_err_completed = true;
             m_err_context = NULL;
+	    m_monitor.Attach(NULL);
+	    MarkForExtentUpdate();
+	    Invalidate();
             UpdateIcon();
         }
         break;
 
-    case KHERR_CTX_EVTCOMMIT:
-    case KHERR_CTX_ERROR:
+	case KHERR_CTX_EVTCOMMIT:
+	case KHERR_CTX_ERROR:
         {
             AutoLock<Alert> a_lock(&m_alert);
-            kherr_event * ev;
+	    AlertContextMonitor::ContextCommitEvent * ev =
+		static_cast<AlertContextMonitor::ContextCommitEvent *>(event);
 
-            ev = ((e == KHERR_CTX_EVTCOMMIT)?
-                  kherr_get_last_event(m_err_context) :
-                  kherr_get_err_event(m_err_context));
-
-            if (ev == NULL || ev->severity > m_alert->severity)
+            if (ev->severity > m_alert->severity)
                 break;
 
             if (((m_alert->monitor_flags & KHUI_AMP_SHOW_EVT_ERR) &&
@@ -367,20 +361,9 @@ void AlertElement::OnErrCtxEvent(enum kherr_ctx_event e)
 
                 khui_alert_set_severity(m_alert, ev->severity);
 
-                if (!(ev->flags & KHERR_RF_STR_RESOLVED))
-                    kherr_evaluate_event(ev);
+		khui_alert_set_message(m_alert, ev->description.c_str());
 
-                if (ev->long_desc) {
-                    khui_alert_set_message(m_alert, ev->long_desc);
-                } else if (ev->short_desc) {
-                    khui_alert_set_message(m_alert, ev->short_desc);
-                }
-
-                if (ev->suggestion) {
-                    khui_alert_set_suggestion(m_alert, ev->suggestion);
-                } else {
-                    khui_alert_set_suggestion(m_alert, NULL);
-                }
+		khui_alert_set_suggestion(m_alert, ev->suggestion.c_str());
 
                 UpdateIcon();
                 MarkForExtentUpdate();
@@ -389,14 +372,12 @@ void AlertElement::OnErrCtxEvent(enum kherr_ctx_event e)
         }
         break;
 
-    case KHERR_CTX_NEWCHILD:
+	case KHERR_CTX_NEWCHILD:
         {
-            kherr_context * c;
+	    AutoLock<Alert> a_lock(&m_alert);
+	    kherr_context * c;
 
-            {
-                AutoLock<Alert> a_lock(&m_alert);
-                c = kherr_get_first_context(m_err_context);
-            }
+	    c = kherr_get_first_context(m_err_context);
 
             for (; c ; c = kherr_get_next_context(c)) {
                 TryMonitorNewChildContext(c);
@@ -404,11 +385,17 @@ void AlertElement::OnErrCtxEvent(enum kherr_ctx_event e)
         }
         break;
 
-    case KHERR_CTX_PROGRESS:
+	case KHERR_CTX_PROGRESS:
         {
-            UpdateProgress();
+	    AlertContextMonitor::ContextProgressEvent * ev =
+		static_cast<AlertContextMonitor::ContextProgressEvent *>(event);
+
+            UpdateProgress(ev->progress);
         }
         break;
+	}
+
+	delete event;
     }
 }
 

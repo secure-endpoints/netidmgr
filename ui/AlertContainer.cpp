@@ -220,7 +220,7 @@ void AlertContainer::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
     if (id == IDC_NTF_ERRCTXMONITOR) {
         AlertElement * ae = static_cast<AlertElement *>((void *) hwndCtl);
         if (ae) {
-            ae->OnErrCtxEvent((enum kherr_ctx_event) codeNotify);
+            ae->OnErrCtxEvent();
         }
     } else if (IsCommandButtonControlId(id)) {
         if (codeNotify == BN_CLICKED) {

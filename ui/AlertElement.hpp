@@ -57,7 +57,7 @@ class AlertElement : public WithOutline< WithTabStop< DisplayElement > > {
     ExposeControlElement	*el_expose;
     ProgressBarElement	*el_progress;
 
-    AlertContextMonitor     *m_monitor;
+    AutoRef<AlertContextMonitor>	m_monitor;
     bool                    m_err_completed;
     kherr_context           *m_err_context;
 
@@ -79,16 +79,16 @@ public:
 
     void UpdateIcon();
 
-    void UpdateProgress();
+    void UpdateProgress(khm_ui_4);
 
     void TryMonitorNewChildContext(kherr_context * c);
 
-    void OnErrCtxEvent(enum kherr_ctx_event e);
+    void OnErrCtxEvent();
 
     DrawState GetDrawState();
 
     bool IsMonitored() {
-        return m_monitor != NULL;
+        return !m_monitor.IsNull();
     }
 
     HICON IconForAlert();
