@@ -229,7 +229,7 @@ void NewCredWizard::OnProcessComplete(int has_error)
 
     nc->response &= ~KHUI_NC_RESPONSE_PROCESSING;
 
-    if (nc->response & KHUI_NC_RESPONSE_NOEXIT) {
+    if ((nc->response & KHUI_NC_RESPONSE_NOEXIT) || has_error) {
 
         EnableControls( TRUE );
 
