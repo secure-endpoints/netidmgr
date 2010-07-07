@@ -35,13 +35,8 @@ KHMEXP int KHMAPI AnsiStrToUnicode( wchar_t * wstr, size_t cbwstr, const char * 
         return 0;
 
     nc = strlen(astr);
-    if(nc == MultiByteToWideChar(
-        CP_ACP,
-        0,
-        astr,
-        (int) nc,
-        wstr,
-        (int)(cbwstr / sizeof(wchar_t) - 1))) {
+    if(nc == MultiByteToWideChar(CP_ACP, 0, astr, (int) nc,
+				 wstr, (int)(cbwstr / sizeof(wchar_t) - 1))) {
         wstr[nc] = L'\0';
     } else {
         wstr[0] = L'\0';
@@ -64,15 +59,8 @@ KHMEXP int KHMAPI UnicodeStrToAnsi( char * dest, size_t cbdest, const wchar_t * 
         // note that cbdest counts the terminating NULL, while nc doesn't
         return 0;
 
-    nc = WideCharToMultiByte(
-        CP_ACP,
-        WC_NO_BEST_FIT_CHARS,
-        src,
-        (int) nc,
-        dest,
-        (int) cbdest,
-        NULL,
-        NULL);
+    nc = WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, src, (int) nc,
+			     dest, (int) cbdest, NULL, NULL);
 
     dest[nc] = 0;
 
