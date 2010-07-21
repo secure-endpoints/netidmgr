@@ -105,7 +105,7 @@ KHMEXP_EXP khm_int32 KHMAPI init_module(kmm_module h_module) {
     pi.flags = 0;
     pi.msg_proc = plugin_msg_proc;
     pi.description = description;
-    pi.dependencies = NULL;
+    pi.dependencies = IDPROV_NAMEW L"\0";
     t = LoadString(hResModule, IDS_PLUGIN_DESC,
                    description, ARRAYLENGTH(description));
     if (!t)

@@ -131,7 +131,26 @@ handle_khui_wm_nc_notify(HWND hwnd, WPARAM wParam, LPARAM lParam) {
         break;
 
     case WMNC_IDENTITY_CHANGE:
-        break;
+    {
+        khm_handle ident = NULL;
+
+        khui_cw_get_primary_id(d->nc, &ident);
+
+        if (ident &&
+            kcdb_identity_by_provider(ident, IDPROV_NAMEW)) {
+            khui_cw_enable_type(d->nc, credtype_id, TRUE);
+
+            khui_cw_notify_identity_state(d->nc, NULL, L"",
+                                          KHUI_CWNIS_VALIDATED |
+                                          KHUI_CWNIS_READY, 0);
+        } else {
+            khui_cw_enable_type(d->nc, credtype_id, FALSE);
+        }
+
+        if (ident)
+            kcdb_identity_release(ident);
+    }
+    break;
 
     case WMNC_DIALOG_PREPROCESS:
         break;

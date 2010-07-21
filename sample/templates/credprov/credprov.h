@@ -66,6 +66,18 @@
 
 #define MYMODULE_NAMEW _T(MYMODULE_NAME)
 
+/* The following macro will be used throughout the template to refer
+   to the name of the identity provider plugin.  The macro is
+   actually defined the Makefile generated configuration header file.
+   Modify the IDPROVNAME Makefile macro.*/
+#ifndef IDPROV_NAME
+#error  IDPROV_NAME not defined
+#endif
+
+/* Also define the unicde equivalent of the name.  In general strings
+   in NetIDMgr are unicode. */
+#define IDPROV_NAMEW _T(IDPROV_NAME)
+
 /* When logging events from our plugin, the event logging API can
    optionally take a facility name to provide a friendly label to
    identify where each event came from.  We will default to the plugin
