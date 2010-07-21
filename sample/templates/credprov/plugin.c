@@ -36,6 +36,8 @@
 khm_int32 credtype_id = KCDB_CREDTYPE_INVALID;
 khm_handle g_credset = NULL;
 
+khm_handle h_idprov = NULL;
+
 /* Handler for system messages.  The only two we handle are
    KMSG_SYSTEM_INIT and KMSG_SYSTEM_EXIT. */
 khm_int32 KHMAPI
@@ -180,6 +182,13 @@ handle_kmsg_system(khm_int32 msg_type,
             khui_cfg_register(cnode, &creg);
 
             khui_cfg_release(cnode);
+
+            /* get IdentProvider handle to which this plugin belongs
+               it is possible to use kcdb_identity_create_ex() function with
+               proper h_idprov */
+            if (KHM_FAILED(kcdb_identpro_find(IDPROV_NAMEW, &h_idprov))) {
+                return KHM_ERROR_UNKNOWN;
+            }
         }
         break;
 
@@ -231,6 +240,8 @@ handle_kmsg_system(khm_int32 msg_type,
 
             /* TODO: Perform additional uninitialization
                operations. */
+
+			kcdb_identpro_release(h_idprov);
         }
         break;
     }

@@ -36,6 +36,9 @@
 # TODO: Change the plug-in name
 PLUGINNAME=MyPlugin
 
+# TODO: Change the identity provider name to which this plugin belongs
+IDPROVNAME=MyIdentProv
+
 # TODO: Change the module name
 MODULENAME=MyModule
 
@@ -212,6 +215,8 @@ $(CONFIGHEADER): Makefile
 /* This is a generated file.  Do not modify directly. */
 
 #pragma once
+
+#define IDPROV_NAME    "$(IDPROVNAME)"
 
 #define MYPLUGIN_DLLBASE "$(DLLBASENAME)"
 
