@@ -296,7 +296,20 @@ void DisplayContainer::OnPaint(Graphics& g, const Rect& clip)
     }
 
     g.DrawImage(dbuffer, clip.X, clip.Y,
-                clip.X - b.X, clip.Y - b.Y, clip.Width, clip.Height, UnitPixel);
+                clip.X - b.X, clip.Y - b.Y,
+		__min(clip.Width, extents.Width - (clip.X - b.X)),
+		__min(clip.Height, extents.Height - (clip.Y - b.Y)),
+		UnitPixel);
+
+    if (clip.Width > extents.Width - (clip.X - b.X) ||
+	clip.Height > extents.Height - (clip.Y - b.Y)) {
+	SolidBrush bb(g_theme->c_background);
+	Region rb(clip);
+	rb.Exclude(Rect(clip.X, clip.Y,
+			extents.Width - (clip.X - b.X),
+			extents.Height - (clip.Y - b.Y)));
+	g.FillRegion(&bb, &rb);
+    }
 }
 
 BOOL DisplayContainer::OnCreate(LPVOID createParams)
