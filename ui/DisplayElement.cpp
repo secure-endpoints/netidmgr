@@ -39,7 +39,7 @@ void DisplayElement::MarkForExtentUpdate(void)
 
 void DisplayElement::MarkChildrenForExtentUpdate(void)
 {
-    for (DisplayElement * c = TQFIRSTCHILD(this); c; c = TQNEXTSIBLING(c)) 
+    for (DisplayElement * c = TQFIRSTCHILD(this); c; c = TQNEXTSIBLING(c))
         if (c->visible) {
             c->recalc_extents = true;
             c->MarkChildrenForExtentUpdate();
