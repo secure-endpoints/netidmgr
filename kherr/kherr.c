@@ -241,7 +241,7 @@ static void
 notify_ctx_event(enum kherr_ctx_event e, kherr_context * c,
 		 kherr_context * d_c, kherr_event * evt, int p)
 {
-    int i, nh = 0;
+    unsigned i, nh = 0;
     kherr_ctx_event_data d;
 #define MAX_NOTIFICATIONS 8
     kherr_handler_node h[MAX_NOTIFICATIONS];
