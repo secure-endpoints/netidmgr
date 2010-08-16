@@ -561,6 +561,7 @@ KHMEXP void KHMAPI kherr_add_ctx_handler_param(kherr_ctx_handler_param h,
  */
 KHMEXP void KHMAPI kherr_remove_ctx_handler(kherr_ctx_handler h,
                                             kherr_serial serial);
+#pragma deprecated(kherr_remove_ctx_handler)
 
 /*! \brief Remove a context event handler
 
