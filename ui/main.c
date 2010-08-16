@@ -372,16 +372,17 @@ WPARAM khm_message_loop(void) {
    displayed. */
 void KHMAPI
 khm_err_ctx_completion_handler(enum kherr_ctx_event evt,
-                               kherr_context * c) {
+                               kherr_ctx_event_data * data,
+                               void * vparam) {
     kherr_event * e;
     khui_alert * a;
 
     /* we only handle top level contexts here.  For others, we allow
        the child contexts to fold upward silently. */
-    if (c->parent || !kherr_is_error_i(c))
+    if (data->ctx->parent || !kherr_is_error_i(data->ctx))
         return;
 
-    for(e = kherr_get_first_event(c);
+    for(e = kherr_get_first_event(data->ctx);
         e;
         e = kherr_get_next_event(e)) {
 
@@ -558,9 +559,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         kmq_set_completion_handler(KMSG_CRED, kmsg_cred_completion);
 
-        kherr_add_ctx_handler(khm_err_ctx_completion_handler,
-                              KHERR_CTX_END,
-                              0);
+        kherr_add_ctx_handler_param(khm_err_ctx_completion_handler,
+                                    KHERR_CTX_END, 0, NULL);
 
         /* load the standard plugins */
         khm_load_default_modules();
