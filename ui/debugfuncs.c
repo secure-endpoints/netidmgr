@@ -101,7 +101,8 @@ fwprint_systime(FILE * f, SYSTEMTIME *psystime, BOOL full) {
 
 static void KHMAPI
 debug_event_handler(enum kherr_ctx_event e,
-		    kherr_context * c) {
+		    kherr_ctx_event_data * data,
+                    void * vparam) {
     kherr_event * evt;
 
     EnterCriticalSection(&cs_dbg);
@@ -115,7 +116,7 @@ debug_event_handler(enum kherr_ctx_event e,
                                    we have a description. */
     } else if (e == KHERR_CTX_DESCRIBE) {
         LeaveCriticalSection(&cs_dbg);
-	evt = kherr_get_desc_event(c);
+	evt = data->data.event;
 	if (evt) {
             FILETIME ltime;
             SYSTEMTIME systime;
@@ -126,11 +127,11 @@ debug_event_handler(enum kherr_ctx_event e,
             FileTimeToSystemTime(&ltime, &systime);
 
             EnterCriticalSection(&cs_dbg);
-            p = TPARENT(c);
+            p = TPARENT(data->ctx);
             fwprint_systime(logfile, &systime, FALSE);
 	    fwprintf(logfile,
                      L"[%d] Begin: %s",
-                     c->serial,
+                     data->ctx->serial,
                      (evt->long_desc)? evt->long_desc: evt->short_desc);
             if (p)
                 fwprintf(logfile, L" (child of [%d])\n", p->serial);
@@ -144,11 +145,11 @@ debug_event_handler(enum kherr_ctx_event e,
 
         GetLocalTime(&systime);
         fwprint_systime(logfile, &systime, FALSE);
-        fwprintf(logfile, L"[%d] End\n", c->serial);
+        fwprintf(logfile, L"[%d] End\n", data->ctx->serial);
 
     } else if (e == KHERR_CTX_EVTCOMMIT) {
         LeaveCriticalSection(&cs_dbg);
-	evt = kherr_get_last_event(c);
+	evt = data->data.event;
 	if (evt && (evt->short_desc || evt->long_desc)) {
 	    SYSTEMTIME systime;
             FILETIME ltime;
@@ -163,7 +164,7 @@ debug_event_handler(enum kherr_ctx_event e,
 	    fwprintf(logfile,
                      L"%d[%d] %s",
                      evt->thread_id,
-                     c->serial,
+                     data->ctx->serial,
                      severity_string(evt->severity));
 
             fwprintf(logfile,
@@ -383,12 +384,12 @@ void khm_start_file_log(void) {
     khm_get_file_log_path(sizeof(temppath), temppath);
 
     logfile = _wfsopen(temppath, L"w", _SH_DENYWR);
-    kherr_add_ctx_handler(debug_event_handler,
-			  KHERR_CTX_BEGIN |
-			  KHERR_CTX_END |
-			  KHERR_CTX_DESCRIBE |
-			  KHERR_CTX_EVTCOMMIT,
-			  0);
+    kherr_add_ctx_handler_param(debug_event_handler,
+                                KHERR_CTX_BEGIN |
+                                KHERR_CTX_END |
+                                KHERR_CTX_DESCRIBE |
+                                KHERR_CTX_EVTCOMMIT,
+                                0, NULL);
     log_started = TRUE;
 
     LeaveCriticalSection(&cs_dbg);
@@ -405,7 +406,7 @@ void khm_stop_file_log(void) {
     if (!log_started)
 	goto _done;
 
-    kherr_remove_ctx_handler(debug_event_handler, 0);
+    kherr_remove_ctx_handler_param(debug_event_handler, 0, NULL);
 
     EnterCriticalSection(&cs_dbg);
 
