@@ -141,6 +141,9 @@ add_ctx_handler_node(const kherr_handler_node * n)
     LeaveCriticalSection(&cs_error);
 }
 
+#pragma warning(push)
+#pragma warning(disable: 4995)
+
 KHMEXP void KHMAPI
 kherr_add_ctx_handler(kherr_ctx_handler h,
                       khm_int32 filter,
@@ -158,6 +161,8 @@ kherr_add_ctx_handler(kherr_ctx_handler h,
 
     add_ctx_handler_node(&n);
 }
+
+#pragma warning(pop)
 
 KHMEXP void KHMAPI
 kherr_add_ctx_handler_param(kherr_ctx_handler_param h,
@@ -177,6 +182,9 @@ kherr_add_ctx_handler_param(kherr_ctx_handler_param h,
 
     add_ctx_handler_node(&n);
 }
+
+#pragma warning(push)
+#pragma warning(disable: 4995)
 
 KHMEXP void KHMAPI
 kherr_remove_ctx_handler(kherr_ctx_handler h,
@@ -200,6 +208,7 @@ kherr_remove_ctx_handler(kherr_ctx_handler h,
     LeaveCriticalSection(&cs_error);
 }
 
+#pragma warning(pop)
 
 KHMEXP void KHMAPI
 kherr_remove_ctx_handler_param(kherr_ctx_handler_param h,
