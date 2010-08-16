@@ -390,6 +390,9 @@ void AlertElement::OnErrCtxEvent()
 	    AlertContextMonitor::ContextProgressEvent * ev =
 		static_cast<AlertContextMonitor::ContextProgressEvent *>(event);
 
+#ifdef DEBUG
+	    kherr_debug_printf(L"  Progress value: %d\n", (int) ev->progress);
+#endif
             UpdateProgress(ev->progress);
         }
         break;
