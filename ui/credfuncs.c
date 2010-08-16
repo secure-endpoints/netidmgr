@@ -211,7 +211,7 @@ khm_new_cred_ops_pending(void)
 
 void KHMCALLBACK
 khm_new_cred_progress_broadcast(enum kherr_ctx_event evt,
-                                kherr_context * ctx,
+                                kherr_ctx_event_data * data,
                                 void * vparam)
 {
     khui_new_creds * nc = (khui_new_creds *) vparam;
@@ -234,21 +234,9 @@ khm_new_cred_progress_broadcast(enum kherr_ctx_event evt,
         break;
 
     case KHERR_CTX_PROGRESS:
-        {
-            khm_ui_4 num = 0;
-            khm_ui_4 denom = 0;
-
-            kherr_get_progress_i(ctx, &num, &denom);
-            if (denom == 0) {
-                num = 0;
-            } else {
-                num = (num * 256) / denom;
-            }
-
-            kmq_post_message(KMSG_CREDP, KMSG_CREDP_PROG_NEWCRED,
-                             ((((khm_ui_4)nc->subtype) << 16)|(num)),
-                             identity);
-        }
+        kmq_post_message(KMSG_CREDP, KMSG_CREDP_PROG_NEWCRED,
+                         ((((khm_ui_4)nc->subtype) << 16)|(data->data.progress)),
+                         identity);
         break;
     }
 }
