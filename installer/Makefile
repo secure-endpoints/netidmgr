@@ -79,7 +79,14 @@ TARGET=no-wix
 !endif
 
 # Build with Omaha updater additions
-OMAHA=1
+#
+# SEI Omaha deployment toolkit is capable of making the necessary
+# transforms itself.  Therefore doing so ourselves is no longer
+# necessary.  In addition, the deployment toolkit and the Omaha server
+# now handle 32-bit vs. 64-bit installers.  We no longer need to
+# package them as different applications.
+#
+# OMAHA=1
 
 # Suppress validation
 LIGHTVAL=-sval
