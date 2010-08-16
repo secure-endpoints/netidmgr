@@ -235,12 +235,6 @@
 
 7.      KNOWN ISSUES
 
-    1.  With the current MIT Kerberos for Windows 3.1 beta, NetIDMgr
-        will fail to load the plug-in when tries to load the plug-in
-        for the first time.  Restarting NetIDMgr will fix the problem.
-        This will be fixed in a future beta and the final release of
-        KfW 3.1
-
 ------------------------------------------------------------------
 
 8.      SUPPORT / BUG REPORTS
