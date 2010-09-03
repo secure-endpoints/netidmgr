@@ -320,7 +320,7 @@ HIVE=HKCU
 REGPATH=$(HIVE)\Software\MIT\NetIDMgr\PluginManager\Modules\$(MODULENAME)
 
 install-local: all
-	REG ADD "$(REGPATH)"
+	REG ADD "$(REGPATH)" /f
 	REG ADD "$(REGPATH)" /v ImagePath /t REG_SZ /d "$(DLL)" /f
 	REG ADD "$(REGPATH)" /v PluginList /t REG_SZ /d "$(PLUGINLIST)" /f
 
