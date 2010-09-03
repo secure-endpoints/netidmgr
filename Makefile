@@ -180,6 +180,15 @@ krb5plugin: plugincommon
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
 
+krb5plugin-install-local:
+	$(ECHO) -- Entering $@
+	$(CD) plugins\krb5
+	$(RMAKE) install-local
+	$(CD) ..\..
+	$(ECHO) -- Done with $@
+
+install-local:: krb5plugin-install-local
+
 !ifndef KH_NO_KRB4
 finale: krb4plugin
 
@@ -189,6 +198,16 @@ krb4plugin: plugincommon
 	$(RMAKE)
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
+
+krb4plugin-install-local:
+	$(ECHO) -- Entering $@
+	$(CD) plugins\krb4
+	$(RMAKE) install-local
+	$(CD) ..\..
+	$(ECHO) -- Done with $@
+
+install-local:: krb4plugin-install-local
+
 !endif
 
 !endif				# BUILD_KFW

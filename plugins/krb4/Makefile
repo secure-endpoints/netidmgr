@@ -99,3 +99,21 @@ clean::
 !endif
 
 
+# install-local:
+# 
+# This target performs a minimal registration of the plug-in binary on
+# the local system.  An installa of Network Identity Manager should
+# then be able to pick up the plug-in from the build location.
+# 
+# The registration is done in HKCU.
+
+HIVE=HKCU
+
+REGPATH=$(HIVE)\Software\MIT\NetIDMgr\PluginManager\Modules\MitKrb4
+
+install-local: all
+	REG ADD "$(REGPATH)" /f
+	REG ADD "$(REGPATH)" /v ImagePath /t REG_SZ /d "$(DLLFILE)" /f
+
+clean-local:
+	REG DELETE "$(REGPATH)"
