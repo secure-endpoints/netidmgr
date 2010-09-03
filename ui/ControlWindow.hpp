@@ -233,12 +233,12 @@ public:
     BOOL DestroyWindow();
 
     BOOL Invalidate() {
-        return ::InvalidateRect(hwnd, NULL, TRUE);
+        return (hwnd != NULL)? ::InvalidateRect(hwnd, NULL, TRUE) : TRUE;
     }
 
     BOOL Invalidate(const Rect& r) {
         RECT R = { r.GetLeft(), r.GetTop(), r.GetRight(), r.GetBottom() };
-        return ::InvalidateRect(hwnd, &R, TRUE);
+        return (hwnd != NULL)? ::InvalidateRect(hwnd, &R, TRUE) : TRUE;
     }
 
     BOOL PostMessage(UINT msg, WPARAM wParam, LPARAM lParam) {
