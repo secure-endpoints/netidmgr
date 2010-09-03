@@ -175,13 +175,13 @@ khm_int32 Notifier::ShowAlert(Alert& a, bool ok_to_enqueue) {
 
         }
 
-        if (IsAlertDisplayed()) {
+        if (a->flags & KHUI_ALERT_FLAG_MODAL) {
 
-            if (a->flags & KHUI_ALERT_FLAG_MODAL) {
-                to_do = Show_in_window;
-            } else {
-                to_do = Consolidate_with_shown_window;
-            }
+            to_do = Show_in_window;
+
+        } else if (IsAlertDisplayed()) {
+
+            to_do = Consolidate_with_shown_window;
 
         } else if ((khm_is_main_window_active() &&
                     !(a->flags & KHUI_ALERT_FLAG_REQUEST_BALLOON)) ||
