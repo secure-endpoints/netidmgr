@@ -46,7 +46,8 @@ void DisplayContainer::Invalidate(const Rect & r)
 
     SetRect(&wr, r.GetLeft(), r.GetTop(), r.GetRight(), r.GetBottom());
     OffsetRect(&wr, - scroll.X, header_height - scroll.Y);
-    ::InvalidateRect(hwnd, &wr, FALSE);
+    if (hwnd != NULL)
+        ::InvalidateRect(hwnd, &wr, FALSE);
 }
 
 bool DisplayContainer::ValidateScrollPos(void)

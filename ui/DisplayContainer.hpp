@@ -138,7 +138,8 @@ public:
     virtual void UpdateLayoutPre(Graphics & g, Rect & layout);
 
     void Invalidate() {
-        ::InvalidateRect(hwnd, NULL, TRUE);
+        if (hwnd)
+            ::InvalidateRect(hwnd, NULL, TRUE);
     }
 
 
