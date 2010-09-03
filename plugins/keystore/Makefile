@@ -327,7 +327,7 @@ clean::
 # install-local:
 #
 # This target performs a minimal registration of the plug-in binary on
-# the local system so.  An installation of Network Identity Manager
+# the local system.  An installation of Network Identity Manager
 # should then be able to pick up your new plug-in from it's build
 # location.
 #
