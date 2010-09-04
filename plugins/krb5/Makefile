@@ -33,6 +33,7 @@ LIBFILE=$(LIBDIR)\krb5cred.lib
 OBJFILES= \
 	$(LIBDIR)\dynimport.obj 	\
 	$(LIBDIR)\krb5common.obj 	\
+	$(LIBDIR)\loadfuncs.obj		\
 	$(OBJ)\krb5main.obj 		\
 	$(OBJ)\datarep.obj 		\
 	$(OBJ)\errorfuncs.obj 		\
@@ -57,12 +58,10 @@ SDKLIBFILES=	\
 
 !if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
 LIBFILES= \
-	$(LIBDIR)\nidmgr64.lib		\
-	$(KFWLIBDIR)\loadfuncs.lib
+	$(LIBDIR)\nidmgr64.lib
 !else
 LIBFILES= \
-	$(LIBDIR)\nidmgr32.lib		\
-	$(KFWLIBDIR)\loadfuncs.lib
+	$(LIBDIR)\nidmgr32.lib
 !endif
 
 MSGRESFILE=$(OBJ)\krb5_msgs.res

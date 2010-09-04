@@ -32,7 +32,8 @@ INCFILES= \
 
 OBJFILES= \
 	$(LIBDIR)\krb5common.obj \
-	$(LIBDIR)\dynimport.obj
+	$(LIBDIR)\dynimport.obj \
+	$(LIBDIR)\loadfuncs.obj
 
 all: mkdirs $(INCFILES) $(OBJFILES)
 

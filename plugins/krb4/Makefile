@@ -33,6 +33,7 @@ LIBFILE=$(LIBDIR)\krb4cred.lib
 OBJFILES= 				\
 	$(LIBDIR)\dynimport.obj 	\
 	$(LIBDIR)\krb5common.obj 	\
+	$(LIBDIR)\loadfuncs.obj		\
 	$(OBJ)\krb4main.obj 		\
 	$(OBJ)\krb4plugin.obj 		\
 	$(OBJ)\krb4funcs.obj 		\
@@ -48,13 +49,11 @@ SDKLIBFILES=
 !if  ("$(CPU)" == "IA64" ) || ("$(CPU)" == "AMD64" ) || ("$(CPU)" == "ALPHA64" )
 SCLIB=bufferoverflowu.lib
 LIBFILES= 				\
-	$(LIBDIR)\nidmgr64.lib		\
-	$(KFWLIBDIR)\loadfuncs.lib
+	$(LIBDIR)\nidmgr64.lib
 !else
 SCLIB=
 LIBFILES= 				\
-	$(LIBDIR)\nidmgr32.lib		\
-	$(KFWLIBDIR)\loadfuncs.lib
+	$(LIBDIR)\nidmgr32.lib
 !endif
 
 VERRESFILE=$(OBJ)\version.res
