@@ -1,13 +1,17 @@
-@echo off
+rem @echo off
 
-for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v6.1\WinSDKWin32Tools" /v InstallationFolder') do set PSDKDir=%%B
-
-if "%PSDKDir%"=="" (
-for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0\WinSDKWin32Tools" /v InstallationFolder') do set PSDKDir=%%B
+for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v6.1\WinSDKWin32Tools" /v InstallationFolder') do (
+    set PSDKDir=%%B
 )
 
 if "%PSDKDir%"=="" (
-   set PSDKDir=%PROGRAMFILES%\Microsoft SDKs\Windows\v6.1\
+for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microsoft SDKs\Windows\v7.0\WinSDKWin32Tools" /v InstallationFolder') do (
+    set PSDKDir=%%B
+)
+)
+
+if "%PSDKDir%"=="" (
+   set PSDKDir=!PROGRAMFILES!\Microsoft SDKs\Windows\v6.1\
 )
 
 if exist "%PSDKDir%bin\SetEnvVS8.Cmd" (
@@ -37,7 +41,10 @@ for /F "tokens=7,8* delims=. " %%A in (%TEMP%\clver.txt) do (
   )
 )
 
-if "%KH_CLVER%"=="" echo Can't determine Visual C compiler version.  Please set KH_CLVER manually to vc8, vc9 or vc10.
+if "%KH_CLVER%"=="" (
+   echo Can't determine Visual C compiler version.  Please set KH_CLVER manually to vc8, vc9 or vc10.
+   exit /b 1
+)
 
 del /q "%TEMP%\clver.txt"
 
