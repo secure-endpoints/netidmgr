@@ -62,6 +62,8 @@ AlertContextMonitor::AlertContextMonitor(AlertElement * _e, ControlWindow *_cw, 
     kherr_add_ctx_handler_param(ErrorContextCallback,
                                 evt_flags,
                                 a->err_context->serial, (void *) this);
+    kherr_context_set_flags(a->err_context, KHERR_CF_MONITORED,
+                            KHERR_CF_MONITORED);
 
     ev = kherr_get_desc_event(a->err_context);
     if (ev) {

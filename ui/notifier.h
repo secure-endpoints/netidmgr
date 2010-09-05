@@ -60,6 +60,15 @@ khm_exit_notifier(void);
 khm_int32
 khm_get_default_notifier_action(void);
 
+/* Internal APIs used by alert related functions */
+KHMEXP khm_int32 KHMAPI
+kherr_context_get_flags(kherr_context * c);
+
+KHMEXP khm_int32 KHMAPI
+kherr_context_set_flags(kherr_context * c,
+                        khm_int32 mask,
+                        khm_int32 flags);
+
 #ifdef __cplusplus
 }
 #endif
