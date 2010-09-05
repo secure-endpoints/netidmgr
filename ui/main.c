@@ -379,7 +379,8 @@ khm_err_ctx_completion_handler(enum kherr_ctx_event evt,
 
     /* we only handle top level contexts here.  For others, we allow
        the child contexts to fold upward silently. */
-    if (data->ctx->parent || !kherr_is_error_i(data->ctx))
+    if (data->ctx->parent || !kherr_is_error_i(data->ctx) ||
+        (kherr_context_get_flags(data->ctx) & KHERR_CF_MONITORED))
         return;
 
     for(e = kherr_get_first_event(data->ctx);

@@ -380,6 +380,12 @@ enum kherr_context_flags {
                                   threads whose current error context
                                   is this one. */
 
+    KHERR_CF_MONITORED     = 0x00000010,
+                                /*!< Alert context is being monitored.
+                                  This flag suppresses display of an
+                                  alert window if an error is reported
+                                  within this context. */
+
     KHERR_CFMASK_INITIAL   = 0x0000000a,
                                 /*!< Allowed initial flags */
 };

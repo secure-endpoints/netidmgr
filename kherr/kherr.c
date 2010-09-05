@@ -1782,3 +1782,27 @@ kherr_context_is_equal(kherr_context *c1, kherr_context *c2)
     return c1 == c2;
 }
 
+KHMEXP khm_int32 KHMAPI
+kherr_context_get_flags(kherr_context * c)
+{
+    khm_int32 flags;
+
+    EnterCriticalSection(&cs_error);
+    flags = c->flags;
+    LeaveCriticalSection(&cs_error);
+
+    return flags;
+}
+
+KHMEXP khm_int32 KHMAPI
+kherr_context_set_flags(kherr_context * c,
+                        khm_int32 mask,
+                        khm_int32 flags)
+{
+    EnterCriticalSection(&cs_error);
+    c->flags = ((c->flags & ~mask) | (flags & mask));
+    flags = c->flags;
+    LeaveCriticalSection(&cs_error);
+
+    return flags;
+}
