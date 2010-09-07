@@ -668,9 +668,50 @@ void khm_cred_renew_all_identities(void)
     kcdb_enum_end(e);
 }
 
+/*! \internal
+  \brief Determine whether an identity should be renewed
+ */
+khm_boolean should_identity_be_renewed(khm_handle identity)
+{
+    khm_int32 flags = 0;
+
+    if (FAILED(kcdb_identity_get_flags(identity, &flags)))
+        return FALSE;
+
+    if ((flags & KCDB_IDENT_FLAG_RENEWABLE) == 0)
+        return FALSE;
+
+    /* TODO: Ideally we wouldn't try to renew an identity that has a
+     * parent identity that is itself renewable.  If the parent is
+     * renewed, then the child would also be renewed as a side-effect.
+     * However, if we prevent such an identity from being renewed, we
+     * should assure that:
+     *
+     * - The parent identity is renewed in time before the child
+     *   expires.
+     *
+     * - If the parent fails to renew for some reason, then the child
+     *   should be renewed independently of the parent.
+     *
+     * Since this logic isn't in place yet, we renew any renewable
+     * identity for the moment.
+     */
+
+    return TRUE;
+}
+
 void khm_cred_renew_identity(khm_handle identity)
 {
     khui_new_creds * c;
+
+    if (!should_identity_be_renewed(identity)) {
+        wchar_t idname[KCDB_IDENT_MAXCCH_NAME] = L"";
+        khm_size cb = sizeof(idname);
+
+        kcdb_identity_get_short_name(identity, FALSE, idname, &cb);
+        _reportf(L"Skipping renewal of identity %s", idname);
+        return;
+    }
 
     if (khm_cred_begin_new_cred_op()) {
         khui_cw_create_cred_blob(&c);
