@@ -709,6 +709,9 @@ get_keystore_credential(keystore_t * ks)
         }
     }
 
+    kcdb_cred_set_flags(credential, KCDB_CRED_FLAG_RENEWABLE | KCDB_CRED_FLAG_INITIAL,
+                        KCDB_CRED_FLAG_RENEWABLE | KCDB_CRED_FLAG_INITIAL);
+
     KSLOCK(ks);
     kcdb_cred_set_attr(credential, KCDB_ATTR_ISSUE, &ks->ft_key_ctime, KCDB_CBSIZE_AUTO);
     if (FtToInt(&ks->ft_key_expire) != 0 &&
