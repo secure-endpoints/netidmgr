@@ -68,6 +68,8 @@ CwOutlineBase * CwOutlineBase::Insert(T& obj, DisplayColumnList& columns, unsign
     if (target == NULL) {
         target = CreateOutlineNode(obj, columns, column);
         InsertOutlineBefore(target, insertion_point);
+    } else {
+        target->RefreshContents();
     }
 
     if (AllowRecursiveInsert<T>(columns, column)) {

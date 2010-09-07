@@ -52,7 +52,7 @@ CwTable::RefreshGlobalColumnMenu(HWND hwnd)
             (attr_info->flags & KCDB_ATTR_FLAG_HIDDEN) != 0 ||
 
             (attr_info->short_desc == NULL && attr_info->long_desc == NULL)) {
-                
+
             if (attrib_to_action[i] != 0) {
 
                 // This attribute should be removed from the action table
