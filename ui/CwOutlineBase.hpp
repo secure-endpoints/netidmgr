@@ -71,6 +71,11 @@ public:
     virtual bool Represents(const Identity& identity) { return false; }
     virtual void SetContext(SelectionContext& sctx) = 0;
 
+    virtual void RefreshContents() {
+        MarkChildrenForExtentUpdate();
+        MarkForExtentUpdate();
+    }
+
     template <class U, class V>
     bool FindElements(const V& criterion, std::vector<U *>& results);
 };

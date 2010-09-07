@@ -40,7 +40,6 @@ protected:
     Credential credential;
     khm_int32  attr_id;
     khm_int32  ftse_flags;
-    volatile bool need_update;
 
 public:
     CwTimeTextCellElement(Credential& _credential,
@@ -48,8 +47,7 @@ public:
         WithColumnAlignment(_column, 1),
         credential(_credential),
         attr_id(_attr_id),
-        ftse_flags(_ftse_flags),
-        need_update(true)
+        ftse_flags(_ftse_flags)
     {}
 
 public:
@@ -63,23 +61,21 @@ public:
 
         FtToStringEx(&ft, ftse_flags, &ms, buf, &cb);
 
-        SetCaption(std::wstring(buf));
+        if (GetCaption() != buf)
+            SetCaption(std::wstring(buf));
+
         if (ms != 0 && owner) {
             owner->SetTimer(this, ms);
         }
-
-        need_update = false;
     }
 
     void OnTimer() {
-        need_update = true;
         MarkForExtentUpdate();
         Invalidate();
     }
 
     void UpdateLayoutPre(Graphics& g, Rect& layout) {
-        if (need_update)
-            UpdateCaption();
+        UpdateCaption();
         __super::UpdateLayoutPre(g, layout);
     }
 
