@@ -2,6 +2,66 @@
 Network Identity Manager
 ========================
 
+Version 2.0.102.907 (Release)
+-----------------------------
+
+KeyStore:
+
+  - Proactively indicate password mismatches in the password change
+    dialog.
+
+Bug fixes:
+
+  - Fix a potential deadlock when displaying the configuration dialog.
+
+  - Set all certificate identities as initializable to fix backward
+    compatibility in certificate provider plug-in.
+
+  - Fix character encoding in Kerberos v5 plug-in configuration
+    dialog.
+
+  - Fix race condition during notification of credential operations
+    that was causing some notifications to not be delivered.
+
+  - Don't show the 'Back' button during credentials acquisition.
+
+  - Don't hide the new credentials wizard if there is an error to be
+    displayed.
+
+  - Fix background erasing for credentials display and notification
+    windows.
+
+  - Modal alerts are now always displayed in a window.  Previously, it
+    was possible for a modal alert to be displayed as a balloon.
+
+  - Prevent the desktop window from being invalidated when displaying
+    an alert windows.
+
+  - Suppress unnecessary alerts during new credentials acquisition.
+    It was possible for a credentials acquisition error to be
+    displayed twice to the user.
+
+  - Attempts to renew identities are now strictly limited to
+    identities that have renewable credentials.
+
+  - The time stamp displays in the credentials display may at times
+    show stale values shortly after a new credentials acquisition.
+
+Source:
+
+  - Support building with Microsoft Windows SDK v7.
+
+  - Update the credprov template to depend on an identity provider.
+
+  - Support install-local target for Kerberos v5 and Kerberos v4
+    plug-ins during development.
+
+  - Fix for automatic detection of Windows SDKs.  In some instances,
+    the setupbuild.cmd script would fail to set paths properly.
+
+  - LoadFuncs is now built as part of the Network Identity Manager
+    source tree to avoid mismatched runtime library dependencies.
+
 Version 2.0.0.304 (Release)
 ---------------------------
 
