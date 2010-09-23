@@ -221,6 +221,16 @@ heimdal: ui
 	$(RMAKE)
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
+
+heimdal-install-local:
+	$(ECHO) -- Entering $@
+	$(CD) plugins\heimdal
+	$(RMAKE) install-local
+	$(CD) ..\..
+	$(ECHO) -- Done with $@
+
+install-local:: heimdal-install-local
+
 !endif				# BUILD_HEIMDAL
 
 !ifndef NODOCBUILD
