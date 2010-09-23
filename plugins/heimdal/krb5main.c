@@ -25,6 +25,7 @@
 /* $Id$ */
 
 #include "krbcred.h"
+#include <krbcompat_delayload.h>
 
 kmm_module h_khModule;          /* KMM's handle to this module */
 HINSTANCE hInstance;            /* Instance of this DLL */
@@ -50,6 +51,8 @@ KHMEXP_EXP khm_int32 KHMAPI init_module(kmm_module h_module) {
     khm_int32 rv = KHM_ERROR_SUCCESS;
     kmm_plugin_reg pi;
     wchar_t buf[256];
+
+    DelayLoadHeimdal(hInstance);
 
     h_khModule = h_module;
 
