@@ -60,7 +60,7 @@ set KH_NO_W2K=1
 
 set KH_RELEASE=PRIVATE
 
-set KH_AUXCFLAGS=/wd4512 /wd4267 /wd4389 /wd4245 /wd4311 /wd4127 /wd4115 /wd4100
+set KH_AUXCFLAGS=/wd4512 /wd4267 /wd4389 /wd4245 /wd4311 /wd4127 /wd4115 /wd4100 /wd4996 /wd4244
 
 rem Try to figure out runtime merge module location
 if "%CommonProgramFiles(x86)%"=="" set mmdir=%CommonProgramFiles%\Merge Modules
