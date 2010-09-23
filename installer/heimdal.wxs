@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+
+  <!--
+
+      Copyright (c) 2010 Secure Endpoints Inc.
+
+      Permission is hereby granted, free of charge, to any person
+      obtaining a copy of this software and associated documentation
+      files (the "Software"), to deal in the Software without
+      restriction, including without limitation the rights to use,
+      copy, modify, merge, publish, distribute, sublicense, and/or
+      sell copies of the Software, and to permit persons to whom the
+      Software is furnished to do so, subject to the following
+      conditions:
+
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
+
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+      OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+      HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+      WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+      FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+      OTHER DEALINGS IN THE SOFTWARE.
+
+    -->
+
+  <?if $(env.CPU)="i386" Or $(env.CPU)="x86" ?>
+  <?define Platform=x86 ?>
+  <?elseif $(env.CPU)="x64" Or $(env.CPU)="AMD64" ?>
+  <?define Platform=x64 ?>
+  <?else ?>
+  <?error Unknown value for CPU environment variable. ?>
+  <?endif ?>
+
+  <?define IncludeDebugSyms="yes" ?>
+
+  <?if $(var.Platform)="x86" ?>
+  <?ifndef NoW2k?>
+  <?define IncludeW2k="yes" ?>
+  <?endif ?>
+  <?endif ?>
+
+  <!-- Platform dependencies -->
+
+  <?if $(var.Platform)="x86" ?>
+
+  <?define Win64="no" ?>
+
+  <?define heimdalcred_dll_guid="2F1E8899-22ED-4E05-A769-2D7FF05F4606" ?>
+  <?define heimdalcred_dll_pdb_guid="AE6A13EC-4CB2-4066-9E11-F6AF2DE1BA46" ?>
+  <?define heimdalcred_en_us_dll_guid="414C2FFD-20E5-47E0-87F6-75901B1E353F" ?>
+
+  <?elseif $(var.Platform)="x64" ?>
+
+  <?define Win64="yes" ?>
+
+  <?define heimdalcred_dll_guid="3E241913-72B9-4F87-931D-AB5F503CACFD" ?>
+  <?define heimdalcred_dll_pdb_guid="0ED92D3C-D713-4B40-A157-E67B03C1A4E1" ?>
+  <?define heimdalcred_en_us_dll_guid="205AB377-F0C8-4BFD-B8F7-359BEB1DF39B" ?>
+
+  <?else ?>
+  <?error Unknown value for Platform variable ?>
+  <?endif ?>
+
+  <Fragment>
+    <DirectoryRef Id="APPDIR" FileSource="$(var.BinDir)" DiskId="1">
+
+      <!-- HEIMDALCRED.DLL -->
+
+      <Component Win64="$(var.Win64)" Id="heimdalcred_dll" Guid="$(var.heimdalcred_dll_guid)" DiskId="1">
+        <File Id="fil_heimdalcred_dll" Name="heimdalcred.dll" KeyPath="yes" />
+
+        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\Heimdal" Action="createAndRemoveOnUninstall" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\Heimdal" Name="ImagePath" Type="string" Value="[#fil_heimdalcred_dll]" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\Heimdal" Name="PluginList" Type="string" Value="Krb5Cred,Krb5Ident" />
+        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Action="createAndRemoveOnUninstall" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Module" Type="string" Value="Heimdal" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Description" Type="string" Value="Kerberos v5 Credentials Provider" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Type" Type="integer" Value="1" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Flags" Type="integer" Value="0" />
+        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Action="createAndRemoveOnUninstall" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Module" Type="string" Value="Heimdal" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Description" Type="string" Value="Kerberos v5 Identity Provider" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Dependencies" Type="string" Value="Heimdal" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Type" Type="integer" Value="2" />
+        <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Flags" Type="integer" Value="0" />
+      </Component>
+
+      <Component Win64="$(var.Win64)" Id="heimdalcred_en_us_dll" Guid="$(var.heimdalcred_en_us_dll_guid)" DiskId="1">
+        <File Id="fil_heimdalcred_en_us_dll" ShortName="krb5cenu.dll" Name="heimdalcred_en_us.dll" KeyPath="yes" />
+      </Component>
+
+      <?ifdef IncludeDebugSyms ?>
+      <Component Id="heimdalcred_dll_pdb" Guid="$(var.heimdalcred_dll_pdb_guid)" DiskId="1">
+        <File Id="fil_heimdalcred_dll_pdb" Name="heimdalcred.pdb" KeyPath="yes" />
+      </Component>
+      <?endif ?>
+
+      <Merge Id="mergeHeimdal" Language="0"
+             SourceFile="$(var.HeimdalDir)redist\$(env.CPU)\Heimdal.msm" />
+
+      <Merge Id="mergeHeimdalCompat" Language="0"
+             SourceFile="$(var.HeimdalDir)redist\$(env.CPU)\Heimdal-krbcompat.msm" />
+
+    </DirectoryRef>
+
+    <ComponentGroup Id="Heimdal">
+      <ComponentRef Id="heimdalcred_dll" />
+      <ComponentRef Id="heimdalcred_en_us_dll" />
+    </ComponentGroup>
+
+    <?ifdef IncludeDebugSyms ?>
+    <ComponentGroup Id="HeimdalDebug">
+      <ComponentRef Id="heimdalcred_dll_pdb" />
+    </ComponentGroup>
+    <?endif ?>
+
+    <Feature Id="Feature.Heimdal" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureKrb5Title)" Description="!(loc.FeatureKrb5Desc)" Level="3">
+      <ComponentGroupRef Id="Heimdal" />
+
+      <?ifdef IncludeDebugSyms ?>
+      <Feature Id="Feature.Heimdal.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
+        <ComponentGroupRef Id="HeimdalDebug" />
+      </Feature>
+      <?endif ?>
+
+      <MergeRef Id="mergeHeimdal" />
+      <MergeRef Id="mergeHeimdalCompat" />
+    </Feature>
+
+  </Fragment>
+</Wix>

@@ -70,10 +70,18 @@
   <?ifndef NoW2k?>
   <?define IncludeW2k="yes" ?>
   <?endif ?>
+  <?ifndef Heimdal?>
   <?define IncludeKrb4="yes" ?>
+  <?endif?>
   <?elseif $(var.Platform)="x64" ?>
   <!-- nothing -->
   <?endif ?>
+
+  <?ifdef Heimdal?>
+  <?define IncludeHeimdal="yes"?>
+  <?else?>
+  <?define IncludeKrb5="yes"?>
+  <?endif?>
 
   <!-- Sanity checks -->
   <?if $(var.Platform) != "x86"?>
@@ -153,7 +161,13 @@
       <FeatureRef Id="Feature.Krb4" />
       <?endif ?>
 
+      <?ifdef IncludeKrb5 ?>
       <FeatureRef Id="Feature.Krb5" />
+      <?endif?>
+
+      <?ifdef IncludeHeimdal ?>
+      <FeatureRef Id="Feature.Heimdal" />
+      <?endif?>
 
       <?ifdef IncludeKeystore?>
       <FeatureRef Id="Feature.KeyStore" />

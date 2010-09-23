@@ -39,17 +39,23 @@
 MODULE=installer
 !include <../config/Makefile.w32>
 
+!ifdef BUILD_HEIMDAL
+BASENAME=netidmgr-heimdal-
+!else
+BASENAME=netidmgr-
+!endif
+
 NETIDMGR_VERSIONU=$(NETIDMGR_VERSION_MAJOR)_$(NETIDMGR_VERSION_MINOR)_$(NETIDMGR_VERSION_PATCH)_$(NETIDMGR_VERSION_AUX)
 
 LANG=en_us
 
-MSIFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
+MSIFILE=$(BINDIR)\$(BASENAME)$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
 
-SDKMSIFILE=$(BINDIR)\netidmgr-sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
+SDKMSIFILE=$(BINDIR)\$(BASENAME)sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
 
-ZIPFILE=$(BINDIR)\netidmgr-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
+ZIPFILE=$(BINDIR)\$(BASENAME)$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
-SDKZIPFILE=$(BINDIR)\netidmgr-sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
+SDKZIPFILE=$(BINDIR)\$(BASENAME)sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
 KEYSTORE=$(SRC)\plugins\keystore
 
@@ -98,11 +104,19 @@ all: $(TARGET)
 MSIOBJS=						\
 	"$(OBJ)\installer.wixobj" 			\
 	"$(OBJ)\nim-core.wixobj" 			\
-	"$(OBJ)\krb5cred.wixobj"			\
 	"$(OBJ)\keystore.wixobj"
 
-!if "$(CPU)" == "i386" || "$(CPU)" == "x86"
+!ifndef BUILD_HEIMDAL
+
+MSIOBJS=$(MSIOBJS) "$(OBJ)\krb5cred.wixobj"
+!if ("$(CPU)" == "i386" || "$(CPU)" == "x86")
 MSIOBJS=$(MSIOBJS) "$(OBJ)\krb4cred.wixobj"
+!endif
+
+!else
+
+MSIOBJS=$(MSIOBJS) "$(OBJ)\heimdal.wixobj"
+
 !endif
 
 !ifdef OMAHA
@@ -159,6 +173,9 @@ $(OBJ)\installer.wixobj: installer.wxs
 !ifdef OMAHA
 		-dOmaha=yes				\
 !endif
+!ifdef BUILD_HEIMDAL
+		-dHeimdal=yes 				\
+!endif
 		-dIncludeKeystore=yes
 
 $(OBJ)\nim-core.wixobj: nim-core.wxs
@@ -180,6 +197,23 @@ $(OBJ)\omaha.wixobj: omaha.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
 		-dProductVersion=$(NETIDMGR_VERSION)	\
 		-dBinDir=$(BINDIR)\			\
+		-dSrcDir=$(SRC)				\
+		-dClVer=$(KH_CLVER)
+!endif
+
+!ifdef BUILD_HEIMDAL
+$(OBJ)\heimdal.wixobj: heimdal.wxs
+	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
+		-dProductVersion=$(NETIDMGR_VERSION)	\
+		-dBinDir=$(BINDIR)\			\
+		-dLibDir=$(LIBDIR)\			\
+		-dHeimdalDir=$(HEIMDALDIR)\		\
+!ifndef NODEBUG
+		-dDebug=1				\
+!endif
+!ifdef KH_NO_W2K
+		-dNoW2k=1				\
+!endif
 		-dSrcDir=$(SRC)				\
 		-dClVer=$(KH_CLVER)
 !endif
@@ -263,13 +297,23 @@ no-wix:
 ZIPSRC=			\
 	$(BINDIR)\netidmgr.exe	\
 	$(BINDIR)\netidmgr.pdb	\
-	$(BINDIR)\netidmgr.chm	\
+	$(BINDIR)\netidmgr.chm
+
+!ifndef BUILD_HEIMDAL
+ZIPSRC=$(ZIPSRC)	\
 	$(BINDIR)\krb5cred.dll	\
 	$(BINDIR)\krb5cred.pdb	\
 	$(BINDIR)\krb5cred_en_us.dll
 
 !if exist($(BINDIR)\krb4cred.dll)
 ZIPSRC=$(ZIPSRC) $(BINDIR)\krb4cred.dll $(BINDIR)\krb4cred.pdb $(BINDIR)\krb4cred_en_us.dll
+!endif
+
+!else
+ZIPSRC=$(ZIPSRC)	\
+	$(BINDIR)\heimdalcred.dll	\
+	$(BINDIR)\heimdalcred.pdb	\
+	$(BINDIR)\heimdalcred_en_us.dll
 !endif
 
 !if exist($(BINDIR)\nidmgr32.dll)
