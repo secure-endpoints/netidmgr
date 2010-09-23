@@ -34,6 +34,7 @@ KHIMAIRA_WIN32_CONFIG=1
 #   KH_ROOT : Root of the source tree.
 #   KH_BUILD: One of DEBUG or RETAIL
 #   KH_CLVER: One of 'vc7', 'vc8' or 'vc9'.  The C compiler used for the build
+#   HEIMDALDIR: Path to Heimdal SDK
 #
 #  The following environment variables are optional:
 #   KH_RUNTIME: One of STATIC or DLL, specifies whether the CRT libs
@@ -161,27 +162,13 @@ HHC=$(KH_HHCFULLPATH)
 HHC=hhc
 !endif
 
-!if defined(KH_KFWPATH) && defined(HEIMDALDIR)
-! error Both KH_KFWPATH and HEIMDALDIR are defined.  Only one should be set.
+!if !defined(HEIMDALDIR)
+! error HEIMDALDIR is not defined
 !endif
 
-!ifdef KH_KFWPATH
-KFWINCDIR=$(KH_KFWPATH)\inc
-krbincflags = -I$(KFWINCDIR)\krb5 -I$(KFWINCDIR)\krb5\KerberosIV -I$(KFWINCDIR)\krb4 -I$(KFWINCDIR)\loadfuncs -I$(KFWINCDIR)
-KFWLIBDIR=$(KH_KFWPATH)\lib\$(CPU)
-BUILD_KFW=1
-!else if defined(PISMERE)
-KFWINCDIR=$(PISMERE)\athena\auth\krb5\src\include
-krbincflags = -I$(KFWINCDIR) -I$(PISMERE)\athena\util\loadfuncs -I$(PISMERE)\athena\auth\krb5\src\include\kerberosIV -I$(PISMERE)\athena\auth\krb4\include
-KFWLIBDIR=$(PISMERE)\target\lib\$(CPU)\$(OUTPRE_DBG)
-BUILD_KFW=1
-!endif
-
-!ifdef HEIMDALDIR
-krbincflags =-I$(HEIMDALDIR)\inc
-HEIMDALLIBDIR=$(HEIMDALDIR)\lib
+krbincflags =-I$(HEIMDALDIR)\inc -I$(HEIMDALDIR)\inc\krb5
+HEIMDALLIBDIR=$(HEIMDALDIR)\lib\$(CPU)
 BUILD_HEIMDAL=1
-!endif
 
 incflags= -I$(INCDIR) -I$(OBJ) $(krbincflags)
 rincflags= /i $(INCDIR)

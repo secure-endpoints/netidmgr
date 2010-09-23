@@ -48,11 +48,10 @@ OBJFILES= \
 	$(OBJ)\krb5configdlg.obj	\
 	$(OBJ)\krb5configcc.obj		\
 	$(OBJ)\krb5configid.obj		\
-	$(OBJ)\krb5configids.obj
+	$(OBJ)\krb5configids.obj	\
+	$(OBJ)\krbcompat_delayload.obj
 
 SDKLIBFILES=	\
-	$(HEIMDALLIBDIR)\heimdal.lib 	\
-	$(HEIMDALLIBDIR)\libcom_err.lib 	\
 	netapi32.lib	\
 	shlwapi.lib	\
 	comctl32.lib
@@ -65,6 +64,11 @@ LIBFILES= \
 	$(LIBDIR)\nidmgr32.lib
 !endif
 
+LIBFILES=$(LIBFILES) \
+	$(HEIMDALLIBDIR)\heimdal.lib 	\
+	$(HEIMDALLIBDIR)\libcom_err.lib	\
+	$(HEIMDALLIBDIR)\krbcompat_manifests.res
+
 MSGRESFILE=$(OBJ)\krb5_msgs.res
 
 VERRESFILE=$(OBJ)\version.res
@@ -72,8 +76,11 @@ VERRESFILE=$(OBJ)\version.res
 $(OBJ)\krb5config.c: krbconfig.csv $(CONFDIR)\csvschema.cfg
 	$(CCSV) $** $@
 
-$(DLLFILE):  $(OBJFILES) $(VERRESFILE)
-	$(DLLGUILINK) $(MSGRESFILE) $(LIBFILES) $(SDKLIBFILES) $(SCLIB)
+$(OBJ)\krbcompat_delayload.obj: $(HEIMDALDIR)\src\krbcompat_delayload.c
+	$(C2OBJ)
+
+$(DLLFILE):  $(OBJFILES) $(VERRESFILE) $(LIBFILES)
+	$(DLLGUILINK) $(MSGRESFILE) $(SDKLIBFILES) $(SCLIB) /DELAYLOAD:heimdal.dll
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)
 	$(_CODESIGN)
