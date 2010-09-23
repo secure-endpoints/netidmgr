@@ -289,22 +289,24 @@ tc_free_idlist(identlist * idlist) {
 #define MAX_ADDRS 256
 
 static long
-get_tickets_from_cache(krb5_context ctx,
+get_tickets_from_cache(krb5_context context,
                        krb5_ccache cache,
                        identlist * idlist)
 {
     krb5_error_code code;
-    krb5_principal  KRBv5Principal;
+    krb5_principal  principal = 0;
     krb5_flags	    flags = 0;
-    krb5_cc_cursor  KRBv5Cursor;
-    krb5_creds	    KRBv5Credentials;
-    Ticket          tkt;
+    krb5_cc_cursor  cursor = 0;
+    krb5_creds	    credentials;
+    Ticket          ticket;
     size_t          len;
-    char	   *ClientName = NULL;
-    char	   *PrincipalName = NULL;
+
+    char	   *client_name = NULL;
+    char	   *principal_name = NULL;
+    char	   *server_name = NULL;
+
     wchar_t         wbuf[256];  /* temporary conversion buffer */
     wchar_t         wcc_name[KRB5_MAXCCH_CCNAME]; /* credential cache name */
-    char	   *sServerName = NULL;
     khm_handle      ident = NULL;
     khm_handle      cred = NULL;
     time_t          tt;
@@ -319,73 +321,50 @@ get_tickets_from_cache(krb5_context ctx,
         const char * cc_name;
         const char * cc_type;
 
-        cc_name = krb5_cc_get_name(ctx, cache);
-        if(cc_name) {
-            cc_type = krb5_cc_get_type(ctx, cache);
-            if (cc_type) {
-                StringCbPrintf(wcc_name, sizeof(wcc_name), L"%S:%S", cc_type, cc_name);
-            } else {
-                AnsiStrToUnicode(wcc_name, sizeof(wcc_name), cc_name);
-            }
-        } else {
-            cc_type = krb5_cc_get_type(ctx, cache);
-            if (cc_type) {
-                StringCbPrintf(wcc_name, sizeof(wcc_name), L"%S:", cc_type);
-            } else {
-                assert(FALSE);
-                StringCbCopy(wcc_name, sizeof(wcc_name), L"");
-            }
-        }
+        cc_name = krb5_cc_get_name(context, cache);
+        cc_type = krb5_cc_get_type(context, cache);
+
+        StringCbPrintf(wcc_name, sizeof(wcc_name), L"%S%s%S",
+                       ((cc_type && cc_type[0] != '\0')? cc_type : ""),
+                       ((cc_type && cc_type[0] != '\0')? ":":""),
+                       ((cc_name)? cc_name : ""));
         khm_krb5_canon_cc_name(wcc_name, sizeof(wcc_name));
     }
 
     _reportf(L"Getting tickets from cache [%s]", wcc_name);
 
-    if ((code = krb5_cc_set_flags(ctx, cache, flags)))
+    if ((code = krb5_cc_set_flags(context, cache, flags)))
     {
         if (code != KRB5_FCC_NOFILE && code != KRB5_CC_NOTFOUND)
-            khm_krb5_error(code, "krb5_cc_set_flags()", 0, &ctx, &cache);
+            khm_krb5_error(code, "krb5_cc_set_flags()", 0, &context, &cache);
 
         goto _exit;
     }
 
-    if ((code = krb5_cc_get_principal(ctx, cache, &KRBv5Principal)))
+    if ((code = krb5_cc_get_principal(context, cache, &principal)))
     {
         if (code != KRB5_FCC_NOFILE && code != KRB5_CC_NOTFOUND)
-            khm_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cache);
+            khm_krb5_error(code, "krb5_cc_get_principal()", 0, &context, &cache);
 
         goto _exit;
     }
 
-    PrincipalName = NULL;
-    ClientName = NULL;
-    sServerName = NULL;
-    if ((code = krb5_unparse_name(ctx, KRBv5Principal,
-				  (char **)&PrincipalName))) {
+    if ((code = krb5_unparse_name(context, principal,
+				  (char **)&principal_name))) {
 
-        khm_krb5_error(code, "krb5_unparse_name()", 0, &ctx, &cache);
-
-        if (PrincipalName != NULL)
-            krb5_xfree(PrincipalName);
-
-        krb5_free_principal(ctx, KRBv5Principal);
+        khm_krb5_error(code, "krb5_unparse_name()", 0, &context, &cache);
 
         goto _exit;
     }
 
-    if (!strcspn(PrincipalName, "@" ))
+    if (!strcspn(principal_name, "@" ))
     {
-        _reportf(L"PrincipalName contains no realm [%S]", PrincipalName);
-
-        if (PrincipalName != NULL)
-            krb5_xfree(PrincipalName);
-
-        krb5_free_principal(ctx, KRBv5Principal);
+        _reportf(L"principal_name contains no realm [%S]", principal_name);
 
         goto _exit;
     }
 
-    AnsiStrToUnicode(wbuf, sizeof(wbuf), PrincipalName);
+    AnsiStrToUnicode(wbuf, sizeof(wbuf), principal_name);
     if(KHM_FAILED(kcdb_identity_create(wbuf, KCDB_IDENT_FLAG_CREATE,
                                        &ident))) {
         _reportf(L"Can't create identity");
@@ -395,68 +374,63 @@ get_tickets_from_cache(krb5_context ctx,
 
     _reportf(L"Found principal [%s]", wbuf);
 
-    krb5_free_principal(ctx, KRBv5Principal);
-
-    if ((code = krb5_cc_start_seq_get(ctx, cache, &KRBv5Cursor)))
+    if ((code = krb5_cc_start_seq_get(context, cache, &cursor)))
     {
         goto _exit;
     }
 
-    memset(&KRBv5Credentials, '\0', sizeof(KRBv5Credentials));
+    memset(&credentials, '\0', sizeof(credentials));
 
-    ClientName = NULL;
-    sServerName = NULL;
-    cred = NULL;
-
-    while (!(code = krb5_cc_next_cred(ctx, cache, &KRBv5Cursor,
-				      &KRBv5Credentials)))
+    while (!(code = krb5_cc_next_cred(context, cache, &cursor,
+				      &credentials)))
     {
         khm_handle tident = NULL;
         khm_int32 cred_flags = 0;
 	krb5_ticket_flags tf;
 
-        if(ClientName != NULL)
-            krb5_xfree(ClientName);
-        if(sServerName != NULL)
-            krb5_xfree(sServerName);
+        if(client_name != NULL)
+            krb5_free_unparsed_name(context, client_name);
+        if(server_name != NULL)
+            krb5_free_unparsed_name(context, server_name);
         if(cred)
             kcdb_cred_release(cred);
 
-        ClientName = NULL;
-        sServerName = NULL;
+        client_name = NULL;
+        server_name = NULL;
         cred = NULL;
 
-        if (krb5_unparse_name(ctx, KRBv5Credentials.client, &ClientName))
+        if (krb5_unparse_name(context, credentials.client, &client_name))
         {
-            krb5_free_cred_contents(ctx, &KRBv5Credentials);
-            khm_krb5_error(code, "krb5_free_cred_contents()", 0, &ctx, &cache);
+            krb5_free_cred_contents(context, &credentials);
+            khm_krb5_error(code, "krb5_unparse_name()", 0, &context, &cache);
             continue;
         }
 
-        if (krb5_unparse_name(ctx, KRBv5Credentials.server, &sServerName))
+        if (krb5_unparse_name(context, credentials.server, &server_name))
         {
-            krb5_free_cred_contents(ctx, &KRBv5Credentials);
-            khm_krb5_error(code, "krb5_free_cred_contents()", 0, &ctx, &cache);
+            krb5_free_cred_contents(context, &credentials);
+            khm_krb5_error(code, "krb5_unparse_name()", 0, &context, &cache);
             continue;
         }
 
-        /* if the ClientName differs from PrincipalName for some
+        /* if the client_name differs from principal_name for some
            reason, we need to create a new identity */
-        if(strcmp(ClientName, PrincipalName)) {
-            AnsiStrToUnicode(wbuf, sizeof(wbuf), ClientName);
-            if(KHM_FAILED(kcdb_identity_create(wbuf, KCDB_IDENT_FLAG_CREATE,
-                                               &tident))) {
-                krb5_free_cred_contents(ctx, &KRBv5Credentials);
+        if(strcmp(client_name, principal_name)) {
+            AnsiStrToUnicode(wbuf, sizeof(wbuf), client_name);
+            if(KHM_FAILED(kcdb_identity_create_ex(k5_identpro, wbuf,
+                                                  KCDB_IDENT_FLAG_CREATE,
+                                                  NULL, &tident))) {
+                krb5_free_cred_contents(context, &credentials);
                 continue;
             }
         } else {
             tident = ident;
         }
 
-        AnsiStrToUnicode(wbuf, sizeof(wbuf), sServerName);
+        AnsiStrToUnicode(wbuf, sizeof(wbuf), server_name);
         if(KHM_FAILED(kcdb_cred_create(wbuf, tident, credtype_id_krb5,
                                        &cred))) {
-            krb5_free_cred_contents(ctx, &KRBv5Credentials);
+            krb5_free_cred_contents(context, &credentials);
             continue;
         }
 
@@ -464,39 +438,31 @@ get_tickets_from_cache(krb5_context ctx,
 
         kcdb_cred_set_attr(cred, KCDB_ATTR_DISPLAY_NAME, wbuf, KCDB_CBSIZE_AUTO);
 
-        if (!KRBv5Credentials.times.starttime)
-            KRBv5Credentials.times.starttime = KRBv5Credentials.times.authtime;
+        if (!credentials.times.starttime)
+            credentials.times.starttime = credentials.times.authtime;
 
-        tt = KRBv5Credentials.times.starttime;
+        tt = credentials.times.starttime;
         TimetToFileTime(tt, &ft);
         kcdb_cred_set_attr(cred, KCDB_ATTR_ISSUE, &ft, sizeof(ft));
 
-        tt = KRBv5Credentials.times.endtime;
+        tt = credentials.times.endtime;
         TimetToFileTime(tt, &eft);
         kcdb_cred_set_attr(cred, KCDB_ATTR_EXPIRE, &eft, sizeof(eft));
 
-        {
+        if (credentials.times.renew_till > 0) {
             FILETIME ftl;
 
-            ftl = FtSub(&eft, &ft);
-            kcdb_cred_set_attr(cred, KCDB_ATTR_LIFETIME, &ftl, sizeof(ftl));
-        }
-
-        if (KRBv5Credentials.times.renew_till > 0) {
-            FILETIME ftl;
-
-            tt = KRBv5Credentials.times.renew_till;
+            tt = credentials.times.renew_till;
             TimetToFileTime(tt, &eft);
             kcdb_cred_set_attr(cred, KCDB_ATTR_RENEW_EXPIRE, &eft,
                                sizeof(eft));
-
 
             ftl = FtSub(&eft, &ft);
             kcdb_cred_set_attr(cred, KCDB_ATTR_RENEW_LIFETIME, &ftl,
                                sizeof(ftl));
         }
 
-        tf = KRBv5Credentials.flags;
+        tf = credentials.flags;
 	ti = tf.i;
         kcdb_cred_set_attr(cred, attr_id_krb5_flags, &ti, sizeof(ti));
 
@@ -506,15 +472,16 @@ get_tickets_from_cache(krb5_context ctx,
 
             if (tf.b.renewable)
                 nflags |= KCDB_CRED_FLAG_RENEWABLE;
+
             if (tf.b.initial)
                 nflags |= KCDB_CRED_FLAG_INITIAL;
 	    else {
 		const char * c0, *c1, *r;
 
 		/* these are macros that do not allocate any memory */
-		c0 = krb5_principal_get_comp_string(ctx,KRBv5Credentials.server,0);
-		c1 = krb5_principal_get_comp_string(ctx,KRBv5Credentials.server,1);
-		r  = krb5_principal_get_realm(ctx,KRBv5Credentials.server);
+		c0 = krb5_principal_get_comp_string(context,credentials.server,0);
+		c1 = krb5_principal_get_comp_string(context,credentials.server,1);
+		r  = krb5_principal_get_realm(context,credentials.server);
 
 		if ( c0 && c1 && r &&
 		     !strcmp(c1,r) &&
@@ -527,26 +494,26 @@ get_tickets_from_cache(krb5_context ctx,
             cred_flags = nflags;
         }
 
-        if ( !decode_Ticket(KRBv5Credentials.ticket.data, KRBv5Credentials.ticket.length,
-			    &tkt, &len) ) {
-            ti = tkt.enc_part.etype;
+        if ( !decode_Ticket(credentials.ticket.data, credentials.ticket.length,
+			    &ticket, &len) ) {
+            ti = ticket.enc_part.etype;
             kcdb_cred_set_attr(cred, attr_id_tkt_enctype, &ti, sizeof(ti));
-	    if (tkt.enc_part.kvno) {
-		ti = *tkt.enc_part.kvno;
+	    if (ticket.enc_part.kvno) {
+		ti = *ticket.enc_part.kvno;
 		kcdb_cred_set_attr(cred, attr_id_kvno, &ti, sizeof(ti));
 	    }
-            free_Ticket(&tkt);
+            free_Ticket(&ticket);
         }
 
-        ti = KRBv5Credentials.session.keytype;
+        ti = credentials.session.keytype;
         kcdb_cred_set_attr(cred, attr_id_key_enctype, &ti, sizeof(ti));
 
         kcdb_cred_set_attr(cred, KCDB_ATTR_LOCATION, wcc_name,
                            KCDB_CBSIZE_AUTO);
 
-        if ( KRBv5Credentials.addresses.len > 0 ) {
+        if ( credentials.addresses.len > 0 ) {
 	    khm_int32 buffer[1024];
-	    
+
 	    void * bufp;
 	    khm_size cb;
 	    khm_int32 rv;
@@ -554,11 +521,11 @@ get_tickets_from_cache(krb5_context ctx,
 	    bufp = (void *) buffer;
 	    cb = sizeof(buffer);
 
-	    rv = serialize_krb5_addresses(&KRBv5Credentials.addresses,
+	    rv = serialize_krb5_addresses(&credentials.addresses,
 					  bufp, &cb);
 	    if (rv == KHM_ERROR_TOO_LONG) {
 		bufp = PMALLOC(cb);
-		rv = serialize_krb5_addresses(&KRBv5Credentials.addresses,
+		rv = serialize_krb5_addresses(&credentials.addresses,
 					      bufp, &cb);
 	    }
 
@@ -580,15 +547,13 @@ get_tickets_from_cache(krb5_context ctx,
             /* an initial ticket!  Add it to the list of identities we
                have seen so far with initial tickets. */
             d = tc_add_ident_to_list(idlist, ident);
-#ifdef DEBUG
             assert(d);
             assert(d->count > 0);
-#endif
 
-            tt = KRBv5Credentials.times.endtime;
+            tt = credentials.times.endtime;
             TimetToFileTime(tt, &ft_expire_new);
 
-            tt = KRBv5Credentials.times.starttime;
+            tt = credentials.times.starttime;
             TimetToFileTime(tt, &ft_issue_new);
 
             /* so now, we have to set the properties of the identity
@@ -625,116 +590,84 @@ get_tickets_from_cache(krb5_context ctx,
                 d->ft_expire = ft_expire_new;
                 d->ft_issue = ft_issue_new;
 
-                if (KRBv5Credentials.times.renew_till > 0) {
-                    tt = KRBv5Credentials.times.renew_till;
+                if (credentials.times.renew_till > 0) {
+                    tt = credentials.times.renew_till;
                     TimetToFileTime(tt, &ft);
                     d->ft_renewexpire = ft;
                 } else {
                     ZeroMemory(&d->ft_renewexpire, sizeof(d->ft_renewexpire));
                 }
 
-                d->krb5_flags = KRBv5Credentials.flags.i;
+                d->krb5_flags = credentials.flags.i;
             }
         }
 
         kcdb_credset_add_cred(krb5_credset, cred, -1);
 
-        krb5_free_cred_contents(ctx, &KRBv5Credentials);
+        krb5_free_cred_contents(context, &credentials);
 
         if(tident != ident)
             kcdb_identity_release(tident);
     }
 
-    if (PrincipalName != NULL)
-        krb5_xfree(PrincipalName);
+_exit:
+    if (principal != 0)
+        krb5_free_principal(context, principal);
 
-    if (ClientName != NULL)
-        krb5_xfree(ClientName);
+    if (principal_name != NULL)
+        krb5_free_unparsed_name(context, principal_name);
 
-    if (sServerName != NULL)
-        krb5_xfree(sServerName);
+    if (client_name != NULL)
+        krb5_free_unparsed_name(context, client_name);
+
+    if (server_name != NULL)
+        krb5_free_unparsed_name(context, server_name);
 
     if (cred)
         kcdb_cred_release(cred);
 
-    if ((code == KRB5_CC_END) || (code == KRB5_CC_NOTFOUND)) {
-        if ((code = krb5_cc_end_seq_get(ctx, cache, &KRBv5Cursor))) {
-            goto _exit;
-        }
+    if (cursor != 0) {
+        krb5_cc_end_seq_get(context, cache, &cursor);
     }
-    else
-    {
-        goto _exit;
-    }
-
-_exit:
 
     return code;
 }
 
 long
-khm_krb5_list_tickets(krb5_context *krbv5Context)
+khm_krb5_list_tickets(krb5_context *pcontext)
 {
-    krb5_context	ctx = NULL;
+    krb5_context	context = NULL;
     krb5_ccache		cache = NULL;
     krb5_error_code	code = 0;
-    struct _infoNC **   pNCi = NULL;
     khm_int32           t;
     wchar_t *           ms = NULL;
     khm_size            cb;
     identlist           idl;
 
+    krb5_cccol_cursor   cc_cursor = 0;
+
     kcdb_credset_flush(krb5_credset);
     tc_prep_idlist(&idl);
 
-    if((*krbv5Context == 0) && (code = krb5_init_context(krbv5Context))) {
+    if((*pcontext == 0) && (code = krb5_init_context(pcontext))) {
         goto _exit;
     }
 
-    ctx = (*krbv5Context);
+    context = (*pcontext);
 
-#if 0
-    /* Once we implement CCache enumeration, we'll need code like
-     * this. */
-    if (!pcc_initialize ||
-        !pcc_get_NC_info ||
-        !pcc_free_NC_info ||
-        !pcc_shutdown)
+    if (krb5_cccol_cursor_new(context, &cc_cursor) != 0)
         goto _skip_cc_iter;
 
-    code = pcc_initialize(&cc_ctx, CC_API_VER_2, NULL, NULL);
-    if (code)
-        goto _exit;
+    while (krb5_cccol_cursor_next(context, cc_cursor, &cache) == 0 && cache != 0) {
+        code = get_tickets_from_cache(context, cache, &idl);
 
-    code = pcc_get_NC_info(cc_ctx, &pNCi);
-    if (code)
-        goto _exit;
-
-    for(i=0; pNCi[i]; i++) {
-        char ccname[KRB5_MAXCCH_CCNAME];
-
-        if (pNCi[i]->vers != CC_CRED_V5)
-            continue;
-
-        if (FAILED(StringCchPrintfA(ccname, sizeof(ccname), "API:%s",
-                                    pNCi[i]->name)))
-            continue;
-
-        code = krb5_cc_resolve(ctx, ccname, &cache);
-
-        if (code)
-            continue;
-
-        code = get_tickets_from_cache(ctx, cache, &idl);
-
-        if(ctx != NULL && cache != NULL)
-            krb5_cc_close(ctx, cache);
-
+        krb5_cc_close(context, cache);
         cache = 0;
     }
 
+    krb5_cccol_cursor_free(context, &cc_cursor);
+
 _skip_cc_iter:
-#endif
 
     if (khc_read_multi_string(csp_params, L"FileCCList", NULL, &cb)
         == KHM_ERROR_TOO_LONG &&
@@ -743,9 +676,7 @@ _skip_cc_iter:
         char ccname[KRB5_MAXCCH_CCNAME];
 
         ms = PMALLOC(cb);
-#ifdef DEBUG
         assert(ms);
-#endif
         khc_read_multi_string(csp_params, L"FileCCList", ms, &cb);
 
         for(t = ms; t && *t; t = multi_string_next(t)) {
@@ -765,17 +696,17 @@ _skip_cc_iter:
             StringCchPrintfA(ccname, ARRAYLENGTH(ccname),
                              "FILE:%S", exppath);
 
-            code = krb5_cc_resolve(ctx, ccname, &cache);
+            code = krb5_cc_resolve(context, ccname, &cache);
 
             if (code) {
-                khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cache);
+                khm_krb5_error(code, "krb5_cc_resolve()", 0, &context, &cache);
                 continue;
             }
 
-            code = get_tickets_from_cache(ctx, cache, &idl);
+            code = get_tickets_from_cache(context, cache, &idl);
 
-            if (ctx != NULL && cache != NULL)
-                krb5_cc_close(ctx, cache);
+            if (context != NULL && cache != NULL)
+                krb5_cc_close(context, cache);
             cache = 0;
         }
 
@@ -783,26 +714,20 @@ _skip_cc_iter:
     }
 
     if (KHM_SUCCEEDED(khc_read_int32(csp_params, L"MsLsaList", &t)) && t) {
-        code = krb5_cc_resolve(ctx, "MSLSA:", &cache);
+        code = krb5_cc_resolve(context, "MSLSA:", &cache);
 
         if (code == 0 && cache) {
-            code = get_tickets_from_cache(ctx, cache, &idl);
+            code = get_tickets_from_cache(context, cache, &idl);
         } else {
-            khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cache);
+            khm_krb5_error(code, "krb5_cc_resolve()", 0, &context, &cache);
         }
 
-        if (ctx != NULL && cache != NULL)
-            krb5_cc_close(ctx, cache);
+        if (context != NULL && cache != NULL)
+            krb5_cc_close(context, cache);
         cache = 0;
     }
 
 _exit:
-#if 0
-    if (pNCi)
-        (*pcc_free_NC_info)(cc_ctx, &pNCi);
-    if (cc_ctx)
-        (*pcc_shutdown)(&cc_ctx);
-#endif
 
     kcdb_credset_collect(NULL, krb5_credset, NULL, credtype_id_krb5, NULL);
     tc_set_ident_data(&idl);
@@ -816,7 +741,7 @@ khm_krb5_renew_cred(khm_handle cred)
 {
     khm_handle          identity = NULL;
     krb5_error_code     code = 0;
-    krb5_context        ctx = NULL;
+    krb5_context        context = NULL;
     krb5_ccache         cc = NULL;
     krb5_principal	me = NULL, server = NULL;
     krb5_creds          in_creds, cc_creds;
@@ -859,11 +784,11 @@ khm_krb5_renew_cred(khm_handle cred)
 	goto cleanup;
     }
 
-    code = khm_krb5_initialize(identity, &ctx, &cc);
+    code = khm_krb5_initialize(identity, &context, &cc);
     if (code)
 	goto cleanup;
 
-    code = krb5_cc_get_principal(ctx, cc, &me);
+    code = krb5_cc_get_principal(context, cc, &me);
     if (code)
         goto cleanup;
 
@@ -873,19 +798,19 @@ khm_krb5_renew_cred(khm_handle cred)
 
     UnicodeStrToAnsi(name, sizeof(name), wname);
 
-    code = krb5_parse_name(ctx, name, &server);
+    code = krb5_parse_name(context, name, &server);
     if (code)
 	goto cleanup;
 
     in_creds.client = me;
     in_creds.server = server;
 
-    if (strcmp("krbtgt", krb5_principal_get_comp_string(ctx, server, 0))) {
-	code = krb5_get_renewed_creds(ctx, &cc_creds, me, cc, name);
+    if (strcmp("krbtgt", krb5_principal_get_comp_string(context, server, 0))) {
+	code = krb5_get_renewed_creds(context, &cc_creds, me, cc, name);
 	if (code) {
-	    code = krb5_cc_retrieve_cred(ctx, cc, 0, &in_creds, &cc_creds);
+	    code = krb5_cc_retrieve_cred(context, cc, 0, &in_creds, &cc_creds);
 	    if (code == 0) {
-		code = krb5_cc_remove_cred(ctx, cc, 0, &cc_creds);
+		code = krb5_cc_remove_cred(context, cc, 0, &cc_creds);
 		if (code) {
 		    brenewIdentity = TRUE;
 		    goto cleanup;
@@ -893,25 +818,25 @@ khm_krb5_renew_cred(khm_handle cred)
 	    }
 	}
 
-	code = krb5_get_credentials(ctx, 0, cc, &in_creds, &out_creds);
+	code = krb5_get_credentials(context, 0, cc, &in_creds, &out_creds);
     } else {
 	istgt = TRUE;
-	code = krb5_get_renewed_creds(ctx, &cc_creds, me, cc, NULL);
+	code = krb5_get_renewed_creds(context, &cc_creds, me, cc, NULL);
     }
 
     if (code) {
 	if ( code != KRB5KDC_ERR_ETYPE_NOSUPP ||
 	     code != KRB5_KDC_UNREACH)
-	    khm_krb5_error(code, "krb5_get_renewed_creds()", 0, &ctx, &cc);
+	    khm_krb5_error(code, "krb5_get_renewed_creds()", 0, &context, &cc);
 	goto cleanup;
     }
 
     if (istgt) {
-	code = krb5_cc_initialize(ctx, cc, me);
+	code = krb5_cc_initialize(context, cc, me);
 	if (code) goto cleanup;
     }
 
-    code = krb5_cc_store_cred(ctx, cc, istgt ? &cc_creds : out_creds);
+    code = krb5_cc_store_cred(context, cc, istgt ? &cc_creds : out_creds);
     if (code) goto cleanup;
 
 
@@ -922,22 +847,22 @@ cleanup:
         in_creds.server = NULL;
 
     if (me)
-	krb5_free_principal(ctx, me);
+	krb5_free_principal(context, me);
 
     if (server)
-	krb5_free_principal(ctx, server);
+	krb5_free_principal(context, server);
 
-    krb5_free_cred_contents(ctx, &in_creds);
-    krb5_free_cred_contents(ctx, &cc_creds);
+    krb5_free_cred_contents(context, &in_creds);
+    krb5_free_cred_contents(context, &cc_creds);
 
     if (out_creds)
-	krb5_free_creds(ctx, out_creds);
+	krb5_free_creds(context, out_creds);
 
-    if (cc && ctx)
-	krb5_cc_close(ctx, cc);
+    if (cc && context)
+	krb5_cc_close(context, cc);
 
-    if (ctx)
-	krb5_free_context(ctx);
+    if (context)
+	krb5_free_context(context);
 
     if (identity) {
 	if (brenewIdentity)
@@ -952,7 +877,7 @@ int
 khm_krb5_renew_ident(khm_handle identity)
 {
     krb5_error_code     code = 0;
-    krb5_context        ctx = NULL;
+    krb5_context        context = NULL;
     krb5_ccache         cc = NULL;
     krb5_principal      me = NULL;
     krb5_principal      server = NULL;
@@ -995,7 +920,7 @@ khm_krb5_renew_ident(khm_handle identity)
 
         /* if the imported identity has already expired or will soon,
            we clear the cache and try again. */
-        khm_krb5_list_tickets(&ctx);
+        khm_krb5_list_tickets(&context);
 
         cb = sizeof(ft_expire);
         if (KHM_FAILED(kcdb_identity_get_attr(imported_id, KCDB_ATTR_EXPIRE,
@@ -1012,24 +937,24 @@ khm_krb5_renew_ident(khm_handle identity)
         if (CompareFileTime(&ft_expire, &ft_now) < 0) {
             /* the ticket lifetime is not long enough */
 
-            if (ctx == NULL)
-                code = krb5_init_context(&ctx);
+            if (context == NULL)
+                code = krb5_init_context(&context);
             if (code)
                 goto import_failed;
 
-            code = krb5_cc_resolve(ctx, "MSLSA:", &cc);
+            code = krb5_cc_resolve(context, "MSLSA:", &cc);
             if (code) {
-                khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cc);
+                khm_krb5_error(code, "krb5_cc_resolve()", 0, &context, &cc);
                 goto import_failed;
             }
 
-            code = krb5_cc_get_principal(ctx, cc, &princ);
+            code = krb5_cc_get_principal(context, cc, &princ);
             if (code) {
-                khm_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cc);
+                khm_krb5_error(code, "krb5_cc_get_principal()", 0, &context, &cc);
                 goto import_failed;
             }
 
-            krb5_cc_initialize(ctx, cc, princ);
+            krb5_cc_initialize(context, cc, princ);
 
             retry_import = TRUE;
         }
@@ -1041,18 +966,18 @@ khm_krb5_renew_ident(khm_handle identity)
             imported_id = NULL;
         }
 
-        if (ctx) {
+        if (context) {
             if (cc) {
-                krb5_cc_close(ctx, cc);
+                krb5_cc_close(context, cc);
                 cc = NULL;
             }
 
             if (princ) {
-                krb5_free_principal(ctx, princ);
+                krb5_free_principal(context, princ);
                 princ = NULL;
             }
 
-            /* leave ctx so we can use it later */
+            /* leave context so we can use it later */
         }
 
         if (retry_import)
@@ -1108,25 +1033,25 @@ khm_krb5_renew_ident(khm_handle identity)
         }
     }
 
-    code = khm_krb5_initialize(identity, &ctx, &cc);
+    code = khm_krb5_initialize(identity, &context, &cc);
     if (code)
         goto cleanup;
 
-    code = krb5_cc_get_principal(ctx, cc, &me);
+    code = krb5_cc_get_principal(context, cc, &me);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cc);
+        khm_krb5_error(code, "krb5_cc_get_principal()", 0, &context, &cc);
         goto cleanup;
     }
 
-    realm = krb5_principal_get_realm(ctx, me);
+    realm = krb5_principal_get_realm(context, me);
 
-    code = krb5_build_principal_ext(ctx, &server,
-				    krb5_realm_length(realm),
-				    krb5_realm_data(realm),
-				    KRB5_TGS_NAME_SIZE, KRB5_TGS_NAME,
-				    krb5_realm_length(realm),
-				    krb5_realm_data(realm),
-				    0);
+    code = krb5_build_principal(context, &server,
+                                krb5_realm_length(realm),
+                                krb5_realm_data(realm),
+                                KRB5_TGS_NAME_SIZE, KRB5_TGS_NAME,
+                                krb5_realm_length(realm),
+                                krb5_realm_data(realm),
+                                0);
 
     if (code)
         goto cleanup;
@@ -1134,23 +1059,23 @@ khm_krb5_renew_ident(khm_handle identity)
     my_creds.client = me;
     my_creds.server = server;
 
-    code = krb5_get_renewed_creds(ctx, &my_creds, me, cc, NULL);
+    code = krb5_get_renewed_creds(context, &my_creds, me, cc, NULL);
     if (code) {
         if ( code != KRB5KDC_ERR_ETYPE_NOSUPP ||
 	     code != KRB5_KDC_UNREACH)
-            khm_krb5_error(code, "krb5_get_renewed_creds()", 0, &ctx, &cc);
+            khm_krb5_error(code, "krb5_get_renewed_creds()", 0, &context, &cc);
         goto cleanup;
     }
 
-    code = krb5_cc_initialize(ctx, cc, me);
+    code = krb5_cc_initialize(context, cc, me);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_initialize()", 0, &ctx, &cc);
+        khm_krb5_error(code, "krb5_cc_initialize()", 0, &context, &cc);
         goto cleanup;
     }
 
-    code = krb5_cc_store_cred(ctx, cc, &my_creds);
+    code = krb5_cc_store_cred(context, cc, &my_creds);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_store_cred()", 0, &ctx, &cc);
+        khm_krb5_error(code, "krb5_cc_store_cred()", 0, &context, &cc);
         goto cleanup;
     }
 
@@ -1160,23 +1085,23 @@ cleanup:
     if (my_creds.server == server)
         my_creds.server = NULL;
 
-    if (ctx) {
-        krb5_free_cred_contents(ctx, &my_creds);
+    if (context) {
+        krb5_free_cred_contents(context, &my_creds);
 
         if (me)
-            krb5_free_principal(ctx, me);
+            krb5_free_principal(context, me);
         if (server)
-            krb5_free_principal(ctx, server);
+            krb5_free_principal(context, server);
         if (cc)
-            krb5_cc_close(ctx, cc);
-        krb5_free_context(ctx);
+            krb5_cc_close(context, cc);
+        krb5_free_context(context);
     }
 
     return(code);
 }
 
 int
-khm_krb5_kinit(krb5_context       alt_ctx,
+khm_krb5_kinit(krb5_context       alt_context,
                char *             principal_name,
                char *             password,
                char *             ccache,
@@ -1190,7 +1115,7 @@ khm_krb5_kinit(krb5_context       alt_ctx,
                void *             p_data)
 {
     krb5_error_code		        code = 0;
-    krb5_context		        ctx = NULL;
+    krb5_context		        context = NULL;
     krb5_ccache			        cc = NULL;
     krb5_principal		        me = NULL;
     char*                       name = NULL;
@@ -1202,20 +1127,20 @@ khm_krb5_kinit(krb5_context       alt_ctx,
 
     memset(&my_creds, 0, sizeof(my_creds));
 
-    if (alt_ctx) {
-        ctx = alt_ctx;
+    if (alt_context) {
+        context = alt_context;
     } else {
-        code = krb5_init_context(&ctx);
+        code = krb5_init_context(&context);
         if (code)
             goto cleanup;
     }
 
-    if ((code = krb5_get_init_creds_opt_alloc(ctx, &options)) != 0)
+    if ((code = krb5_get_init_creds_opt_alloc(context, &options)) != 0)
 	goto cleanup;
 
     if (ccache) {
         _reportf(L"Using supplied ccache name %S", ccache);
-        code = krb5_cc_resolve(ctx, ccache, &cc);
+        code = krb5_cc_resolve(context, ccache, &cc);
     } else {
 	khm_handle identity = NULL;
 	wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
@@ -1238,18 +1163,18 @@ khm_krb5_kinit(krb5_context       alt_ctx,
 	if (identity)
 	    kcdb_identity_release(identity);
 
-        code = krb5_cc_resolve(ctx, pccname, &cc);
+        code = krb5_cc_resolve(context, pccname, &cc);
     }
 
     if (code) {
-        khm_krb5_error(code, "krb5_cc_resolve()", 0, &ctx, &cc);
+        khm_krb5_error(code, "krb5_cc_resolve()", 0, &context, &cc);
         goto cleanup;
     }
 
-    code = krb5_parse_name(ctx, principal_name, &me);
+    code = krb5_parse_name(context, principal_name, &me);
     if (code) goto cleanup;
 
-    code = krb5_unparse_name(ctx, me, &name);
+    code = krb5_unparse_name(context, me, &name);
     if (code) goto cleanup;
 
     if (lifetime == 0) {
@@ -1268,12 +1193,12 @@ khm_krb5_kinit(krb5_context       alt_ctx,
     krb5_get_init_creds_opt_set_renew_life(options,
 					   renew_life);
 
-    if (addressless)
-        krb5_get_init_creds_opt_set_address_list(options,NULL);
-    else {
+    if (addressless) {
+        krb5_get_init_creds_opt_set_addressless(context, options, TRUE);
+    } else {
 	krb5_addresses addrs;
 
-	krb5_get_all_client_addrs(ctx, &addrs);
+	krb5_get_all_client_addrs(context, &addrs);
         if (publicIP) {
             // we are going to add the public IP address specified by the user
             // to the list provided by the operating system
@@ -1286,22 +1211,22 @@ khm_krb5_kinit(krb5_context       alt_ctx,
 	    ai.sin_port = 0;
 	    ai.sin_addr.S_un.S_addr = htonl(publicIP);
 
-	    krb5_sockaddr2address(ctx, (struct sockaddr *) &ai, &p_addr);
+	    krb5_sockaddr2address(context, (struct sockaddr *) &ai, &p_addr);
 
 	    p_addrs.len = 1;
 	    p_addrs.val = &p_addr;
 
-	    krb5_append_addresses(ctx, &addrs, &p_addrs);
+	    krb5_append_addresses(context, &addrs, &p_addrs);
 
-	    krb5_free_address(ctx, &p_addr);
+	    krb5_free_address(context, &p_addr);
         }
 
 	krb5_get_init_creds_opt_set_address_list(options, &addrs);
-	krb5_free_addresses(ctx, &addrs);
+	krb5_free_addresses(context, &addrs);
     }
 
     code =
-        krb5_get_init_creds_password(ctx,
+        krb5_get_init_creds_password(context,
 				     &my_creds,
 				     me,
 				     password, // password
@@ -1311,46 +1236,46 @@ khm_krb5_kinit(krb5_context       alt_ctx,
 				     0, // service name
 				     options);
     if (code) {
-        khm_krb5_error(code, "krb5_get_init_creds_password()", 0, &ctx, NULL);
+        khm_krb5_error(code, "krb5_get_init_creds_password()", 0, &context, NULL);
         goto cleanup;
     }
 
-    code = krb5_cc_initialize(ctx, cc, me);
+    code = krb5_cc_initialize(context, cc, me);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_initialize()", 0, &ctx, NULL);
+        khm_krb5_error(code, "krb5_cc_initialize()", 0, &context, NULL);
         goto cleanup;
     }
 
-    code = krb5_cc_store_cred(ctx, cc, &my_creds);
+    code = krb5_cc_store_cred(context, cc, &my_creds);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_store_cred()", 0, &ctx, NULL);
+        khm_krb5_error(code, "krb5_cc_store_cred()", 0, &context, NULL);
         goto cleanup;
     }
 
 cleanup:
     if (my_creds.client == me)
         my_creds.client = 0;
-    krb5_free_cred_contents(ctx, &my_creds);
+    krb5_free_cred_contents(context, &my_creds);
     if (name)
-        krb5_xfree(name);
+        krb5_free_unparsed_name(context, name);
     if (me)
-        krb5_free_principal(ctx, me);
+        krb5_free_principal(context, me);
     if (cc)
-        krb5_cc_close(ctx, cc);
+        krb5_cc_close(context, cc);
     if (options)
-	krb5_get_init_creds_opt_free(ctx, options);
-    if (ctx && (ctx != alt_ctx))
-        krb5_free_context(ctx);
+	krb5_get_init_creds_opt_free(context, options);
+    if (context && (context != alt_context))
+        krb5_free_context(context);
     return(code);
 }
 
 long
-khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
+khm_krb5_copy_ccache_by_name(krb5_context in_context,
                              wchar_t * wscc_dest,
                              wchar_t * wscc_src) {
-    krb5_context ctx = NULL;
+    krb5_context context = NULL;
     krb5_error_code code = 0;
-    khm_boolean free_ctx;
+    khm_boolean free_context;
     krb5_ccache cc_src = NULL;
     krb5_ccache cc_dest = NULL;
     krb5_principal princ_src = NULL;
@@ -1367,60 +1292,60 @@ khm_krb5_copy_ccache_by_name(krb5_context in_ctx,
     if (t == 0)
         return KHM_ERROR_TOO_LONG;
 
-    if (in_ctx) {
-        ctx = in_ctx;
-        free_ctx = FALSE;
+    if (in_context) {
+        context = in_context;
+        free_context = FALSE;
     } else {
-        code = krb5_init_context(&ctx);
+        code = krb5_init_context(&context);
         if (code) {
-            if (ctx)
-                krb5_free_context(ctx);
+            if (context)
+                krb5_free_context(context);
             return code;
         }
-        free_ctx = TRUE;
+        free_context = TRUE;
     }
 
-    code = krb5_cc_resolve(ctx, scc_dest, &cc_dest);
+    code = krb5_cc_resolve(context, scc_dest, &cc_dest);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_resolve() for dest", 0, &ctx, NULL);
+        khm_krb5_error(code, "krb5_cc_resolve() for dest", 0, &context, NULL);
         goto _cleanup;
     }
 
-    code = krb5_cc_resolve(ctx, scc_src, &cc_src);
+    code = krb5_cc_resolve(context, scc_src, &cc_src);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_resolve() for source", 0, &ctx, NULL);
+        khm_krb5_error(code, "krb5_cc_resolve() for source", 0, &context, NULL);
         goto _cleanup;
     }
 
-    code = krb5_cc_get_principal(ctx, cc_src, &princ_src);
+    code = krb5_cc_get_principal(context, cc_src, &princ_src);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_get_principal()", 0, &ctx, &cc_src);
+        khm_krb5_error(code, "krb5_cc_get_principal()", 0, &context, &cc_src);
         goto _cleanup;
     }
 
-    code = krb5_cc_initialize(ctx, cc_dest, princ_src);
+    code = krb5_cc_initialize(context, cc_dest, princ_src);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_initialize()", 0, &ctx, &cc_dest);
+        khm_krb5_error(code, "krb5_cc_initialize()", 0, &context, &cc_dest);
         goto _cleanup;
     }
 
-    code = krb5_cc_copy_creds(ctx, cc_src, cc_dest);
+    code = krb5_cc_copy_creds(context, cc_src, cc_dest);
     if (code) {
-        khm_krb5_error(code, "krb5_cc_copy_creds()", 0, &ctx, NULL);
+        khm_krb5_error(code, "krb5_cc_copy_creds()", 0, &context, NULL);
     }
 
 _cleanup:
     if (princ_src)
-        krb5_free_principal(ctx, princ_src);
+        krb5_free_principal(context, princ_src);
 
     if (cc_dest)
-        krb5_cc_close(ctx, cc_dest);
+        krb5_cc_close(context, cc_dest);
 
     if (cc_src)
-        krb5_cc_close(ctx, cc_src);
+        krb5_cc_close(context, cc_src);
 
-    if (free_ctx && ctx)
-        krb5_free_context(ctx);
+    if (free_context && context)
+        krb5_free_context(context);
 
     return code;
 }
@@ -1619,7 +1544,7 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
     khm_handle d_cs = NULL;
     khm_int32 rv = KHM_ERROR_SUCCESS;
     khm_size s, cb;
-    krb5_context ctx = NULL;
+    krb5_context context = NULL;
     krb5_error_code code = 0;
     int i;
     wchar_t ccname[KRB5_MAXCCH_CCNAME];
@@ -1640,7 +1565,7 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
         return 0;
     }
 
-    code = krb5_init_context(&ctx);
+    code = krb5_init_context(&context);
     if (code != 0) {
         rv = code;
         goto _cleanup;
@@ -1648,7 +1573,7 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
 
     /* we should synchronize the credential lists before we attempt to
        make any assumptions on the state of the root credset */
-    khm_krb5_list_tickets(&ctx);
+    khm_krb5_list_tickets(&context);
 
     /* so, we need to make a decision about whether to destroy entire
        ccaches or just individual credentials.  Therefore we first
@@ -1699,16 +1624,16 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
                              sizeof(a_ccname),
                              ccname);
 
-            code = krb5_cc_resolve(ctx,
+            code = krb5_cc_resolve(context,
 				   a_ccname,
 				   &cc);
             if (code)
                 goto _delete_this_set;
 
-            code = krb5_cc_destroy(ctx, cc);
+            code = krb5_cc_destroy(context, cc);
 
             if (code) {
-                khm_krb5_error(code, "krb5_cc_destroy()", 0, &ctx, &cc);
+                khm_krb5_error(code, "krb5_cc_destroy()", 0, &context, &cc);
             }
 
         _delete_this_set:
@@ -1766,17 +1691,17 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
                          sizeof(a_ccname),
                          ccname);
 
-        code = krb5_cc_resolve(ctx,
+        code = krb5_cc_resolve(context,
 			       a_ccname,
 			       &cc);
 
         if (code)
             goto _skip_similar;
 
-        code = krb5_cc_get_principal(ctx, cc, &princ);
+        code = krb5_cc_get_principal(context, cc, &princ);
 
         if (code) {
-            krb5_cc_close(ctx, cc);
+            krb5_cc_close(context, cc);
             goto _skip_similar;
         }
 
@@ -1803,36 +1728,36 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
 
         ZeroMemory(&in_cred, sizeof(in_cred));
 
-        code = krb5_parse_name(ctx, a_srvname, &in_cred.server);
+        code = krb5_parse_name(context, a_srvname, &in_cred.server);
         if (code)
             goto _do_next_cred;
         in_cred.client = princ;
         in_cred.session.keytype = etype;
 
-        code = krb5_cc_retrieve_cred(ctx,
+        code = krb5_cc_retrieve_cred(context,
 				     cc,
 				     KRB5_TC_MATCH_SRV_NAMEONLY |
 				     KRB5_TC_MATCH_KEYTYPE,
 				     &in_cred,
 				     &out_cred);
         if (code) {
-            khm_krb5_error(code, "krb5_cc_retrieve_cred()", 0, &ctx, &cc);
+            khm_krb5_error(code, "krb5_cc_retrieve_cred()", 0, &context, &cc);
             goto _do_next_cred_0;
         }
 
-        code = krb5_cc_remove_cred(ctx, cc,
+        code = krb5_cc_remove_cred(context, cc,
 				   KRB5_TC_MATCH_SRV_NAMEONLY |
 				   KRB5_TC_MATCH_KEYTYPE |
 				   KRB5_TC_MATCH_AUTHDATA,
 				   &out_cred);
 
         if (code) {
-            khm_krb5_error(code, "krb5_cc_remove_cred()", 0, &ctx, &cc);
+            khm_krb5_error(code, "krb5_cc_remove_cred()", 0, &context, &cc);
         }
 
-        krb5_free_cred_contents(ctx, &out_cred);
+        krb5_free_cred_contents(context, &out_cred);
     _do_next_cred_0:
-        krb5_free_principal(ctx, in_cred.server);
+        krb5_free_principal(context, in_cred.server);
     _do_next_cred:
 
         /* check if the next cred is also of the same ccache */
@@ -1863,9 +1788,9 @@ khm_krb5_destroy_by_credset(khm_handle p_cs)
 
 
     _done_with_this_set:
-        krb5_free_principal(ctx, princ);
+        krb5_free_principal(context, princ);
 
-        krb5_cc_close(ctx, cc);
+        krb5_cc_close(context, cc);
 
     _done_with_this_cred:
         kcdb_cred_release(cred);
@@ -1905,8 +1830,8 @@ _cleanup:
     if (d_cs)
         kcdb_credset_delete(&d_cs);
 
-    if (ctx != NULL)
-        krb5_free_context(ctx);
+    if (context != NULL)
+        krb5_free_context(context);
 
     return rv;
 }
@@ -1914,20 +1839,20 @@ _cleanup:
 int
 khm_krb5_destroy_identity(khm_handle identity)
 {
-    krb5_context		ctx;
+    krb5_context		context;
     krb5_ccache			cache;
     krb5_error_code		rc;
 
-    ctx = NULL;
+    context = NULL;
     cache = NULL;
 
-    if (rc = khm_krb5_initialize(identity, &ctx, &cache))
+    if (rc = khm_krb5_initialize(identity, &context, &cache))
         return(rc);
 
-    rc = krb5_cc_destroy(ctx, cache);
+    rc = krb5_cc_destroy(context, cache);
 
-    if (ctx != NULL)
-        krb5_free_context(ctx);
+    if (context != NULL)
+        krb5_free_context(context);
 
     return(rc);
 }
@@ -2001,10 +1926,7 @@ BOOL
 khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
                 khm_handle * ret_ident)
 {
-#ifdef NO_KRB5
-    return(FALSE);
-#else /* NO_KRB5 */
-    krb5_context kcontext = 0;
+    krb5_context context = 0;
     krb5_error_code code = 0;
     krb5_ccache ccache=0;
     krb5_ccache mslsa_ccache=0;
@@ -2020,24 +1942,24 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
 
     kherr_reportf(L"Begin : khm_krb5_ms2mit. save_cred=%d\n", (int) save_creds);
 
-    if (code = krb5_init_context(&kcontext)) {
-        khm_krb5_error(code, "krb5_init_context() for MSLSA:", 0, &kcontext, NULL);
+    if (code = krb5_init_context(&context)) {
+        khm_krb5_error(code, "krb5_init_context() for MSLSA:", 0, &context, NULL);
         goto cleanup;
     }
 
-    if (code = krb5_cc_resolve(kcontext, "MSLSA:", &mslsa_ccache)) {
-        khm_krb5_error(code, "krb5_cc_resolve() for MSLSA:", 0, &kcontext, NULL);
+    if (code = krb5_cc_resolve(context, "MSLSA:", &mslsa_ccache)) {
+        khm_krb5_error(code, "krb5_cc_resolve() for MSLSA:", 0, &context, NULL);
         goto cleanup;
     }
 
     if ( save_creds ) {
-        if (code = krb5_cc_get_principal(kcontext, mslsa_ccache, &princ)) {
-            khm_krb5_error(code, "krb5_cc_get_principal() for MSLSA:", 0, &kcontext, &mslsa_ccache);
+        if (code = krb5_cc_get_principal(context, mslsa_ccache, &princ)) {
+            khm_krb5_error(code, "krb5_cc_get_principal() for MSLSA:", 0, &context, &mslsa_ccache);
             goto cleanup;
         }
 
-        if (code = krb5_unparse_name(kcontext, princ, &princ_name)) {
-            khm_krb5_error(code, "krb5_unparse_name()", 0, &kcontext, NULL);
+        if (code = krb5_unparse_name(context, princ, &princ_name)) {
+            khm_krb5_error(code, "krb5_unparse_name()", 0, &context, NULL);
             goto cleanup;
         }
 
@@ -2063,7 +1985,7 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
                 goto cleanup;
             }
 
-            princ_realm = krb5_principal_get_realm(kcontext, princ);
+            princ_realm = krb5_principal_get_realm(context, princ);
             UnicodeStrToAnsi(defrealm, sizeof(defrealm), wdefrealm);
 
             if (strcmp(defrealm, princ_realm)) {
@@ -2090,9 +2012,7 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
         } else {
             /* the identity could not be created.  we just use the
                name of the principal as the ccache name. */
-#ifdef DEBUG
             assert(FALSE);
-#endif
             kherr_reportf(L"Failed to create identity");
             StringCbPrintfA(ccname, sizeof(ccname), "API:%s", princ_name);
             cache_name = ccname;
@@ -2100,22 +2020,22 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
 
         kherr_reportf(L"Resolving target cache [%S]\n", cache_name);
 
-        if (code = krb5_cc_resolve(kcontext, cache_name, &ccache)) {
+        if (code = krb5_cc_resolve(context, cache_name, &ccache)) {
             kherr_reportf(L"Cannot resolve cache [%S] with code=%d.  Trying default.\n", cache_name, code);
 
-            if (code = krb5_cc_default(kcontext, &ccache)) {
-                khm_krb5_error(code, "krb5_cc_default()", 0, &kcontext, NULL);
+            if (code = krb5_cc_default(context, &ccache)) {
+                khm_krb5_error(code, "krb5_cc_default()", 0, &context, NULL);
                 goto cleanup;
             }
         }
 
-        if (code = krb5_cc_initialize(kcontext, ccache, princ)) {
-            khm_krb5_error(code, "krb5_cc_initialize()", 0, &kcontext, &ccache);
+        if (code = krb5_cc_initialize(context, ccache, princ)) {
+            khm_krb5_error(code, "krb5_cc_initialize()", 0, &context, &ccache);
             goto cleanup;
         }
 
-        if (code = krb5_cc_copy_creds(kcontext, mslsa_ccache, ccache)) {
-            khm_krb5_error(code, "krb5_cc_copy_creds()", 0, &kcontext, NULL);
+        if (code = krb5_cc_copy_creds(context, mslsa_ccache, ccache)) {
+            khm_krb5_error(code, "krb5_cc_copy_creds()", 0, &context, NULL);
             goto cleanup;
         }
 
@@ -2133,40 +2053,39 @@ khm_krb5_ms2mit(char * match_princ, BOOL match_realm, BOOL save_creds,
 
     } else {
         /* Enumerate tickets from cache looking for an initial ticket */
-        if ((code = krb5_cc_start_seq_get(kcontext, mslsa_ccache, &cursor))) {
-            khm_krb5_error(code, "krb5_cc_start_seq_get()", 0, &kcontext, &mslsa_ccache);
+        if ((code = krb5_cc_start_seq_get(context, mslsa_ccache, &cursor))) {
+            khm_krb5_error(code, "krb5_cc_start_seq_get()", 0, &context, &mslsa_ccache);
             goto cleanup;
         }
 
-        while (!(code = krb5_cc_next_cred(kcontext, mslsa_ccache,
+        while (!(code = krb5_cc_next_cred(context, mslsa_ccache,
 					  &cursor, &creds))) {
             if ( creds.flags.b.initial ) {
                 kherr_reportf(L"Found initial ticket");
                 rc = TRUE;
-                krb5_free_cred_contents(kcontext, &creds);
+                krb5_free_cred_contents(context, &creds);
                 break;
             }
-            krb5_free_cred_contents(kcontext, &creds);
+            krb5_free_cred_contents(context, &creds);
         }
-        krb5_cc_end_seq_get(kcontext, mslsa_ccache, &cursor);
+        krb5_cc_end_seq_get(context, mslsa_ccache, &cursor);
     }
 
 cleanup:
     if (princ_name)
-        krb5_xfree(princ_name);
+        krb5_free_unparsed_name(context, princ_name);
     if (princ)
-        krb5_free_principal(kcontext, princ);
+        krb5_free_principal(context, princ);
     if (ccache)
-        krb5_cc_close(kcontext, ccache);
+        krb5_cc_close(context, ccache);
     if (mslsa_ccache)
-        krb5_cc_close(kcontext, mslsa_ccache);
-    if (kcontext)
-        krb5_free_context(kcontext);
+        krb5_cc_close(context, mslsa_ccache);
+    if (context)
+        krb5_free_context(context);
     if (ident)
         kcdb_identity_release(ident);
 
     return(rc);
-#endif /* NO_KRB5 */
 }
 
 #define KRB_FILE                "KRB.CON"
@@ -2186,58 +2105,24 @@ khm_krb5_get_temp_profile_file(LPSTR confname, UINT szConfname)
 
 #ifdef NOT_QUITE_IMPLEMENTED_YET
 BOOL
-khm_krb5_set_profile_file(krb5_context ctx, LPSTR confname)
+khm_krb5_set_profile_file(krb5_context context, LPSTR confname)
 {
     char *conffiles[2];
 
     if (confname == NULL ||
         krb5_set_config_files == NULL ||
-        ctx == NULL)
+        context == NULL)
         return FALSE;
 
     conffiles[0] = confname;
     conffiles[1] = NULL;
 
-    if (krb5_set_config_files(ctx, conffiles))
+    if (krb5_set_config_files(context, conffiles))
         return FALSE;
     else
         return TRUE;
 }
 #endif
-
-BOOL
-khm_krb5_get_profile_file(LPSTR confname, UINT szConfname)
-{
-    char **configFile = NULL;
-    if (krb5_get_default_config_files(&configFile))
-    {
-        GetWindowsDirectoryA(confname,szConfname);
-        confname[szConfname-1] = '\0';
-
-        StringCchCatA(confname, szConfname, "\\");
-        StringCchCatA(confname, szConfname, KRB5_FILE);
-
-        return FALSE;
-    }
-
-    *confname = 0;
-
-    if (configFile)
-    {
-        StringCchCopyA(confname, szConfname, *configFile);
-        krb5_free_config_files(configFile);
-    }
-
-    if (!*confname)
-    {
-        GetWindowsDirectoryA(confname,szConfname);
-        confname[szConfname-1] = '\0';
-        StringCchCatA(confname, szConfname, "\\");
-        StringCchCatA(confname, szConfname, KRB5_FILE);
-    }
-
-    return FALSE;
-}
 
 int
 readstring(FILE * file, char * buf, int len)
@@ -2286,17 +2171,17 @@ readstring(FILE * file, char * buf, int len)
 wchar_t *
 khm_krb5_get_realm_list(void)
 {
-    krb5_context ctx = 0;
+    krb5_context context = 0;
     const krb5_config_binding * list;
     const krb5_config_binding * b;
     size_t cbsize = 0, cbleft;
     wchar_t * rs;
     wchar_t * rsp;
 
-    if (krb5_init_context(&ctx))
+    if (krb5_init_context(&context))
 	return NULL;
 
-    list = krb5_config_get_list(ctx, NULL, "realms", NULL);
+    list = krb5_config_get_list(context, NULL, "realms", NULL);
     if (list == NULL)
 	return NULL;
 
@@ -2322,7 +2207,7 @@ khm_krb5_get_realm_list(void)
 
     assert(cbleft == 0);
 
-    krb5_free_context(ctx);
+    krb5_free_context(context);
 
     return rs;
 }
@@ -2340,51 +2225,51 @@ khm_krb5_get_default_realm(void)
 {
     wchar_t * realm;
     size_t cch;
-    krb5_context ctx=0;
+    krb5_context context=0;
     krb5_realm def = 0;
 
-    krb5_init_context(&ctx);
+    krb5_init_context(&context);
 
-    if (ctx == 0)
+    if (context == 0)
         return NULL;
 
-    krb5_get_default_realm(ctx, &def);
+    krb5_get_default_realm(context, &def);
 
     if (def) {
         cch = strlen(def) + 1;
         realm = PMALLOC(sizeof(wchar_t) * cch);
         AnsiStrToUnicode(realm, sizeof(wchar_t) * cch, def);
-        krb5_xfree(def);
+        krb5_free_default_realm(context, def);
     } else
         realm = NULL;
 
-    krb5_free_context(ctx);
+    krb5_free_context(context);
 
     return realm;
 }
 
 long
 khm_krb5_set_default_realm(wchar_t * realm) {
-    krb5_context ctx=0;
+    krb5_context context=0;
     char * def = 0;
     long rv = 0;
     char astr[K5_MAXCCH_REALM];
 
     UnicodeStrToAnsi(astr, sizeof(astr), realm);
 
-    krb5_init_context(&ctx);
-    krb5_get_default_realm(ctx, &def);
+    krb5_init_context(&context);
+    krb5_get_default_realm(context, &def);
 
     if ((def && strcmp(def, astr)) ||
         !def) {
-        rv = krb5_set_default_realm(ctx, astr);
+        rv = krb5_set_default_realm(context, astr);
     }
 
     if (def) {
-        krb5_xfree(def);
+        krb5_free_default_realm(context, def);
     }
 
-    krb5_free_context(ctx);
+    krb5_free_context(context);
 
     return rv;
 }
@@ -2454,7 +2339,8 @@ khm_krb5_changepwd(char * principal,
         goto cleanup;
     }
 
-    if (rc = krb5_change_password(context, &creds, newpassword,
+    if (rc = krb5_set_password(context, &creds, newpassword,
+                                  princ,
 				  &result_code, &result_code_string,
 				  &result_string)) {
         *error_str = PSTRDUP(error_message(rc));
@@ -2482,10 +2368,10 @@ khm_krb5_changepwd(char * principal,
 
 cleanup:
     if (result_string.data)
-        krb5_free_data_contents(context, &result_string);
+        krb5_data_free(&result_string);
 
     if (result_code_string.data)
-        krb5_free_data_contents(context, &result_code_string);
+        krb5_data_free(&result_code_string);
 
     if (princ)
         krb5_free_principal(context, princ);
@@ -2548,7 +2434,7 @@ khm_krb5_get_identity_flags(khm_handle identity) {
 }
 
 long
-khm_krb5_get_temp_ccache(krb5_context ctx,
+khm_krb5_get_temp_ccache(krb5_context context,
                          krb5_ccache * prcc) {
     int  rnd = rand();
     char ccname[MAX_PATH];
@@ -2557,7 +2443,7 @@ khm_krb5_get_temp_ccache(krb5_context ctx,
 
     StringCbPrintfA(ccname, sizeof(ccname), "MEMORY:TempCache%8x", rnd);
 
-    code = krb5_cc_resolve(ctx, ccname, &cc);
+    code = krb5_cc_resolve(context, ccname, &cc);
 
     if (code == 0)
         *prcc = cc;
@@ -2710,14 +2596,14 @@ done:
 
 /* from get_in_tkt.c */
 static krb5_error_code
-get_libdefault_string(krb5_context ctx, const char * realm,
+get_libdefault_string(krb5_context context, const char * realm,
                       const char * option, char ** ret_val) {
 
     const char * val;
 
-    val = krb5_config_get_string(ctx, NULL, "libdefaults", realm, NULL);
+    val = krb5_config_get_string(context, NULL, "libdefaults", realm, option, NULL);
     if (val == NULL)
-	val = krb5_config_get_string(ctx, NULL, "libdefaults", NULL);
+	val = krb5_config_get_string(context, NULL, "libdefaults", option, NULL);
 
     if (val) {
 	*ret_val = PSTRDUP(val);
@@ -2819,8 +2705,6 @@ khm_krb5_get_identity_default_ccache_failover(khm_handle ident, wchar_t * buf, k
     wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
     khm_size cb;
     khm_int32 use_file_cache = 1;
-
-#ifdef HAVE_API_CACHE
     khm_handle csp_id = NULL;
 
     rv = khm_krb5_get_identity_config(ident, 0, &csp_id);
@@ -2828,7 +2712,6 @@ khm_krb5_get_identity_default_ccache_failover(khm_handle ident, wchar_t * buf, k
         return rv;
 
     khc_read_int32(csp_id, L"DefaultToFileCache", &use_file_cache);
-#endif
 
     cb = sizeof(idname);
     kcdb_identity_get_name(ident, idname, &cb);
@@ -2856,10 +2739,8 @@ khm_krb5_get_identity_default_ccache_failover(khm_handle ident, wchar_t * buf, k
         rv = KHM_ERROR_TOO_LONG;
     }
 
-#ifdef HAVE_API_CACHE
     if (csp_id)
         khc_close_space(csp_id);
-#endif
 
     return rv;
 }
@@ -2958,7 +2839,7 @@ khm_krb5_get_identity_params(khm_handle ident, k5_params * p) {
     khm_int32 e;
     khm_int32 v;
     CHAR realmname[K5_MAXCCH_REALM];
-    krb5_context ctx = 0;
+    krb5_context context = 0;
     krb5_error_code retval = 0;
 
     ZeroMemory(p, sizeof(*p));
@@ -3039,13 +2920,13 @@ done_reg:
        the values weren't really defined for this identity.  So we now
        have to read the values from the krb5 configuration file. */
 
-    if (krb5_init_context(&ctx))
+    if (krb5_init_context(&context))
 	goto cleanup;
 
     /* default ticket lifetime */
     if (!(regf & K5PARAM_F_LIFE)) {
 	char * value = NULL;
-	retval = get_libdefault_string(ctx, realmname,
+	retval = get_libdefault_string(context, realmname,
 				       "ticket_lifetime", &value);
 
 	if (retval == 0 && value) {
@@ -3103,7 +2984,7 @@ done_reg:
 
     if (!(regf & K5PARAM_F_RLIFE)) {
 	char * value = NULL;
-	retval = get_libdefault_string(ctx, realmname,
+	retval = get_libdefault_string(context, realmname,
 				       "renew_lifetime", &value);
 	if (retval == 0 && value) {
 	    krb5_deltat d;
@@ -3119,7 +3000,7 @@ done_reg:
 
     if (!(regf & K5PARAM_F_FORW)) {
 	char * value = NULL;
-	retval = get_libdefault_string(ctx, realmname,
+	retval = get_libdefault_string(context, realmname,
 				       "forwardable", &value);
 	if (retval == 0 && value) {
 	    khm_boolean b;
@@ -3135,7 +3016,7 @@ done_reg:
 
     if (!(regf & K5PARAM_F_RENEW)) {
 	char * value = NULL;
-	retval = get_libdefault_string(ctx, realmname,
+	retval = get_libdefault_string(context, realmname,
 				       "renewable", &value);
 	if (retval == 0 && value) {
 	    khm_boolean b;
@@ -3151,7 +3032,7 @@ done_reg:
 
     if (!(regf & K5PARAM_F_ADDL)) {
 	char * value = NULL;
-	retval = get_libdefault_string(ctx, realmname,
+	retval = get_libdefault_string(context, realmname,
 				       "noaddresses", &value);
 	if (retval == 0 && value) {
 	    khm_boolean b;
@@ -3167,7 +3048,7 @@ done_reg:
 
     if (!(regf & K5PARAM_F_PROX)) {
 	char * value = NULL;
-	retval = get_libdefault_string(ctx, realmname,
+	retval = get_libdefault_string(context, realmname,
 				       "proxiable", &value);
 	if (retval == 0 && value) {
 	    khm_boolean b;
@@ -3186,8 +3067,8 @@ done_reg:
 
 cleanup:
 
-    if (ctx)
-	krb5_free_context(ctx);
+    if (context)
+	krb5_free_context(context);
 
     return rv;
 }
