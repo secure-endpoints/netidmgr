@@ -757,11 +757,11 @@ k5_ident_set_default_int(khm_handle def_ident) {
 
     _reportf(L"Setting default CC name in the registry");
 
-    l = RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\MIT\\kerberos5", 0,
+    l = RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Heimdal", 0,
                      KEY_READ | KEY_WRITE, &hk_ccname);
 
     if (l != ERROR_SUCCESS)
-        l = RegCreateKeyEx(HKEY_CURRENT_USER, L"Software\\MIT\\kerberos5", 0,
+        l = RegCreateKeyEx(HKEY_CURRENT_USER, L"Software\\Heimdal", 0,
                            NULL, REG_OPTION_NON_VOLATILE, KEY_READ | KEY_WRITE,
                            NULL, &hk_ccname, &dw);
 
@@ -773,7 +773,7 @@ k5_ident_set_default_int(khm_handle def_ident) {
 
     dwSize = sizeof(reg_ccname);
 
-    l = RegQueryValueEx(hk_ccname, L"ccname", NULL, &dwType, (LPBYTE) reg_ccname,
+    l = RegQueryValueEx(hk_ccname, L"default_cc_name", NULL, &dwType, (LPBYTE) reg_ccname,
                         &dwSize);
 
     if (l != ERROR_SUCCESS ||
@@ -782,7 +782,7 @@ k5_ident_set_default_int(khm_handle def_ident) {
 
         /* we have to write the new value in */
 
-        l = RegSetValueEx(hk_ccname, L"ccname", 0, REG_SZ, (BYTE *) id_ccname,
+        l = RegSetValueEx(hk_ccname, L"default_cc_name", 0, REG_SZ, (BYTE *) id_ccname,
                           (DWORD) cb);
     }
 
@@ -806,7 +806,7 @@ k5_ident_set_default(khm_int32 msg_type,
 
     /*
        Currently, setting the default identity simply sets the
-       "ccname" registry value at "Software\MIT\kerberos5".
+       "default_cc_name" registry value at "Software\Heimdal".
     */
 
     if (uparam) {
@@ -959,10 +959,12 @@ k5_ident_notify_create(khm_int32 msg_type,
 
  _nc_cleanup:
     if (princ_nameA)
-        krb5_xfree(princ_nameA);
+        krb5_free_unparsed_name(k5_identpro_ctx, princ_nameA);
+
     if (princ)
         krb5_free_principal(k5_identpro_ctx,
-                             princ);
+                            princ);
+
     if (cc)
         krb5_cc_close(k5_identpro_ctx, cc);
 
@@ -1266,7 +1268,7 @@ k5_refresh_default_identity(krb5_context ctx) {
     _end_task();
 
     if (princ_nameA)
-        krb5_xfree(princ_nameA);
+        krb5_free_unparsed_name(ctx, princ_nameA);
 
     if (princ)
         krb5_free_principal(ctx, princ);
@@ -1660,17 +1662,17 @@ unsigned __stdcall k5_ccname_monitor_thread(void * lpParameter) {
     wchar_t reg_ccname[KRB5_MAXCCH_CCNAME];
     LONG l;
 
-    PDESCTHREAD(L"Krb5 CCName Monitor", L"Krb5");
+    PDESCTHREAD(L"Heimdal CCName Monitor", L"Heimdal");
 
     l = RegOpenKeyEx(HKEY_CURRENT_USER,
-                     L"Software\\MIT\\kerberos5",
+                     L"Software\\Heimdal",
                      0,
                      KEY_READ | KEY_WRITE,
                      &hk_ccname);
 
     if (l != ERROR_SUCCESS)
         l = RegCreateKeyEx(HKEY_CURRENT_USER,
-                           L"Software\\MIT\\kerberos5",
+                           L"Software\\Heimdal",
                            0,
                            NULL,
                            REG_OPTION_NON_VOLATILE,
@@ -1687,7 +1689,7 @@ unsigned __stdcall k5_ccname_monitor_thread(void * lpParameter) {
     dwSize = sizeof(reg_ccname);
 
     l = RegQueryValueEx(hk_ccname,
-                        L"ccname",
+                        L"default_cc_name",
                         NULL,
                         &dwType,
                         (LPBYTE) reg_ccname,
