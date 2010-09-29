@@ -58,11 +58,7 @@ KHIMAIRA_WIN32_CONFIG=1
 !	error MODULE must be specified
 !endif
 !ifndef KH_ROOT
-! ifndef PISMERE
-!   error Either KH_ROOT or PISMERE must be defined
-! else
-KH_ROOT=$(PISMERE)\athena\auth\krb5\src\windows\identity
-! endif
+!	error KH_ROOT must be defined
 !endif
 
 # See what compiler we are using
@@ -163,7 +159,7 @@ HHC=hhc
 !endif
 
 !if !defined(HEIMDALDIR)
-! error HEIMDALDIR is not defined
+!	error HEIMDALDIR is not defined
 !endif
 
 krbincflags =-I$(HEIMDALDIR)\inc -I$(HEIMDALDIR)\inc\krb5
