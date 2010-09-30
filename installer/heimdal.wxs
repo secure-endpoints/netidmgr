@@ -100,9 +100,6 @@
       </Component>
       <?endif ?>
 
-      <Merge Id="mergeHeimdal" Language="0"
-             SourceFile="$(var.HeimdalDir)redist\$(env.CPU)\Heimdal.msm" />
-
       <Merge Id="mergeHeimdalCompat" Language="0"
              SourceFile="$(var.HeimdalDir)redist\$(env.CPU)\Heimdal-krbcompat.msm" />
 
@@ -128,7 +125,6 @@
       </Feature>
       <?endif ?>
 
-      <MergeRef Id="mergeHeimdal" />
       <MergeRef Id="mergeHeimdalCompat" />
     </Feature>
 
