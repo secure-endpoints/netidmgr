@@ -56,7 +56,7 @@ khm_get_identity_expiration_time(krb5_context ctx, krb5_ccache cc,
 
 #ifdef HEIMDAL
 
-#define IS_IMPORTED(sym) 1
+#define IS_IMPORTED(sym) (sym != NULL)
 
 #else
 
