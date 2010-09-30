@@ -61,12 +61,12 @@ Manager on Windows:
 * __7-Zip__: Used to build the binary and SDK archives.  Not needed if
   you don't need to build archives.
 
-* __Kerberos for Windows__: The [MIT Kerberos for Windows][2] SDK is
-  required for building the Kerberos v5 and Kerberos v4 plug-ins.
+* __Heimdal Compatibility SDK__: The [Heimdal Compatibility SDK][2] is
+  required for building the Kerberos plug-in.
 
 [1]: http://wix.sourceforge.net/
 
-[2]: http://web.mit.edu/kerberos/
+[2]: http://github.com/secure-endpoints/heimdal-krbcompat
 
 3. Tour of the source tree
 --------------------------
@@ -107,9 +107,7 @@ Manager on Windows:
 
   * __common__: Common code shared across plug-ins.
 
-  * __krb5__: Kerberos v5 identity provider and credentials provider.
-
-  * __krb4__: Kerberos v4 credentials provider.
+  * __heimdal__: Kerberos v5 identity provider and credentials provider.
 
   * __keystore__: KeyStore identity provider and credentials provider.
 
@@ -134,15 +132,15 @@ Manager on Windows:
 4. Setting up the build environment
 ------------------------------------
 
- The build is invoked using `nmake` and the build environment is
- specified using environment variables.  To ease the process of
- setting up the environment, use the provided `setupbuild.cmd` script
- from the `cmd.exe` prompt.
+The build is invoked using `nmake` and the build environment is
+specified using environment variables.  To ease the process of setting
+up the environment, use the provided `setupbuild.cmd` script from the
+`cmd.exe` prompt.
 
 The `setupbuild.cmd` script attempts to locate the Platform SDK that
-is installed (currently only looks for version 6.1 of the SDK) and
-attempts to run the SetEnv.Cmd script that is included in the Platform
-SDK.  All the arguments to `setupbuild.cmd` are passed to
+is installed (currently only looks for version 6.1 and 7 of the SDK)
+and attempts to run the `SetEnv.Cmd` script that is included in the
+Platform SDK.  All the arguments to `setupbuild.cmd` are passed to
 `SetEnv.Cmd`.  So you can specifcy target CPU and buid type (/Release
 or /Debug) and target OS (/XP etc.) on the `setupbuild.cmd` command-
 line.
@@ -208,10 +206,10 @@ Appendix A. setupbuild.local.cmd
 The `setupbuild.local.cmd` file is expected to define a number of
 environment variables.  Each of these are explained below.
 
-* `KH_KFWPATH`: Path to MIT Kerberos for Windows installation
-  directory including the Kerberos for Windows SDK.  The C header
-  files and libraries will be expected to exist under this directory.
-  E.g.: `%KH_KFWPATH%\inc` should be the include file directory.
+* `HEIMDALSDK`: Path to Heimdal Compatibility SDK directory.  The C
+  header files and libraries will be expected to exist under this
+  directory.  E.g.: `%HEIMDALSDK%\inc` should be the include file
+  directory.
 
 * `KH_DOXYFULLPATH`: Full path to the "doxygen.exe" executable.
 
@@ -229,7 +227,6 @@ An example 'setupbuild.local.cmd' file:
 
     set KH_DOXYFULLPATH=c:\Program Files\doxygen\doxygen.exe
     set KH_HHCFULLPATH="C:\Program Files\HTML Help Workshop\hhc.exe"
-    set KH_KFWPATH=c:\Program Files\MIT\Kerberos
+    set HEIMDALSDK="C:\src\heimdal-krbcompat"
     set WIXDIR=c:\Program Files\wix3
     set ZIP="C:\Program Files\7-Zip\7z.exe"
-
