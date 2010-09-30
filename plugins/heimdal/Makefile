@@ -29,6 +29,9 @@ DLLFILE=$(BINDIR)\heimdalcred.dll
 
 LIBFILE=$(LIBDIR)\heimdalcred.lib
 
+INCFILES= \
+	$(INCDIR)\krb5common.h
+
 OBJFILES= \
 	$(OBJ)\krb5common.obj 		\
 	$(OBJ)\krb5main.obj 		\
@@ -92,7 +95,10 @@ $(OBJ)\krb5_msgs.rc: lang\krb5_msgs.mc
 {}.c{$(OBJ)}.obj:
 	$(C2OBJ) -DHEIMDAL
 
-all: mkdirs $(MSGRESFILE) $(DLLFILE) lang
+$(INCDIR)\krb5common.h: ..\common\krb5common.h
+	$(CP) $** $@
+
+all: mkdirs $(INCFILES) $(MSGRESFILE) $(DLLFILE) lang
 
 lang::
 
