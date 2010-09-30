@@ -60,7 +60,7 @@ typedef LPSTR (*err_func)(int, long);
     \param[out] suggestion Message ID of suggestion
     \param[out] suggest_code Suggestion ID
 */
-void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
+void khm_err_describe(krb5_context context, long code, wchar_t * buf, khm_size cbbuf,
                       DWORD * suggestion,
                       kherr_suggestion * suggest_code);
 

@@ -50,7 +50,8 @@ HWND GetRootParent (HWND Child)
 }
 #endif
 
-void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
+void khm_err_describe(krb5_context context,
+		      long code, wchar_t * buf, khm_size cbbuf,
                       DWORD * suggestion,
                       kherr_suggestion * suggest_code)
 {
@@ -66,7 +67,7 @@ void khm_err_describe(long code, wchar_t * buf, khm_size cbbuf,
     *buf = L'\0';
 
     table_num = (code & ~0xff);
-    com_err_msg = error_message(code);
+    com_err_msg = krb5_get_error_message(context, code);
 
     if (suggestion)
         *suggestion = 0;

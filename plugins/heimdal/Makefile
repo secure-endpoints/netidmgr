@@ -65,7 +65,6 @@ LIBFILES= \
 
 LIBFILES=$(LIBFILES) \
 	$(HEIMDALLIBDIR)\heimdal.lib 	\
-	$(HEIMDALLIBDIR)\libcom_err.lib	\
 	$(HEIMDALLIBDIR)\krbcompat_manifests.res
 
 MSGRESFILE=$(OBJ)\krb5_msgs.res

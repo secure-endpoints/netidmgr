@@ -32,8 +32,6 @@
 #include<netidmgr.h>
 #ifndef HEIMDAL
 #include<dynimport.h>
-#else
-#include<com_err.h>
 #endif
 #include<krb5common.h>
 #ifdef DEBUG
@@ -49,7 +47,7 @@ khm_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
     const char *errText;
     int krb5Error = ((int)(rc & 255));
 
-    errText = error_message(rc);
+    errText = krb5_get_error_message((ctx != NULL)? *ctx : NULL, rc);
 
     /* Reporting this as an INFO event because this function is called
        to log a return value from a function and the logged message is

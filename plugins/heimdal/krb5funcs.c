@@ -2331,20 +2331,20 @@ khm_krb5_changepwd(char * principal,
     if (rc = krb5_get_init_creds_password(context, &creds, princ,
 					  password, 0, 0, 0,
 					  "kadmin/changepw", opts)) {
-        if (rc == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
-            *error_str = PSTRDUP("Password incorrect while getting initial ticket");
-        } else {
-            *error_str = PSTRDUP(error_message(rc));
-        }
-        goto cleanup;
+      if (rc == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
+	*error_str = PSTRDUP("Password incorrect while getting initial ticket");
+      } else {
+	*error_str = PSTRDUP(krb5_get_error_message(context, rc));
+      }
+      goto cleanup;
     }
 
     if (rc = krb5_set_password(context, &creds, newpassword,
-                                  princ,
-				  &result_code, &result_code_string,
-				  &result_string)) {
-        *error_str = PSTRDUP(error_message(rc));
-        goto cleanup;
+			       princ,
+			       &result_code, &result_code_string,
+			       &result_string)) {
+      *error_str = PSTRDUP(krb5_get_error_message(context, rc));
+      goto cleanup;
     }
 
     if (result_code) {

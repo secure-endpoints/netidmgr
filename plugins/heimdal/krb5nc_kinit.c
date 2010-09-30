@@ -1007,7 +1007,7 @@ kinit_task_proc(void * vparam)
                                     KCDB_IDENT_FLAG_INVALID,
                                     KCDB_IDENT_FLAG_INVALID);
             khui_cw_clear_prompts(kt->nc);
-            khm_err_describe(kt->kinit_code, msg, sizeof(msg), NULL, NULL);
+            khm_err_describe(kt->context, kt->kinit_code, msg, sizeof(msg), NULL, NULL);
             khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel,
                                           msg, KHUI_CWNIS_VALIDATED, 0);
             break;
@@ -1017,7 +1017,7 @@ kinit_task_proc(void * vparam)
                                     KCDB_IDENT_FLAG_UNKNOWN,
                                     KCDB_IDENT_FLAG_UNKNOWN);
             khui_cw_clear_prompts(kt->nc);
-            khm_err_describe(kt->kinit_code, msg, sizeof(msg), NULL, NULL);
+            khm_err_describe(kt->context, kt->kinit_code, msg, sizeof(msg), NULL, NULL);
             khui_cw_notify_identity_state(kt->nc, kt->nct->hwnd_panel,
                                           msg, KHUI_CWNIS_VALIDATED, 0);
         }

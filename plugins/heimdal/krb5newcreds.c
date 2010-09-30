@@ -820,7 +820,8 @@ k5_handle_process_new_creds(khui_new_creds *nc,
         DWORD suggestion = 0;
         kherr_suggestion suggest_code = 0;
 
-        khm_err_describe(d->kinit_task->kinit_code,
+        khm_err_describe(d->kinit_task->context,
+			 d->kinit_task->kinit_code,
                          tbuf, sizeof(tbuf),
                          &suggestion, &suggest_code);
 
@@ -1024,7 +1025,7 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
                are still good enough for other credential types to
                obtain their credentials. */
 
-            khm_err_describe(code, tbuf, sizeof(tbuf),
+            khm_err_describe(NULL, code, tbuf, sizeof(tbuf),
                              &suggestion, &sug_id);
 
             _report_cs0(KHERR_WARNING, tbuf);
@@ -1041,7 +1042,7 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
             DWORD suggestion;
             kherr_suggestion sug_id;
 
-            khm_err_describe(code, tbuf, sizeof(tbuf),
+            khm_err_describe(NULL, code, tbuf, sizeof(tbuf),
                              &suggestion, &sug_id);
 
             _report_cs0(KHERR_ERROR, tbuf);
@@ -1318,7 +1319,7 @@ k5_handle_process_password(khui_new_creds * nc,
                 DWORD suggestion;
                 kherr_suggestion sug_id;
 
-                khm_err_describe(code, tbuf, sizeof(tbuf),
+                khm_err_describe(NULL, code, tbuf, sizeof(tbuf),
                                  &suggestion, &sug_id);
                 _report_cs0(KHERR_ERROR, tbuf);
 
