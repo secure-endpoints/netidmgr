@@ -34,7 +34,7 @@ KHIMAIRA_WIN32_CONFIG=1
 #   KH_ROOT : Root of the source tree.
 #   KH_BUILD: One of DEBUG or RETAIL
 #   KH_CLVER: One of 'vc7', 'vc8' or 'vc9'.  The C compiler used for the build
-#   HEIMDALDIR: Path to Heimdal SDK
+#   HEIMDALSDKDIR: Path to Heimdal SDK
 #
 #  The following environment variables are optional:
 #   KH_RUNTIME: One of STATIC or DLL, specifies whether the CRT libs
@@ -158,12 +158,12 @@ HHC=$(KH_HHCFULLPATH)
 HHC=hhc
 !endif
 
-!if !defined(HEIMDALDIR)
-!	error HEIMDALDIR is not defined
+!if !defined(HEIMDALSDKDIR)
+!	error HEIMDALSDKDIR is not defined
 !endif
 
-krbincflags =-I$(HEIMDALDIR)\inc -I$(HEIMDALDIR)\inc\krb5
-HEIMDALLIBDIR=$(HEIMDALDIR)\lib\$(CPU)
+krbincflags =-I$(HEIMDALSDKDIR)\inc -I$(HEIMDALSDKDIR)\inc\krb5
+HEIMDALLIBDIR=$(HEIMDALSDKDIR)\lib\$(CPU)
 BUILD_HEIMDAL=1
 
 incflags= -I$(INCDIR) -I$(OBJ) $(krbincflags)

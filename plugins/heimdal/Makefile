@@ -25,10 +25,6 @@
 MODULE=plugins\heimdal
 !include <../../config/Makefile.w32>
 
-!ifndef HEIMDALDIR
-!  error HEIMDALDIR is not defined
-!endif
-
 DLLFILE=$(BINDIR)\heimdalcred.dll
 
 LIBFILE=$(LIBDIR)\heimdalcred.lib
@@ -76,7 +72,7 @@ VERRESFILE=$(OBJ)\version.res
 $(OBJ)\krb5config.c: krbconfig.csv $(CONFDIR)\csvschema.cfg
 	$(CCSV) $** $@
 
-$(OBJ)\krbcompat_delayload.obj: $(HEIMDALDIR)\src\krbcompat_delayload.c
+$(OBJ)\krbcompat_delayload.obj: $(HEIMDALSDKDIR)\src\krbcompat_delayload.c
 	$(C2OBJ)
 
 $(DLLFILE):  $(OBJFILES) $(VERRESFILE) $(LIBFILES)
