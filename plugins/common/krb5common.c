@@ -32,6 +32,8 @@
 #include<netidmgr.h>
 #ifndef HEIMDAL
 #include<dynimport.h>
+#else
+#include<com_err.h>
 #endif
 #include<krb5common.h>
 #ifdef DEBUG
