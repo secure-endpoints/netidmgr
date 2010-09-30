@@ -206,9 +206,9 @@ Appendix A. setupbuild.local.cmd
 The `setupbuild.local.cmd` file is expected to define a number of
 environment variables.  Each of these are explained below.
 
-* `HEIMDALSDK`: Path to Heimdal Compatibility SDK directory.  The C
+* `HEIMDALSDKDIR`: Path to Heimdal Compatibility SDK directory.  The C
   header files and libraries will be expected to exist under this
-  directory.  E.g.: `%HEIMDALSDK%\inc` should be the include file
+  directory.  E.g.: `%HEIMDALSDKDIR%\inc` should be the include file
   directory.
 
 * `KH_DOXYFULLPATH`: Full path to the "doxygen.exe" executable.
@@ -227,6 +227,6 @@ An example 'setupbuild.local.cmd' file:
 
     set KH_DOXYFULLPATH=c:\Program Files\doxygen\doxygen.exe
     set KH_HHCFULLPATH="C:\Program Files\HTML Help Workshop\hhc.exe"
-    set HEIMDALSDK="C:\src\heimdal-krbcompat"
+    set HEIMDALSDKDIR="C:\src\heimdal-krbcompat"
     set WIXDIR=c:\Program Files\wix3
     set ZIP="C:\Program Files\7-Zip\7z.exe"

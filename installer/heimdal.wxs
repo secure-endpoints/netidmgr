@@ -101,7 +101,7 @@
       <?endif ?>
 
       <Merge Id="mergeHeimdalCompat" Language="0"
-             SourceFile="$(var.HeimdalDir)redist\$(env.CPU)\Heimdal-krbcompat.msm" />
+             SourceFile="$(var.HeimdalSdkDir)redist\$(env.CPU)\Heimdal-krbcompat.msm" />
 
     </DirectoryRef>
 

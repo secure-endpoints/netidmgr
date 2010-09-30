@@ -207,7 +207,7 @@ $(OBJ)\heimdal.wixobj: heimdal.wxs
 		-dProductVersion=$(NETIDMGR_VERSION)	\
 		-dBinDir=$(BINDIR)\			\
 		-dLibDir=$(LIBDIR)\			\
-		-dHeimdalDir=$(HEIMDALDIR)\		\
+		-dHeimdalSdkDir=$(HEIMDALSDKDIR)\		\
 !ifndef NODEBUG
 		-dDebug=1				\
 !endif
