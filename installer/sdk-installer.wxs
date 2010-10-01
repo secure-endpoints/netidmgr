@@ -87,7 +87,6 @@
               <Directory Id="dirIncNetidmgr" Name="netidmgr" FileSource="$(var.IncDir)">
 
                 <Component Id="cmpIncNetidmgr" Guid="4B416C66-7CC0-4D90-B5E5-42755EB527E1" DiskId="1">
-                  <File Id="file_inc_dynimport_h" ShortName="dynimprt.h" Name="dynimport.h" />
                   <File Id="file_inc_hashtable_h" ShortName="hashtbl.h" Name="hashtable.h" />
                   <File Id="file_inc_kconfig_h" Name="kconfig.h" />
                   <File Id="file_inc_kcreddb_h" Name="kcreddb.h" />
