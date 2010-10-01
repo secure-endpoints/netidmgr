@@ -52,7 +52,7 @@ KHMEXP_EXP khm_int32 KHMAPI init_module(kmm_module h_module) {
     kmm_plugin_reg pi;
     wchar_t buf[256];
 
-    DelayLoadHeimdal(hInstance);
+    DelayLoadHeimdal();
 
     h_khModule = h_module;
 
