@@ -56,7 +56,7 @@
 
   <?define UpgradeCode="342E07BD-8B38-4F2F-BED8-F26E027B25CE" ?>
 
-  <?if $(var.ClVer)=vc9 ?>
+  <?if $(var.ClVer)=vc9 Or $(var.ClVer)=vc8 ?>
   <?define InstallerVersion=300 ?>
   <?else ?>
   <?define InstallerVersion=200 ?>
