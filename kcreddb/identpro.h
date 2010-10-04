@@ -44,6 +44,7 @@ typedef struct tag_kcdb_identpro_i {
 
     khm_int32  flags;
 #define KCDB_IDENTPRO_FLAG_DELETED 0x08000000L
+#define KCDB_IDENTPRO_FLAG_READY   0x00000001L
 
     khm_int32  refcount;
 
@@ -54,7 +55,7 @@ typedef struct tag_kcdb_identpro_i {
 
 #define kcdb_is_identpro(idp) ((idp) && ((kcdb_identpro_i *)(idp))->magic == KCDB_IDENTPRO_MAGIC)
 
-#define kcdb_is_active_identpro(idp) (kcdb_is_identpro(idp) && !((((kcdb_identpro_i *)(idp))->flags) & KCDB_IDENTPRO_FLAG_DELETED))
+#define kcdb_is_active_identpro(idp) (kcdb_is_identpro(idp) && ((((kcdb_identpro_i *)(idp))->flags) & KCDB_IDENTPRO_FLAG_READY))
 
 #define kcdb_identpro_from_handle(vidp) ((kcdb_identpro_i *) vidp)
 

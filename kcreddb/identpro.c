@@ -288,6 +288,7 @@ identpro_mark_for_deletion(kcdb_identpro_i * p)
         n_id_providers--;
         LPUSH(&deleted_id_providers, p);
         p->flags |= KCDB_IDENTPRO_FLAG_DELETED;
+	p->flags &= ~KCDB_IDENTPRO_FLAG_READY;
 
         kcdbint_identpro_post_message(KCDB_OP_DELETE, p);
     }
@@ -430,7 +431,11 @@ kcdb_identity_set_provider(khm_handle sub)
         if (KHM_FAILED(rv)) {
             kmq_send_sub_msg(sub, KMSG_IDENT, KMSG_IDENT_EXIT, 0, 0);
             identpro_mark_for_deletion(p);
-        }
+        } else {
+	    EnterCriticalSection(&cs_identpro);
+	    p->flags |= KCDB_IDENTPRO_FLAG_READY;
+	    LeaveCriticalSection(&cs_identpro);
+	}
     } else {
         EnterCriticalSection(&cs_identpro);
         sub = p->sub;
