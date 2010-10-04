@@ -440,10 +440,10 @@ $(SRC)\sample\templates\idprov\lang\en_us\langres.rc	sample\templates\idprov\lan
 
 clean::
 	cd $(OBJ)
-	-rmdir /s /q doc
-	-rmdir /s /q inc
-	-rmdir /s /q lib
-	-rmdir /s /q sample
+	-$(RMDIR) /s /q doc
+	-$(RMDIR) /s /q inc
+	-$(RMDIR) /s /q lib
+	-$(RMDIR) /s /q sample
 	cd $(SRC)\installer
 
 clean::
