@@ -123,7 +123,7 @@ $(OBJ)\langres_ver_$(LANG).res: version.rc
 
 clean::
 !if defined(INCFILES)
-	$(RM) $(INCFILES)
+	-$(RM) $(INCFILES)
 !endif
 
 # install-local:
