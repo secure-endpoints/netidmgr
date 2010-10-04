@@ -55,7 +55,7 @@ void khm_err_describe(krb5_context context,
                       DWORD * suggestion,
                       kherr_suggestion * suggest_code)
 {
-    const char * com_err_msg;
+    const char * com_err_msg = NULL;
     long table_num;
     DWORD msg_id = 0;
     DWORD sugg_id = 0;
@@ -67,7 +67,9 @@ void khm_err_describe(krb5_context context,
     *buf = L'\0';
 
     table_num = (code & ~0xff);
-    com_err_msg = krb5_get_error_message(context, code);
+
+    if (context != NULL)
+        com_err_msg = krb5_get_error_message(context, code);
 
     if (suggestion)
         *suggestion = 0;

@@ -44,10 +44,11 @@ khm_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
                int FreeContextFlag, krb5_context * ctx,
                krb5_ccache * cache)
 {
-    const char *errText;
+    const char *errText = "";
     int krb5Error = ((int)(rc & 255));
 
-    errText = krb5_get_error_message((ctx != NULL)? *ctx : NULL, rc);
+    if (ctx != NULL && *ctx != NULL)
+        errText = krb5_get_error_message(*ctx, rc);
 
     /* Reporting this as an INFO event because this function is called
        to log a return value from a function and the logged message is
