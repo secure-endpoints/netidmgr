@@ -109,7 +109,8 @@ void khm_err_describe(krb5_context context,
             break;
 
 	case KRB5KRB_AP_ERR_BAD_INTEGRITY:
-	    sugg_code = MSG_ERR_S_INTEGRITY;
+	    sugg_id = MSG_ERR_S_INTEGRITY;
+            sugg_code = KHERR_SUGGEST_RETRY;
 	    break;
         }
     } else if (table_num == ERROR_TABLE_BASE_kadm5) {
