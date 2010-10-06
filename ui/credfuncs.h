@@ -129,6 +129,8 @@ khm_cred_import(void);
 void
 khm_cred_end_dialog(khui_new_creds * nc);
 
+BOOL khm_cred_is_new_creds_pending(khui_new_creds * nc);
+
 END_C
 
 #endif

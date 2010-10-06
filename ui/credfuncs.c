@@ -1165,6 +1165,50 @@ khm_cred_conclude_processing(khui_new_creds * nc)
     return has_error;
 }
 
+/**
+ * Check if there are any credential types that have pending operations
+ *
+ * Returns true if any work will be done if a
+ * khm_cred_dispatch_process_message() will be called.  Naturally, the
+ * logic here has to reflect the logic in
+ * khm_cred_dispatch_process_message().
+ */
+BOOL khm_cred_is_new_creds_pending(khui_new_creds * nc)
+{
+    BOOL pending = FALSE;
+    khm_size i;
+
+    EnterCriticalSection(&nc->cs);
+
+    for (i=0; i < nc->n_types && !pending; i++) {
+        khm_size j;
+        khui_new_creds_by_type *t;
+        khui_new_creds_by_type *dep;
+
+        t = nc->types[i].nct;
+
+        if (t->flags & (KHUI_NCT_FLAG_PROCESSED |
+                        KHUI_NC_RESPONSE_COMPLETED |
+                        KHUI_NCT_FLAG_DISABLED))
+            continue;
+
+        pending = TRUE;
+
+        for(j=0; j < t->n_type_deps && pending; j++) {
+
+            if(KHM_FAILED(khui_cw_find_type(nc, t->type_deps[j], &dep))) {
+                /* Type has a dependency on a non-existent or
+                 * non-participating type. */
+                pending = FALSE;
+            }
+        }
+    }
+
+    LeaveCriticalSection(&nc->cs);
+
+    return pending;
+}
+
 /* this is called by khm_cred_dispatch_process_message and the
    kmsg_cred_completion to initiate and continue checked broadcasts of
    KMSG_CRED_DIALOG_PROCESS messages.
