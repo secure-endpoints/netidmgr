@@ -1248,13 +1248,16 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
 
         for(j=0; j<t->n_type_deps; j++) {
             if(KHM_FAILED(khui_cw_find_type(nc, t->type_deps[j], &d))) {
-                _reportf(L"Credtype %s(%d) has invalid dependency.  Depends on type %d, that is not participating in the current operation.",
+                _reportf(L"Credtype %s(%d) has invalid dependency."
+                         L"  Depends on type %d, that is not participating"
+                         L" in the current operation.",
                          nc->types[i].display_name, t->type, t->type_deps[j]);
                 break;
             }
 
             if (d->flags & KHUI_NCT_FLAG_DISABLED) {
-                _reportf(L"Credtype %s(%d) waiting for disabled credtype %s(%d). Ignoring dependency.",
+                _reportf(L"Credtype %s(%d) waiting for disabled credtype %s(%d)."
+                         L" Ignoring dependency.",
                          nc->types[i].display_name, t->type, d->name, d->type);
                 continue;
             }
@@ -1270,7 +1273,8 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
             continue;
 
         /* all dependencies for this type have been met. */
-        _reportf(L"Queuing credtype %s(%d) for processing", nc->types[i].display_name, t->type);
+        _reportf(L"Queuing credtype %s(%d) for processing",
+                 nc->types[i].display_name, t->type);
         subs[n_subs++] = kcdb_credtype_get_sub(t->type);
         t->flags |= KHUI_NCT_FLAG_PROCESSED;
         cont = TRUE;
