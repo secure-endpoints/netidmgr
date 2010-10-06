@@ -429,8 +429,6 @@ HWND NewCredPanels::UpdateLayout()
        displayed, we enable the Next button.  If not, we enable
        the Finish button. */
 
-    NewCredWizard::FromNC(nc)->m_nav.CheckControls();
-
     if (hw_target != NULL)
         return GetNextDlgTabItem(hw_target, NULL, FALSE);
     return NULL;

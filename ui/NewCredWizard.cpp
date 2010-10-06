@@ -361,7 +361,6 @@ void NewCredWizard::OnIdentityStateChange(const nc_identity_state_notification *
  done:
 
     m_privint.UpdateLayout();
-    m_nav.CheckControls();
     m_nav.UpdateLayout();
 
 }

@@ -34,6 +34,8 @@ HWND NewCredNavigation::UpdateLayout()
 {
     HDWP dwp;
 
+    CheckControls();
+
     dwp = BeginDeferWindowPos(8);
 
     dwp = DeferWindowPos(dwp, GetItem(IDC_BACK), NULL, 0, 0, 0, 0,
@@ -191,7 +193,16 @@ void NewCredNavigation::CheckControls()
 
     khui_cw_unlock_nc(nc);
 
-    if (khui_cw_is_ready(nc) && !IsControlEnabled(Retry))
+    if (!khm_cred_is_new_creds_pending(nc))
+        DisableControl(Retry);
+
+    if (!IsControlEnabled(Retry))
+        DisableControl(Prev);
+
+    if (khui_cw_is_ready(nc) &&
+        !IsControlEnabled(Retry) &&
+        !IsControlEnabled(Close) &&
+        !IsControlEnabled(Abort))
         EnableControl(Finish);
 }
 }
