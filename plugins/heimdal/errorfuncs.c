@@ -73,7 +73,7 @@ void khm_err_describe(krb5_context context,
 
     if (suggestion)
         *suggestion = 0;
-    if (sugg_code)
+    if (suggest_code)
         *suggest_code = KHERR_SUGGEST_NONE;
 
     if (WSABASEERR <= code && code < (WSABASEERR + 1064)) {
