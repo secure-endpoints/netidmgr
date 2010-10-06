@@ -765,6 +765,7 @@ k5_handle_process_new_creds(khui_new_creds *nc,
         k5_kinit_task_abort_and_release(d->kinit_task);
         d->kinit_task = NULL;
     } else if (khui_cw_get_result(nc) == KHUI_NC_RESULT_PROCESS) {
+
         if (d->kinit_task == NULL ||
             KHM_FAILED(k5_kinit_task_confirm_and_wait(d->kinit_task))) {
 
@@ -918,10 +919,11 @@ k5_handle_process_new_creds(khui_new_creds *nc,
     if (r & KHUI_NC_RESPONSE_NOEXIT) {
         /* if we are retrying the call, we should restart the kinit
            thread */
-#ifdef DEBUG
         assert(r & KHUI_NC_RESPONSE_PENDING);
-#endif
+        khui_cw_lock_nc(nc);
         d->kinit_task = k5_kinit_task_create(nc);
+        d->sync = TRUE;
+        khui_cw_unlock_nc(nc);
     }
 
  done:
