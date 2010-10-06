@@ -1409,10 +1409,57 @@ describe_new_creds_operation(khui_new_creds * nc)
    - ::KMSG_CREDP_END_NEWCRED
 */
 
+/**
+ * Reset the PROCESSED and COMPLETED flags for credential types as appropriate
+ *
+ * All credential types will have PROCESSSED bit reset.  If any
+ * credential type doesn't have DISABLED and COMPLETED set, then any
+ * type that depends on it with COMPLETED set will have COMPLETED
+ * reset.
+ *
+ * \note: Must be called with nc->cs held.
+ */
+static void
+reset_completion_state_for_types(khui_new_creds * nc)
+{
+    khm_size i;
+    khm_boolean retry;
+
+    do {
+        retry = FALSE;
+
+        for (i=0; i < nc->n_types; i++) {
+            khui_new_creds_by_type * t = nc->types[i].nct;
+            khui_new_creds_by_type * dep;
+
+            t->flags &= ~KHUI_NCT_FLAG_PROCESSED;
+
+            if (t->flags & KHUI_NC_RESPONSE_COMPLETED) {
+                khm_size j;
+
+                for(j=0; j<t->n_type_deps; j++) {
+                    if(KHM_FAILED(khui_cw_find_type(nc, t->type_deps[j], &dep))) {
+                        break;
+                    }
+
+                    if (dep->flags & KHUI_NCT_FLAG_DISABLED) {
+                        continue;
+                    }
+
+                    if (!(dep->flags & KHUI_NC_RESPONSE_COMPLETED)) {
+                        t->flags &= ~KHUI_NC_RESPONSE_COMPLETED;
+                        retry = TRUE;
+                        break;
+                    }
+                }
+            }
+        }
+    } while (retry);
+}
+
 void
 khm_cred_dispatch_process_message(khui_new_creds *nc)
 {
-    khm_size i;
     BOOL pending;
 
     /* see if there's anything to do.  We can check this without
@@ -1438,9 +1485,7 @@ khm_cred_dispatch_process_message(khui_new_creds *nc)
         goto _terminate_job;
     }
 
-    for(i=0; i<nc->n_types; i++) {
-        nc->types[i].nct->flags &= ~ KHUI_NCT_FLAG_PROCESSED;
-    }
+    reset_completion_state_for_types(nc);
     nc->response = 0;
 
     if (nc->persist_privcred) {
