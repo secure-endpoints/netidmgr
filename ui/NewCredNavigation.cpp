@@ -141,17 +141,17 @@ void NewCredNavigation::OnCommand(int id, HWND hwndCtl, UINT codeNotify)
 
 void NewCredNavigation::CheckControls()
 {
-    khui_new_creds_privint_panel * p;
+    khui_new_creds_privint_panel * p = NULL;
     AutoRef<NewCredWizard> cw (NewCredWizard::FromNC(nc));
-
-    DisableControl(Next | Prev | Finish);
 
     khui_cw_lock_nc(nc);
 
-    p = khui_cw_get_current_privint_panel(nc);
-
     switch (cw->page) {
     case NC_PAGE_CREDOPT_WIZ:
+
+        DisableControl(Next | Prev | Finish);
+
+        p = khui_cw_get_current_privint_panel(nc);
 
         if (cw->m_privint.idx_current == NC_PRIVINT_PANEL) {
 
@@ -179,11 +179,30 @@ void NewCredNavigation::CheckControls()
         break;
 
     case NC_PAGE_PROGRESS:
+
+        DisableControl(Next | Prev | Finish);
+
+        p = khui_cw_get_current_privint_panel(nc);
+
         if (p && !(nc->response & KHUI_NC_RESPONSE_PROCESSING))
             EnableControl(Prev);
+
+        if (!khm_cred_is_new_creds_pending(nc))
+            DisableControl(Retry);
+
+        if (!IsControlEnabled(Retry))
+            DisableControl(Prev);
+
         break;
 
-    default:
+    case NC_PAGE_CREDOPT_BASIC:
+    case NC_PAGE_CREDOPT_ADV:
+    case NC_PAGE_PASSWORD:
+
+        DisableControl(Next | Prev | Finish);
+
+        p = khui_cw_get_current_privint_panel(nc);
+
         if ((p && QNEXT(p)) || KHM_SUCCEEDED(khui_cw_peek_next_privint(nc, NULL)))
             EnableControl(Next);
 
@@ -192,12 +211,6 @@ void NewCredNavigation::CheckControls()
     }
 
     khui_cw_unlock_nc(nc);
-
-    if (!khm_cred_is_new_creds_pending(nc))
-        DisableControl(Retry);
-
-    if (!IsControlEnabled(Retry))
-        DisableControl(Prev);
 
     if (khui_cw_is_ready(nc) &&
         !IsControlEnabled(Retry) &&
