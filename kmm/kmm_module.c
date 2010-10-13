@@ -624,6 +624,22 @@ kmm_unload_module(kmm_module module) {
     return KHM_ERROR_SUCCESS;
 }
 
+static khm_boolean
+is_allowed_module(const wchar_t * module_name)
+{
+    /* Check for schema subspace.  This is not an actual module. */
+    if (!wcscmp(module_name, L"_Schema"))
+        return FALSE;
+
+    /* Disallow MITKrb5 module for now.  We ship with the Heimdal
+     * module that uses MIT as a backened if MIT Kerberos for Windows
+     * is available and Heimdal is not. */
+    if (!wcscmp(module_name, L"MITKrb5"))
+        return FALSE;
+
+    return TRUE;
+}
+
 KHMEXP khm_int32   KHMAPI
 kmm_load_default_modules(void) {
     khm_handle csm = NULL;
@@ -655,8 +671,7 @@ kmm_load_default_modules(void) {
         if (KHM_FAILED(khc_get_config_space_name(cs_mod, buf, &s)))
             continue;
 
-        /* check for schema subspace.  This is not an actual module. */
-        if (!wcscmp(buf, L"_Schema"))
+        if (!is_allowed_module(buf))
             continue;
 
         kmm_load_module(buf, 0, NULL);
