@@ -88,7 +88,7 @@ khm_krb5_initialize(khm_handle ident,
     krb5_error_code	rc = -1;
     krb5_flags          flags = 0;
 
-    if (IS_IMPORTED(krb5_init_context))
+    if (!IS_IMPORTED(krb5_init_context))
         return 1;
 
     if (*ctx == 0 && (rc = krb5_init_context(ctx))) {
