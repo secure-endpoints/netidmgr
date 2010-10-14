@@ -1046,12 +1046,7 @@ khm_krb5_renew_ident(khm_handle identity)
     realm = krb5_principal_get_realm(context, me);
 
     code = krb5_build_principal(context, &server,
-                                krb5_realm_length(realm),
-                                krb5_realm_data(realm),
-                                KRB5_TGS_NAME_SIZE, KRB5_TGS_NAME,
-                                krb5_realm_length(realm),
-                                krb5_realm_data(realm),
-                                0);
+                                strlen(realm), realm, KRB5_TGS_NAME, realm, 0);
 
     if (code)
         goto cleanup;
