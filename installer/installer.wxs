@@ -209,6 +209,7 @@
 
     <Condition Message="!(loc.AdminRequired)">Privileged</Condition>
     <Condition Message="!(loc.OsVersionRequired)">VersionNT &gt;=501</Condition>
+    <Condition Message="!(loc.AlreadyInstalled)">Installed Or Not EXISTINGNIM</Condition>
     <?if $(var.Platform) = "x64" ?>
     <Condition Message="!(loc.Platform64Required)">VersionNT64</Condition>
     <?endif ?>
@@ -218,7 +219,11 @@
     </InstallExecuteSequence>
 
     <Upgrade Id="$(var.UpgradeCode)">
-      <UpgradeVersion IgnoreRemoveFailure="no" IncludeMinimum="no" Maximum="$(var.ProductVersion)" IncludeMaximum="no" MigrateFeatures="yes" Property="UPGRADENIM" />
+      <UpgradeVersion IgnoreRemoveFailure="no" IncludeMinimum="no"
+                      Maximum="$(var.ProductVersion)" IncludeMaximum="no"
+                      MigrateFeatures="yes" Property="UPGRADENIM" />
+      <UpgradeVersion OnlyDetect="yes" Minimum="$(var.ProductVersion)" IncludeMinimum="yes"
+                      Property="EXISTINGNIM" />
     </Upgrade>
 
     <?ifdef IncludeKeystore ?>

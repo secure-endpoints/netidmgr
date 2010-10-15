@@ -58,6 +58,8 @@
 
   <String Id="AdminRequired">This package requires administrator privileges to install</String>
 
+  <String Id="AlreadyInstalled">A current or newer version of Network Identity Manager is installed on this machine.  Please use the Add/Remove Programs control panel to manage this installation.</String>
+
   <String Id="OsVersionRequired">This package requires Windows XP or later</String>
 
   <String Id="Platform64Required">This package requires a 64-bit operating system</String>
