@@ -124,8 +124,8 @@ NIDMLIBDIR=$(KFWSDKDIR)
 
 CD=cd
 RM=del /q
-MKDIR=mkdir
-RMDIR=rmdir
+MKDIR=md
+RMDIR=rd
 ECHO=echo
 CP=copy /y
 LINK=link
