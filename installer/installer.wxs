@@ -222,7 +222,8 @@
       <UpgradeVersion IgnoreRemoveFailure="no" IncludeMinimum="no"
                       Maximum="$(var.ProductVersion)" IncludeMaximum="no"
                       MigrateFeatures="yes" Property="UPGRADENIM" />
-      <UpgradeVersion OnlyDetect="yes" Minimum="$(var.ProductVersion)" IncludeMinimum="yes"
+      <UpgradeVersion OnlyDetect="yes" Minimum="$(var.ProductVersion)"
+                      IncludeMinimum="yes" Maximum="127.127.32767.32767"
                       Property="EXISTINGNIM" />
     </Upgrade>
 

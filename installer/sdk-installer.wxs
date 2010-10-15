@@ -283,6 +283,7 @@
     <Property Id="INSTALLLEVEL">3</Property>
 
     <Condition Message="!(loc.OsVersionRequired)">VersionNT &gt;=501</Condition>
+    <Condition Message="!(loc.AlreadyInstalled)">Installed Or Not CURRENTNIMSDK</Condition>
 
     <InstallExecuteSequence>
       <RemoveExistingProducts After="InstallValidate">(Not Installed) And UPGRADENIMSDK</RemoveExistingProducts>
@@ -290,6 +291,9 @@
 
     <Upgrade Id="$(var.UpgradeCode)">
       <UpgradeVersion IgnoreRemoveFailure="no" IncludeMinimum="no" Maximum="$(var.ProductVersion)" IncludeMaximum="no" MigrateFeatures="yes" Property="UPGRADENIMSDK" />
+      <UpgradeVersion Minimum="$(var.ProductVersion)" IncludeMinimum="yes"
+                      OnlyDetect="yes" Property="CURRENTNIMSDK"
+                      Maximum="127.127.32767.32767" />
     </Upgrade>
 
     <Media Id="1" Cabinet="Disk1" CompressionLevel="high" EmbedCab="yes" />

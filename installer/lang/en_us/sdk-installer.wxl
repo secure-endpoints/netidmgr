@@ -56,6 +56,8 @@
 
   <String Id="OsVersionRequired">This package requires Windows XP or later</String>
 
+  <String Id="AlreadyInstalled">A current or newer version of Network Identity Manager SDK is already installed on this machine.  Please use the Add/Remove Programs control panel to manage this installation.</String>
+
   <String Id="FeatureMainTitle">Network Identity Manager SDK</String>
 
   <String Id="FeatureMainDesc">Installs the Network Identity Manager SDK header files, libraries and samples.</String>
