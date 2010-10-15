@@ -94,7 +94,7 @@ BUILDTYPE=debug
 !ifndef DEST
 DEST=$(BUILDROOT)\dest\$(CPU)_$(BUILDTYPE)
 !endif
-!ifdef OBJ
+!ifndef OBJ
 OBJ=$(BUILDROOT)\obj\$(CPU)_$(BUILDTYPE)
 !endif
 
@@ -118,8 +118,8 @@ NIDMLIBDIR=$(KFWSDKDIR)
 
 CD=cd
 RM=-del /q
-MKDIR=mkdir
-RMDIR=rmdir
+MKDIR=md
+RMDIR=rd
 ECHO=echo
 CP=copy /y
 LINK=link
