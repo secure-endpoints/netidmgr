@@ -511,7 +511,8 @@ list_certs(void)
 
         kcdb_cred_set_flags(credential,
                             KCDB_CRED_FLAG_INITIAL,
-                            KCDB_CRED_FLAG_INITIAL);
+                            KCDB_CRED_FLAG_INITIAL |
+                            KCDB_CRED_FLAG_DESTROYABLE);
 
         kcdb_credset_add_cred(g_credset, credential, -1);
 
@@ -563,6 +564,11 @@ khm_int32 KHMAPI delete_cred_func(khm_handle cred, void * rock)
     kcdb_cred_get_type(cred, &t);
 
     if (t != credtype_id)
+        return KHM_ERROR_SUCCESS;
+
+    t = 0;
+    kcdb_cred_get_flags(cred, &t);
+    if ((t & KCDB_CRED_FLAG_DESTROYABLE) != KCDB_CRED_FLAG_DESTROYABLE)
         return KHM_ERROR_SUCCESS;
 
     find_matching_cert(cred, &pCtx, &hCertStore);
