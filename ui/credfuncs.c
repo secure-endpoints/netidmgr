@@ -1267,6 +1267,12 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
                          nc->types[i].display_name, t->type, d->name, d->type);
                 break;
             }
+
+            if (d->flags & KHUI_NC_RESPONSE_FAILED) {
+                _reportf(L"Credtype %s(%d) waiting on failed type %s(%d)",
+                         nc->types[i].display_name, t->type, d->name, d->type);
+                break;
+            }
         }
 
         if (j < t->n_type_deps) /* there are unmet dependencies */
