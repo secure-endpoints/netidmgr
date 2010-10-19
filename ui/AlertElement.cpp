@@ -344,6 +344,12 @@ void AlertElement::OnErrCtxEvent()
 	    AlertContextMonitor::ContextCommitEvent * ev =
 		static_cast<AlertContextMonitor::ContextCommitEvent *>(event);
 
+            // Context fold events are already displayed in the child
+            // context elements.  Displaying it again here doesn't add
+            // information to the user.
+            if (ev->flags & KHERR_RF_CONTEXT_FOLD)
+                break;
+
             if (ev->severity > m_alert->severity)
                 break;
 

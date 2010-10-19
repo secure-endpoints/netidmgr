@@ -999,6 +999,134 @@ void khm_cred_obtain_new_creds(wchar_t * title)
     }
 }
 
+/*! \brief Describe the result of a new credentials operation
+
+  This is used when concluding error contexts that are being monitored
+  remotely.  In this case, we add a final additional event to the
+  primary event context that describes the result of the operation.
+ */
+static void
+describe_new_creds_result(khui_new_creds * nc, khm_boolean has_error)
+{
+    wchar_t wsinsert[512];
+    khm_size cbsize;
+
+    kherr_severity severity = (has_error) ? KHERR_ERROR : KHERR_NONE;
+
+    if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+       nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
+
+        cbsize = sizeof(wsinsert);
+        kcdb_get_resource(nc->identities[0],
+                          KCDB_RES_DISPLAYNAME,
+                          0, NULL, NULL, wsinsert, &cbsize);
+
+        _report_sr1(severity,  (has_error ? IDS_CTX_PROC_NEW_CREDS_RF :
+                                IDS_CTX_PROC_NEW_CREDS_R),
+                    _cstr(wsinsert));
+
+    } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+        cbsize = sizeof(wsinsert);
+
+        if (nc->ctx.scope == KHUI_SCOPE_IDENT)
+            kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
+        else if (nc->ctx.scope == KHUI_SCOPE_CREDTYPE) {
+            if (nc->ctx.identity != NULL)
+                kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
+            else
+                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->ctx.cred_type),
+                                  KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
+        } else if (nc->ctx.scope == KHUI_SCOPE_CRED) {
+            kcdb_get_resource(nc->ctx.cred, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
+        } else {
+            StringCbCopy(wsinsert, sizeof(wsinsert), L"(?)");
+        }
+
+        if (has_error) {
+            _report_sr1(severity, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
+                                   IDS_CTX_PROC_NEW_CREDS_RF :IDS_CTX_PROC_RENEW_CREDS_RF),
+                        _cstr(wsinsert));
+        } else {
+            _report_sr1(severity, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
+                                   IDS_CTX_PROC_NEW_CREDS_R :IDS_CTX_PROC_RENEW_CREDS_R),
+                        _cstr(wsinsert));
+        }
+    } else if (nc->subtype == KMSG_CRED_PASSWORD) {
+        cbsize = sizeof(wsinsert);
+        kcdb_identity_get_name(nc->identities[0], wsinsert, &cbsize);
+
+        _report_sr1(severity, (has_error ? IDS_CTX_PROC_PASSWORD_RF :
+                               IDS_CTX_PROC_PASSWORD_R),
+                    _cstr(wsinsert));
+    } else {
+        assert(FALSE);
+    }
+
+    _resolve();
+}
+
+/*! \brief Figure out a good description of the credentials operation we are going to perform
+
+ */
+static void
+describe_new_creds_operation(khui_new_creds * nc)
+{
+    wchar_t wsinsert[512];
+    khm_size cbsize;
+
+    if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
+       nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
+
+        cbsize = sizeof(wsinsert);
+        kcdb_get_resource(nc->identities[0],
+                          KCDB_RES_DISPLAYNAME,
+                          0, NULL, NULL, wsinsert, &cbsize);
+
+        _report_sr1(KHERR_NONE,  IDS_CTX_PROC_NEW_CREDS,
+                    _cstr(wsinsert));
+
+    } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
+        cbsize = sizeof(wsinsert);
+
+        if (nc->ctx.scope == KHUI_SCOPE_IDENT)
+            kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
+        else if (nc->ctx.scope == KHUI_SCOPE_CREDTYPE) {
+            if (nc->ctx.identity != NULL)
+                kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
+            else
+                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->ctx.cred_type),
+                                  KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                                  wsinsert, &cbsize);
+        } else if (nc->ctx.scope == KHUI_SCOPE_CRED) {
+            kcdb_get_resource(nc->ctx.cred, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
+                              wsinsert, &cbsize);
+        } else {
+            StringCbCopy(wsinsert, sizeof(wsinsert), L"(?)");
+        }
+
+        _report_sr1(KHERR_NONE, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
+                                 IDS_CTX_PROC_NEW_CREDS :IDS_CTX_PROC_RENEW_CREDS),
+                    _cstr(wsinsert));
+    } else if (nc->subtype == KMSG_CRED_PASSWORD) {
+        cbsize = sizeof(wsinsert);
+        kcdb_identity_get_name(nc->identities[0], wsinsert, &cbsize);
+
+        _report_sr1(KHERR_NONE, IDS_CTX_PROC_PASSWORD,
+                    _cstr(wsinsert));
+    } else {
+        assert(FALSE);
+    }
+
+    _describe();
+
+}
+
 /*! \brief Conclude processing of a new credentials operation
 
   Once the new credentials operation has concluded, this function is
@@ -1011,7 +1139,12 @@ khm_cred_conclude_processing(khui_new_creds * nc)
 
     khm_new_cred_progress_broadcast(KHERR_CTX_END, NULL, nc);
 
-    if(has_error && !nc->ignore_errors) {
+    if (nc->ignore_errors) {
+        describe_new_creds_result(nc, has_error);
+        return has_error;
+    }
+
+    if(has_error) {
         khui_alert * alert;
         kherr_event * evt;
         kherr_context * ctx;
@@ -1324,64 +1457,6 @@ BOOL khm_cred_dispatch_process_level(khui_new_creds *nc)
     }
 
     return cont;
-}
-
-/*! \brief Figure out a good description of the credentials operation we are going to perform
-
- */
-static void
-describe_new_creds_operation(khui_new_creds * nc)
-{
-    wchar_t wsinsert[512];
-    khm_size cbsize;
-
-    if(nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-       nc->subtype == KHUI_NC_SUBTYPE_ACQPRIV_ID) {
-
-        cbsize = sizeof(wsinsert);
-        kcdb_get_resource(nc->identities[0],
-                          KCDB_RES_DISPLAYNAME,
-                          0, NULL, NULL, wsinsert, &cbsize);
-
-        _report_sr1(KHERR_NONE,  IDS_CTX_PROC_NEW_CREDS,
-                    _cstr(wsinsert));
-
-    } else if (nc->subtype == KMSG_CRED_RENEW_CREDS) {
-        cbsize = sizeof(wsinsert);
-
-        if (nc->ctx.scope == KHUI_SCOPE_IDENT)
-            kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                              wsinsert, &cbsize);
-        else if (nc->ctx.scope == KHUI_SCOPE_CREDTYPE) {
-            if (nc->ctx.identity != NULL)
-                kcdb_get_resource(nc->ctx.identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                                  wsinsert, &cbsize);
-            else
-                kcdb_get_resource(KCDB_HANDLE_FROM_CREDTYPE(nc->ctx.cred_type),
-                                  KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                                  wsinsert, &cbsize);
-        } else if (nc->ctx.scope == KHUI_SCOPE_CRED) {
-            kcdb_get_resource(nc->ctx.cred, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
-                              wsinsert, &cbsize);
-        } else {
-            StringCbCopy(wsinsert, sizeof(wsinsert), L"(?)");
-        }
-
-        _report_sr1(KHERR_NONE, ((nc->original_subtype == KHUI_NC_SUBTYPE_ACQDERIVED) ?
-                                 IDS_CTX_PROC_NEW_CREDS :IDS_CTX_PROC_RENEW_CREDS),
-                    _cstr(wsinsert));
-    } else if (nc->subtype == KMSG_CRED_PASSWORD) {
-        cbsize = sizeof(wsinsert);
-        kcdb_identity_get_name(nc->identities[0], wsinsert, &cbsize);
-
-        _report_sr1(KHERR_NONE, IDS_CTX_PROC_PASSWORD,
-                    _cstr(wsinsert));
-    } else {
-        assert(FALSE);
-    }
-
-    _describe();
-
 }
 
 /*! \page idnotif Identity Event Notification

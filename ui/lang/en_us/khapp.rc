@@ -26,17 +26,17 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "..\\..\\resource.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#include ""afxres.h""\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "\r\0"
 END
@@ -146,7 +146,7 @@ IDB_FLAG_RENEW          BITMAP                  "..\\..\\images\\flag_renewable.
 // Accelerator
 //
 
-IDR_MENU_BAR ACCELERATORS 
+IDR_MENU_BAR ACCELERATORS
 BEGIN
     VK_F10,         IDA_ACTIVATE_MENU,      VIRTKEY, NOINVERT
     VK_UP,          IDA_UP,                 VIRTKEY, NOINVERT
@@ -539,7 +539,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_NC_PRIVINT_ADVANCED, DIALOG
     BEGIN
@@ -819,7 +819,7 @@ IDB_PROGRESS            PNG                     "..\\..\\images\\progress.png"
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_MAIN_WINDOW_TITLE   "Network Identity Manager"
     IDS_MENU_FILE           "&File"
@@ -827,7 +827,7 @@ BEGIN
     IDS_MENU_VIEW           "&View"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_MENU_OPTIONS        "&Options"
     IDS_MENU_HELP           "&Help"
@@ -847,7 +847,7 @@ BEGIN
     IDS_MENU_TOOLBARS       "Toolbars"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_ACTION_LAYOUT_ID    "By identity"
     IDS_ACTION_LAYOUT_TYPE  "By type"
@@ -867,7 +867,7 @@ BEGIN
     IDS_WT_NEW_CREDS        "Obtain new credentials"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_NC_IDENTITY         "&Identity"
     IDS_NC_IDENTS           "&Identities"
@@ -887,7 +887,7 @@ BEGIN
     IDS_ALERT_DEFAULT       "Alert"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_PACTION_OK          "&Ok"
     IDS_PACTION_CANCEL      "&Cancel"
@@ -907,7 +907,7 @@ BEGIN
     IDS_CTX_PROC_NEW_IDENT  "Obtaining initial credentials for %1!s!"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_CTX_PROC_NEW_CREDS  "Obtaining new credentials for %1!s!"
     IDS_CTX_PROC_RENEW_CREDS "Renewing credentials for %1!s!"
@@ -927,7 +927,7 @@ BEGIN
     IDS_ALERT_MOREINFO      "...\nClick here for more..."
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_WARN_EXP_TITLE      "Some of your credentials have expired"
     IDS_WARN_EXPD_CRED      "Credentials for %1!.180s! have expired."
@@ -947,7 +947,7 @@ BEGIN
     IDS_PISTATE_FAILREG     "Not properly registered"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_PISTATE_FAILDIS     "Disabled"
     IDS_PISTATE_FAILLOD     "Failed to initialize"
@@ -967,10 +967,10 @@ BEGIN
     IDS_ERR_TITLE_NO_IDENTPRO "Cannot proceed without identity provider"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_ERR_MSG_NO_IDENTPRO "There is no identity provider currently loaded.  The identity provider is the component of Network Identity Manager that verifies and performs operations on actual identities.  Without this provider, many critical operations cannot be performed."
-    IDS_ERR_SUGG_NO_IDENTPRO 
+    IDS_ERR_SUGG_NO_IDENTPRO
                             "This is quite possibly caused by the identity provider module failing to load properly."
     IDS_NC_REN_FAILED_TITLE "Failed to renew credentials"
     IDS_CW_DEFAULT          "(Default)"
@@ -988,7 +988,7 @@ BEGIN
     IDS_PACTION_DISCARD     "&Discard"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_CFG_IT_MOD          "Changes need to be applied"
     IDS_CFG_IT_APP          "Changes have been applied"
@@ -1008,7 +1008,7 @@ BEGIN
     IDS_APR_HEADER_TEXT     "Header text"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_APR_HEADER_TEXT_BOLD "Header text (selected)"
     IDS_APR_TEXT            "Normal text"
@@ -1028,7 +1028,7 @@ BEGIN
     IDS_ACTIONT_PROPERTIES  "Show properties for the current selection"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_ACTIONT_EXIT        "Exit Network Identity Manager"
     IDS_ACTIONT_SET_DEF_ID  "Set the currently selected identity as the default identity"
@@ -1036,7 +1036,7 @@ BEGIN
     IDS_ACTIONT_NEW_CRED    "Obtain new credentials"
     IDS_ACTIONT_RENEW_CRED  "Renew or re-obtain credentials for the currently selected identity"
     IDS_ACTIONT_DESTROY_CRED "Destroy the selected credentials or identities"
-    IDS_ACTIONT_VIEW_REFRESH 
+    IDS_ACTIONT_VIEW_REFRESH
                             "Re-obtain information about credentials and refresh the credentials display"
     IDS_ACTIONT_OPT_IDENTS  "Change options for identities"
     IDS_ACTIONT_OPT_KHIM    "Change general application settings for Network Identity Manager"
@@ -1049,7 +1049,7 @@ BEGIN
     IDS_NC_PWD_FAILED_TITLE_I "Failed to change password for %s"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_NC_REN_FAILED_TITLE_I "Failed to renew credentials for %s"
     IDS_CFG_IDNAME_NON      "No identity selected.  Please select an identity and try again."
@@ -1069,7 +1069,7 @@ BEGIN
     IDS_IDACTIONT_NEW       "New credentials for %s"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_IDACTIONT_RENEW     "Renew credentials for %s"
     IDS_IDACTIONT_DESTROY   "Destroy credentials for %s"
@@ -1089,7 +1089,7 @@ BEGIN
     IDS_IDACTIONT_SETDEF    "Set %s as default identity"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_IDACTION_SETDEF     "%s"
     IDS_ACTION_VIEW_ALL_IDS "All identities"
@@ -1109,13 +1109,19 @@ BEGIN
     IDS_IS_CUE_EMAIL        "(Type email address to fetch icon for)"
 END
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_NC_CANTINIT         "The selected identity cannot be used to obtain initial credentials."
     IDS_NC_NOPWCHANGE       "The selected identity does not support changing passwords."
     IDS_MBT_IDREMOVE        "Removing %s"
     IDS_MB_IDREMOVE         "Are you sure you want to remove configuration information for %s ?\nThis will remove all configured settings and stored passwords for this identity."
     IDS_CW_NOEXP            "(No expiration time)"
+    IDS_CTX_PROC_NEW_CREDS_RF   "Failed to obtain new credentials for %1!s!"
+    IDS_CTX_PROC_NEW_CREDS_R    "Successfully obtained new credentials for %1!s!"
+    IDS_CTX_PROC_RENEW_CREDS_RF "Failed to renew credentials for %1!s!"
+    IDS_CTX_PROC_RENEW_CREDS_R  "Successfully renewed credentials for %1!s!"
+    IDS_CTX_PROC_PASSWORD_RF    "Failed to change password for %1!s!"
+    IDS_CTX_PROC_PASSWORD_R     "Successfully changed password for %1!s!"
 END
 
 #endif    // English (U.S.) resources
@@ -1128,7 +1134,7 @@ END
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 

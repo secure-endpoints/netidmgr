@@ -358,6 +358,12 @@
 #define IDS_MBT_IDREMOVE                338
 #define IDS_MB_IDREMOVE                 339
 #define IDS_CW_NOEXP                    340
+#define IDS_CTX_PROC_NEW_CREDS_RF       341
+#define IDS_CTX_PROC_NEW_CREDS_R        342
+#define IDS_CTX_PROC_RENEW_CREDS_RF     343
+#define IDS_CTX_PROC_RENEW_CREDS_R      344
+#define IDS_CTX_PROC_PASSWORD_RF        345
+#define IDS_CTX_PROC_PASSWORD_R         346
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027
