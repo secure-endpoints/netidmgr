@@ -1611,6 +1611,8 @@ khui_cw_derive_credentials(khui_new_creds * nc,
     cpcd.target_identity = identity;
     cpcd.dest_credset = dest_credset;
 
+    khui_cw_add_identity(nc, identity);
+
     return (khm_int32)
         SendMessage(khui_hwnd_main, WM_COMMAND, MAKEWPARAM(KHUI_ACTION_ACQ_DERIVED, 0),
                     (LPARAM) &cpcd);
