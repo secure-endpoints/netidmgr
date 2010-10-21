@@ -29,9 +29,52 @@
 #include<process.h>
 #include<assert.h>
 
+#define KRB5_MAXCCH_CCNAME 1024
+
 ATOM reqdaemon_atom = 0;
 HANDLE reqdaemon_thread = NULL;
 HWND reqdaemon_hwnd = NULL;
+
+struct cache_data {
+    khm_int32 result;
+    wchar_t idname[KCDB_IDENT_MAXCCH_NAME];
+    wchar_t ccname[KRB5_MAXCCH_CCNAME];
+};
+
+static void
+pick_cache(khui_new_creds * nc, void * data)
+{
+    struct cache_data * d = (struct cache_data *) data;
+    khm_size i;
+
+    khui_cw_lock_nc(nc);
+
+    d->result = nc->result;
+    d->idname[0] = L'\0';
+    d->ccname[0] = L'\0';
+
+    if (d->result == KHUI_NC_RESULT_PROCESS) {
+        for (i = 0; i < nc->n_identities; i++) {
+            khm_size cb;
+            khm_handle ident;
+
+            if (!kcdb_identity_by_provider(nc->identities[i], L"Krb5Ident"))
+                continue;
+
+            ident = nc->identities[i];
+
+            cb = sizeof(d->idname);
+            kcdb_identity_get_attr(ident, KCDB_ATTR_DISPLAY_NAME, NULL, d->idname, &cb);
+
+            cb = sizeof(d->ccname);
+            kcdb_identity_get_attrib(ident, L"Krb5CCName", NULL, d->ccname, &cb);
+
+            break;
+        }
+    }
+
+    khui_cw_unlock_nc(nc);
+}
 
 LRESULT CALLBACK
 reqdaemonwnd_proc(HWND hwnd,
@@ -55,20 +98,20 @@ reqdaemonwnd_proc(HWND hwnd,
         /* Leash compatibility */
     case ID_OBTAIN_TGT_WITH_LPARAM:
         {
-            wchar_t widname[KCDB_IDENT_MAXCCH_NAME];
             wchar_t wmapping[ARRAYLENGTH(KHUI_REQD_MAPPING_FORMAT) + 10];
             khm_handle identity = NULL;
             LPNETID_DLGINFO pdlginfo;
             LRESULT lr = 1;
-            khm_int32 result;
             HANDLE hmap = NULL;
             HRESULT hr;
+            struct cache_data cdata;
 
             hr = StringCbPrintf(wmapping, sizeof(wmapping),
                                 KHUI_REQD_MAPPING_FORMAT, (DWORD) lParam);
-#ifdef DEBUG
             assert(SUCCEEDED(hr));
-#endif
+
+            memset(&cdata, 0, sizeof(cdata));
+
             hmap = CreateFileMapping(INVALID_HANDLE_VALUE,
                                      NULL,
                                      PAGE_READWRITE,
@@ -94,36 +137,27 @@ reqdaemonwnd_proc(HWND hwnd,
 
             if (pdlginfo->in.username[0] &&
                 pdlginfo->in.realm[0] &&
-                SUCCEEDED(StringCbPrintf(widname,
-                                         sizeof(widname),
+                SUCCEEDED(StringCbPrintf(cdata.idname,
+                                         sizeof(cdata.idname),
                                          L"%s@%s",
                                          pdlginfo->in.username,
                                          pdlginfo->in.realm))) {
 
-                kcdb_identity_create(widname,
+                kcdb_identity_create(cdata.idname,
                                      KCDB_IDENT_FLAG_CREATE,
                                      &identity);
             }
 
-            widname[0] = 0;
-
             do {
                 if (khm_cred_is_in_dialog()) {
-                    khm_cred_wait_for_dialog(INFINITE, NULL, NULL, 0);
+                    khm_cred_wait_for_dialog(INFINITE, NULL, NULL);
                 }
 
-                if (identity)
-                    khui_context_set_ex(KHUI_SCOPE_IDENT,
-                                        identity,
-                                        KCDB_CREDTYPE_INVALID,
-                                        NULL,
-                                        NULL,
-                                        0,
-                                        NULL,
-                                        pdlginfo,
-                                        sizeof(*pdlginfo));
-                else
-                    khui_context_reset();
+                khui_context_set_ex(KHUI_SCOPE_IDENT,
+                                    identity,
+                                    KCDB_CREDTYPE_INVALID,
+                                    NULL, NULL, 0, NULL,
+                                    pdlginfo, sizeof(*pdlginfo));
 
                 if (pdlginfo->dlgtype == NETID_DLGTYPE_TGT)
                     SendMessage(khm_hwnd_main, WM_COMMAND,
@@ -134,56 +168,36 @@ reqdaemonwnd_proc(HWND hwnd,
                 else
                     break;
 
-                if (KHM_FAILED(khm_cred_wait_for_dialog(INFINITE, &result,
-                                                        widname,
-                                                        sizeof(widname))))
+                memset(&cdata, 0, sizeof(cdata));
+
+                if (KHM_FAILED(khm_cred_wait_for_dialog(INFINITE, pick_cache, &cdata)))
                     continue;
                 else {
-                    lr = (result != KHUI_NC_RESULT_PROCESS);
+                    lr = (cdata.result != KHUI_NC_RESULT_PROCESS);
                     break;
                 }
             } while(TRUE);
 
-#ifdef DEBUG
             assert(lr || pdlginfo->dlgtype != NETID_DLGTYPE_TGT ||
-                   widname[0]);
-#endif
+                   cdata.idname[0]);
 
             if (!lr && pdlginfo->dlgtype == NETID_DLGTYPE_TGT &&
-                widname[0]) {
-                khm_handle out_ident;
+                cdata.idname[0]) {
                 wchar_t * atsign;
 
-                atsign = wcsrchr(widname, L'@');
+                atsign = wcsrchr(cdata.idname, L'@');
 
                 if (atsign == NULL)
                     goto _exit;
 
-                if (KHM_SUCCEEDED(kcdb_identity_create(widname,
-                                                       0,
-                                                       &out_ident))) {
-                    khm_size cb;
-
-                    pdlginfo->out.ccache[0] = 0;
-
-                    cb = sizeof(pdlginfo->out.ccache);
-                    kcdb_identity_get_attrib(out_ident,
-                                             L"Krb5CCName",
-                                             NULL,
-                                             pdlginfo->out.ccache,
-                                             &cb);
-                    kcdb_identity_release(out_ident);
-                } else {
-#ifdef DEBUG
-                    assert(FALSE);
-#endif
-                }
+                StringCbCopy(pdlginfo->out.ccache, sizeof(pdlginfo->out.ccache),
+                             cdata.ccname);
 
                 *atsign++ = 0;
 
                 StringCbCopy(pdlginfo->out.username,
                              sizeof(pdlginfo->out.username),
-                             widname);
+                             cdata.idname);
 
                 StringCbCopy(pdlginfo->out.realm,
                              sizeof(pdlginfo->out.realm),
