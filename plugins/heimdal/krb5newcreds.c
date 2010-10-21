@@ -1349,6 +1349,41 @@ k5_handle_process_password(khui_new_creds * nc,
     _end_task();
 }
 
+/*! \brief Check whether the primary ID is correct */
+static void
+check_primary_id(khui_new_creds * nc)
+{
+    NETID_DLGINFO * pDlgInfo;
+    khui_action_context * pctx;
+    khm_handle identity = NULL;
+    krb5_context context = NULL;
+
+    pctx = khui_cw_get_ctx(nc);
+    if (pctx == NULL || pctx->cb_vparam != sizeof(NETID_DLGINFO))
+        return;
+
+    pDlgInfo = (NETID_DLGINFO *) pctx->vparam;
+
+    if (pDlgInfo->size != NETID_DLGINFO_V1_SZ)
+        return;
+
+    if (pDlgInfo->in.ccache[0] == L'\0')
+        return;
+
+    if (krb5_init_context(&context) == 0) {
+
+        khm_krb5_get_identity_for_ccache(context, pDlgInfo->in.ccache,
+                                         &identity);
+
+        if (identity != NULL)
+            khui_cw_set_primary_id(nc, identity);
+
+        kcdb_identity_release(identity);
+
+        krb5_free_context(context);
+    }
+}
+
 /* Handler for CRED type messages
 
     Runs in the context of the Krb5 plugin
@@ -1391,6 +1426,8 @@ k5_msg_cred_dialog(khm_int32 msg_type,
             khui_cw_add_type(nc, &d->nct);
 
             khui_cw_add_selector(nc, k5_idselector_factory, NULL);
+
+            check_primary_id(nc);
         }
         break;
 
