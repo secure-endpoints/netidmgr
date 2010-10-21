@@ -144,49 +144,57 @@ khui_cw_unlock_nc(khui_new_creds * c)
 
 #define NC_N_IDENTITIES 4
 
-#pragma warning(push)
-#pragma warning(disable: 4995)
-
 KHMEXP khm_int32 KHMAPI 
 khui_cw_add_identity(khui_new_creds * c, 
                      khm_handle id)
 {
+    khm_size i;
+
     ASSERT_NC(c);
 
     if(id == NULL)
         return KHM_ERROR_SUCCESS; /* we return success because adding
-                                  a NULL id is equivalent to adding
-                                  nothing. */
+                                     a NULL id is equivalent to adding
+                                     nothing. */
     EnterCriticalSection(&(c->cs));
 
-    if(c->identities == NULL) {
-        c->nc_identities = NC_N_IDENTITIES;
-        c->identities = PMALLOC(sizeof(*(c->identities)) * 
-                               c->nc_identities);
-        c->n_identities = 0;
-    } else if(c->n_identities + 1 > c->nc_identities) {
-        khm_handle * ni;
-
-        c->nc_identities = UBOUNDSS(c->n_identities + 1, 
-                                    NC_N_IDENTITIES, 
-                                    NC_N_IDENTITIES);
-        ni = PMALLOC(sizeof(*(c->identities)) * c->nc_identities);
-        memcpy(ni, c->identities, 
-               sizeof(*(c->identities)) * c->n_identities);
-        PFREE(c->identities);
-        c->identities = ni;
+    for (i = 0; i < c->n_identities; i++) {
+        if (kcdb_identity_is_equal(id, c->identities[i]))
+            break;
     }
 
-    kcdb_identity_hold(id);
-    c->identities[c->n_identities++] = id;
+    if (i >= c->n_identities) {
+
+        if(c->identities == NULL) {
+            c->nc_identities = NC_N_IDENTITIES;
+            c->identities = PMALLOC(sizeof(*(c->identities)) *
+                                    c->nc_identities);
+            c->n_identities = 0;
+        } else if(c->n_identities + 1 > c->nc_identities) {
+            khm_handle * ni;
+
+            c->nc_identities = UBOUNDSS(c->n_identities + 1,
+                                        NC_N_IDENTITIES,
+                                        NC_N_IDENTITIES);
+            ni = PMALLOC(sizeof(*(c->identities)) * c->nc_identities);
+            memcpy(ni, c->identities,
+                   sizeof(*(c->identities)) * c->n_identities);
+            PFREE(c->identities);
+            c->identities = ni;
+        }
+
+        kcdb_identity_hold(id);
+        c->identities[c->n_identities++] = id;
+    }
+
     LeaveCriticalSection(&(c->cs));
 
     return KHM_ERROR_SUCCESS;
 }
 
-KHMEXP khm_int32 KHMAPI 
-khui_cw_set_primary_id(khui_new_creds * c, 
-                       khm_handle id)
+KHMEXP khm_int32 KHMAPI
+khui_cw_set_primary_id_no_notify(khui_new_creds * c,
+                                    khm_handle id)
 {
     khm_size  i;
     khm_int32 rv;
@@ -196,7 +204,8 @@ khui_cw_set_primary_id(khui_new_creds * c,
     EnterCriticalSection(&c->cs);
 
     /* no change */
-    if((c->n_identities > 0 && c->identities[0] == id) ||
+    if((c->n_identities > 0 &&
+        kcdb_identity_is_equal(c->identities[0], id)) ||
        (c->n_identities == 0 && id == NULL)) {
         LeaveCriticalSection(&c->cs);
         return KHM_ERROR_DUPLICATE;
@@ -204,21 +213,41 @@ khui_cw_set_primary_id(khui_new_creds * c,
 
     for(i=0; i<c->n_identities; i++) {
         kcdb_identity_release(c->identities[i]);
+        c->identities[i] = NULL;
     }
     c->n_identities = 0;
 
     rv = khui_cw_add_identity(c,id);
+
     LeaveCriticalSection(&(c->cs));
 
-    if(c->hwnd != NULL) {
-        PostMessage(c->hwnd, KHUI_WM_NC_NOTIFY, 
+    return rv;
+}
+
+KHMEXP khm_int32 KHMAPI
+khui_cw_set_primary_id(khui_new_creds * c,
+                       khm_handle id)
+{
+    khm_int32 rv = KHM_ERROR_SUCCESS;
+    HWND hwnd = NULL;
+
+    ASSERT_NC(c);
+
+    EnterCriticalSection(&c->cs);
+
+    if (KHM_SUCCEEDED(rv = khui_cw_set_primary_id_no_notify(c, id))) {
+        hwnd = c->hwnd;
+    }
+
+    LeaveCriticalSection(&(c->cs));
+
+    if(hwnd != NULL) {
+        PostMessage(hwnd, KHUI_WM_NC_NOTIFY,
                     MAKEWPARAM(0, WMNC_IDENTITY_CHANGE), 0);
     }
 
     return rv;
 }
-
-#pragma warning(pop)
 
 KHMEXP khm_int32 KHMAPI
 khui_cw_get_primary_id(khui_new_creds * c,

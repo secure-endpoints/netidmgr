@@ -365,6 +365,10 @@ khui_cw_set_current_privint_panel(khui_new_creds * c,
 KHMEXP khm_boolean KHMAPI
 khui_cw_is_ready(khui_new_creds * c);
 
+KHMEXP khm_int32 KHMAPI
+khui_cw_set_primary_id_no_notify(khui_new_creds * c,
+                                 khm_handle id);
+
 typedef struct khui_collect_privileged_cred_data {
     khui_new_creds *nc;
     HWND            hwnd_parent;
