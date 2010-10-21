@@ -28,11 +28,11 @@
 #include "khmapp.h"
 #include<assert.h>
 
-static khm_boolean in_dialog = FALSE;
 static CRITICAL_SECTION cs_dialog;
+static khm_boolean in_dialog = FALSE;
 static HANDLE in_dialog_evt = NULL;
-static khm_int32 dialog_result = 0;
-static wchar_t dialog_identity[KCDB_IDENT_MAXCCH_NAME];
+static nc_dialog_completion_callback dialog_completion_callback = NULL;
+static void * dialog_completion_callback_data = NULL;
 static khui_new_creds * dialog_nc = NULL;
 
 DECLARE_ONCE(dialog_init_once);
@@ -97,22 +97,14 @@ khm_cred_end_dialog(khui_new_creds * nc) {
         SetEvent(in_dialog_evt);
     }
     if (nc != NULL) {
-        dialog_result = nc->result;
         assert(dialog_nc == nc);
         dialog_nc = NULL;
-        if ((nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS ||
-             nc->subtype == KHUI_NC_SUBTYPE_IDSPEC) &&
-            nc->n_identities > 0 &&
-            nc->identities[0]) {
-            khm_size cb;
 
-            cb = sizeof(dialog_identity);
-            if (KHM_FAILED(kcdb_identity_get_short_name(nc->identities[0],
-                                                        FALSE,
-                                                        dialog_identity, &cb)))
-                dialog_identity[0] = 0;
-        } else {
-            dialog_identity[0] = 0;
+        if (nc->subtype == KHUI_NC_SUBTYPE_NEW_CREDS &&
+            dialog_completion_callback != NULL) {
+
+            (*dialog_completion_callback)(nc, dialog_completion_callback_data);
+
         }
     } else {
         assert(dialog_nc == NULL);
@@ -134,8 +126,8 @@ khm_cred_is_in_dialog(void) {
 }
 
 khm_int32
-khm_cred_wait_for_dialog(DWORD timeout, khm_int32 * result,
-                         wchar_t * ident, khm_size cb_ident) {
+khm_cred_wait_for_dialog(DWORD timeout, nc_dialog_completion_callback cb,
+                         void * cb_data) {
     khm_int32 rv;
 
     dialog_sync_init();
@@ -146,6 +138,9 @@ khm_cred_wait_for_dialog(DWORD timeout, khm_int32 * result,
     else {
         DWORD dw;
 
+        dialog_completion_callback = cb;
+        dialog_completion_callback_data = cb_data;
+
         do {
             LeaveCriticalSection(&cs_dialog);
 
@@ -155,12 +150,8 @@ khm_cred_wait_for_dialog(DWORD timeout, khm_int32 * result,
 
             if (!in_dialog) {
                 rv = KHM_ERROR_SUCCESS;
-                if (result) {
-                    *result = dialog_result;
-                }
-                if (ident) {
-                    StringCbCopy(ident, cb_ident, dialog_identity);
-                }
+                dialog_completion_callback = NULL;
+                dialog_completion_callback_data = NULL;
                 break;
             } else if(dw == WAIT_TIMEOUT) {
                 rv = KHM_ERROR_TIMEOUT;

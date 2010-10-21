@@ -107,9 +107,11 @@ khm_cred_conclude_processing(khui_new_creds * nc);
 BOOL
 khm_cred_is_in_dialog(void);
 
+typedef void (*nc_dialog_completion_callback)(khui_new_creds *, void *);
+
 khm_int32
-khm_cred_wait_for_dialog(DWORD timeout, khm_int32 * result,
-                         wchar_t * ident, khm_size cb_ident);
+khm_cred_wait_for_dialog(DWORD timeout, nc_dialog_completion_callback cb,
+                         void *);
 
 void
 khm_cred_begin_startup_actions(void);
