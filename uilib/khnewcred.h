@@ -948,7 +948,6 @@ khui_cw_get_primary_id(khui_new_creds * c,
 KHMEXP khm_int32 KHMAPI 
 khui_cw_add_identity(khui_new_creds * c, 
                      khm_handle id);
-#pragma deprecated(khui_cw_add_identity)
 
 /*! \brief Set the response for a plugin
 
