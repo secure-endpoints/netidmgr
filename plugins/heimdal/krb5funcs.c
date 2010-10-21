@@ -1345,6 +1345,85 @@ _cleanup:
     return code;
 }
 
+khm_int32
+khm_krb5_get_identity_for_ccache(krb5_context context, const wchar_t * ccnameW,
+                                 khm_handle *pidentity)
+{
+    khm_int32 rv = KHM_ERROR_NOT_FOUND;
+    krb5_error_code code;
+    krb5_ccache cc = NULL;
+    krb5_principal principal = NULL;
+    char * princ_nameA = NULL;
+    wchar_t princ_nameW[KCDB_IDENT_MAXCCH_NAME];
+    const char * name = NULL;
+
+    *pidentity = NULL;
+
+    if (ccnameW == NULL) {
+        code = krb5_cc_default(context, &cc);
+    } else {
+        char ccnameA[KRB5_MAXCCH_CCNAME] = "";
+
+        UnicodeStrToAnsi(ccnameA, sizeof(ccnameA), ccnameW);
+        code = krb5_cc_resolve(context, ccnameA, &cc);
+    }
+
+    if (code) {
+        _reportf(L"Can't open default ccache. code=%d", code);
+        goto cleanup;
+    }
+
+    code = krb5_cc_get_principal(context, cc, &principal);
+    if (code) {
+
+        /* Try to determine the identity from the ccache name */
+        const char * type;
+
+        type = krb5_cc_get_type(context, cc);
+        if (stricmp(type, "API") != 0) {
+            _reportf(L"Credentials cache [%S] is not an API cache", name);
+            goto cleanup;
+        }
+
+        name = krb5_cc_get_name(context, cc);
+        _reportf(L"CC name is [%S]", (name ? name : "[Unknown cache name]"));
+
+        AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), name);
+        if (KHM_SUCCEEDED(khm_krb5_validate_name(context, princ_nameW))) {
+            rv = kcdb_identity_create_ex(k5_identpro, princ_nameW,
+                                         KCDB_IDENT_FLAG_CREATE, NULL, pidentity);
+        } else {
+            _reportf(L"Credentials cache name [%s] is not a valid principal name",
+                     princ_nameW);
+        }
+    } else {
+
+        code = krb5_unparse_name(context, principal, &princ_nameA);
+        if (code)
+            goto cleanup;
+
+        AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), princ_nameA);
+
+        _reportf(L"Found principal [%s]", princ_nameW);
+
+        rv = kcdb_identity_create_ex(k5_identpro, princ_nameW,
+                                     KCDB_IDENT_FLAG_CREATE, NULL, pidentity);
+
+    }
+
+cleanup:
+    if (cc)
+        krb5_cc_close(context, cc);
+
+    if (princ_nameA)
+        krb5_free_unparsed_name(context, princ_nameA);
+
+    if (principal)
+        krb5_free_principal(context, principal);
+
+    return rv;
+}
+
 long
 khm_krb5_sync_default_id_with_mslsa(void)
 {

@@ -1188,16 +1188,7 @@ k5_ident_update(khm_int32 msg_type,
 
 static khm_boolean
 k5_refresh_default_identity(krb5_context ctx) {
-    /* just like notify_create, except now we set the default identity
-       based on what we find in the configuration */
-    krb5_ccache cc = NULL;
-    krb5_error_code code;
-    krb5_principal princ = NULL;
-    char * princ_nameA = NULL;
-    wchar_t princ_nameW[KCDB_IDENT_MAXCCH_NAME];
-    const char * ccname = NULL;
     khm_handle ident = NULL;
-    khm_boolean found_default = FALSE;
 
     assert(ctx != NULL);
 
@@ -1205,81 +1196,15 @@ k5_refresh_default_identity(krb5_context ctx) {
     _report_cs0(KHERR_DEBUG_1, L"Refreshing default identity");
     _describe();
 
-    code = krb5_cc_default(ctx, &cc);
-    if (code) {
-        _reportf(L"Can't open default ccache. code=%d", code);
-        goto _nc_cleanup;
-    }
+    if (KHM_SUCCEEDED(khm_krb5_get_identity_for_ccache(ctx, NULL, &ident))) {
 
-    ccname = krb5_cc_get_name(ctx, cc);
-    _reportf(L"CC name is [%S]", (ccname ? ccname : "[Unknown cache name]"));
-
-    code = krb5_cc_get_principal(ctx, cc, &princ);
-    if (code) {
-        /* try to determine the identity from the ccache name */
-        if (ccname) {
-            const char * namepart = strchr(ccname, ':');
-
-            if (namepart == NULL)
-                namepart = ccname;
-            else
-                namepart++;
-
-            _reportf(L"Checking if [%S] is a valid identity name", namepart);
-
-            AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), namepart);
-            if (KHM_SUCCEEDED(k5_validate_name(princ_nameW))) {
-                kcdb_identity_create_ex(k5_identpro, princ_nameW,
-                                        KCDB_IDENT_FLAG_CREATE, NULL, &ident);
-                if (ident) {
-                    _reportf(L"Setting [%S] as the default identity", namepart);
-                    kcdb_identity_set_default_int(ident);
-                    found_default = TRUE;
-                }
-            }
-        } else {
-            _reportf(L"Can't determine ccache name");
-        }
-
-        goto _nc_cleanup;
-    }
-
-    code = krb5_unparse_name(ctx, princ, &princ_nameA);
-    if (code)
-        goto _nc_cleanup;
-
-    AnsiStrToUnicode(princ_nameW, sizeof(princ_nameW), princ_nameA);
-
-    _reportf(L"Found principal [%s]", princ_nameW);
-
-    if (KHM_FAILED(kcdb_identity_create_ex(k5_identpro, princ_nameW,
-                                           KCDB_IDENT_FLAG_CREATE, NULL, &ident))) {
-        _reportf(L"Failed to create identity");
-        goto _nc_cleanup;
-    }
-
-    _reportf(L"Setting default identity to [%s]", princ_nameW);
-    kcdb_identity_set_default_int(ident);
-
-    found_default = TRUE;
-
- _nc_cleanup:
-
-    _end_task();
-
-    if (princ_nameA)
-        krb5_free_unparsed_name(ctx, princ_nameA);
-
-    if (princ)
-        krb5_free_principal(ctx, princ);
-
-    if (cc)
-        krb5_cc_close(ctx, cc);
-
-    if (ident)
+        kcdb_identity_set_default_int(ident);
         kcdb_identity_release(ident);
 
-    return found_default;
+        return TRUE;
+    }
+
+    return FALSE;
 }
 
 static khm_int32

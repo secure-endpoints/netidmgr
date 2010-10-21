@@ -199,6 +199,10 @@ khm_krb5_get_identity_default_ccacheA(khm_handle ident, char * buf, khm_size * p
 khm_int32
 khm_krb5_get_identity_default_ccache_failover(khm_handle ident, wchar_t * buf, khm_size * pcb);
 
+khm_int32
+khm_krb5_get_identity_for_ccache(krb5_context context, const wchar_t * ccnameW,
+                                 khm_handle *pidentity);
+
 /* Utility */
 
 wchar_t *
