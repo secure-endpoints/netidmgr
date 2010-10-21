@@ -397,27 +397,35 @@ void NewCredWizard::OnDialogActivate()
     case KHUI_NC_SUBTYPE_NEW_CREDS:
 
         if (nc->n_identities > 0) {
-            /* If there is a primary identity, then we can start
-               in the credentials options page */
+            /* If there is a primary identity, then we can start in
+               the credentials options page */
 
             khm_int32 idflags = 0;
-            khm_handle ident;
+            khm_handle ident = NULL;
 
             khm_handle parent = NULL;
 
-            ident = nc->identities[0];
+            khui_cw_lock_nc(nc);
+
+            khui_cw_get_primary_id(nc, &ident);
 
             if (KHM_SUCCEEDED(kcdb_identity_get_parent(ident, &parent)) &&
                 parent != NULL) {
 
-                kcdb_identity_release(ident);
-                ident = nc->identities[0] = parent;
+                khui_cw_set_primary_id_no_notify(nc, parent);
 
+                kcdb_identity_release(ident);
+                ident = parent;
+                parent = NULL;
             }
+
+            khui_cw_unlock_nc(nc);
 
             NotifyNewIdentity( FALSE );
 
             assert(ident != NULL);
+            assert(parent == NULL);
+
             kcdb_identity_get_flags(ident, &idflags);
 
             /* Check if this identity has a configuration.  If so,
@@ -431,6 +439,8 @@ void NewCredWizard::OnDialogActivate()
             } else {
                 Navigate( NC_PAGE_CREDOPT_WIZ);
             }
+
+            kcdb_identity_release(ident);
         } else {
             /* No primary identity.  We have to open with the
                identity specification page */
