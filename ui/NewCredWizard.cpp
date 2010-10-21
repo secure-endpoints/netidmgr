@@ -413,6 +413,7 @@ void NewCredWizard::OnDialogActivate()
                 parent != NULL) {
 
                 khui_cw_set_primary_id_no_notify(nc, parent);
+                khui_cw_add_identity(nc, ident);
 
                 kcdb_identity_release(ident);
                 ident = parent;
