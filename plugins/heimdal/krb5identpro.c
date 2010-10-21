@@ -662,50 +662,15 @@ k5_idselector_factory(HWND hwnd_parent, khui_identity_selector * u) {
 /************************************************************/
 
 static khm_int32
-k5_validate_name(const wchar_t * name)
-{
-    krb5_principal princ = NULL;
-    char princ_name[KCDB_IDENT_MAXCCH_NAME];
-    krb5_error_code code;
-    wchar_t * atsign;
-
-    if(UnicodeStrToAnsi(princ_name, sizeof(princ_name), name) == 0) {
-        return KHM_ERROR_INVALID_NAME;
-    }
-
-    assert(k5_identpro_ctx != NULL);
-
-    code = krb5_parse_name(k5_identpro_ctx,
-                            princ_name,
-                            &princ);
-
-    if (code) {
-        return KHM_ERROR_INVALID_NAME;
-    }
-
-    if (princ != NULL)
-        krb5_free_principal(k5_identpro_ctx, princ);
-
-    /* krb5_parse_name() accepts principal names with no realm or an
-       empty realm.  We don't. */
-    atsign = wcschr(name, L'@');
-    if (atsign == NULL || atsign[1] == L'\0') {
-        return KHM_ERROR_INVALID_NAME;
-    }
-
-    return KHM_ERROR_SUCCESS;
-}
-
-static khm_int32
 k5_ident_validate_name(khm_int32 msg_type,
-                      khm_int32 msg_subtype,
-                      khm_ui_4 uparam,
-                      void * vparam) {
+                       khm_int32 msg_subtype,
+                       khm_ui_4 uparam,
+                       void * vparam) {
     kcdb_ident_name_xfer * nx;
 
     nx = (kcdb_ident_name_xfer *) vparam;
 
-    nx->result = k5_validate_name(nx->name_src);
+    nx->result = khm_krb5_validate_name(k5_identpro_ctx, nx->name_src);
 
     return KHM_ERROR_SUCCESS;
 }

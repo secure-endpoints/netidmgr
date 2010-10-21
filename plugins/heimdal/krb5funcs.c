@@ -1424,6 +1424,37 @@ cleanup:
     return rv;
 }
 
+khm_int32
+khm_krb5_validate_name(krb5_context context, const wchar_t * name)
+{
+    krb5_principal princ = NULL;
+    char princ_name[KCDB_IDENT_MAXCCH_NAME];
+    krb5_error_code code;
+    wchar_t * atsign;
+
+    if(UnicodeStrToAnsi(princ_name, sizeof(princ_name), name) == 0) {
+        return KHM_ERROR_INVALID_NAME;
+    }
+
+    code = krb5_parse_name(context, princ_name, &princ);
+
+    if (code) {
+        return KHM_ERROR_INVALID_NAME;
+    }
+
+    if (princ != NULL)
+        krb5_free_principal(context, princ);
+
+    /* krb5_parse_name() accepts principal names with no realm or an
+       empty realm.  We don't. */
+    atsign = wcschr(name, L'@');
+    if (atsign == NULL || atsign[1] == L'\0') {
+        return KHM_ERROR_INVALID_NAME;
+    }
+
+    return KHM_ERROR_SUCCESS;
+}
+
 long
 khm_krb5_sync_default_id_with_mslsa(void)
 {

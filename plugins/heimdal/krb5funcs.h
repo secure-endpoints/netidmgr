@@ -203,6 +203,9 @@ khm_int32
 khm_krb5_get_identity_for_ccache(krb5_context context, const wchar_t * ccnameW,
                                  khm_handle *pidentity);
 
+khm_int32
+khm_krb5_validate_name(krb5_context context, const wchar_t * name);
+
 /* Utility */
 
 wchar_t *
