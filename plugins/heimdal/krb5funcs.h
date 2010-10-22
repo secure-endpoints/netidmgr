@@ -206,6 +206,18 @@ khm_krb5_get_identity_for_ccache(krb5_context context, const wchar_t * ccnameW,
 khm_int32
 khm_krb5_validate_name(krb5_context context, const wchar_t * name);
 
+void
+khm_krb5_update_last_default_identity(khm_handle ident);
+
+khm_int32
+khm_krb5_set_default_identity(khm_handle def_ident);
+
+khm_boolean
+khm_krb5_refresh_default_identity(krb5_context context);
+
+void
+khm_krb5_set_initial_default_identity(krb5_context context);
+
 /* Utility */
 
 wchar_t *
