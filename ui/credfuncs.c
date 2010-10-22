@@ -208,7 +208,7 @@ khm_new_cred_progress_broadcast(enum kherr_ctx_event evt,
     khui_new_creds * nc = (khui_new_creds *) vparam;
     khm_handle identity;
 
-    if (nc->n_identities > 0)
+    if (nc->n_identities > 0 && nc->subtype != KHUI_NC_SUBTYPE_RENEW_CREDS)
         identity = nc->identities[0];
     else
         identity = nc->ctx.identity;
