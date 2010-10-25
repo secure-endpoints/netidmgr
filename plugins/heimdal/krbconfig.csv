@@ -11,6 +11,7 @@ Krb5Cred,KC_SPACE,0,Kerberos V Credentials Provider
     MsLsaImport,KC_INT32,1,Automatically import MSLSA credentials: 0-never 1-always 2-if principle matches
     MsLsaList,KC_INT32,1,Include MSLSA in the credentials list
     FileCCList,KC_STRING,,List of file CCaches to include in listing
+    AllowWeakCrypto,KC_INT32,0,Allow weak enctypes
     AutoRenewTickets,KC_INT32,1,Automatically renew expiring tickets
     DefaultLifetime,KC_INT32,36000,Default ticket lifetime
     MaxLifetime,KC_INT32,86400,Maximum lifetime

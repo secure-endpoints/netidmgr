@@ -1312,17 +1312,32 @@ cleanup:
     return(code);
 }
 
+static void
+enable_weak_crypto_for_context(krb5_context context)
+{
+    if (krb5_enctype_enable == NULL)
+        return;
+
+    krb5_enctype_enable(context, ETYPE_DES_CBC_CRC);
+    krb5_enctype_enable(context, ETYPE_DES_CBC_MD4);
+    krb5_enctype_enable(context, ETYPE_DES_CBC_MD5);
+    krb5_enctype_enable(context, ETYPE_DES_CBC_NONE);
+    krb5_enctype_enable(context, ETYPE_DES_CFB64_NONE);
+    krb5_enctype_enable(context, ETYPE_DES_PCBC_NONE);
+}
+
 int
 khm_krb5_kinit(krb5_context       alt_context,
                char *             principal_name,
                char *             password,
                char *             ccache,
                krb5_deltat        lifetime,
-               DWORD              forwardable,
+               krb5_boolean       forwardable,
                DWORD              proxiable,
                krb5_deltat        renew_life,
-               DWORD              addressless,
+               krb5_boolean       addressless,
                DWORD              publicIP,
+               krb5_boolean       allow_weak_crypto,
                krb5_prompter_fct  prompter,
                void *             p_data)
 {
@@ -1345,6 +1360,10 @@ khm_krb5_kinit(krb5_context       alt_context,
         code = krb5_init_context(&context);
         if (code)
             goto cleanup;
+    }
+
+    if (allow_weak_crypto) {
+        enable_weak_crypto_for_context(context);
     }
 
     if ((code = krb5_get_init_creds_opt_alloc(context, &options)) != 0)
@@ -3187,6 +3206,7 @@ khm_krb5_get_identity_params(khm_handle ident, k5_params * p) {
     GETVAL(L"Proxiable", proxiable, K5PARAM_F_PROX);
     GETVAL(L"Addressless", addressless, K5PARAM_F_ADDL);
     GETVAL(L"PublicIP", publicIP, K5PARAM_F_PUBIP);
+    GETVAL(L"AllowWeakCrypto", allow_weak_crypto, K5PARAM_F_WEAKCRYPTO);
 
     /* Lifetime */
     GETVAL(L"DefaultLifetime", lifetime, K5PARAM_F_LIFE);
@@ -3384,6 +3404,22 @@ done_reg:
 	}
     }
 
+    if (!(regf & K5PARAM_F_WEAKCRYPTO)) {
+        char * value = NULL;
+        retval = get_libdefault_string(context, realmname,
+                                       "allow_weak_crypto", &value);
+        if (retval == 0 && value) {
+            khm_boolean b;
+
+            if (!khm_krb5_parse_boolean(value, &b))
+                p->allow_weak_crypto = b;
+            else
+                p->allow_weak_crypto = FALSE;
+            PFREE(value);
+            proff |= K5PARAM_F_WEAKCRYPTO;
+        }
+    }
+
     p->source_reg = regf;
     p->source_prof = proff;
 
@@ -3473,6 +3509,10 @@ khm_krb5_set_identity_params(khm_handle ident, const k5_params * p) {
         p_s.renew_life_min != p->renew_life_min)
         khc_write_int32(csp_id, L"MinRenewLifetime", p->renew_life_min);
 
+    if ((source_reg & K5PARAM_F_WEAKCRYPTO) &&
+        p_s.allow_weak_crypto != p->allow_weak_crypto)
+        khc_write_int32(csp_id, L"AllowWeakCrypto", p->allow_weak_crypto);
+
     /* and now, remove the values that are present in source_prof.
        Not all values are removed since not all values can be
        specified in the profile file. */
@@ -3493,6 +3533,9 @@ khm_krb5_set_identity_params(khm_handle ident, const k5_params * p) {
 
     if (source_prof & K5PARAM_F_RLIFE)
         khc_remove_value(csp_id, L"DefaultRenewLifetime", 0);
+
+    if (source_prof & K5PARAM_F_WEAKCRYPTO)
+        khc_remove_value(csp_id, L"AllowWeakCrypto", 0);
 
 done_reg:
     if (csp_id != NULL)

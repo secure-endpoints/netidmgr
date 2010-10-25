@@ -942,6 +942,7 @@ kinit_task_proc(void * vparam)
          (kt->is_valid_principal && kt->params.renewable) ? kt->params.renew_life : 0,
          kt->params.addressless,
          kt->params.publicIP,
+         kt->params.allow_weak_crypto,
          kinit_prompter,
          kt);
 

@@ -64,6 +64,7 @@ typedef struct tag_k5params {
     khm_boolean forwardable;
     khm_boolean proxiable;
     khm_boolean addressless;
+    khm_boolean allow_weak_crypto;
 
     khm_ui_4    publicIP;
 
@@ -77,20 +78,21 @@ typedef struct tag_k5params {
 
 } k5_params;
 
-#define K5PARAM_F_RENEW   0x00000001
-#define K5PARAM_F_FORW    0x00000002
-#define K5PARAM_F_PROX    0x00000004
-#define K5PARAM_F_ADDL    0x00000008
-#define K5PARAM_F_PUBIP   0x00000010
-#define K5PARAM_F_LIFE    0x00000020
-#define K5PARAM_F_RLIFE   0x00000040
-#define K5PARAM_F_LIFE_L  0x00000080
-#define K5PARAM_F_LIFE_H  0x00000100
-#define K5PARAM_F_RLIFE_L 0x00000200
-#define K5PARAM_F_RLIFE_H 0x00000400
+#define K5PARAM_F_RENEW         0x00000001
+#define K5PARAM_F_FORW          0x00000002
+#define K5PARAM_F_PROX          0x00000004
+#define K5PARAM_F_ADDL          0x00000008
+#define K5PARAM_F_PUBIP         0x00000010
+#define K5PARAM_F_LIFE          0x00000020
+#define K5PARAM_F_RLIFE         0x00000040
+#define K5PARAM_F_LIFE_L        0x00000080
+#define K5PARAM_F_LIFE_H        0x00000100
+#define K5PARAM_F_RLIFE_L       0x00000200
+#define K5PARAM_F_RLIFE_H       0x00000400
+#define K5PARAM_F_WEAKCRYPTO    0x00000800
 
-#define K5PARAM_FM_ALL    0x000007ff
-#define K5PARAM_FM_PROF   0x0000007f
+#define K5PARAM_FM_ALL          0x00000fff
+#define K5PARAM_FM_PROF         0x0000087f
 
 /* Credential and principal operations */
 
@@ -101,16 +103,17 @@ khm_krb5_ms2mit(char * match_princ,
                 khm_handle * ret_ident);
 
 int
-khm_krb5_kinit(krb5_context       alt_ctx,
+khm_krb5_kinit(krb5_context       alt_context,
                char *             principal_name,
                char *             password,
                char *             ccache,
                krb5_deltat        lifetime,
-               DWORD              forwardable,
+               krb5_boolean       forwardable,
                DWORD              proxiable,
                krb5_deltat        renew_life,
-               DWORD              addressless,
+               krb5_boolean       addressless,
                DWORD              publicIP,
+               krb5_boolean       allow_weak_crypto,
                krb5_prompter_fct  prompter,
                void *             p_data);
 

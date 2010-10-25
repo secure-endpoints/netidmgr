@@ -1226,6 +1226,7 @@ k5_handle_process_password(khui_new_creds * nc,
                                   (d->params.renewable)?d->params.renew_life:0,
                                   d->params.addressless, /* addressless */
                                   d->params.publicIP, /* public IP */
+                                  d->params.allow_weak_crypto,
                                   NULL,               /* prompter */
                                   NULL           /* prompter data */);
 
@@ -1643,6 +1644,7 @@ k5_msg_cred_dialog(khm_int32 msg_type,
                                       (d->params.renewable)?d->params.renew_life:0,
                                       d->params.addressless, /* addressless */
                                       d->params.publicIP, /* public IP */
+                                      d->params.allow_weak_crypto,
                                       NULL,               /* prompter */
                                       NULL           /* prompter data */);
 
