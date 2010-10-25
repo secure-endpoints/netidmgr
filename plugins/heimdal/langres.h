@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\netidmgr.git\plugins\krb5\lang\en_us\langres.rc
+// Used by C:\src\netidmgr\plugins\heimdal\lang\en_us\langres.rc
 //
 #define IDS_UNK_ADDR_FMT                101
 #define IDD_NC_KRB5                     102
@@ -219,6 +219,8 @@
 #define IDC_NC_REALM_LBL                1084
 #define IDC_NC_ICON                     1085
 #define IDC_BROWSE                      1086
+#define IDC_CFG_WEAKCRYPTO              1087
+#define IDC_NCK5_WEAKCRYPTO             1088
 #define ID_FOO_BAR                      40001
 
 // Next default values for new objects
@@ -227,7 +229,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        221
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1087
+#define _APS_NEXT_CONTROL_VALUE         1089
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -48,6 +48,7 @@ typedef struct tag_k5_id_dlg_data {
     khm_boolean forwardable;
     khm_boolean proxiable;
     khm_boolean addressless;
+    khm_boolean allow_weak_crypto;
 
     DWORD public_ip;
 
@@ -110,6 +111,12 @@ k5_id_read_params(k5_id_dlg_data * d) {
     else
         d->public_ip = 0;
 
+    rv = khc_read_int32(csp_ident, L"AllowWeakCrypto", &t);
+    if (KHM_SUCCEEDED(rv))
+        d->allow_weak_crypto = !!t;
+    else
+        d->allow_weak_crypto = 0;
+
     cb = sizeof(d->ccache);
     rv = khm_krb5_get_identity_default_ccache(d->ident, d->ccache, &cb);
 
@@ -155,6 +162,9 @@ k5_id_is_mod(HWND hw, k5_id_dlg_data * d) {
 
         (IsDlgButtonChecked(hw, IDC_CFG_ADDRESSLESS) == BST_CHECKED)
         != d->addressless ||
+
+        (IsDlgButtonChecked(hw, IDC_CFG_WEAKCRYPTO) == BST_CHECKED) !=
+        d->allow_weak_crypto ||
 
         dwaddress != d->public_ip)
 
@@ -238,6 +248,13 @@ k5_id_write_params(HWND hw, k5_id_dlg_data * d) {
     if (dwaddress != d->public_ip) {
         d->public_ip = dwaddress;
         khc_write_int32(csp_ident, L"PublicIP", (khm_int32) dwaddress);
+        applied = TRUE;
+    }
+
+    b = (IsDlgButtonChecked(hw, IDC_CFG_WEAKCRYPTO) == BST_CHECKED);
+    if (b != d->allow_weak_crypto) {
+        d->allow_weak_crypto = b;
+        khc_write_int32(csp_ident, L"AllowWeakCrypto", (khm_int32) b);
         applied = TRUE;
     }
 
@@ -370,6 +387,9 @@ k5_id_tab_dlgproc(HWND hwnd,
 
         CheckDlgButton(hwnd, IDC_CFG_ADDRESSLESS,
                        (d->addressless? BST_CHECKED: BST_UNCHECKED));
+
+        CheckDlgButton(hwnd, IDC_CFG_WEAKCRYPTO,
+                       (d->allow_weak_crypto? BST_CHECKED: BST_UNCHECKED));
 
         SendDlgItemMessage(hwnd, IDC_CFG_PUBLICIP,
                            IPM_SETADDRESS,

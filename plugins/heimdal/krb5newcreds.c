@@ -191,6 +191,11 @@ k5_handle_wmnc_notify(HWND hwnd,
 
             EnableWindow(GetDlgItem(hwnd, IDC_NCK5_PUBLICIP), !d->params.addressless);
 
+            SendDlgItemMessage(hwnd, IDC_NCK5_WEAKCRYPTO,
+                               BM_SETCHECK,
+                               (d->params.allow_weak_crypto)? BST_CHECKED : BST_UNCHECKED,
+                               0);
+
             d->sync = old_sync;
         }
         break;
@@ -323,6 +328,13 @@ k5_handle_wm_command(HWND hwnd,
                                      BM_GETCHECK, 0, 0);
         d->params.addressless = (c == BST_CHECKED);
         EnableWindow(GetDlgItem(hwnd, IDC_NCK5_PUBLICIP), !d->params.addressless);
+        break;
+
+    case MAKEWPARAM(IDC_NCK5_WEAKCRYPTO, BN_CLICKED):
+
+        c = (int) SendDlgItemMessage(hwnd, IDC_NCK5_WEAKCRYPTO,
+                                     BM_GETCHECK, 0, 0);
+        d->params.allow_weak_crypto = (c == BST_CHECKED);
         break;
 
     case MAKEWPARAM(IDC_NCK5_RENEW_EDIT, EN_CHANGE):
