@@ -7,31 +7,31 @@ Krb5Cred,KC_SPACE,0,Kerberos V Credentials Provider
   Type,KC_INT32,1,
   Flags,KC_INT32,0,
   Parameters,KC_SPACE,0,Parameters for KrbCred
-    CreateMissingConfig,KC_INT32,0,Create missing configuration files
-    MsLsaImport,KC_INT32,1,Automatically import MSLSA credentials: 0-never 1-always 2-if principle matches
-    MsLsaList,KC_INT32,1,Include MSLSA in the credentials list
-    FileCCList,KC_STRING,,List of file CCaches to include in listing
+    Addressless,KC_INT32,1,Obtain addressless tickets (boolean)
     AllowWeakCrypto,KC_INT32,0,Allow weak enctypes
     AutoRenewTickets,KC_INT32,1,Automatically renew expiring tickets
+    CreateMissingConfig,KC_INT32,0,Create missing configuration files
+    DefaultCCName,KC_STRING,,Default CC name (only per identity)
     DefaultLifetime,KC_INT32,36000,Default ticket lifetime
-    MaxLifetime,KC_INT32,86400,Maximum lifetime
-    MinLifetime,KC_INT32,60,Minimum lifetime
+    DefaultRenewLifetime,KC_INT32,604800,Default renewable lifetime
+    DefaultToFileCache,KC_INT32,0,"If no DefaultCCName is specified for an identity, use a generated FILE: cache instead of an API: cache"
+    FileCCList,KC_STRING,,List of file CCaches to include in listing
     Forwardable,KC_INT32,1,Obtain forwardable tickets (boolean)
+    LRUPrincipals,KC_STRING,,
+    LRURealms,KC_STRING,,
+    LastDefaultIdent,KC_STRING,,Last known default identity
+    MaxLifetime,KC_INT32,86400,Maximum lifetime
+    MaxRenewLifetime,KC_INT32,2592000,Maximum renewable lifetime
+    MinLifetime,KC_INT32,60,Minimum lifetime
+    MinRenewLifetime,KC_INT32,60,Maximum renewable lifetime
+    MsLsaImport,KC_INT32,1,Automatically import MSLSA credentials: 0-never 1-always 2-if principle matches
+    MsLsaList,KC_INT32,1,Include MSLSA in the credentials list
+    PromptCacheLifetime,KC_INT32,172800,Lifetime of the prompt cache in seconds
     Proxiable,KC_INT32,0,Obtain proxiable tickets (boolean)
-    Addressless,KC_INT32,1,Obtain addressless tickets (boolean)
     PublicIP,KC_INT32,0,Additional public IP address to use (int32)
     Renewable,KC_INT32,1,Obtain renewable tickets (boolean)
-    DefaultRenewLifetime,KC_INT32,604800,Default renewable lifetime
-    MaxRenewLifetime,KC_INT32,2592000,Maximum renewable lifetime
-    MinRenewLifetime,KC_INT32,60,Maximum renewable lifetime
-    UseFullRealmList,KC_INT32,0,Use the full list of realms in the New Creds dialog
-    LRURealms,KC_STRING,,
-    LRUPrincipals,KC_STRING,,
-    LastDefaultIdent,KC_STRING,,Last known default identity
-    PromptCacheLifetime,KC_INT32,172800,Lifetime of the prompt cache in seconds
-    DefaultCCName,KC_STRING,,Default CC name (only per identity)
-    DefaultToFileCache,KC_INT32,0,"If no DefaultCCName is specified for an identity, use a generated FILE: cache instead of an API: cache"
     ShowProfileEditor,KC_INT32,0,"Whether to enable the profile editor component"
+    UseFullRealmList,KC_INT32,0,Use the full list of realms in the New Creds dialog
     PromptCache,KC_SPACE,0,Cache of prompts (only per identity)
       Name,KC_STRING,,
       Banner,KC_STRING,,
