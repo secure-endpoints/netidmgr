@@ -1,10 +1,12 @@
 *~
 obj/
 bins/
-plugins/keystore/
+plugins/certprov/dest/
+sample/templates/idprov/dest/
 Thumbs.db
 setupbuild.local.cmd
 *.aps
+*.pdb
 GPATH
 GRTAGS
 GSYMS
