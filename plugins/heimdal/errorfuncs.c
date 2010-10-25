@@ -112,6 +112,12 @@ void khm_err_describe(krb5_context context,
 	    sugg_id = MSG_ERR_S_INTEGRITY;
             sugg_code = KHERR_SUGGEST_RETRY;
 	    break;
+
+        case KRB5KDC_ERR_ETYPE_NOSUPP:
+            msg_id = MSG_ERR_ETYPE_NOSUPP;
+            sugg_id = MSG_ERR_S_ETYPE_NOSUPP;
+            sugg_code = KHERR_SUGGEST_RETRY;
+            break;
         }
     } else if (table_num == ERROR_TABLE_BASE_kadm5) {
         switch(code) {
