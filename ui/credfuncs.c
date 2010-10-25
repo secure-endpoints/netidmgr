@@ -1726,6 +1726,7 @@ khm_cred_derive_identity_from_privileged_creds(khui_collect_privileged_creds_dat
 
     khui_cw_create_cred_blob(&nc_child);
     nc_child->subtype = KHUI_NC_SUBTYPE_ACQDERIVED;
+    nc_child->result = KHUI_NC_RESULT_PROCESS;
     khui_context_create(&nc_child->ctx,
                         KHUI_SCOPE_IDENT,
                         pcd->target_identity,
