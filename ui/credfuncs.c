@@ -1311,8 +1311,7 @@ BOOL khm_cred_is_new_creds_pending(khui_new_creds * nc)
 
         t = nc->types[i].nct;
 
-        if (t->flags & (KHUI_NCT_FLAG_PROCESSED |
-                        KHUI_NC_RESPONSE_COMPLETED |
+        if (t->flags & (KHUI_NC_RESPONSE_COMPLETED |
                         KHUI_NCT_FLAG_DISABLED))
             continue;
 
