@@ -218,6 +218,25 @@ void NewCredWizard::OnCollectPrivCred(khui_collect_privileged_creds_data * pcd)
     khm_cred_collect_privileged_creds(pcd);
 }
 
+bool NewCredWizard::CheckForPendingCredentialTypes()
+{
+    for (khui_new_creds_privint_panel * p = khui_cw_get_current_privint_panel(nc);
+         p; p = QPREV(p)) {
+        if (p->ctype < 0)
+            continue;
+
+        khui_new_creds_by_type * type;
+        if (KHM_FAILED(khui_cw_find_type(nc, p->ctype, &type)))
+            continue;
+
+        if (type->flags & KHUI_NC_RESPONSE_PENDING) {
+            khui_cw_set_current_privint_panel(nc, p);
+            return true;
+        }
+    }
+    return false;
+}
+
 void NewCredWizard::OnProcessComplete(int has_error)
 {
     khui_cw_lock_nc(nc);
@@ -240,7 +259,7 @@ void NewCredWizard::OnProcessComplete(int has_error)
 
         NotifyTypes( WMNC_DIALOG_PROCESS_COMPLETE, 0, TRUE);
 
-        if (has_error) {
+        if (has_error && !CheckForPendingCredentialTypes()) {
             m_nav.SetAllControls(NewCredNavigation::Retry |
                                  NewCredNavigation::Close |
                                  NewCredNavigation::Prev);

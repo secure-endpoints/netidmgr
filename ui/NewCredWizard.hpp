@@ -144,6 +144,8 @@ public:
 
     void PrepCredTypes();
 
+    bool CheckForPendingCredentialTypes();
+
     void PositionSelf();
 
     bool HaveValidIdentity();
