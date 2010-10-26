@@ -184,14 +184,11 @@ void NewCredNavigation::CheckControls()
 
         p = khui_cw_get_current_privint_panel(nc);
 
-        if (p && !(nc->response & KHUI_NC_RESPONSE_PROCESSING))
-            EnableControl(Prev);
-
         if (!khm_cred_is_new_creds_pending(nc))
             DisableControl(Retry);
 
-        if (!IsControlEnabled(Retry))
-            DisableControl(Prev);
+        if (p && !(nc->response & KHUI_NC_RESPONSE_PROCESSING) && IsControlEnabled(Retry))
+            EnableControl(Prev);
 
         break;
 
