@@ -1313,7 +1313,7 @@ cleanup:
 }
 
 static void
-enable_weak_crypto_for_context(krb5_context context)
+enable_weak_crypto(krb5_context context)
 {
     if (krb5_enctype_enable == NULL)
         return;
@@ -1363,7 +1363,7 @@ khm_krb5_kinit(krb5_context       alt_context,
     }
 
     if (allow_weak_crypto) {
-        enable_weak_crypto_for_context(context);
+        enable_weak_crypto(context);
     }
 
     if ((code = krb5_get_init_creds_opt_alloc(context, &options)) != 0)

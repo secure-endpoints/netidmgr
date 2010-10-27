@@ -94,6 +94,10 @@ typedef struct tag_k5_config_data {
 
     k5_lsa_import lsa_import;   /* import mslsa creds? */
 
+    khm_boolean   allow_weak_crypto;
+
+    khm_boolean   allow_weak_crypto_libdefaults;
+
     /* [realms] */
     k5_realm_data *realms;
     khm_size      n_realms;
@@ -121,6 +125,7 @@ typedef struct tag_k5_config_data {
 #define K5_CDFLAG_MOD_CREATE_CONF    0x00000080
 #define K5_CDFLAG_MOD_INC_REALMS     0x00000100
 #define K5_CDFLAG_MOD_REALMS         0x00001000
+#define K5_CDFLAG_MOD_WEAKCRYPTO     0x00002000
 
 void
 k5_init_config_data(k5_config_data * d) {
@@ -253,6 +258,9 @@ k5_read_config_data(k5_config_data * d) {
 						       NULL);
 	d->noaddresses = krb5_config_get_bool_default(ctx, NULL, FALSE,
 						      "libdefaults", "noaddresses");
+        d->allow_weak_crypto = krb5_config_get_bool_default(ctx, NULL, FALSE,
+                                                            "libdefaults", "allow_weak_crypto");
+        d->allow_weak_crypto_libdefaults = d->allow_weak_crypto;
 
 #ifdef PROFILE_EDITOR
         /* now we look at the [realms] section */
@@ -419,6 +427,11 @@ k5_read_config_data(k5_config_data * d) {
         } else {
             d->inc_realms = TRUE;
         }
+
+        if (KHM_SUCCEEDED(khc_read_int32(csp_params,
+                                         L"AllowWeakCrypto", &t)) && t) {
+            d->allow_weak_crypto = !!t;
+        }
     }
 
     d->flags = 0;
@@ -448,6 +461,15 @@ k5_write_config_data(k5_config_data * d) {
         applied = TRUE;
     }
 
+    if (d->flags & K5_CDFLAG_MOD_WEAKCRYPTO) {
+        if (d->allow_weak_crypto != d->allow_weak_crypto_libdefaults)
+            khc_write_int32(csp_params, L"AllowWeakCrypto", d->allow_weak_crypto);
+        else
+            khc_remove_value(csp_params, L"AllowWeakCrypto", 0);
+        d->flags &= ~K5_CDFLAG_MOD_WEAKCRYPTO;
+        applied = TRUE;
+    }
+
     if (!(d->flags &
           (K5_CDFLAG_MOD_DEF_REALM |
            K5_CDFLAG_MOD_CONF_FILE |
@@ -456,7 +478,8 @@ k5_write_config_data(k5_config_data * d) {
            K5_CDFLAG_MOD_DNS_LOOKUP_KDC |
            K5_CDFLAG_MOD_NOADDRESSES |
            K5_CDFLAG_MOD_CREATE_CONF |
-           K5_CDFLAG_MOD_REALMS))) {
+           K5_CDFLAG_MOD_REALMS |
+           K5_CDFLAG_MOD_WEAKCRYPTO))) {
 
         d->flags = 0;
         return applied;
@@ -912,6 +935,9 @@ k5_config_dlgproc(HWND hwnd,
             CheckDlgButton(hwnd, IDC_CFG_INCREALMS,
                            (d->inc_realms)? BST_CHECKED: BST_UNCHECKED);
 
+            CheckDlgButton(hwnd, IDC_CFG_WEAKCRYPTO,
+                           (d->allow_weak_crypto)? BST_CHECKED: BST_UNCHECKED);
+
             hw = GetDlgItem(hwnd, IDC_CFG_DEFREALM);
 #ifdef DEBUG
             assert(hw);
@@ -1011,6 +1037,16 @@ k5_config_dlgproc(HWND hwnd,
                     d->inc_realms = FALSE;
                 }
                 d->flags |= K5_CDFLAG_MOD_INC_REALMS;
+
+                khui_cfg_set_flags(d->node_main,
+                                   KHUI_CNFLAG_MODIFIED,
+                                   KHUI_CNFLAG_MODIFIED);
+                return TRUE;
+            }
+
+            if (wParam == MAKEWPARAM(IDC_CFG_WEAKCRYPTO, BN_CLICKED)) {
+                d->allow_weak_crypto = (IsDlgButtonChecked(hwnd, IDC_CFG_WEAKCRYPTO) == BST_CHECKED);
+                d->flags |= K5_CDFLAG_MOD_WEAKCRYPTO;
 
                 khui_cfg_set_flags(d->node_main,
                                    KHUI_CNFLAG_MODIFIED,
