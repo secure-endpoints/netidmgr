@@ -959,6 +959,7 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
     FILETIME ftcurrent;
     khm_size cb;
     khui_action_context * pctx = NULL;
+    khm_boolean is_kerberos_identity = TRUE;
 
     GetSystemTimeAsFileTime(&ftcurrent);
 
@@ -982,46 +983,69 @@ k5_handle_process_renew_creds(khui_new_creds *nc,
         if (pctx->scope == KHUI_SCOPE_CRED &&
             pctx->cred != NULL) {
 
-            /* get the expiration time for the identity first. */
-            cb = sizeof(ftidexp);
-#ifdef DEBUG
             assert(pctx->identity != NULL);
-#endif
-            kcdb_identity_get_attr(pctx->identity,
-                                   KCDB_ATTR_EXPIRE,
-                                   NULL,
-                                   &ftidexp,
-                                   &cb);
 
-            code = khm_krb5_renew_cred(pctx->cred);
+            /* Check if we are dealing with a Kerberos v5 identity and
+               disable ourselves if not.  This automatically disables
+               any other credentials types that are dependent on
+               Kerberos v5 */
+
+            if (!kcdb_identity_by_provider(pctx->identity, L"Krb5Ident")) {
+
+                _reportf(L"Not a Kerberos v5 identity");
+                is_kerberos_identity = FALSE;
+                code = KHM_ERROR_SUCCESS;
+
+            } else {
+
+                cb = sizeof(ftidexp);
+                kcdb_identity_get_attr(pctx->identity, KCDB_ATTR_EXPIRE,
+                                       NULL, &ftidexp, &cb);
+
+                code = khm_krb5_renew_cred(pctx->cred);
+            }
 
         } else if (pctx->scope == KHUI_SCOPE_IDENT &&
                    pctx->identity != 0) {
-            /* get the current identity expiration time */
-            cb = sizeof(ftidexp);
 
-            kcdb_identity_get_attr(pctx->identity,
-                                   KCDB_ATTR_EXPIRE,
-                                   NULL,
-                                   &ftidexp,
-                                   &cb);
+            if (!kcdb_identity_by_provider(pctx->identity, L"Krb5Ident")) {
 
-            code = khm_krb5_renew_ident(pctx->identity);
+                _reportf(L"Not a Kerberos v5 identity");
+                is_kerberos_identity = FALSE;
+                code = KHM_ERROR_SUCCESS;
+
+            } else {
+
+                cb = sizeof(ftidexp);
+                kcdb_identity_get_attr(pctx->identity, KCDB_ATTR_EXPIRE,
+                                       NULL, &ftidexp, &cb);
+
+                code = khm_krb5_renew_ident(pctx->identity);
+
+            }
         } else {
 
             _reportf(L"No identity specified.  Can't renew Kerberos tickets");
-
-            code = 1; /* it just has to be non-zero */
+            code = KHM_ERROR_SUCCESS;
+            is_kerberos_identity = FALSE;
         }
 
         _progress(1,2);
 
-        if (code == 0) {
+        if (!is_kerberos_identity) {
+
+            khui_cw_enable_type(nc, credtype_id_krb5, FALSE);
+            khui_cw_set_response(nc, credtype_id_krb5,
+                                 KHUI_NC_RESPONSE_EXIT |
+                                 KHUI_NC_RESPONSE_FAILED);
+
+        } else if (code == 0) {
             _reportf(L"Tickets successfully renewed");
 
             khui_cw_set_response(nc, credtype_id_krb5,
                                  KHUI_NC_RESPONSE_EXIT |
                                  KHUI_NC_RESPONSE_SUCCESS);
+
         } else if (pctx->identity == NULL) {
 
             _report_mr0(KHERR_ERROR, MSG_ERR_NO_IDENTITY);
