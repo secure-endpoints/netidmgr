@@ -25,6 +25,7 @@
 /* $Id$ */
 
 #include "krbcred.h"
+#include<windowsx.h>
 #include<krb5.h>
 #include<assert.h>
 #include<lm.h>
@@ -75,6 +76,7 @@ typedef struct tag_k5_realm_data {
 typedef struct tag_k5_config_data {
     wchar_t       def_realm[K5_MAXCCH_REALM];    /* default realm */
 
+    char        **config_files;          /* Array of configuration file names */
     wchar_t       config_file[MAX_PATH]; /* path to configuration file */
     khm_boolean   create_config_file; /* create config_file if missing? */
     khm_boolean   inc_realms;   /* include full realm list in new
@@ -136,6 +138,17 @@ void
 k5_free_config_data(k5_config_data * d) {
     if (d->realms)
         PFREE(d->realms);
+
+    if (d->config_files) {
+        char ** s;
+
+        for (s = d->config_files; *s; s++) {
+            PFREE(*s);
+            *s = NULL;
+        }
+
+        PFREE(d->config_files);
+    }
 
     k5_init_config_data(d);
 }
@@ -226,6 +239,55 @@ k5_purge_config_data(k5_config_data * d,
                    (d->nc_realms - (r + 1)));
 }
 
+KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
+_krb5_expand_path_tokens(krb5_context context,
+			 const char *path_in,
+			 char **ppath_out);
+
+void
+get_config_files(krb5_context context, char ***config_files)
+{
+    char ** sfiles = NULL;
+    krb5_error_code code;
+    char ** file;
+    char ** ret_list = NULL;
+    int n_ret_list = 0;
+    int nc_ret_list = 0;
+
+    code = krb5_get_default_config_files(&sfiles);
+    if (code != 0)
+        return;
+
+    for (file = sfiles; *file; file++) {
+        char * exp_file = NULL;
+        char * ret_file;
+
+        code = _krb5_expand_path_tokens(context, *file, &exp_file);
+        ret_file = ((code == 0 && exp_file != NULL)? exp_file : *file);
+
+        if (ret_list == NULL || n_ret_list == nc_ret_list) {
+            nc_ret_list += 4;
+            ret_list = PREALLOC(ret_list, sizeof(ret_list[0]) * nc_ret_list);
+        }
+
+        ret_list[n_ret_list++] = PSTRDUP(ret_file);
+
+        if (exp_file != NULL)
+            krb5_xfree(exp_file);
+    }
+
+    if (ret_list == NULL || n_ret_list == nc_ret_list) {
+        nc_ret_list += 1;
+        ret_list = PREALLOC(ret_list, sizeof(ret_list[0]) * nc_ret_list);
+    }
+
+    ret_list[n_ret_list++] = NULL;
+
+    krb5_free_config_files(sfiles);
+
+    *config_files = ret_list;
+}
+
 void
 k5_read_config_data(k5_config_data * d) {
     wchar_t * defrealm;
@@ -261,6 +323,8 @@ k5_read_config_data(k5_config_data * d) {
         d->allow_weak_crypto = krb5_config_get_bool_default(ctx, NULL, FALSE,
                                                             "libdefaults", "allow_weak_crypto");
         d->allow_weak_crypto_libdefaults = d->allow_weak_crypto;
+
+        get_config_files(ctx, &d->config_files);
 
 #ifdef PROFILE_EDITOR
         /* now we look at the [realms] section */
@@ -999,6 +1063,21 @@ k5_config_dlgproc(HWND hwnd,
             t = importopts;
             SendMessage(hw, CB_GETLBTEXT, d->lsa_import,(LPARAM) t);
             SendMessage(hw, CB_SELECTSTRING, (WPARAM) -1, (LPARAM) t);
+
+            /* Config files */
+            hw = GetDlgItem(hwnd, IDC_CFG_CONFIGFILES);
+            assert(hw);
+
+            ListBox_ResetContent(hw);
+            {
+                const char **file;
+                wchar_t wfile[MAX_PATH];
+
+                for (file = d->config_files; *file; file++) {
+                    AnsiStrToUnicode(wfile, sizeof(wfile), *file);
+                    ListBox_InsertString(hw, -1, wfile);
+                }
+            }
         }
         break;
 

@@ -221,6 +221,8 @@
 #define IDC_BROWSE                      1086
 #define IDC_CFG_WEAKCRYPTO              1087
 #define IDC_NCK5_WEAKCRYPTO             1088
+#define IDC_CFG_CONFIG                  1089
+#define IDC_CFG_CONFIGFILES             1089
 #define ID_FOO_BAR                      40001
 
 // Next default values for new objects
@@ -229,7 +231,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        221
 #define _APS_NEXT_COMMAND_VALUE         40002
-#define _APS_NEXT_CONTROL_VALUE         1089
+#define _APS_NEXT_CONTROL_VALUE         1090
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
