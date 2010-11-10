@@ -209,7 +209,7 @@ khm_get_identity_expiration_time(krb5_context ctx, krb5_ccache cc,
         if (princ_name)
             krb5_free_unparsed_name(ctx, princ_name);
         krb5_free_principal(ctx, principal);
-        return KHM_ERROR_UNKNOWN;
+        return KHM_ERROR_NOT_FOUND;
     }
 
     krb5_free_unparsed_name(ctx, princ_name);
