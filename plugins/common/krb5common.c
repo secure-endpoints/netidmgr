@@ -44,11 +44,11 @@ khm_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
                int FreeContextFlag, krb5_context * ctx,
                krb5_ccache * cache)
 {
-    const char *errText = "";
+    const char *errText = NULL;
     int krb5Error = ((int)(rc & 255));
 
     if (ctx != NULL && *ctx != NULL)
-        errText = krb5_get_error_message(*ctx, rc);
+        errText = krbErrorMessage = krb5_get_error_message(*ctx, rc);
 
     /* Reporting this as an INFO event because this function is called
        to log a return value from a function and the logged message is
@@ -57,9 +57,12 @@ khm_krb5_error(krb5_error_code rc, LPCSTR FailedFunctionName,
        message being displayed to the user. */
     _report_cs3(KHERR_INFO, L"%1!S! failed. %2!S! (Code=%3!d!)",
                 _cptr(FailedFunctionName),
-                _cptr(errText),
+                _cptr((errText != NULL)? errText: L""),
                 _int32(krb5Error));
     _resolve();
+
+    if (errText)
+        krb5_free_error_message(*ctx, errText);
 
     if (FreeContextFlag == 1)
     {

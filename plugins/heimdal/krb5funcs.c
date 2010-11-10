@@ -2675,7 +2675,11 @@ khm_krb5_changepwd(char * principal,
       if (rc == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
 	*error_str = PSTRDUP("Password incorrect while getting initial ticket");
       } else {
-	*error_str = PSTRDUP(krb5_get_error_message(context, rc));
+          const char * krb_err;
+
+          krb_err = krb5_get_error_message(context, rc);
+          *error_str = PSTRDUP(krb_err);
+          krb5_free_error_message(context, krb_err);
       }
       goto cleanup;
     }
@@ -2684,8 +2688,12 @@ khm_krb5_changepwd(char * principal,
 			       princ,
 			       &result_code, &result_code_string,
 			       &result_string)) {
-      *error_str = PSTRDUP(krb5_get_error_message(context, rc));
-      goto cleanup;
+        const char *krb_err;
+
+        krb_err = krb5_get_error_message(context, rc);
+        *error_str = PSTRDUP(krb_err);
+        krb5_free_error_message(context, krb_err);
+        goto cleanup;
     }
 
     if (result_code) {

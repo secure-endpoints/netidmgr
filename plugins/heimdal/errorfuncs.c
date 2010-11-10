@@ -55,7 +55,7 @@ void khm_err_describe(krb5_context context,
                       DWORD * suggestion,
                       kherr_suggestion * suggest_code)
 {
-    const char * com_err_msg = NULL;
+    const char * krb_err_msg = NULL;
     long table_num;
     DWORD msg_id = 0;
     DWORD sugg_id = 0;
@@ -69,7 +69,7 @@ void khm_err_describe(krb5_context context,
     table_num = (code & ~0xff);
 
     if (context != NULL)
-        com_err_msg = krb5_get_error_message(context, code);
+        krb_err_msg = krb5_get_error_message(context, code);
 
     if (suggestion)
         *suggestion = 0;
@@ -169,8 +169,8 @@ void khm_err_describe(krb5_context context,
                       buf,
                       (int) (cbbuf / sizeof(buf[0])),
                       NULL);
-    } else if (com_err_msg) {
-        AnsiStrToUnicode(buf, cbbuf, com_err_msg);
+    } else if (krb_err_msg) {
+        AnsiStrToUnicode(buf, cbbuf, krb_err_msg);
     }
 
     if (sugg_id != 0 && suggestion != NULL)
@@ -178,6 +178,10 @@ void khm_err_describe(krb5_context context,
 
     if (sugg_code != KHERR_SUGGEST_NONE && suggest_code != NULL)
         *suggest_code = sugg_code;
+
+    if (krb_err_msg) {
+        krb5_free_error_message(context, krb_err_msg);
+    }
 }
 
 #ifdef DEPRECATED_REMOVABLE
