@@ -202,9 +202,9 @@ KDC has no support for encryption type
 MessageId=
 SymbolicName=MSG_ERR_S_ETYPE_NOSUPP
 Language=English
-This may be caused a legacy server that is expecting a different set of encryption types.  Consider allowing the use of weak encryption types for this identity.
+This may be caused a legacy server that is expecting a different set of encryption types.  Consider allowing the use of weak encryption types.
 
-The "allow use of weak encryption types" option can be found under the "Kerberos 5" settings for this identity.
+The "allow use of weak encryption types" option can be found under "Kerberos 5" settings.
 .
 
 MessageId=
