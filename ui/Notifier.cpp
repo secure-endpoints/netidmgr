@@ -259,6 +259,9 @@ void Notifier::ShowQueuedAlerts() {
                 break;
             }
         }
+#ifdef DEBUG
+        w->SetOkToDispose(true);
+#endif
     } else {
         w->SetOwnerList(&m_alert_windows);
         w->Create(khm_hwnd_main);
