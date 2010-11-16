@@ -124,7 +124,7 @@ class NOINITVTABLE WithTextDisplay : public T {
         caption_pos.Y = (INT) bb.Y - bounds.Y;
         truncated = ((unsigned int) chars != caption.length());
 
-        if (bb.Width > extents.Width) {
+        if (bb.Width > extents.Width || bb.Height > extents.Height) {
             MarkForExtentUpdate();
             Invalidate();
         }
