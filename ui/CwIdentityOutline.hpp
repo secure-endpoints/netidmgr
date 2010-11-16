@@ -201,23 +201,26 @@ public:
 
     void SetCaption(const std::wstring& _caption) {
         use_static_caption = (_caption.length()  != 0);
-        __super::SetCaption(_caption);
+        if (use_static_caption)
+            __super::SetCaption(_caption);
+        else
+            GetCaption();       // Automatically sets dynamic caption
     }
 
     std::wstring GetCaption() {
 
         if (use_static_caption) {
 
-            return __super::GetCaption();
+            // Do nothing
 
         } else if (identity.Exists(KCDB_ATTR_STATUS)) {
 
-            return identity.GetAttribStringObj(KCDB_ATTR_STATUS);
+            __super::SetCaption(identity.GetAttribStringObj(KCDB_ATTR_STATUS));
 
         } else if (identity.GetAttribInt32(KCDB_ATTR_N_IDCREDS) == 0 ||
                    !identity.Exists(KCDB_ATTR_EXPIRE)) {
 
-            return LoadStringResource(IDS_CW_NOEXP);
+            __super::SetCaption(LoadStringResource(IDS_CW_NOEXP));
 
         } else {
             FILETIME ft_exp;
@@ -227,7 +230,7 @@ public:
             GetSystemTimeAsFileTime(&ft_now);
 
             if (CompareFileTime(&ft_now, &ft_exp) >= 0) {
-                return LoadStringResource(IDS_CW_EXPIRED); // "(Expired)"
+                __super::SetCaption(LoadStringResource(IDS_CW_EXPIRED)); // "(Expired)"
             } else {
                 wchar_t fmt[32];
 
@@ -246,9 +249,11 @@ public:
                 wchar_t status_msg[160];
                 StringCbPrintf(status_msg, sizeof(status_msg), fmt, timeref);
 
-                return std::wstring(status_msg);
+                __super::SetCaption(status_msg);
             }
         }
+
+        return __super::GetCaption();
     }
 
     void PaintSelf(Graphics& g, const Rect& bounds, const Rect& clip) {

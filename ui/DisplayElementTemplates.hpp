@@ -168,9 +168,11 @@ class NOINITVTABLE WithStaticCaption : public T {
     }
 
     void SetCaption(const std::wstring& _caption) {
-        static_caption = _caption;
-        MarkForExtentUpdate();
-        Invalidate();
+        if (static_caption != _caption) {
+            static_caption = _caption;
+            MarkForExtentUpdate();
+            Invalidate();
+        }
     }
 };
 
