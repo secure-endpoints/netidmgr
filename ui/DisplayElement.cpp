@@ -49,7 +49,6 @@ void DisplayElement::MarkChildrenForExtentUpdate(void)
 void DisplayElement::InsertChildAfter(DisplayElement * e, DisplayElement * previous)
 {
     TQINSERT(this, previous, e);
-    e->recalc_extents = true;
     e->Show(visible);
     e->SetOwner(owner);
     MarkForExtentUpdate();
@@ -58,7 +57,6 @@ void DisplayElement::InsertChildAfter(DisplayElement * e, DisplayElement * previ
 void DisplayElement::InsertChildBefore(DisplayElement * e, DisplayElement * next)
 {
     TQINSERTP(this, next, e);
-    e->recalc_extents = true;
     e->Show(visible);
     e->SetOwner(owner);
     MarkForExtentUpdate();
@@ -88,7 +86,6 @@ void DisplayElement::MoveChildAfter(DisplayElement * e, DisplayElement * previou
 {
     TQDELCHILD(this, e);
     TQINSERT(this, previous, e);
-    e->recalc_extents = true;
     MarkForExtentUpdate();
 }
 
@@ -96,7 +93,6 @@ void DisplayElement::MoveChildBefore(DisplayElement * e, DisplayElement * next)
 {
     TQDELCHILD(this, e);
     TQINSERTP(this, next, e);
-    e->recalc_extents = true;
     MarkForExtentUpdate();
 }
 
