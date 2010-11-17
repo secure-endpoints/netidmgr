@@ -63,6 +63,7 @@ RMAKE_W2K=$(MAKECMD) /nologo test KHBUILD_W2K=1
 ! endif
 !else
 RMAKE=$(MAKECMD) /nologo clean
+all: installer
 ! ifndef KH_NO_W2K
 RMAKE_W2K=$(MAKECMD) /nologo clean KHBUILD_W2K=1
 ! endif
