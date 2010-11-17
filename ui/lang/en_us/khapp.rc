@@ -373,7 +373,7 @@ BEGIN
     ICON            IDI_MAIN_APP,IDC_STATIC,7,7,21,20
     LTEXT           "Productname",IDC_PRODUCT,40,7,262,13,NOT WS_GROUP
     CONTROL         "",IDC_CONTENT,"RichEdit20A",ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_BORDER | WS_VSCROLL | WS_TABSTOP,40,22,262,231
-    LTEXT           "© 2005-2007 Massachusetts Institute of Technology\n© 2006-2007 Secure Endpoints Inc.",IDC_COPYRIGHT,7,258,240,21,NOT WS_GROUP
+    LTEXT           "© 2005-2007 Massachusetts Institute of Technology\n© 2006-2010 Secure Endpoints Inc.",IDC_COPYRIGHT,7,258,240,21,NOT WS_GROUP
 END
 
 IDD_NC_CONTAINER DIALOGEX 0, 0, 370, 270
