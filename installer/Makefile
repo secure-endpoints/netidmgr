@@ -437,15 +437,17 @@ $(SRC)\sample\templates\idprov\lang\en_us\langres.rc	sample\templates\idprov\lan
 	cd $(SRC)\installer
 
 clean::
+!if exist($(OBJ))
 	cd $(OBJ)
 	-$(RMDIR) /s /q doc
 	-$(RMDIR) /s /q inc
 	-$(RMDIR) /s /q lib
 	-$(RMDIR) /s /q sample
 	cd $(SRC)\installer
+!endif
 
 clean::
-	$(RM) $(MSIFILE)
-	$(RM) $(ZIPFILE)
-	$(RM) $(SDKZIPFILE)
-	$(RM) $(OBJ)\*.wixobj
+	-$(RM) $(MSIFILE)
+	-$(RM) $(ZIPFILE)
+	-$(RM) $(SDKZIPFILE)
+	-$(RM) $(OBJ)\*.wixobj
