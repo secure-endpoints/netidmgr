@@ -674,6 +674,8 @@ encode_KS_Credential(khm_handle credential, Codec * e)
            encoding */
         rv = KHM_ERROR_INVALID_PARAM;
         goto done;
+    } else {
+        rv = KHM_ERROR_SUCCESS;
     }
 
  done:
