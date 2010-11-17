@@ -41,16 +41,20 @@ bool NewCredPanels::IsSavePasswordAllowed()
 
        1. The primary identity has KCDB_IDENT_FLAG_KEY_EXPORT set.
 
-       2. The primary identity has no parent identity.
+       2. We are showing the first privileged interaction panel.
 
-       3. We are showing the first privileged interaction panel.
+       3. There is exactly one identity with both
+          KCDB_IDENT_FLAG_KEY_STORE, and KCDB_IDENT_FLAG_DEFAULT set
+          and is not the primary identity.
 
-       4. There is exactly one identity with both
-       KCDB_IDENT_FLAG_KEY_STORE, and KCDB_IDENT_FLAG_DEFAULT set
-       and is not the primary identity.
+       4. The type of the key store identity is a participant of this
+          new credentials dialog.
 
-       5. The type of the key store identity is a participant of this
-       new credentials dialog.
+       If all the above criteria are met, then we assume that we can
+       save the password.  In addition, if the primary identity has a
+       parent identity, then we conclude that the password has already
+       been saved.  If so, we allow updating the saved password.
+
     */
 
     khui_cw_lock_nc(nc);
@@ -77,10 +81,6 @@ bool NewCredPanels::IsSavePasswordAllowed()
             break;
 
         /* 2. */
-        if (parent_id != NULL)
-            break;
-
-        /* 3. */
         khui_cw_lock_nc(nc);
 
         if (QTOP(&nc->privint.shown) != NULL &&
@@ -93,7 +93,7 @@ bool NewCredPanels::IsSavePasswordAllowed()
 
         khui_cw_unlock_nc(nc);
 
-        /* 4. */
+        /* 3. */
         if (KHM_SUCCEEDED(kcdb_identity_begin_enum(KCDB_IDENT_FLAG_KEY_STORE | KCDB_IDENT_FLAG_DEFAULT,
                                                    KCDB_IDENT_FLAG_KEY_STORE | KCDB_IDENT_FLAG_DEFAULT,
                                                    &e, &n))) {
@@ -105,7 +105,7 @@ bool NewCredPanels::IsSavePasswordAllowed()
         } else
             break;
 
-        /* 5. */
+        /* 4. */
         cb = sizeof(ks_type);
         if (KHM_FAILED(kcdb_identity_get_attr(h_ks, KCDB_ATTR_TYPE, NULL, &ks_type, &cb))) {
             kcdb_identity_release(h_ks);
@@ -126,6 +126,8 @@ bool NewCredPanels::IsSavePasswordAllowed()
 
         nc->persist_identity = h_ks;
 
+        nc->persist_exist = (parent_id != NULL);
+
         khui_cw_unlock_nc(nc);
 
     } while (FALSE);
@@ -140,7 +142,7 @@ bool NewCredPanels::IsSavePasswordAllowed()
 khui_new_creds_privint_panel * NewCredPanels::GetPrivintPanel(HWND parent)
 {
     khui_new_creds_privint_panel * p;
-        
+
     p = khui_cw_get_current_privint_panel(nc);
 
     if (p == NULL) {
@@ -301,18 +303,20 @@ HWND NewCredPanels::UpdateLayout()
 
         assert(nc->persist_identity);
 
-        LoadStringResource(format, IDS_NC_PERSIST);
+        LoadStringResource(format,
+                           (nc->persist_exist)? IDS_NC_PERSIST_UPDATE :
+                           IDS_NC_PERSIST);
 
         cb = sizeof(idname);
         kcdb_get_resource(nc->persist_identity, KCDB_RES_DISPLAYNAME, 0, NULL, NULL,
                           idname, &cb);
         StringCbPrintf(msgtext, sizeof(msgtext), format, idname);
 
-        cb = sizeof(hicon);
-        kcdb_get_resource(nc->persist_identity, KCDB_RES_ICON_NORMAL, 0, NULL, NULL,
-                          &hicon, &cb);
-
         if (page == NC_PAGE_CREDOPT_ADV || page == NC_PAGE_CREDOPT_WIZ) {
+
+            cb = sizeof(hicon);
+            kcdb_get_resource(nc->persist_identity, KCDB_RES_ICON_NORMAL, 0,
+                              NULL, NULL, &hicon, &cb);
 
             m_persist.SetItemText(IDC_PERSIST, msgtext);
 

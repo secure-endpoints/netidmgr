@@ -364,6 +364,7 @@
 #define IDS_CTX_PROC_RENEW_CREDS_R      344
 #define IDS_CTX_PROC_PASSWORD_RF        345
 #define IDS_CTX_PROC_PASSWORD_R         346
+#define IDS_NC_PERSIST_UPDATE           347
 #define IDC_NC_ADVANCED                 1019
 #define IDC_PP_IDNAME                   1026
 #define IDC_PP_IDDEF                    1027

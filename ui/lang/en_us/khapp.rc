@@ -1122,6 +1122,7 @@ BEGIN
     IDS_CTX_PROC_RENEW_CREDS_R  "Successfully renewed credentials for %1!s!"
     IDS_CTX_PROC_PASSWORD_RF    "Failed to change password for %1!s!"
     IDS_CTX_PROC_PASSWORD_R     "Successfully changed password for %1!s!"
+	IDS_NC_PERSIST_UPDATE	"Update password in %s"
 END
 
 #endif    // English (U.S.) resources

@@ -294,6 +294,8 @@ typedef struct tag_khui_new_creds {
     khm_handle          persist_identity;
                                 /*!< identity which will be used to
                                   store privileged credentials. */
+    khm_boolean         persist_exist;
+                                /*!< Saved privileged exists. */
 
     nc_privint          privint; /*!< Privileged interaction */
 
