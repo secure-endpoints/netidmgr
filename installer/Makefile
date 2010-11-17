@@ -320,8 +320,6 @@ ZIPSRC=$(ZIPSRC)	\
 ZIPSRC=$(ZIPSRC) $(BINDIR)\nidmgr32.dll $(BINDIR)\nidmgr32.pdb
 !elseif exist($(BINDIR)\nidmgr64.dll)
 ZIPSRC=$(ZIPSRC) $(BINDIR)\nidmgr64.dll $(BINDIR)\nidmgr64.pdb
-!else
-! error nidmgr32.dll or nidmgr64 must be built
 !endif
 
 !if exist($(KSBIN)\keystore.dll)
