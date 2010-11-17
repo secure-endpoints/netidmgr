@@ -760,11 +760,13 @@ creddlg_KHUI_WM_NC_NOTIFY(HWND hwnd, khui_wm_nc_notification notification,
     return TRUE;
 }
 
-void
+khm_int32
 add_identkeys_from_credset(keystore_t * ks, khm_handle credset)
 {
     khm_size n_creds = 0;
+    khm_size n_succeeded = 0;
     khm_size i;
+    khm_int32 rv = KHM_ERROR_NOT_FOUND;
 
     kcdb_credset_get_size(credset, &n_creds);
 
@@ -790,18 +792,21 @@ add_identkeys_from_credset(keystore_t * ks, khm_handle credset)
         idk = ks_identkey_create_new();
 
         cb = sizeof(buf);
-        if (KHM_FAILED(kcdb_identity_get_name(identity, buf, &cb)))
+        rv = kcdb_identity_get_name(identity, buf, &cb);
+        if (KHM_FAILED(rv))
             goto done;
         idk->identity_name = _wcsdup(buf);
 
         cb = sizeof(buf);
-        if (KHM_FAILED(kcdb_get_resource(identity, KCDB_RES_DISPLAYNAME,
-                                         0, NULL, NULL, buf, &cb)))
+        rv = kcdb_get_resource(identity, KCDB_RES_DISPLAYNAME,
+                               0, NULL, NULL, buf, &cb);
+        if (KHM_FAILED(rv))
             goto done;
         idk->display_name = _wcsdup(buf);
 
         cb = sizeof(buf);
-        if (KHM_FAILED(kcdb_identpro_get_name(identpro, buf, &cb)))
+        rv = kcdb_identpro_get_name(identpro, buf, &cb);
+        if (KHM_FAILED(rv))
             goto done;
         idk->provider_name = _wcsdup(buf);
 
@@ -811,25 +816,53 @@ add_identkeys_from_credset(keystore_t * ks, khm_handle credset)
         cb = sizeof(idk->ft_expire);
         kcdb_cred_get_attr(cred, KCDB_ATTR_EXPIRE, NULL, &idk->ft_expire, &cb);
 
-        ks_serialize_credential(cred, NULL, &cb);
-        if (cb == 0)
+        rv = ks_serialize_credential(cred, NULL, &cb);
+        if (cb == 0) {
+            rv = KHM_ERROR_INVALID_PARAM;
             goto done;
+        }
         data = PMALLOC(cb);
 
-        ks_serialize_credential(cred, data, &cb);
+        rv = ks_serialize_credential(cred, data, &cb);
+        if (KHM_FAILED(rv))
+            goto done;
+
         ks_datablob_copy(&idk->plain_key, data, cb, 0);
 
         idk->flags = 0;
-        ks_keystore_add_identkey(ks, idk);
+        rv = ks_keystore_add_identkey(ks, idk);
+        if (KHM_FAILED(rv)) {
+            _reportf(L"Failed to add identity key [%s:%s] to keystore",
+                     idk->provider_name, idk->identity_name);
+            goto done;
+        }
 
         idk = NULL;
     done:
+        if (KHM_SUCCEEDED(rv)) {
+            n_succeeded ++;
+        } else {
+            if (idk && idk->display_name) {
+                _report_sr1(KHERR_ERROR, IDS_CANTADDIDKEY, _dupstr(idk->display_name));
+            } else {
+                _report_sr0(KHERR_ERROR, IDS_CANTADDIDKEYN);
+            }
+        }
+
         if (cred) kcdb_cred_release(cred);
         if (identity) kcdb_identity_release(identity);
         if (identpro) kcdb_identpro_release(identpro);
         if (idk) ks_identkey_free(idk);
         if (data) PFREE(data);
     }
+
+    if (n_creds == 0)
+        return KHM_ERROR_NOT_FOUND;
+
+    if (n_succeeded < n_creds)
+        return KHM_ERROR_PARTIAL;
+
+    return KHM_ERROR_SUCCESS;
 }
 
 void
@@ -844,7 +877,13 @@ creddlg_prompt_for_new_identity(HWND hwnd, struct nc_dialog_data * d)
     rv = khui_cw_collect_privileged_credentials(d->nct.nc, NULL, NULL, credset);
 
     if (rv == KHUI_NC_RESULT_PROCESS) {
+        _begin_task(0);
+        _report_sr0(KHERR_NONE, IDS_ADDINGKEYS);
+        _describe();
+
         add_identkeys_from_credset(d->ks, credset);
+
+        _end_task();
     } else {
         /* Do nothing */
     }

@@ -312,7 +312,7 @@ unmount_identkey_configuration(keystore_t * ks, khm_size idx);
 khm_size
 get_keystores_with_identkey(khm_handle s_identity, keystore_t *** pks);
 
-void
+khm_int32
 add_identkeys_from_credset(keystore_t * ks, khm_handle credset);
 
 void
