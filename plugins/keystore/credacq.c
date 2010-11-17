@@ -988,11 +988,26 @@ creddlg_remove_selected_identkeys(HWND hwnd, struct nc_dialog_data *d)
     KSLOCK(d->ks);
     while ((idx = ListView_GetNextItem(hwlist, idx, LVNI_SELECTED)) != -1) {
         LVITEM lvi = { LVIF_PARAM, idx, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, 0 };
+        identkey_t *idk;
+        khm_handle identity;
+
         ListView_GetItem(hwlist, &lvi);
 
-        ks_keystore_remove_identkey(d->ks, lvi.lParam);
+        if (KHM_SUCCEEDED(ks_keystore_get_identkey(d->ks, lvi.lParam, &idk))) {
+            identity = get_identkey_identity(idk);
+            if (identity != NULL) {
+                kcdb_identity_set_parent(identity, NULL);
+                kcdb_identity_release(identity);
+            }
+        }
+
+        ks_keystore_mark_remove_identkey(d->ks, lvi.lParam);
+
     }
+    ks_keystore_purge_removed_identkeys(d->ks);
     KSUNLOCK(d->ks);
+    ks_keystore_lock(d->ks);
+    save_keystore_with_identity(d->ks);
     creddlg_refresh_idlist(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
 }
 
