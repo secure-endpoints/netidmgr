@@ -916,16 +916,34 @@ creddlg_prompt_for_configure(HWND hwnd, khui_new_creds * nc, keystore_t *ks)
     }
 }
 
+khm_boolean
+creddlg_confirm_identkey_deletion(HWND hwnd, int n_to_delete)
+{
+    wchar_t title[64], msg[128], fmt[128];
+
+    LoadString(hResModule, IDS_CONF_DEL_TITLE, title, ARRAYLENGTH(title));
+
+    if (n_to_delete == 1)
+        LoadString(hResModule, IDS_CONF_DEL_FMT1, msg, ARRAYLENGTH(msg));
+    else {
+        LoadString(hResModule, IDS_CONF_DEL_FMT, fmt, ARRAYLENGTH(fmt));
+        StringCbPrintf(msg, sizeof(msg), fmt, n_to_delete);
+    }
+
+    return (MessageBox(hwnd, msg, title, MB_YESNO | MB_ICONQUESTION) == IDYES);
+}
+
 void
 creddlg_remove_selected_identkeys(HWND hwnd, struct nc_dialog_data *d)
 {
-    int idx = -1;
+    int idx = -1, n_sel;
     HWND hwlist = GetDlgItem(hwnd, IDC_IDLIST);
 
-    if (ListView_GetSelectedCount(hwlist) == 0)
+    if ((n_sel = ListView_GetSelectedCount(hwlist)) == 0)
         return;
 
-    /* TODO: show what's going to be removed */
+    if (!creddlg_confirm_identkey_deletion(hwnd, n_sel))
+        return;
 
     assert(d->ks);
     KSLOCK(d->ks);

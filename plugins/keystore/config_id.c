@@ -109,25 +109,8 @@ config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
     {
         int    idx = -1;
 
-        {
-            wchar_t title[64];
-            wchar_t msg[128];
-            wchar_t fmt[128];
-
-            LoadString(hResModule, IDS_CONF_DEL_TITLE, title, ARRAYLENGTH(title));
-
-            if (n_to_del == 1)
-                LoadString(hResModule, IDS_CONF_DEL_FMT1, msg, ARRAYLENGTH(msg));
-            else {
-                LoadString(hResModule, IDS_CONF_DEL_FMT, fmt, ARRAYLENGTH(fmt));
-                StringCbPrintf(msg, sizeof(msg), fmt, n_to_del);
-            }
-
-            if (MessageBox(hwnd, msg, title, MB_YESNO | MB_ICONQUESTION) != IDYES) {
-                ks_keystore_release_key(d->ks);
-                return TRUE;
-            }
-        }
+        if (!creddlg_confirm_identkey_deletion(hwnd, n_to_del))
+            return TRUE;
 
         while ((idx = ListView_GetNextItem(hw_list, idx, LVNI_SELECTED)) != -1) {
             LVITEM lvi;
