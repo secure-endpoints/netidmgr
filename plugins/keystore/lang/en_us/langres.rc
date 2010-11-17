@@ -430,6 +430,9 @@ END
 STRINGTABLE 
 BEGIN
     IDS_DOESNOTEXPIRE       "(The key does not expire)"
+    IDS_CANTADDIDKEY        "Password for %1!s! could not be added to keystore"
+    IDS_CANTADDIDKEYN       "Password could not be added to keystore"
+    IDS_ADDINGKEYS          "Adding passwords to keystore"
 END
 
 #endif    // English (U.S.) resources

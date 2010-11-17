@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by C:\work\netidmgr.git\plugins\keystore\lang\en_us\langres.rc
+// Used by C:\src\netidmgr\plugins\keystore\lang\en_us\langres.rc
 //
 #define IDD_PP_CRED                     106
 #define IDD_PP_IDENT                    107
@@ -72,6 +72,9 @@
 #define IDS_S_RENEW_CREDS               158
 #define IDS_PWR_ACQ                     159
 #define IDS_DOESNOTEXPIRE               160
+#define IDS_CANTADDIDKEY                161
+#define IDS_CANTADDIDKEYN               162
+#define IDS_ADDINGKEYS                  164
 #define IDC_NAME                        1039
 #define IDC_REGISTRY                    1040
 #define IDC_FILE                        1041
