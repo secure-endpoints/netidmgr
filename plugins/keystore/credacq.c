@@ -1040,10 +1040,14 @@ creddlg_WM_COMMAND(HWND hwnd, int id, HWND hwCtl, UINT code)
     if (id == IDC_SHOWPW && code == BN_CLICKED) {
         BOOL show = (IsDlgButtonChecked(hwnd, IDC_SHOWPW) == BST_CHECKED);
 
-        if (show)
-            creddlg_show_passwords(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
-        else
+        if (show) {
+            if (get_key_if_necessary(hwnd, d->ks, IDS_PWR_SHOWP)) {
+                creddlg_show_passwords(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+                ks_keystore_release_key(d->ks);
+            }
+        } else {
             creddlg_hide_passwords(GetDlgItem(hwnd, IDC_IDLIST), d->ks);
+        }
         return TRUE;
     }
 
@@ -1513,9 +1517,11 @@ handle_kmsg_cred_process(khui_new_creds * nc) {
                     khm_handle cs_source = NULL;
 
                     khui_cw_get_privileged_credential_collector(nc, &cs_source);
-                    process_keystore_new_credentials(nc, d->hw_privint, d->ks, cs_source, FALSE);
+                    process_keystore_new_credentials(nc, d->hw_privint, d->ks,
+                                                     cs_source, FALSE);
                 } else {
-                    process_keystore_new_credentials(nc, d->hw_privint, d->ks, NULL, TRUE);
+                    process_keystore_new_credentials(nc, d->hw_privint, d->ks,
+                                                     NULL, TRUE);
                 }
             }
             return KHM_ERROR_SUCCESS;
