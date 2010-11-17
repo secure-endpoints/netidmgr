@@ -121,8 +121,6 @@ config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
 
             ListView_GetItem(hw_list, &lvi);
 
-            ks_keystore_mark_remove_identkey(d->ks, lvi.lParam);
-
             {
                 identkey_t * idk = NULL;
 
@@ -135,6 +133,8 @@ config_id_ks_delete_identkey(HWND hwnd, config_id_dlg_data * d)
                     }
                 }
             }
+
+            ks_keystore_mark_remove_identkey(d->ks, lvi.lParam);
         }
 
         ks_keystore_purge_removed_identkeys(d->ks);
