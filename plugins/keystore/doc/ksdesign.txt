@@ -582,4 +582,4 @@ Endnotes:
     through its "dialog" procedure.  The hWnd parameter will be set to
     the hWnd of the new credentials dialog.
 
-Copyright (C) 2009 Secure-Endpoints Inc.
+Copyright (C) 2009 Secure Endpoints Inc.
