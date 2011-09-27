@@ -100,8 +100,8 @@
       </Component>
       <?endif ?>
 
-      <Merge Id="mergeHeimdalCompat" Language="0"
-             SourceFile="$(var.HeimdalSdkDir)redist\$(env.CPU)\Heimdal-krbcompat.msm" />
+      <Merge Id="mergeHeimdalCompat" Language="0" DiskId="1"
+             SourceFile="$(var.HeimdalSdkDir)redist\$(env.CPU)\SecureEndpoints-krbcompat.msm" />
 
     </DirectoryRef>
 

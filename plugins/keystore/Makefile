@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2010 Secure Endpoints Inc.
+# Copyright (c) 2008-2011 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -21,7 +21,10 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
+!if exists(..\..\config\Makefile.w32)
+MODULE=plugins\keystore
+!include <..\..\config\Makefile.w32>
+!endif
 
 # Environment variables
 # ---------------------
@@ -67,12 +70,10 @@ PLUGINLIST=$(CREDPROVNAME),$(IDPROVNAME)
 
 # Various checks
 
-!ifndef MSSDK
-! error Platform SDK environment variables not set.
-!endif
-
+!ifndef NIDMRAWDIRS
 !ifndef KFWSDKDIR
 ! error KFWSDKDIR environment variable not set.
+!endif
 !endif
 
 # Directories
@@ -110,8 +111,8 @@ KFWINCDIR=$(KFWSDKDIR)\inc
 NIDMINCDIR=$(KFWINCDIR)\netidmgr
 NIDMLIBDIR=$(KFWSDKDIR)\lib\$(CPU)
 !else
-NIDMINCDIR=$(KFWSDKDIR)\inc
-NIDMLIBDIR=$(KFWSDKDIR)
+NIDMINCDIR=$(DEST)\inc
+NIDMLIBDIR=$(DEST)\lib
 !endif
 
 # Win32.mak
@@ -122,8 +123,8 @@ NIDMLIBDIR=$(KFWSDKDIR)
 
 CD=cd
 RM=del /q
-MKDIR=mkdir
-RMDIR=rmdir
+MKDIR=md
+RMDIR=rd
 ECHO=echo
 CP=copy /y
 LINK=link
@@ -145,7 +146,7 @@ cdefines = $(cdefines) -DUNICODE -D_UNICODE
 
 C2OBJ=$(CC) $(cdebug) $(cflags:-W4=-W3) $(incflags) $(cdefines) $(cwarn) $(KH_AUXCFLAGS) /Fo"$@" /c $**
 
-DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:"$@" /IMPLIB:"$(DEST)\$(@B).lib" $**
+DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:"$@" /IMPLIB:"$(DEST)\lib\$(@B).lib" $**
 
 DLLRESLINK=$(LINK) /NOLOGO /DLL /NOENTRY /MACHINE:$(PROCESSOR_ARCHITECTURE) /OUT:"$@" $**
 
@@ -162,15 +163,23 @@ RC2RES=$(RC) $(RFLAGS) $(rincflags) /fo "$@" $**
 
 mkdirs::
 !if !exist($(DEST))
-	$(MKDIR) "$(DEST)"
+	-$(MKDIR) "$(DEST)"
+!endif
+!if !exist($(DEST)\bin)
+	-$(MKDIR) "$(DEST)\bin"
+!endif
+!if !exist($(DEST)\lib)
+	-$(MKDIR) "$(DEST)\lib"
 !endif
 !if !exist($(OBJ))
-	$(MKDIR) "$(OBJ)"
+	-$(MKDIR) "$(OBJ)"
 !endif
 
 clean::
 	-$(RM) "$(OBJ)\*.*"
 	-$(RM) "$(DEST)\*.*"
+	-$(RM) "$(DEST)\bin\*.*"
+	-$(RM) "$(DEST)\lib\*.*"
 
 .SUFFIXES: .h
 
@@ -217,7 +226,7 @@ _CODESIGN=
 
 # Now for the actual build stuff
 
-DLL=$(DEST)\$(DLLBASENAME).dll
+DLL=$(DEST)\bin\$(DLLBASENAME).dll
 
 LIBFILES= 				\
 	$(NIDMLIBDIR)\$(NIDMGRLIB) 	\
@@ -294,7 +303,7 @@ clean::
 # English-US
 LANG=en_us
 
-LANGDLL="$(DEST)\$(DLLBASENAME)_$(LANG).dll"
+LANGDLL="$(DEST)\bin\$(DLLBASENAME)_$(LANG).dll"
 
 lang:: $(LANGDLL)
 
@@ -372,7 +381,7 @@ $(OBJ)\installer.wixobj: installer.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** \
 		-dProductVersion=$(VERLIST)	\
 		-dDllBaseName=$(DLLBASENAME)	\
-		"-dDestDir=$(DEST)"		\
+		"-dDestDir=$(DEST)\bin"		\
 		-dPluginList=$(PLUGINLIST)	\
 		-dModuleName=$(MODULENAME)
 
@@ -380,7 +389,7 @@ $(OBJ)\keystore_fragment.wixobj: keystore_fragment.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** \
 		-dProductVersion=$(VERLIST)	\
 		-dDllBaseName=$(DLLBASENAME)	\
-		"-dDestDir=$(DEST)"		\
+		"-dDestDir=$(DEST)\bin"		\
 		-dPluginList=$(PLUGINLIST)	\
 		-dModuleName=$(MODULENAME)
 
@@ -403,17 +412,17 @@ install:
 
 test:: kstest
 
-kstest: $(DEST)\test_keystore.exe
-	$(DEST)\test_keystore.exe
+kstest: $(DEST)\bin\test_keystore.exe
+	$(DEST)\bin\test_keystore.exe
 
-$(DEST)\test_keystore.exe: $(OBJ)\test_keystore.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
+$(DEST)\bin\test_keystore.exe: $(OBJ)\test_keystore.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
 	$(LINK) /NOLOGO $(ldebug) $(conlflags) $(conlibsdll) Crypt32.lib $(NIDMLIBDIR)\$(NIDMGRLIB) Rpcrt4.lib /OUT:$@ $**
 
 # 
 # Dump utility
 # 
 
-util:: $(DEST)\ksdump.exe
+util:: $(DEST)\bin\ksdump.exe
 
-$(DEST)\ksdump.exe: $(OBJ)\ksdump.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
+$(DEST)\bin\ksdump.exe: $(OBJ)\ksdump.obj $(OBJ)\keystore.obj $(OBJ)\ks_codec.obj
 	$(LINK) /NOLOGO $(ldebug) $(conlflags)$(conlibsdll) Crypt32.lib $(NIDMLIBDIR)\$(NIDMGRLIB) Rpcrt4.lib /OUT:$@ $**

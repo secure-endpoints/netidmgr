@@ -1,5 +1,5 @@
 # Copyright (c) 2004,2005,2006 Massachusetts Institute of Technology
-# Copyright (c) 2006-2010 Secure Endpoints Inc.
+# Copyright (c) 2006-2011 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -58,7 +58,7 @@ NETIDMGR_VERSIONC=$(NETIDMGR_VERSION_MAJOR),$(NETIDMGR_VERSION_MINOR),$(NETIDMGR
 
 # Source information
 NETIDMGR_SRC_COMPANY_1033=Secure Endpoints Inc.
-NETIDMGR_SRC_COPYRIGHT_1033=Copyright © 2006-2010 Secure Endpoints Inc.
+NETIDMGR_SRC_COPYRIGHT_1033=Copyright © 2006-2011 Secure Endpoints Inc.
 
 # Choose the default build type if one is not set
 !if ("$(KH_BUILD)" != "DEBUG") && ("$(KH_BUILD)" != "RETAIL")
@@ -92,6 +92,26 @@ KH_RELEASE=PRIVATE
 # future we will need to update the target APPVER value, but these
 # values ensure that the produced binaries work on Windows XP (32 or
 # 64 bit).
+
+!if !defined(APPVER)
+!if !defined(CPU)
+! error Neither APPVER nor CPU defined!
+!endif
+!if ("$(CPU)"=="i386")
+APPVER=5.01
+TARGETOS=WINNT
+_WIN32_IE=0x0501
+_WIN32_WINNT=0x0501
+!elseif ("$(CPU)"=="AMD64")
+APPVER=5.02
+TARGETOS=WINNT
+_WIN32_IE=0x0502
+_WIN32_WINNT=0x0502
+!else
+! error APPVER not defined and unknown CPU
+!endif
+!endif
+
 !if ("$(CPU)"!="i386" || "$(APPVER)"!="5.01") && ("$(CPU)"!="AMD64" || "$(APPVER)"!="5.02") && "$(KH_RELEASE)" != "SPECIAL"
 ! error Unexpected APPVER value $(APPVER)
 !endif

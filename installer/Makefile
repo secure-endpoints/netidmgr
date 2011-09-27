@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2010 Secure Endpoints Inc.
+# Copyright (c) 2008-2011 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -32,7 +32,7 @@
 # 
 # MIT Compatibility Mode:
 # 
-# In this mode, the directory struture follows that of MIT KfW.  The
+# In this mode, the directory structure follows that of MIT KfW.  The
 # netidmgr.exe will be installed over the netidmgr.exe that comes with
 # MIT KfW.
 
@@ -49,13 +49,13 @@ NETIDMGR_VERSIONU=$(NETIDMGR_VERSION_MAJOR)_$(NETIDMGR_VERSION_MINOR)_$(NETIDMGR
 
 LANG=en_us
 
-MSIFILE=$(BINDIR)\$(BASENAME)$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
+MSIFILE=$(DESTDIR)\$(BASENAME)$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
 
-SDKMSIFILE=$(BINDIR)\$(BASENAME)sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
+SDKMSIFILE=$(DESTDIR)\$(BASENAME)sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).msi
 
-ZIPFILE=$(BINDIR)\$(BASENAME)$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
+ZIPFILE=$(DESTDIR)\$(BASENAME)$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
-SDKZIPFILE=$(BINDIR)\$(BASENAME)sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
+SDKZIPFILE=$(DESTDIR)\$(BASENAME)sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).zip
 
 KEYSTORE=$(SRC)\plugins\keystore
 
@@ -66,23 +66,28 @@ KEYSTORE=$(SRC)\plugins\keystore
 COMBINED=1
 !endif
 
-!if "$(ARCHIVE)" != ""
-!if "$(ZIP)" == ""
+!if ("$(ARCHIVE)" == "bin")
+!if !defined(7ZIP)
 TARGET=no-zip
-!else
-!if "$(ARCHIVE)" == "sdk"
-TARGET=$(SDKZIPFILE)
 !else
 TARGET=$(ZIPFILE)
 !endif
-!endif
+!elseif ("$(ARCHIVE)" == "sdk")
+!if !defined(7ZIP)
+TARGET=no-zip
 !else
+TARGET=$(SDKZIPFILE)
+!endif
+!else if ("$(ARCHIVE)" == "")
 !if exist("$(WIXDIR)\candle.exe")
 TARGET=mkdirs $(MSIFILE) $(SDKMSIFILE)
 !else
 TARGET=no-wix
 !endif
+!else
+!error Unknown ARCHIVE value "$(ARCHIVE)"
 !endif
+
 
 # Build with Omaha updater additions
 #
@@ -207,7 +212,7 @@ $(OBJ)\heimdal.wixobj: heimdal.wxs
 		-dProductVersion=$(NETIDMGR_VERSION)	\
 		-dBinDir=$(BINDIR)\			\
 		-dLibDir=$(LIBDIR)\			\
-		-dHeimdalSdkDir=$(HEIMDALSDKDIR)\		\
+		-dHeimdalSdkDir=$(KERBEROSCOMPATSDKROOT)\       \
 !ifndef NODEBUG
 		-dDebug=1				\
 !endif
@@ -327,12 +332,12 @@ ZIPSRC=$(ZIPSRC) $(KSBIN)\keystore.dll $(KSBIN)\keystore.pdb $(KSBIN)\keystore_e
 !endif
 
 $(ZIPFILE): $(ZIPSRC)
-	"$(ZIP)" a $(ZIPFILE) -tzip $(ZIPSRC)
+	"$(7ZIP)" a $(ZIPFILE) -tzip $(ZIPSRC)
 
-# ZIP but $(ZIP) isn't specified
+# ZIP but $(7ZIP) isn't specified
 
 no-zip:
-	$(ECHO) Please set the ZIP environment variable to point to the location of 7z.exe
+	$(ECHO) Please set the 7ZIP environment variable to point to the location of 7z.exe
 
 # SDK ZIP
 
@@ -433,7 +438,7 @@ $(SRC)\sample\templates\idprov\images\plugin.ico	sample\templates\idprov\images
 $(SRC)\sample\templates\idprov\lang\en_us\installer.wxl	sample\templates\idprov\lang\en_us
 $(SRC)\sample\templates\idprov\lang\en_us\langres.rc	sample\templates\idprov\lang\en_us
 <<
-	"$(ZIP)" a $(SDKZIPFILE) -tzip doc inc lib sample
+	"$(7ZIP)" a $(SDKZIPFILE) -tzip doc inc lib sample
 	cd $(SRC)\installer
 
 clean::

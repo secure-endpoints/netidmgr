@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2010 Secure Endpoints Inc.
+# Copyright (c) 2008-2011 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -69,12 +69,10 @@ PLUGINLIST=$(CREDPROVNAME),$(IDPROVNAME)
 
 # Various checks
 
-!ifndef MSSDK
-! error Platform SDK environment variables not set.
-!endif
-
+!ifndef NIDMRAWDIRS
 !ifndef KFWSDKDIR
 ! error KFWSDKDIR environment variable not set.
+!endif
 !endif
 
 # Directories
@@ -106,8 +104,8 @@ KFWINCDIR=$(KFWSDKDIR)\inc
 NIDMINCDIR=$(KFWINCDIR)\netidmgr
 NIDMLIBDIR=$(KFWSDKDIR)\lib\$(CPU)
 !else
-NIDMINCDIR=$(KFWSDKDIR)\inc
-NIDMLIBDIR=$(KFWSDKDIR)
+NIDMINCDIR=$(DEST)\inc
+NIDMLIBDIR=$(DEST)\lib
 !endif
 
 # Win32.mak
@@ -137,7 +135,7 @@ cdefines = $(cdefines) -DUNICODE -D_UNICODE
 
 C2OBJ=$(CC) $(cdebug) $(cflags) $(incflags) $(cdefines) /Fo"$@" /c $**
 
-DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:"$@" /IMPLIB:"$(DEST)\$(@B).lib" $**
+DLLGUILINK=$(LINK) /NOLOGO $(ldebug) $(dlllflags) $(guilibsmt) /OUT:"$@" /IMPLIB:"$(DEST)\lib\$(@B).lib" $**
 
 DLLRESLINK=$(LINK) /NOLOGO /DLL /NOENTRY /MACHINE:$(PROCESSOR_ARCHITECTURE) /OUT:"$@" $**
 
@@ -156,6 +154,12 @@ mkdirs::
 !if !exist($(DEST))
 	$(MKDIR) "$(DEST)"
 !endif
+!if !exist($(DEST)\bin)
+	$(MKDIR) "$(DEST)\bin"
+!endif
+!if !exist($(DEST)\lib)
+	-$(MKDIR) "$(DEST)\lib"
+!endif
 !if !exist($(OBJ))
 	$(MKDIR) "$(OBJ)"
 !endif
@@ -163,6 +167,8 @@ mkdirs::
 clean::
 	$(RM) "$(OBJ)\*.*"
 	$(RM) "$(DEST)\*.*"
+	$(RM) "$(DEST)\bin\*.*"
+	$(RM) "$(DEST)\lib\*.*"
 
 .SUFFIXES: .h
 
@@ -201,7 +207,7 @@ if exist "$@.manifest" $(RM) "$@.manifest"
 
 # Now for the actual build stuff
 
-DLL=$(DEST)\$(DLLBASENAME).dll
+DLL=$(DEST)\bin\$(DLLBASENAME).dll
 
 LIBFILES= \
 	Crypt32.lib			\
@@ -277,7 +283,7 @@ clean::
 # English-US
 LANG=en_us
 
-LANGDLL="$(DEST)\$(DLLBASENAME)_$(LANG).dll"
+LANGDLL="$(DEST)\bin\$(DLLBASENAME)_$(LANG).dll"
 
 lang:: $(LANGDLL)
 
@@ -353,7 +359,7 @@ $(OBJ)\installer.wixobj: installer.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** \
 		-dProductVersion=$(VERLIST)	\
 		-dDllBaseName=$(DLLBASENAME)	\
-		"-dDestDir=$(DEST)"		\
+		"-dDestDir=$(DEST)\bin"		\
 		-dPluginList=$(PLUGINLIST)	\
 		-dModuleName=$(MODULENAME)
 

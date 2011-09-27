@@ -4,7 +4,7 @@
 #             in the build tree.
 #
 # Copyright (c) 2004,2005,2006 Massachusetts Institute of Technology
-# Copyright (c) 2006-2010 Secure Endpoints Inc.
+# Copyright (c) 2006-2011 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -34,7 +34,7 @@ KHIMAIRA_WIN32_CONFIG=1
 #   KH_ROOT : Root of the source tree.
 #   KH_BUILD: One of DEBUG or RETAIL
 #   KH_CLVER: One of 'vc7', 'vc8' or 'vc9'.  The C compiler used for the build
-#   HEIMDALSDKDIR: Path to Heimdal SDK
+#   KERBEROSCOMPATSDKROOT: Path to Kerberos Compatibility SDK
 #
 #  The following environment variables are optional:
 #   KH_RUNTIME: One of STATIC or DLL, specifies whether the CRT libs
@@ -84,10 +84,8 @@ OUTPRE2=$(OUTPRE1)\$(CPU)
 OUTPRE3=$(OUTPRE2)\$(OUTPRE_DBG)
 OUTPRE=$(OUTPRE3)
 
-
-
 # Output directory structure
-DESTROOT=$(KH_ROOT)\obj
+DESTROOT=$(KH_ROOT)\dest
 OBJROOT=$(KH_ROOT)\obj
 SRC=$(KH_ROOT)
 
@@ -96,15 +94,14 @@ OBJDIR=$(OBJROOT)\$(CPU)\$(OUTPRE_DBG)
 
 OBJ=$(OBJDIR)\$(MODULE)
 INCDIR=$(DESTDIR)\inc
-#BINDIR=$(DESTDIR)\bin
-BINDIR=$(KH_ROOT)\$(OUTPRE)
-#LIBDIR=$(DESTDIR)\lib
-LIBDIR=$(KH_ROOT)\$(OUTPRE)
+BINDIR=$(DESTDIR)\bin
+#BINDIR=$(KH_ROOT)\$(OUTPRE)
+LIBDIR=$(DESTDIR)\lib
+#LIBDIR=$(KH_ROOT)\$(OUTPRE)
 DOCDIR=$(DESTDIR)\doc
 
 # Source directories
 CONFDIR=$(SRC)\config
-
 
 
 # If we are forcing a Win2K build, we need to adjust the build
@@ -120,7 +117,6 @@ APPVER=5.0
 TARGETOS=WINNT
 _WIN32_IE=0x0500
 _WIN32_WINNT=0x0500
-
 !endif
 
 # Setup environment for win32.mak
@@ -128,6 +124,7 @@ _WIN32_WINNT=0x0500
 !if "$(KH_BUILD)" == "RETAIL"
 NODEBUG=1
 !endif
+
 
 # Win32.mak
 
@@ -158,12 +155,12 @@ HHC=$(KH_HHCFULLPATH)
 HHC=hhc
 !endif
 
-!if !defined(HEIMDALSDKDIR)
-!	error HEIMDALSDKDIR is not defined
+!if !defined(KERBEROSCOMPATSDKROOT)
+!	error KERBEROSCOMPATSDKROOT is not defined
 !endif
 
-krbincflags =-I$(HEIMDALSDKDIR)\inc -I$(HEIMDALSDKDIR)\inc\krb5
-HEIMDALLIBDIR=$(HEIMDALSDKDIR)\lib\$(CPU)
+krbincflags =-I$(KERBEROSCOMPATSDKROOT)\inc -I$(KERBEROSCOMPATSDKROOT)\inc\krb5
+HEIMDALLIBDIR=$(KERBEROSCOMPATSDKROOT)\lib\$(CPU)
 BUILD_HEIMDAL=1
 
 incflags= -I$(INCDIR) -I$(OBJ) $(krbincflags)
@@ -350,8 +347,8 @@ if exist $@.manifest $(RM) $@.manifest
 # End of manifest handling
 
 # Code signing
-!ifdef CODESIGN
-_CODESIGN=$(CODESIGN) $@
+!ifdef SIGNTOOL
+_CODESIGN=$(SIGNTOOL) $@
 !else
 _CODESIGN=
 !endif

@@ -139,9 +139,9 @@ if exist setupbuild.local.cmd (
     echo - KH_DOXYFULLPATH should be the full path to doxygen.exe
     echo - KH_HHCFULLPATH should be the full path to hhc.exe
     echo - WIXDIR should be the directory containing WiX 3.x
-    echo - ZIP should be the full path to 7-Zip command line executable
-    echo - HEIMDALSDKDIR should the directory containing the Heimdal SDK
-    echo - CODESIGN Can be set to the command used to sign binaries
+    echo - 7ZIP should be the full path to 7-Zip command line executable
+    echo - KERBEROSCOMPATSDKROOT should the directory containing the Kerberos Compatibility SDK
+    echo - SIGNTOOL Can be set to the command used to sign binaries
 )
 
 @echo off

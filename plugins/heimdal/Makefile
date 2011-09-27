@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010 Secure Endpoints Inc.
+# Copyright (c) 2010-2011 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -73,7 +73,11 @@ VERRESFILE=$(OBJ)\version.res
 $(OBJ)\krb5config.c: krbconfig.csv $(CONFDIR)\csvschema.cfg
 	$(CCSV) $** $@
 
-$(OBJ)\krbcompat_delayload.obj: $(HEIMDALSDKDIR)\src\krbcompat_delayload.c
+!if !defined(KERBEROSCOMPATSDKROOT)
+!	error KERBEROSCOMPATSDKROOT is not defined
+!endif
+
+$(OBJ)\krbcompat_delayload.obj: $(KERBEROSCOMPATSDKROOT)\src\krbcompat_delayload.c
 	$(C2OBJ)
 
 $(DLLFILE):  $(OBJFILES) $(VERRESFILE) $(LIBFILES)

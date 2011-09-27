@@ -94,7 +94,7 @@
   <?endif ?>
 
   <Product Id="*" Language="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" Name="!(loc.ProductName)" Codepage="$(var.CodePage)" UpgradeCode="$(var.UpgradeCode)" Version="$(var.ProductVersion)">
-    <Package Compressed="yes" Description="!(loc.ProductDescription)" InstallerVersion="$(var.InstallerVersion)" InstallPrivileges="elevated" Languages="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" Platform="$(var.Platform)" SummaryCodepage="!(loc.CodePage)" />
+    <Package Compressed="yes" Description="!(loc.ProductDescription)" InstallerVersion="$(var.InstallerVersion)" InstallPrivileges="elevated" Languages="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" SummaryCodepage="!(loc.CodePage)" />
 
     <!-- Directory structure -->
 
@@ -102,9 +102,9 @@
       <Directory Id="$(var.ProgramFilesFolder)">
 
         <?ifdef MITCompatibilityMode ?>
-        <Directory Id="dirCompany" SourceName="." ShortName="MIT" Name="MIT">
-          <Directory Id="dirAppClass" SourceName="." ShortName="Kerberos" Name="Kerberos">
-            <Directory Id="APPDIR" ShortName="bin" Name="bin" FileSource="$(var.BinDir)">
+        <Directory Id="dirCompany" SourceName="." Name="MIT">
+          <Directory Id="dirAppClass" SourceName="." Name="Kerberos">
+            <Directory Id="APPDIR" Name="bin" FileSource="$(var.BinDir)">
             </Directory>
           </Directory>
         </Directory>

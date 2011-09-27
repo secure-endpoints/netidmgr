@@ -1,6 +1,6 @@
 #
 # Copyright (c) 2004-2006 Massachusetts Institute of Technology
-# Copyright (c) 2006-2010 Secure Endpoints Inc.
+# Copyright (c) 2006-2011 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -43,22 +43,22 @@ KH_NO_W2K=1
 # Define KH_NO_WX if the build should not fail on warnings.  The
 # default is to treat warnings as errors.
 
-#RMAKE=$(MAKECMD) /nologo all KH_NO_WX=1
-RMAKE=$(MAKECMD) /nologo all
+#RMAKE=$(MAKECMD) all KH_NO_WX=1
+RMAKE=$(MAKECMD) all
 !   ifndef KH_NO_W2K
-RMAKE_W2K=$(MAKECMD) /nologo all KHBUILD_W2K=1
+RMAKE_W2K=$(MAKECMD) all KHBUILD_W2K=1
 !   endif
 
 !  else
-RMAKE=$(MAKECMD) /nologo etag
+RMAKE=$(MAKECMD) etag
 !   ifndef KH_NO_W2K
 RMAKE_W2K=echo Skipping W2K target for ETAGS run.
 !   endif
 !  endif
 ! else
-RMAKE=$(MAKECMD) /nologo test
+RMAKE=$(MAKECMD) test
 !  ifndef KH_NO_W2K
-RMAKE_W2K=$(MAKECMD) /nologo test KHBUILD_W2K=1
+RMAKE_W2K=$(MAKECMD) test KHBUILD_W2K=1
 !  endif
 ! endif
 !else
@@ -248,21 +248,21 @@ finale: keystore
 keystore: ui
 	$(ECHO) -- Entering $@
 	$(CD) plugins\keystore
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
 
 keystore-install-local:
 	$(ECHO) Local install of plugins\keystore
 	$(CD) plugins\keystore
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore install-local
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore install-local
 	$(CD) ..\..
 	$(ECHO) Done
 
 keystore-test:
 	$(ECHO) Testing keystore
 	$(CD) plugins\keystore
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore test
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\keystore test
 	$(CD) ..\..
 	$(ECHO) Done
 
@@ -276,21 +276,21 @@ finale: certprov
 certprov: ui
 	$(ECHO) -- Entering $@
 	$(CD) plugins\certprov
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov
 	$(CD) ..\..
 	$(ECHO) -- Done with $@
 
 certprov-install-local:
 	$(ECHO) Local install of plugins\certprov
 	$(CD) plugins\certprov
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov install-local
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov install-local
 	$(CD) ..\..
 	$(ECHO) Done
 
 certprov-installer:
 	$(ECHO) Installers of plugins\certprov
 	$(CD) plugins\certprov
-	$(RMAKE) KFWSDKDIR=$(DESTDIR) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov installer
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\certprov installer
 	$(CD) ..\..
 	$(ECHO) Done
 
@@ -327,13 +327,13 @@ archive: parchive
 	$(ECHO) -- Done with archive
 
 clean::
-	$(MAKECMD) /nologo CLEANRUN=1
+	$(MAKECMD) CLEANRUN=1
 
 test::
-	$(MAKECMD) /nologo TESTRUN=1
+	$(MAKECMD) TESTRUN=1
 
 etags::
 	$(RM) $(TAGFILE)
-	$(MAKECMD) /nologo ETAGRUN=1
+	$(MAKECMD) ETAGRUN=1
 
 release: all doc installer archive
