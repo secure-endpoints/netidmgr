@@ -1263,7 +1263,7 @@ khm_krb5_renew_ident(khm_handle identity)
     realm = krb5_principal_get_realm(context, me);
 
     code = krb5_build_principal(context, &server,
-                                strlen(realm), realm, KRB5_TGS_NAME, realm, 0);
+                                (int)strlen(realm), realm, KRB5_TGS_NAME, realm, 0);
 
     if (code)
         goto cleanup;
@@ -1616,7 +1616,7 @@ khm_krb5_get_identity_for_ccache(krb5_context context, const wchar_t * ccnameW,
         const char * type;
 
         type = krb5_cc_get_type(context, cc);
-        if (stricmp(type, "API") != 0) {
+        if (_stricmp(type, "API") != 0) {
             _reportf(L"Credentials cache [%S] is not an API cache", name);
             goto cleanup;
         }
@@ -2539,7 +2539,7 @@ khm_krb5_get_realm_list(void)
     for (b = list; b ; b = b->next )
 	if (b->type == krb5_config_list) {
 	    int nc = MultiByteToWideChar(CP_ACP, 0, b->name, -1,
-					 rsp, cbleft / sizeof(wchar_t));
+					 rsp, (int)(cbleft / sizeof(wchar_t)));
 	    cbleft -= nc * sizeof(wchar_t);
 	    rsp += nc;
 	}
@@ -2697,9 +2697,9 @@ khm_krb5_changepwd(char * principal,
     }
 
     if (result_code) {
-        int len = result_code_string.length +
+        int len = (int)(result_code_string.length +
             (result_string.length ? (sizeof(": ") - 1) : 0) +
-            result_string.length;
+            result_string.length);
         if (len && error_str) {
             *error_str = PMALLOC(len + 1);
             if (*error_str)
@@ -3495,27 +3495,27 @@ khm_krb5_set_identity_params(khm_handle ident, const k5_params * p) {
 
     if ((source_reg & K5PARAM_F_LIFE) &&
         p_s.lifetime != p->lifetime)
-        khc_write_int32(csp_id, L"DefaultLifetime", p->lifetime);
+        khc_write_int32(csp_id, L"DefaultLifetime", (khm_int32)p->lifetime);
 
     if ((source_reg & K5PARAM_F_LIFE_H) &&
         p_s.lifetime_max != p->lifetime_max)
-        khc_write_int32(csp_id, L"MaxLifetime", p->lifetime_max);
+        khc_write_int32(csp_id, L"MaxLifetime", (khm_int32)p->lifetime_max);
 
     if ((source_reg & K5PARAM_F_LIFE_L) &&
         p_s.lifetime_min != p->lifetime_min)
-        khc_write_int32(csp_id, L"MinLifetime", p->lifetime_min);
+        khc_write_int32(csp_id, L"MinLifetime", (khm_int32)p->lifetime_min);
 
     if ((source_reg & K5PARAM_F_RLIFE) &&
         p_s.renew_life != p->renew_life)
-        khc_write_int32(csp_id, L"DefaultRenewLifetime", p->renew_life);
+        khc_write_int32(csp_id, L"DefaultRenewLifetime", (khm_int32)p->renew_life);
 
     if ((source_reg & K5PARAM_F_RLIFE_H) &&
         p_s.renew_life_max != p->renew_life_max)
-        khc_write_int32(csp_id, L"MaxRenewLifetime", p->renew_life_max);
+        khc_write_int32(csp_id, L"MaxRenewLifetime", (khm_int32)p->renew_life_max);
 
     if ((source_reg & K5PARAM_F_RLIFE_L) &&
         p_s.renew_life_min != p->renew_life_min)
-        khc_write_int32(csp_id, L"MinRenewLifetime", p->renew_life_min);
+        khc_write_int32(csp_id, L"MinRenewLifetime", (khm_int32)p->renew_life_min);
 
     if ((source_reg & K5PARAM_F_WEAKCRYPTO) &&
         p_s.allow_weak_crypto != p->allow_weak_crypto)

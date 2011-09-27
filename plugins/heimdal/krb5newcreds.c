@@ -387,13 +387,13 @@ k5_read_dlg_params(k5_dlg_data * d, khm_handle identity)
 
     khm_krb5_get_identity_params(identity, &d->params);
 
-    d->tc_lifetime.current = d->params.lifetime;
-    d->tc_lifetime.max = d->params.lifetime_max;
-    d->tc_lifetime.min = d->params.lifetime_min;
+    d->tc_lifetime.current = (khm_int32)d->params.lifetime;
+    d->tc_lifetime.max = (khm_int32)d->params.lifetime_max;
+    d->tc_lifetime.min = (khm_int32)d->params.lifetime_min;
 
-    d->tc_renew.current = d->params.renew_life;
-    d->tc_renew.max = d->params.renew_life_max;
-    d->tc_renew.min = d->params.renew_life_min;
+    d->tc_renew.current = (khm_int32)d->params.renew_life;
+    d->tc_renew.max = (khm_int32)d->params.renew_life_max;
+    d->tc_renew.min = (khm_int32)d->params.renew_life_min;
 
     /* however, if this has externally supplied defaults, we have to
        use them too. */

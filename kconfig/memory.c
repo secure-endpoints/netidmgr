@@ -613,7 +613,7 @@ khm_int32 KHMCALLBACK p_write_value(void * nodeHandle, const wchar_t * valuename
 
     case KC_BINARY:
         v->bin = PMALLOC(cb);
-        v->cb_bin = cb;
+        v->cb_bin = (int)cb;
         memcpy(v->bin, buffer, cb);
         break;
 

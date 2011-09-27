@@ -502,7 +502,7 @@ HttpRequest::FetchGravatarForEmail()
         }
 
         d = sizeof(ehash);
-        if (KHM_FAILED(hash_data((BYTE *) email, len, CALG_MD5, (BYTE *) ehash, &d))) {
+        if (KHM_FAILED(hash_data((BYTE *) email, (DWORD)len, CALG_MD5, (BYTE *) ehash, &d))) {
             ReportStatus(KHERR_ERROR, L"Failed to hash email address", NULL);
             return;
         }

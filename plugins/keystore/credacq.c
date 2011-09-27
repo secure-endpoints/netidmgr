@@ -342,7 +342,7 @@ creddlg_show_passwords(HWND hwlist, keystore_t * ks)
                     }
 
                     nc = MultiByteToWideChar(CP_ACP, MB_ERR_INVALID_CHARS,
-                                             pdata, cb_data,
+                                             pdata, (int)cb_data,
                                              caption, ARRAYLENGTH(caption));
                     caption[min(nc, ARRAYLENGTH(caption) - 1)] = L'\0';
 

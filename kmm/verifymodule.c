@@ -57,7 +57,7 @@ get_full_path_for_module(const wchar_t * modname, wchar_t *path, size_t cch)
         return FALSE;
     }
 
-    d = GetModuleFileName(hm, path, cch);
+    d = GetModuleFileName(hm, path, (DWORD)cch);
     if (d == 0 || d == cch) {
         _report_mr2(KHERR_WARNING, MSG_MOD_VERIFY_FAILED, _cstr(last_component_of(path)),
                     _cstr(path));

@@ -148,7 +148,7 @@ bool AlertContainer::Add(Alert &alert)
     ++m_unseen;
 
     {
-        AlertElement * e = PNEW AlertElement(alert, m_alerts.size() - 1);
+        AlertElement * e = PNEW AlertElement(alert, (int)(m_alerts.size() - 1));
         InsertChildAfter(e);
         Invalidate();
     }
