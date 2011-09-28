@@ -151,7 +151,7 @@ KSDBG=release
 KSDBG=debug
 !endif
 
-KSBIN=$(DESTDIR)
+KSBIN=$(DESTDIR)\bin
 
 $(OBJ)\installer.wixobj: installer.wxs
 	"$(WIXDIR)\candle.exe" -nologo -out "$@" $** 	\
