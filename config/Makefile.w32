@@ -346,11 +346,33 @@ if exist $@.manifest $(RM) $@.manifest
 
 # End of manifest handling
 
-# Code signing
-!ifdef SIGNTOOL
-_CODESIGN=$(SIGNTOOL) $@
+#----------------------------------------------------------------------
+# Code and assembly signing
+#
+# SIGNTOOL_D is the product description usually the name
+#
+# SIGNTOOL_C is any set of options required for certificate/private
+# key selection for code signging.
+#
+# SIGNTOOL_O is any set of additional options to signtool.exe
+#
+# SIGNTOOL_T is the timestamp option
+
+!ifdef CODESIGN
+_CODESIGN=$(CODESIGN) $@
 !else
-_CODESIGN=
+! ifdef SIGNTOOL_C
+!  ifndef SIGNTOOL
+SIGNTOOL=signtool.exe
+!  endif
+!  ifndef SIGNTOOL_T
+SIGNTOOL_T=/t http://timestamp.verisign.com/scripts/timstamp.dll
+!  endif
+
+_CODESIGN=( $(SIGNTOOL) sign $(SIGNTOOL_D) $(SIGNTOOL_O) $(SIGNTOOL_T) $(SIGNTOOL_C) /v $@ )
+! else
+_CODESIGN=echo Skipping code signing
+! endif
 !endif
 
 !endif
