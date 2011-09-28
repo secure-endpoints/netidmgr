@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2005 Massachusetts Institute of Technology
- * Copyright (c) 2006-2010 Secure Endpoints Inc.
+ * Copyright (c) 2006-2011 Secure Endpoints Inc.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -1276,6 +1276,9 @@ kherr_push_new_context(khm_int32 flags)
     c = get_empty_context();
     if(IS_KHERR_CTX(p)) {
         LDELETE(&ctx_root_list, c);
+#ifdef DEBUG
+        assert(TPARENT(c) == NULL);
+#endif
         TADDCHILD(p,c);
         c->flags &= ~KHERR_CF_UNBOUND;
         kherr_hold_context(p);
@@ -1362,7 +1365,7 @@ get_progress(kherr_context * c, khm_ui_4 * pnum, khm_ui_4 * pdenom)
 
         for (cc = TFIRSTCHILD(c);
              cc;
-             cc = LNEXT(cc)) {
+             cc = TNEXTSIBLING(cc)) {
 
             khm_ui_4 cnum, cdenom;
 
@@ -1379,6 +1382,24 @@ get_progress(kherr_context * c, khm_ui_4 * pnum, khm_ui_4 * pdenom)
                 if (cdenom != 256) {
                     cnum = ((long)cnum * 256) / cdenom;
                     cdenom = 256;
+                }
+
+                /*
+                 * The following works around a bug that I have
+                 * been unable to find the cause of.  This function
+                 * iterates forever because cc == TNEXTSIBLING(cc)
+                 */
+                if (cc == TNEXTSIBLING(cc)) {
+#ifdef DEBUG
+                    assert(cc != TNEXTSIBLING(cc));
+#endif
+                    cc->next = NULL;
+                }
+                if (cc == TPREVSIBLING(cc)) {
+#ifdef DEBUG
+                    assert(cc != TPREVSIBLING(cc));
+#endif
+                    cc->prev = NULL;
                 }
             }
 
