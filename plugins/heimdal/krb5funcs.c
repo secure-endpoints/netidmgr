@@ -27,6 +27,11 @@
 /* Originally this was krb5routines.c in Leash sources.  Subsequently
  * modified and adapted for NetIDMgr */
 
+/* Heimdal uses 64-bit time_t everywhere */
+#ifdef _USE_32BIT_TIME_T
+#undef _USE_32BIT_TIME_T
+#endif
+
 #include "krbcred.h"
 
 #define SECURITY_WIN32
@@ -37,6 +42,39 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <strsafe.h>
+
+/* we cannot use the kcreddb/filetime.c versions of the conversion
+   functions because of the 32-bit time_t problem so we defined our
+   own private copies.
+ */
+
+static void
+_TimetToFileTime( time_t t, LPFILETIME pft )
+{
+    LONGLONG ll;
+
+    if ( sizeof(time_t) == 4 )
+	ll = Int32x32To64(t, 10000000) + 116444736000000000i64;
+    else {
+	ll = t * 10000000i64 + 116444736000000000i64;
+    }
+    pft->dwLowDateTime = (DWORD) ll;
+    pft->dwHighDateTime = (DWORD) (ll >> 32);
+}
+
+static void
+_TimetToFileTimeInterval(time_t t, LPFILETIME pft)
+{
+    LONGLONG ll;
+
+    if ( sizeof(time_t) == 4 )
+	ll = Int32x32To64(t, 10000000);
+    else {
+	ll = t * 10000000i64;
+    }
+    pft->dwLowDateTime = (DWORD) ll;
+    pft->dwHighDateTime = (DWORD) (ll >> 32);
+}
 
 /* we use these structures to keep track of identities that we find
    while going through the API, FILE and MSLSA caches and enumerating
@@ -442,18 +480,18 @@ get_tickets_from_cache(krb5_context context,
             credentials.times.starttime = credentials.times.authtime;
 
         tt = credentials.times.starttime;
-        TimetToFileTime(tt, &ft);
+        _TimetToFileTime(tt, &ft);
         kcdb_cred_set_attr(cred, KCDB_ATTR_ISSUE, &ft, sizeof(ft));
 
         tt = credentials.times.endtime;
-        TimetToFileTime(tt, &eft);
+        _TimetToFileTime(tt, &eft);
         kcdb_cred_set_attr(cred, KCDB_ATTR_EXPIRE, &eft, sizeof(eft));
 
         if (credentials.times.renew_till > 0) {
             FILETIME ftl;
 
             tt = credentials.times.renew_till;
-            TimetToFileTime(tt, &eft);
+            _TimetToFileTime(tt, &eft);
             kcdb_cred_set_attr(cred, KCDB_ATTR_RENEW_EXPIRE, &eft,
                                sizeof(eft));
 
@@ -551,10 +589,10 @@ get_tickets_from_cache(krb5_context context,
             assert(d->count > 0);
 
             tt = credentials.times.endtime;
-            TimetToFileTime(tt, &ft_expire_new);
+            _TimetToFileTime(tt, &ft_expire_new);
 
             tt = credentials.times.starttime;
-            TimetToFileTime(tt, &ft_issue_new);
+            _TimetToFileTime(tt, &ft_issue_new);
 
             /* so now, we have to set the properties of the identity
                based on the properties of this credential under the
@@ -592,7 +630,7 @@ get_tickets_from_cache(krb5_context context,
 
                 if (credentials.times.renew_till > 0) {
                     tt = credentials.times.renew_till;
-                    TimetToFileTime(tt, &ft);
+                    _TimetToFileTime(tt, &ft);
                     d->ft_renewexpire = ft;
                 } else {
                     ZeroMemory(&d->ft_renewexpire, sizeof(d->ft_renewexpire));
@@ -908,7 +946,7 @@ khm_krb5_set_initial_default_identity(krb5_context context)
         BOOL match_all = FALSE;
         kcdb_enumeration e = NULL;
 
-        TimetToFileTimeInterval(5 * 60, &ft_threshold);
+        _TimetToFileTimeInterval(5 * 60, &ft_threshold);
         GetSystemTimeAsFileTime(&ft_now);
         ft_now = FtAdd(&ft_now, &ft_threshold);
 
@@ -1145,7 +1183,7 @@ khm_krb5_renew_ident(khm_handle identity)
             goto import_failed;
 
         GetSystemTimeAsFileTime(&ft_now);
-        TimetToFileTimeInterval(5 * 60, &ft_threshold);
+        _TimetToFileTimeInterval(5 * 60, &ft_threshold);
 
         ft_now = FtAdd(&ft_now, &ft_threshold);
 
