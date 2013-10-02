@@ -33,7 +33,7 @@ KHIMAIRA_WIN32_CONFIG=1
 #  The following environment variables MUST be set:
 #   KH_ROOT : Root of the source tree.
 #   KH_BUILD: One of DEBUG or RETAIL
-#   KH_CLVER: One of 'vc7', 'vc8' or 'vc9'.  The C compiler used for the build
+#   KH_CLVER: One of 'vc7', 'vc8', 'vc9' or 'vc10'.  The C compiler used for the build
 #   KERBEROSCOMPATSDKROOT: Path to Kerberos Compatibility SDK
 #   HEIMDALSDKROOT: Path to Heimdal SDK
 #
@@ -64,9 +64,9 @@ KHIMAIRA_WIN32_CONFIG=1
 
 # See what compiler we are using
 !ifndef KH_CLVER
-!  error KH_CLVER needs to be set to the version of the C/C++ compiler that is being used (vc7, vc8 or vc9)
+!  error KH_CLVER needs to be set to the version of the C/C++ compiler that is being used (vc7, vc8, vc9, or vc10)
 !endif
-!if "$(KH_CLVER)" != "vc7" && "$(KH_CLVER)" != "vc8" && "$(KH_CLVER)" != "vc9"
+!if "$(KH_CLVER)" != "vc7" && "$(KH_CLVER)" != "vc8" && "$(KH_CLVER)" != "vc9" && "$(KH_CLVER)" != "vc10"
 !  error Unknown compiler specified in KH_CLVER
 !endif
 
