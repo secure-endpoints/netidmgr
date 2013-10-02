@@ -93,8 +93,26 @@
     <?endif ?>
   <?endif ?>
 
-  <Product Id="*" Language="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" Name="!(loc.ProductName)" Codepage="$(var.CodePage)" UpgradeCode="$(var.UpgradeCode)" Version="$(var.ProductVersion)">
-    <Package Compressed="yes" Description="!(loc.ProductDescription)" InstallerVersion="$(var.InstallerVersion)" InstallPrivileges="elevated" Languages="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" SummaryCodepage="!(loc.CodePage)" />
+  <Product Name="!(loc.ProductName)"
+	   Id="*"
+	   Codepage="$(var.CodePage)"
+	   Language="!(loc.LanguageId)"
+	   Manufacturer="!(loc.ProductManufacturer)"
+	   UpgradeCode="$(var.UpgradeCode)"
+	   Version="$(var.ProductVersion)">
+    <Package Id="*"
+	AdminImage="no"
+	Compressed="yes"
+	Description="!(loc.ProductDescription)"
+	InstallerVersion="$(var.InstallerVersion)"
+	InstallScope="perMachine"
+	Keywords="Installer,NetIDMgr,!(loc.ProductManufacturer)"
+	InstallPrivileges="elevated"
+	Languages="!(loc.LanguageId)"
+	Manufacturer="!(loc.ProductManufacturer)"
+	Platform="$(var.Platform)"
+	ShortNames="no"
+	SummaryCodepage="!(loc.CodePage)" />
 
     <!-- Directory structure -->
 
@@ -193,7 +211,6 @@
 
         <!-- We are registering this product in HKLM. We are only
              installing this for all users. -->
-    <Property Id="ALLUSERS">1</Property>
     <Property Id="ARPCOMMENTS">!(loc.ARPComments)</Property>
     <Property Id="ARPCONTACT">!(loc.ARPContact)</Property>
     <Property Id="ARPURLINFOABOUT">!(loc.ARPURLInfo)</Property>
