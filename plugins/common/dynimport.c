@@ -392,7 +392,7 @@ khm_int32 init_imports(void) {
 
 #ifndef HEIMDAL
 #ifndef _WIN64
-    imp_rv = LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 0, 0);
+    imp_rv = LoadFuncs(KRB4_DLL, k4_fi, &hKrb4, 0, 1, 1, 1);
     CKRV(KRB4_DLL);
 #endif
 #endif
