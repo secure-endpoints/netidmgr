@@ -35,6 +35,7 @@ KHIMAIRA_WIN32_CONFIG=1
 #   KH_BUILD: One of DEBUG or RETAIL
 #   KH_CLVER: One of 'vc7', 'vc8' or 'vc9'.  The C compiler used for the build
 #   KERBEROSCOMPATSDKROOT: Path to Kerberos Compatibility SDK
+#   HEIMDALSDKROOT: Path to Heimdal SDK
 #
 #  The following environment variables are optional:
 #   KH_RUNTIME: One of STATIC or DLL, specifies whether the CRT libs
@@ -155,13 +156,19 @@ HHC=$(KH_HHCFULLPATH)
 HHC=hhc
 !endif
 
-!if !defined(KERBEROSCOMPATSDKROOT)
-!	error KERBEROSCOMPATSDKROOT is not defined
-!endif
-
+!if defined(HEIMDALSDKROOT)
+HEIMDALINCDIR=$(HEIMDALSDKROOT)\inc
+krbincflags =-I$(HEIMDALINCDIR) -I$(HEIMDALINCDIR)\krb5
+HEIMDALLIBDIR=$(HEIMDALSDKROOT)\lib\$(CPU)
+BUILD_HEIMDAL=1
+!elseif defined(KERBEROSCOMPATSDKROOT)
 krbincflags =-I$(KERBEROSCOMPATSDKROOT)\inc -I$(KERBEROSCOMPATSDKROOT)\inc\krb5
 HEIMDALLIBDIR=$(KERBEROSCOMPATSDKROOT)\lib\$(CPU)
 BUILD_HEIMDAL=1
+BUILD_KRBCOMPAT=1
+!else
+!	error Neither HEIMDALSDKROOT nor KERBEROSCOMPATSDKROOT are defined
+!endif
 
 incflags= -I$(INCDIR) -I$(OBJ) $(krbincflags)
 rincflags= /i $(INCDIR)
@@ -325,6 +332,21 @@ etag::
 
 !ifndef MT
 MT=mt.exe -nologo
+!endif
+
+#
+# Heimdal Platform Specific Manifest
+#
+!if (("$(CPU)" == "i386") || ("$(CPU)" == "x86"))
+_MERGE_HEIMDAL_MANIFEST= \
+if exist $@.manifest mt.exe -nologo -manifest $(HEIMDALINCDIR)\Heimdal.Application.x86.manifest $@.manifest -out:$@.manifest^
+else $(COPY) $(HEIMDALINCDIR)\Heimdal.Application.x86.manifest $@.manifest
+!elseif (("$(CPU)" == "amd64") || ("$(CPU)" == "AMD64"))
+_MERGE_HEIMDAL_MANIFEST= \
+if exist $@.manifest mt.exe -nologo -manifest $(HEIMDALINCDIR)\Heimdal.Application.amd64.manifest $@.manifest -out:$@.manifest^
+else $(COPY) $(HEIMDALINCDIR)\Heimdal.Application.amd64.manifest $@.manifest
+!else
+!  error Unrecognized CPU value: $(CPU)
 !endif
 
 #

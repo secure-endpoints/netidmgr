@@ -25,7 +25,9 @@
 /* $Id$ */
 
 #include "krbcred.h"
+#ifdef BUILD_KRBCOMPAT
 #include <krbcompat_delayload.h>
+#endif
 
 kmm_module h_khModule;          /* KMM's handle to this module */
 HINSTANCE hInstance;            /* Instance of this DLL */
@@ -52,12 +54,14 @@ KHMEXP_EXP khm_int32 KHMAPI init_module(kmm_module h_module) {
     kmm_plugin_reg pi;
     wchar_t buf[256];
 
+#ifdef BUILD_KRBCOMPAT
     /* If no Kerberos backend is available, we can't function. */
     if (!DelayLoadHeimdal()) {
         _report_cs0(KHERR_ERROR, L"Unabled to locate a Kerberos backend");
         _suggest_cs(L"Please install Heimdal for Windows or MIT Kerberos for Windows.  Network Identity Manager requires a Kerberos backend to manage Kerberos credentials.", KHERR_SUGGEST_ABORT);
         return KHM_ERROR_NOT_FOUND;
     }
+#endif
 
     h_khModule = h_module;
 

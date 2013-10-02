@@ -100,8 +100,15 @@
       </Component>
       <?endif ?>
 
-      <Merge Id="mergeHeimdalCompat" Language="0" DiskId="1"
+      <?ifdef UseKrbCompat ?>
+	 <Merge Id="mergeKrbCompat" Language="0" DiskId="1"
              SourceFile="$(var.HeimdalSdkDir)redist\$(env.CPU)\SecureEndpoints-krbcompat.msm" />
+      <?else ?>
+	 <Merge Id="mergeHeimdal" Language="0" DiskId="1"
+	     SourceFile="$(var.HeimdalSdkDir)redist\$(env.CPU)\Heimdal.msm" />
+	 <Merge Id="mergeHeimdalCommand" Language="0" DiskId="1"
+	     SourceFile="$(var.HeimdalSdkDir)redist\$(env.CPU)\Heimdal.Command.msm" />
+      <?endif ?>
 
     </DirectoryRef>
 
@@ -125,7 +132,12 @@
       </Feature>
       <?endif ?>
 
-      <MergeRef Id="mergeHeimdalCompat" />
+      <?ifdef UseKrbCompat ?>
+	  <MergeRef Id="mergeKrbCompat" />
+      <?else ?>
+	  <MergeRef Id="mergeHeimdal" />
+	  <MergeRef Id="mergeHeimdalCommand" />
+      <?endif ?>
     </Feature>
 
   </Fragment>

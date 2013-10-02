@@ -212,7 +212,11 @@ $(OBJ)\heimdal.wixobj: heimdal.wxs
 		-dProductVersion=$(NETIDMGR_VERSION)	\
 		-dBinDir=$(BINDIR)\			\
 		-dLibDir=$(LIBDIR)\			\
-		-dHeimdalSdkDir=$(KERBEROSCOMPATSDKROOT)\       \
+!ifdef BUILD_KRBCOMPAT
+		-dHeimdalSdkDir=$(KERBEROSCOMPATSDKROOT)\ \
+!else
+		-dHeimdalSdkDir=$(HEIMDALSDKROOT)\       \
+!endif
 !ifndef NODEBUG
 		-dDebug=1				\
 !endif

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2010-2011 Secure Endpoints Inc.
+# Copyright (c) 2010-2013 Secure Endpoints Inc.
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -48,7 +48,9 @@ OBJFILES= \
 	$(OBJ)\krb5configcc.obj		\
 	$(OBJ)\krb5configid.obj		\
 	$(OBJ)\krb5configids.obj	\
+!if defined(BUILD_KRBCOMPAT)
 	$(OBJ)\krbcompat_delayload.obj
+!endif
 
 SDKLIBFILES=	\
 	netapi32.lib	\
@@ -73,15 +75,25 @@ VERRESFILE=$(OBJ)\version.res
 $(OBJ)\krb5config.c: krbconfig.csv $(CONFDIR)\csvschema.cfg
 	$(CCSV) $** $@
 
-!if !defined(KERBEROSCOMPATSDKROOT)
+!if defined(BUILD_KRBCOMPAT)
+!    if !defined(KERBEROSCOMPATSDKROOT)
 !	error KERBEROSCOMPATSDKROOT is not defined
-!endif
+!    endif
 
 $(OBJ)\krbcompat_delayload.obj: $(KERBEROSCOMPATSDKROOT)\src\krbcompat_delayload.c
 	$(C2OBJ)
 
+DELAYLOAD=/DELAYLOAD:heimdal.dll
+!else
+!    if !defined(HEIMDALSDKROOT)
+!	error HEIMDALSDKROOT is not defined
+!    endif
+!endif
+
+
 $(DLLFILE):  $(OBJFILES) $(VERRESFILE) $(LIBFILES)
-	$(DLLGUILINK) $(MSGRESFILE) $(SDKLIBFILES) $(SCLIB) /DELAYLOAD:heimdal.dll
+	$(DLLGUILINK) $(MSGRESFILE) $(SDKLIBFILES) $(SCLIB) $(DELAYLOAD)
+	$(_MERGE_HEIMDAL_MANIFEST)
 	$(__MERGE_COMMON_CONTROLS_MANIFEST)
 	$(_VC_MANIFEST_EMBED_DLL)
 	$(_VC_MANIFEST_CLEAN)
@@ -134,7 +146,7 @@ clean::
 # install-local:
 # 
 # This target performs a minimal registration of the plug-in binary on
-# the local system.  An installa of Network Identity Manager should
+# the local system.  An install of Network Identity Manager should
 # then be able to pick up the plug-in from the build location.
 # 
 # The registration is done in HKCU.
