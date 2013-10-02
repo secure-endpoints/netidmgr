@@ -95,7 +95,7 @@
       </Component>
 
       <?ifdef IncludeDebugSyms ?>
-      <Component Id="heimdalcred_dll_pdb" Guid="$(var.heimdalcred_dll_pdb_guid)" DiskId="1">
+      <Component Win64="$(var.Win64)" Id="heimdalcred_dll_pdb" Guid="$(var.heimdalcred_dll_pdb_guid)" DiskId="1">
         <File Id="fil_heimdalcred_dll_pdb" Name="heimdalcred.pdb" KeyPath="yes" />
       </Component>
       <?endif ?>
