@@ -67,30 +67,30 @@
   <?define IncludeDebugSyms="yes" ?>
 
   <?if $(var.Platform)="x86" ?>
-  <?ifndef NoW2k?>
-  <?define IncludeW2k="yes" ?>
-  <?endif ?>
-  <?ifndef Heimdal?>
-  <?define IncludeKrb4="yes" ?>
-  <?endif?>
+    <?ifndef NoW2k?>
+      <?define IncludeW2k="yes" ?>
+    <?endif ?>
+    <?ifndef Heimdal?>
+      <?define IncludeKrb4="yes" ?>
+    <?endif?>
   <?elseif $(var.Platform)="x64" ?>
-  <!-- nothing -->
+    <!-- nothing -->
   <?endif ?>
 
   <?ifdef Heimdal?>
-  <?define IncludeHeimdal="yes"?>
+    <?define IncludeHeimdal="yes"?>
   <?else?>
-  <?define IncludeKrb5="yes"?>
+    <?define IncludeKrb5="yes"?>
   <?endif?>
 
   <!-- Sanity checks -->
   <?if $(var.Platform) != "x86"?>
-  <?ifdef IncludeW2k?>
-  <?error Can not include Windows 2000 components in a 64 bit installer ?>
-  <?endif ?>
-  <?ifdef IncludeKrb4?>
-  <?error Kerberos 4 components are not supported in a 64 bit installer ?>
-  <?endif ?>
+    <?ifdef IncludeW2k?>
+      <?error Can not include Windows 2000 components in a 64 bit installer ?>
+    <?endif ?>
+    <?ifdef IncludeKrb4?>
+    <?error Kerberos 4 components are not supported in a 64 bit installer ?>
+    <?endif ?>
   <?endif ?>
 
   <Product Id="*" Language="!(loc.LanguageId)" Manufacturer="!(loc.ProductManufacturer)" Name="!(loc.ProductName)" Codepage="$(var.CodePage)" UpgradeCode="$(var.UpgradeCode)" Version="$(var.ProductVersion)">
