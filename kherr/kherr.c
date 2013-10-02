@@ -1046,13 +1046,6 @@ kherr_report(enum kherr_severity severity,
 {
     kherr_context * c;
     kherr_event * e;
-    khm_boolean invalid = FALSE;
-
-    /* sanity check */
-    if (!IS_POW2(flags & KHERR_RFMASK_SHORT_DESC) ||
-        !IS_POW2(flags & KHERR_RFMASK_LONG_DESC) ||
-        !IS_POW2(flags & KHERR_RFMASK_SUGGEST))
-        invalid = TRUE;
 
     e = get_empty_event();
 
@@ -1077,20 +1070,33 @@ kherr_report(enum kherr_severity severity,
     e->h_module = h_module;
 #endif
 
-    EnterCriticalSection(&cs_error);
-    c = peek_context();
-
-    if(!c || invalid) {
+    /* sanity check */
+    if (!IS_POW2(flags & KHERR_RFMASK_SHORT_DESC) ||
+	!IS_POW2(flags & KHERR_RFMASK_LONG_DESC) ||
+	!IS_POW2(flags & KHERR_RFMASK_SUGGEST))
+    {
         /* the reason why we are doing it this way is because p1..p4,
            the descriptions and the suggestion may contain allocations
            that has to be freed. */
+#ifdef DEBUG
+	assert(FALSE);
+#else
+	if (IsDebuggerPresent())
+	    DebugBreak();
+#endif
         free_event(e);
         e = NULL;
     } else {
-        add_event(c,e);
+	EnterCriticalSection(&cs_error);
+	c = peek_context();
+	if(c) {
+	    add_event(c,e);
+	} else {
+	    free_event(e);
+	    e = NULL;
+	}
+	LeaveCriticalSection(&cs_error);
     }
-
-    LeaveCriticalSection(&cs_error);
 
     return e;
 }
