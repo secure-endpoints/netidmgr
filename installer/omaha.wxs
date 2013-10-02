@@ -67,7 +67,7 @@
 
       <Component Win64="$(var.Win64)" Id="omaha_regkeys" Guid="$(var.omaha_reg_guid)">
         <RegistryKey Root="HKLM" Key="SOFTWARE\Secure Endpoints\Update\Clients\[OMAHA_APPID]"
-                     Action="createAndRemoveOnUninstall" />
+		     ForceDeleteOnUninstall="yes" />
         <RegistryValue Root="HKLM" Key="SOFTWARE\Secure Endpoints\Update\Clients\[OMAHA_APPID]"
                        Name="name" Type="string" Value="!(loc.ProductName)" />
         <RegistryValue Root="HKLM" Key="SOFTWARE\Secure Endpoints\Update\Clients\[OMAHA_APPID]"

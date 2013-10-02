@@ -72,10 +72,10 @@
       <Component Win64="$(var.Win64)" Id="krb4cred_dll" Guid="$(var.krb4cred_dll_guid)" DiskId="1">
         <File Id="fil_krb4cred_dll" Name="krb4cred.dll" KeyPath="yes" />
 
-        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Action="createAndRemoveOnUninstall" />
+	<RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" ForceDeleteOnUninstall="yes" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Name="ImagePath" Type="string" Value="[#fil_krb4cred_dll]" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\MITKrb4" Name="PluginList" Type="string" Value="Krb4Cred" />
-        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Action="createAndRemoveOnUninstall" />
+	<RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" ForceDeleteOnUninstall="yes" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Module" Type="string" Value="MITKrb4" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Description" Type="string" Value="Kerberos v4 Credentials Provider" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb4Cred" Name="Dependencies" Type="string" Value="Krb5Cred" />

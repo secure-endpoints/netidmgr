@@ -74,15 +74,15 @@
       <Component Win64="$(var.Win64)" Id="heimdalcred_dll" Guid="$(var.heimdalcred_dll_guid)" DiskId="1">
         <File Id="fil_heimdalcred_dll" Name="heimdalcred.dll" KeyPath="yes" />
 
-        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\Heimdal" Action="createAndRemoveOnUninstall" />
+	<RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\Heimdal" ForceDeleteOnUninstall="yes" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\Heimdal" Name="ImagePath" Type="string" Value="[#fil_heimdalcred_dll]" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Modules\Heimdal" Name="PluginList" Type="string" Value="Krb5Cred,Krb5Ident" />
-        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Action="createAndRemoveOnUninstall" />
+	<RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" ForceDeleteOnUninstall="yes" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Module" Type="string" Value="Heimdal" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Description" Type="string" Value="Kerberos v5 Credentials Provider" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Type" Type="integer" Value="1" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Cred" Name="Flags" Type="integer" Value="0" />
-        <RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Action="createAndRemoveOnUninstall" />
+	<RegistryKey Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" ForceDeleteOnUninstall="yes" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Module" Type="string" Value="Heimdal" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Description" Type="string" Value="Kerberos v5 Identity Provider" />
         <RegistryValue Root="HKLM" Key="Software\MIT\NetIDMgr\PluginManager\Plugins\Krb5Ident" Name="Dependencies" Type="string" Value="Heimdal" />

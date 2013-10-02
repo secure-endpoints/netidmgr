@@ -116,7 +116,7 @@
       <Component Win64="$(var.Win64)" Id="netidmgr_exe" Guid="$(var.netidmgr_exe_guid)" Transitive="yes">
         <File Id="fil_netidmgr_exe" Name="netidmgr.exe" KeyPath="yes" />
 
-        <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Action="createAndRemoveOnUninstall" />
+	<RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" ForceDeleteOnUninstall="yes" />
         <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Name="Flags" Type="integer" Value="1032" />
 
         <Shortcut Id="sc_netidmgr_exe" Advertise="no" Directory="dirShortcut" ShortName="netidmgr.lnk" Name="Network Identity Manager.lnk" Target="[APPDIR]netidmgr.exe" Show="minimized" WorkingDirectory="APPDIR" />
@@ -149,7 +149,7 @@
 
         <File Id="fil_netidmgr_exe_w2k" Name="netidmgr.exe" KeyPath="yes" Source="$(var.BinDir)W2K\netidmgr.exe" />
 
-        <RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Action="createAndRemoveOnUninstall" />
+	<RegistryKey Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" ForceDeleteOnUninstall="yes" />
 
         <RegistryValue Root="HKLM" Key="Software\Microsoft\Windows NT\CurrentVersion\Terminal Server\Compatibility\Applications\netidmgr" Name="Flags" Type="integer" Value="1032" />
 
