@@ -180,6 +180,10 @@ khcwarn=$(khcwarn) /WX
 
 khdefines=$(khdefines) -DISOLATION_AWARE_ENABLED
 
+!if "$(CPU)" == "i386"
+khdefines=$(khdefines) -D_USE_32BIT_TIME_T
+!endif
+
 # Debug symbols
 ldebug=$(ldebug) /DEBUG
 cdebug=$(cdebug) -Fd$(OBJ)\ -Zi
