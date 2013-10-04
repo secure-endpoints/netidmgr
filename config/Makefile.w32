@@ -343,12 +343,12 @@ MT=mt.exe -nologo
 #
 !if (("$(CPU)" == "i386") || ("$(CPU)" == "x86"))
 _MERGE_HEIMDAL_MANIFEST= \
-if exist $@.manifest mt.exe -nologo -manifest $(HEIMDALINCDIR)\Heimdal.Application.x86.manifest $@.manifest -out:$@.manifest^
-else $(COPY) $(HEIMDALINCDIR)\Heimdal.Application.x86.manifest $@.manifest
+if exist $@.manifest $(MT) -manifest $(HEIMDALINCDIR)\Heimdal.Application.x86.manifest $@.manifest -out:$@.manifest^
+else $(CP) $(HEIMDALINCDIR)\Heimdal.Application.x86.manifest $@.manifest
 !elseif (("$(CPU)" == "amd64") || ("$(CPU)" == "AMD64"))
 _MERGE_HEIMDAL_MANIFEST= \
-if exist $@.manifest mt.exe -nologo -manifest $(HEIMDALINCDIR)\Heimdal.Application.amd64.manifest $@.manifest -out:$@.manifest^
-else $(COPY) $(HEIMDALINCDIR)\Heimdal.Application.amd64.manifest $@.manifest
+if exist $@.manifest $(MT) -manifest $(HEIMDALINCDIR)\Heimdal.Application.amd64.manifest $@.manifest -out:$@.manifest^
+else $(CP) $(HEIMDALINCDIR)\Heimdal.Application.amd64.manifest $@.manifest
 !else
 !  error Unrecognized CPU value: $(CPU)
 !endif
@@ -358,12 +358,12 @@ else $(COPY) $(HEIMDALINCDIR)\Heimdal.Application.amd64.manifest $@.manifest
 #
 !if (("$(CPU)" == "i386") || ("$(CPU)" == "x86"))
 _MERGE_COMMON_CONTROLS_MANIFEST= \
-if exist $@.manifest mt.exe -nologo -manifest $(SRC)\ui\netidmgr.i386.manifest $@.manifest -out:$@.manifest^
-else $(COPY) $(SRC)\ui\netidmgr.i386.manifest $@.manifest
+if exist $@.manifest $(MT) -manifest $(SRC)\ui\netidmgr.i386.manifest $@.manifest -out:$@.manifest^
+else $(CP) $(SRC)\ui\netidmgr.i386.manifest $@.manifest
 !elseif (("$(CPU)" == "amd64") || ("$(CPU)" == "AMD64"))
 _MERGE_COMMON_CONTROLS_MANIFEST= \
-if exist $@.manifest mt.exe -nologo -manifest $(SRC)\ui\netidmgr.amd64.manifest $@.manifest -out:$@.manifest^
-else $(COPY) $(SRC)\ui\netidmgr.amd64.manifest $@.manifest
+if exist $@.manifest $(MT) -manifest $(SRC)\ui\netidmgr.amd64.manifest $@.manifest -out:$@.manifest^
+else $(CP) $(SRC)\ui\netidmgr.amd64.manifest $@.manifest
 !else
 !  error Unrecognized CPU value: $(CPU)
 !endif
