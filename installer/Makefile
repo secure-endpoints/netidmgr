@@ -218,6 +218,7 @@ $(OBJ)\heimdal.wixobj: heimdal.wxs
 		-dLibDir=$(LIBDIR)\			\
 !ifdef BUILD_KRBCOMPAT
 		-dHeimdalSdkDir=$(KERBEROSCOMPATSDKROOT)\ \
+		-dUseKrbCompat=1 \
 !else
 		-dHeimdalSdkDir=$(HEIMDALSDKROOT)\       \
 !endif
