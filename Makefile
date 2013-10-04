@@ -298,6 +298,33 @@ install-local:: certprov-install-local
 
 !endif
 
+!if exist( plugins\kcacred )
+finale: kcacred
+
+kcacred: ui
+	$(ECHO) -- Entering $@
+	$(CD) plugins\kcacred
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\kcacred
+	$(CD) ..\..
+	$(ECHO) -- Done with $@
+
+kcacred-install-local:
+	$(ECHO) Local install of plugins\kcacred
+	$(CD) plugins\kcacred
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\kcacred install-local
+	$(CD) ..\..
+	$(ECHO) Done
+
+kcacred-installer:
+	$(ECHO) Installers of plugins\kcacred
+	$(CD) plugins\kcacred
+	$(RMAKE) NIDMRAWDIRS=1 DEST=$(DESTDIR) OBJ=$(OBJDIR)\plugins\kcacred installer
+	$(CD) ..\..
+	$(ECHO) Done
+
+install-local:: kcacred-install-local
+!endif
+
 pdoc:
 
 doc: pdoc

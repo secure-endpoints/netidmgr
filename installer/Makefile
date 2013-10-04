@@ -60,7 +60,11 @@ SDKZIPFILE=$(DESTDIR)\$(BASENAME)sdk-$(CPU)-$(OUTPRE_DBG)-$(NETIDMGR_VERSIONU).z
 KEYSTORE=$(SRC)\plugins\keystore
 
 # External libraries
-# KCAPLUGINLIB=\path\to\kcacred-*.wixlib
+!ifndef KCAPLUGINLIB
+!  if exist( ..\plugins\kcacred)
+KCAPLUGINLIB=$(OBJDIR)\plugins\kcacred\kcaplugin-wl.wixobj
+!  endif
+!endif
 
 !if defined(KCAPLUGINLIB) || defined(KFWWIXLIB)
 COMBINED=1
