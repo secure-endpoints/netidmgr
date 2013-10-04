@@ -200,15 +200,15 @@
     </ComponentGroup>
     <?endif?>
 
-      <Feature Id="Feature.Core" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
+      <Feature Id="Feature.Core" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="1">
         <ComponentGroupRef Id="NetIdMgrCore" />
 
-        <Feature Id="Feature.StartupShortcut" Display="hidden" InstallDefault="local" TypicalDefault="install" Level="3">
+	<Feature Id="Feature.StartupShortcut" Display="expand" InstallDefault="local" TypicalDefault="install" Level="3">
           <ComponentRef Id="csc_NetIDMgrStartup" />
         </Feature>
 
         <?ifdef IncludeDebugSyms ?>
-        <Feature Id="Feature.Core.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
+	<Feature Id="Feature.Core.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="5">
           <ComponentGroupRef Id="NetIdMgrCoreDebug" />
         </Feature>
         <?endif?>

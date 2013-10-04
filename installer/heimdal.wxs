@@ -127,7 +127,7 @@
       <ComponentGroupRef Id="Heimdal" />
 
       <?ifdef IncludeDebugSyms ?>
-      <Feature Id="Feature.Heimdal.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
+      <Feature Id="Feature.Heimdal.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="5">
         <ComponentGroupRef Id="HeimdalDebug" />
       </Feature>
       <?endif ?>

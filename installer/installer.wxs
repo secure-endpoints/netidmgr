@@ -171,7 +171,7 @@
 
     </DirectoryRef> <!-- /Runtime -->
 
-    <Feature Id="Feature.Main" AllowAdvertise="no" ConfigurableDirectory="APPDIR" Title="!(loc.FeatureMainTitle)" Description="!(loc.FeatureMainDesc)" Display="expand" InstallDefault="local" TypicalDefault="install" Level="3">
+    <Feature Id="Feature.Main" AllowAdvertise="no" ConfigurableDirectory="APPDIR" Title="!(loc.FeatureMainTitle)" Description="!(loc.FeatureMainDesc)" Display="expand" InstallDefault="local" TypicalDefault="install" Level="1">
 
       <FeatureRef Id="Feature.Core" />
 

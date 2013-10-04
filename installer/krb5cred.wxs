@@ -117,7 +117,7 @@
       <ComponentGroupRef Id="Krb5Cred" />
 
       <?ifdef IncludeDebugSyms ?>
-      <Feature Id="Feature.Krb5.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="3">
+      <Feature Id="Feature.Krb5.Debug" Display="expand" InstallDefault="local" TypicalDefault="install" Title="!(loc.FeatureDebug)" Description="!(loc.FeatureDebugDesc)" Level="5">
         <ComponentGroupRef Id="Krb5CredDebug" />
       </Feature>
       <?endif ?>
