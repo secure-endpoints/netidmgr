@@ -85,6 +85,8 @@
       <Component Win64="$(var.Win64)" Id="nim_dll" Guid="$(var.nim_dll_guid)" Transitive="yes">
         <File Id="fil_nidmgr32_dll" Name="$(var.nim_dll_name)" KeyPath="yes" />
         <Condition>VersionNT &gt; 500</Condition>
+	<Environment Id='env.Path' Name='PATH' Action='set' Part='last'
+	   Separator=';' Value='[APPDIR]' System='yes' />
       </Component>
 
       <?ifdef IncludeDebugSyms?>
