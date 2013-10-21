@@ -68,13 +68,13 @@ typedef struct tag_k5params {
 
     khm_ui_4    publicIP;
 
-    krb5_deltat lifetime;
-    krb5_deltat lifetime_min;
-    krb5_deltat lifetime_max;
+    khm_int64  lifetime;
+    khm_int64  lifetime_min;
+    khm_int64  lifetime_max;
 
-    krb5_deltat renew_life;
-    krb5_deltat renew_life_min;
-    krb5_deltat renew_life_max;
+    khm_int64  renew_life;
+    khm_int64  renew_life_min;
+    khm_int64  renew_life_max;
 
 } k5_params;
 
