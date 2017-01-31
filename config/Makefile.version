@@ -58,7 +58,7 @@ NETIDMGR_VERSIONC=$(NETIDMGR_VERSION_MAJOR),$(NETIDMGR_VERSION_MINOR),$(NETIDMGR
 
 # Source information
 NETIDMGR_SRC_COMPANY_1033=Secure Endpoints Inc.
-NETIDMGR_SRC_COPYRIGHT_1033=Copyright © 2006-2013 Secure Endpoints Inc.
+NETIDMGR_SRC_COPYRIGHT_1033=Copyright © 2006-2016 Secure Endpoints Inc.
 
 # Choose the default build type if one is not set
 !if ("$(KH_BUILD)" != "DEBUG") && ("$(KH_BUILD)" != "RETAIL")

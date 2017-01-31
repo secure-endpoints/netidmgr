@@ -407,10 +407,17 @@ _CODESIGN=$(CODESIGN) $@
 SIGNTOOL=signtool.exe
 !  endif
 !  ifndef SIGNTOOL_T
-SIGNTOOL_T=/t http://timestamp.verisign.com/scripts/timstamp.dll
+SIGNTOOL_T=http://timestamp.verisign.com/scripts/timstamp.dll
 !  endif
 
-_CODESIGN=( $(SIGNTOOL) sign $(SIGNTOOL_D) $(SIGNTOOL_O) $(SIGNTOOL_T) $(SIGNTOOL_C) /v $@ )
+_CODESIGN_SHA1 = \
+   "$(SIGNTOOL)" sign /a /d $(SIGNTOOL_D) /du $(SIGNTOOL_O) /fd sha1 /t $(SIGNTOOL_T_SHA1) $(SIGNTOOL_C) $@
+_CODESIGN_USERLAND_SHA256 = \
+   "$(SIGNTOOL)" sign /a /d $(SIGNTOOL_D) /du $(SIGNTOOL_O) /as /fd sha256 /tr $(SIGNTOOL_T_SHA256) $(SIGNTOOL_C) $@
+
+_CODESIGN= \
+  $(_CODESIGN_SHA1) ^& \
+  $(_CODESIGN_SHA256)
 ! else
 _CODESIGN=echo Skipping code signing
 ! endif
