@@ -242,6 +242,7 @@ k5_purge_config_data(k5_config_data * d,
 KRB5_LIB_FUNCTION krb5_error_code KRB5_LIB_CALL
 _krb5_expand_path_tokens(krb5_context context,
 			 const char *path_in,
+			 int filepath,
 			 char **ppath_out);
 
 void
@@ -262,7 +263,7 @@ get_config_files(krb5_context context, char ***config_files)
         char * exp_file = NULL;
         char * ret_file;
 
-        code = _krb5_expand_path_tokens(context, *file, &exp_file);
+	code = _krb5_expand_path_tokens(context, *file, 1, &exp_file);
         ret_file = ((code == 0 && exp_file != NULL)? exp_file : *file);
 
         if (ret_list == NULL || n_ret_list == nc_ret_list) {
