@@ -2688,6 +2688,7 @@ khm_krb5_changepwd(char * principal,
     krb5_principal princ = 0;
     krb5_get_init_creds_opt *opts = NULL;
     krb5_creds creds;
+    krb5_ccache id = NULL;
 
     result_string.data = 0;
     result_code_string.data = 0;
@@ -2701,16 +2702,16 @@ khm_krb5_changepwd(char * principal,
     }
 
     krb5_get_init_creds_opt_alloc(context, &opts);
-    krb5_get_init_creds_opt_set_tkt_life(opts, 5*60);
+    krb5_get_init_creds_opt_set_tkt_life(opts, 300);
     krb5_get_init_creds_opt_set_renew_life(opts, 0);
     krb5_get_init_creds_opt_set_forwardable(opts, 0);
     krb5_get_init_creds_opt_set_proxiable(opts, 0);
-    krb5_get_init_creds_opt_set_address_list(opts,NULL);
 
     if (rc = krb5_get_init_creds_password(context, &creds, princ,
 					  password, 0, 0, 0,
 					  "kadmin/changepw", opts)) {
-      if (rc == KRB5KRB_AP_ERR_BAD_INTEGRITY) {
+      if (rc == KRB5KRB_AP_ERR_BAD_INTEGRITY
+	  || rc ==  KRB5KRB_AP_ERR_MODIFIED) {
 	*error_str = PSTRDUP("Password incorrect while getting initial ticket");
       } else {
           const char * krb_err;
@@ -2722,10 +2723,43 @@ khm_krb5_changepwd(char * principal,
       goto cleanup;
     }
 
-    if (rc = krb5_set_password(context, &creds, newpassword,
-			       princ,
-			       &result_code, &result_code_string,
-			       &result_string)) {
+    rc = krb5_cc_new_unique(context, krb5_cc_type_memory, NULL, &id);
+    if (rc)  {
+	const char * krb_err;
+
+	krb_err = krb5_get_error_message(context, rc);
+	*error_str = PSTRDUP(krb_err);
+	krb5_free_error_message(context, krb_err);
+	goto cleanup;
+    }
+
+    rc = krb5_cc_initialize(context, id, princ);
+    if (rc)  {
+	const char * krb_err;
+
+	krb_err = krb5_get_error_message(context, rc);
+	*error_str = PSTRDUP(krb_err);
+	krb5_free_error_message(context, krb_err);
+	goto cleanup;
+    }
+
+    rc = krb5_cc_store_cred(context, id, &creds);
+    if (rc)  {
+	const char * krb_err;
+
+	krb_err = krb5_get_error_message(context, rc);
+	*error_str = PSTRDUP(krb_err);
+	krb5_free_error_message(context, krb_err);
+	goto cleanup;
+    }
+
+
+    rc = krb5_set_password_using_ccache(context, id, newpassword,
+					princ,
+					&result_code,
+					&result_code_string,
+					&result_string);
+    if (rc) {
         const char *krb_err;
 
         krb_err = krb5_get_error_message(context, rc);
@@ -2765,6 +2799,9 @@ cleanup:
 
     if (opts)
 	krb5_get_init_creds_opt_free(context, opts);
+
+    if (id)
+	krb5_cc_destroy(context, id);
 
     if (context)
         krb5_free_context(context);
