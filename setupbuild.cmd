@@ -11,7 +11,7 @@ for /F "tokens=2* delims=	 " %%A in ('reg query "HKLM\SOFTWARE\Microsoft\Microso
 )
 
 if "%PSDKDir%"=="" (
-   set PSDKDir=!PROGRAMFILES!\Microsoft SDKs\Windows\v6.1\
+   set PSDKDir=!PROGRAMFILES!\Microsoft SDKs\Windows\v7.0\
 )
 
 if exist "%PSDKDir%bin\SetEnvVS8.Cmd" (
